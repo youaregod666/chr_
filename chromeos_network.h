@@ -110,6 +110,11 @@ extern int (*GetEnabledNetworkDevices)();
 // Returns false on failure and true on success.
 extern bool (*EnableNetworkDevice)(ConnectionType type, bool enable);
 
+// Set offline mode. This will turn off all radios.
+//
+// Returns false on failure and true on success.
+extern bool (*SetOfflineMode)(bool offline);
+
 }  // namespace chromeos
 
 #endif  // CHROMEOS_NETWORK_H_

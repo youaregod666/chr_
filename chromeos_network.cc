@@ -24,6 +24,7 @@ const char* kConnmanServiceName = "org.moblin.connman";
 
 // Connman function names.
 const char* kGetPropertiesFunction = "GetProperties";
+const char* kSetPropertyFunction = "SetProperty";
 const char* kConnectServiceFunction = "ConnectService";
 const char* kEnableTechnologyFunction = "EnableTechnology";
 const char* kDisableTechnologyFunction = "DisableTechnology";
@@ -33,6 +34,7 @@ const char* kEncryptionProperty = "Security";
 const char* kPassphraseRequiredProperty = "PassphraseRequired";
 const char* kServicesProperty = "Services";
 const char* kEnabledTechnologiesProperty = "EnabledTechnologies";
+const char* kOfflineModeProperty = "OfflineMode";
 const char* kSignalStrengthProperty = "Strength";
 const char* kSsidProperty = "Name";
 const char* kStateProperty = "State";
@@ -454,6 +456,35 @@ bool ChromeOSEnableNetworkDevice(ConnectionType type, bool enable) {
   }
 
   ::g_free(device);
+  return true;
+}
+
+extern "C"
+bool ChromeOSSetOfflineMode(bool offline) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy manager_proxy(bus,
+                            kConnmanServiceName,
+                            "/",
+                            kConnmanManagerInterface);
+
+  glib::Value value_offline(offline);
+
+  glib::ScopedError error;
+  ::DBusGProxy obj;
+  if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
+                           kSetPropertyFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           kOfflineModeProperty,
+                           G_TYPE_VALUE,
+                           &value_offline,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "SetOfflineMode failed: "
+        << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+
   return true;
 }
 

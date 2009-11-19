@@ -30,6 +30,7 @@ typedef NetworkStatusConnection
 typedef void (*DisconnectNetworkStatusType)(NetworkStatusConnection);
 typedef int (*GetEnabledNetworkDevicesType)();
 typedef bool (*EnableNetworkDeviceType)(ConnectionType type, bool enable);
+typedef bool (*SetOfflineModeType)(bool offline);
 typedef void (*SetSynapticsParameterType)(SynapticsParameter param, int value);
 
 CrosVersionCheckType CrosVersionCheck = 0;
@@ -50,6 +51,7 @@ MonitorNetworkStatusType MonitorNetworkStatus = 0;
 DisconnectNetworkStatusType DisconnectNetworkStatus = 0;
 GetEnabledNetworkDevicesType GetEnabledNetworkDevices = 0;
 EnableNetworkDeviceType EnableNetworkDevice = 0;
+SetOfflineModeType SetOfflineMode = 0;
 
 SetSynapticsParameterType SetSynapticsParameter = 0;
 
@@ -117,6 +119,9 @@ bool LoadCros(const char* path_to_libcros) {
   EnableNetworkDevice = EnableNetworkDeviceType(
       ::dlsym(handle, "ChromeOSEnableNetworkDevice"));
 
+  SetOfflineMode = SetOfflineModeType(
+      ::dlsym(handle, "ChromeOSSetOfflineMode"));
+
   SetSynapticsParameter = SetSynapticsParameterType(
       ::dlsym(handle, "ChromeOSSetSynapticsParameter"));
 
@@ -134,6 +139,7 @@ bool LoadCros(const char* path_to_libcros) {
       && DisconnectNetworkStatus
       && GetEnabledNetworkDevices
       && EnableNetworkDevice
+      && SetOfflineMode
       && SetSynapticsParameter;
 }
 
