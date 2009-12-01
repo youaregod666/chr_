@@ -122,8 +122,8 @@ bool MountRemoveableDevice(const dbus::BusConnection& bus, const char* path) {
   if (!::dbus_g_proxy_call(proxy.gproxy(),
                            "FilesystemMount",
                            &Resetter(&error).lvalue(),
-                           G_TYPE_STRING, "",
-                           G_TYPE_STRV, options,
+                           G_TYPE_STRING, NULL,
+                           G_TYPE_STRV, NULL,
                            G_TYPE_INVALID,
                            G_TYPE_STRING,
                            &val, G_TYPE_INVALID)) {
@@ -237,13 +237,30 @@ MountStatusConnection ChromeOSMonitorMountStatus(MountMonitor monitor,
                             "DeviceChanged",
                             DBUS_TYPE_G_OBJECT_PATH,
                             G_TYPE_INVALID);
+  typedef dbus::MonitorConnection<void (const char*)> ConnectionType;
 
-  result->addedconnection() = dbus::Monitor(mount, "DeviceAdded",
+  ConnectionType* added = new ConnectionType(mount, "DeviceAdded",
       &OpaqueMountStatusConnection::Added, result);
-  result->removedconnection() = dbus::Monitor(mount, "DeviceRemoved",
+  ::dbus_g_proxy_connect_signal(mount.gproxy(), "DeviceAdded",
+                                G_CALLBACK(&ConnectionType::Run),
+                                added, NULL);
+  result->addedconnection() = added;
+
+
+  ConnectionType* removed = new ConnectionType(mount, "DeviceRemoved",
       &OpaqueMountStatusConnection::Removed, result);
-  result->changedconnection() = dbus::Monitor(mount, "DeviceChanged",
+  ::dbus_g_proxy_connect_signal(mount.gproxy(), "DeviceRemoved",
+                                G_CALLBACK(&ConnectionType::Run),
+                                removed, NULL);
+  result->removedconnection() = removed;
+
+
+  ConnectionType* changed = new ConnectionType(mount, "DeviceChanged",
       &OpaqueMountStatusConnection::Changed, result);
+  ::dbus_g_proxy_connect_signal(mount.gproxy(), "DeviceChanged",
+                                G_CALLBACK(&ConnectionType::Run),
+                                changed, NULL);
+  result->changedconnection() = changed;
 
   return result;
 }
