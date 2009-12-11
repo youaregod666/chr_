@@ -11,6 +11,7 @@
 #include "marshal.h"  // NOLINT
 #include "chromeos/dbus/dbus.h"  // NOLINT
 #include "chromeos/glib/object.h"  // NOLINT
+#include "chromeos/string.h"
 
 // TODO(rtc): Unittest this code as soon as the tree is refactored.
 namespace chromeos {  // NOLINT
@@ -78,15 +79,6 @@ bool GetProperties(const dbus::Proxy& proxy, glib::ScopedHashTable* result) {
     return false;
   }
   return true;
-}
-
-// TODO(rtc): Forked from chromeos_power.cc. This needs to be moved to
-// a common location. I'll do this once we have the tree setup the way we
-// want it.
-char* NewStringCopy(const char* x) {
-  char* result = static_cast<char*>(::operator new(std::strlen(x) + 1));
-  std::strcpy(result, x);  // NOLINT
-  return result;
 }
 
 ConnectionType ParseType(const std::string& type) {

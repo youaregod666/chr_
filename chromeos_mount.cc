@@ -12,9 +12,9 @@
 #include <string>
 #include <vector>
 
-#include "util.h" // NOLINT
 #include "chromeos/dbus/dbus.h"
 #include "chromeos/glib/object.h"
+#include "chromeos/string.h"
 
 namespace chromeos { // NOLINT
 

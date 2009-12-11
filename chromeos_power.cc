@@ -14,20 +14,11 @@
 
 #include "chromeos/dbus/dbus.h"
 #include "chromeos/glib/object.h"
+#include "chromeos/string.h"
 
 namespace chromeos {
 
 namespace {  // NOLINT
-
-// REVISIT (seanparent) : StrLess and StrEqualTo are general function objects
-// for dealing with NTBSs. An equivalent to StrLess exists in ASL -
-// I'll either roll these into a chromos/cstring.h or add ASL to chromeos build.
-
-char* NewStringCopy(const char* x) {
-  char* result = static_cast<char*>(std::malloc(std::strlen(x) + 1));
-  std::strcpy(result, x);  // NOLINT
-  return result;
-}
 
 bool RetrieveBatteryStatus(const glib::ScopedHashTable& table,
                            PowerStatus* status) {
