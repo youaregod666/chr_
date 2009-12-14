@@ -160,9 +160,10 @@ class OpaquePowerStatusConnection {
   static void Run(void* object, const char* device) {
     PowerStatusConnection self = static_cast<PowerStatusConnection>(object);
 
-    if (std::strcmp(device, self->battery_.path()) == 0)
+    if (self->battery_ && std::strcmp(device, self->battery_.path()) == 0)
       RetrieveBatteryStatus(self->battery_, &self->status_);
-    else if (std::strcmp(device, self->line_power_.path()) == 0)
+    else if (self->line_power_
+             && std::strcmp(device, self->line_power_.path()) == 0)
       RetrieveLinePowerStatus(self->line_power_, &self->status_);
     else
       return;
