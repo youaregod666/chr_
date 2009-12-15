@@ -9,6 +9,7 @@
       'sources': [
         'chromeos_power.h',
         'chromeos_network.h',
+        'chromeos_language.h',
         'load.cc',
       ],
       'include_dirs': [

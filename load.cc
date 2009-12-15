@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 
 #include "chromeos_cros_api.h" // NOLINT
+#include "chromeos_language.h"  // NOLINT
 #include "chromeos_mount.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
 #include "chromeos_power.h"  // NOLINT
@@ -16,6 +17,12 @@ typedef bool (*CrosVersionCheckType)(chromeos::CrosAPIVersion);
 typedef PowerStatusConnection (*MonitorPowerStatusType)(PowerMonitor, void*);
 typedef void (*DisconnectPowerStatusType)(PowerStatusConnection);
 typedef bool (*RetrievePowerInformationType)(PowerInformation* information);
+typedef LanguageStatusConnection* (*MonitorLanguageStatusType)(
+    LanguageStatusMonitorFunction, void*);
+typedef void (*DisconnectLanguageStatusType)(LanguageStatusConnection*);
+typedef InputLanguageList* (*GetLanguagesType)(LanguageStatusConnection*);
+typedef void (*ChangeLanguageType)(
+    LanguageStatusConnection*, LanguageCategory, const char*);
 typedef MountStatusConnection (*MonitorMountStatusType)(MountMonitor, void*);
 typedef void (*DisconnectMountStatusType)(MountStatusConnection);
 typedef MountStatus* (*RetrieveMountInformationType)();
@@ -38,6 +45,11 @@ CrosVersionCheckType CrosVersionCheck = 0;
 MonitorPowerStatusType MonitorPowerStatus = 0;
 DisconnectPowerStatusType DisconnectPowerStatus = 0;
 RetrievePowerInformationType RetrievePowerInformation = 0;
+
+MonitorLanguageStatusType MonitorLanguageStatus = 0;
+DisconnectLanguageStatusType DisconnectLanguageStatus = 0;
+GetLanguagesType GetLanguages = 0;
+ChangeLanguageType ChangeLanguage = 0;
 
 MonitorMountStatusType MonitorMountStatus = 0;
 DisconnectMountStatusType DisconnectMountStatus = 0;
@@ -86,6 +98,15 @@ bool LoadCros(const char* path_to_libcros) {
   RetrievePowerInformation = RetrievePowerInformationType(
       ::dlsym(handle, "ChromeOSRetrievePowerInformation"));
 
+  MonitorLanguageStatus = MonitorLanguageStatusType(
+      ::dlsym(handle, "ChromeOSMonitorLanguageStatus"));
+  DisconnectLanguageStatus = DisconnectLanguageStatusType(
+      ::dlsym(handle, "ChromeOSDisconnectLanguageStatus"));
+  GetLanguages = GetLanguagesType(
+      ::dlsym(handle, "ChromeOSGetLanguages"));
+  ChangeLanguage = ChangeLanguageType(
+      ::dlsym(handle, "ChromeOSChangeLanguage"));
+
   MonitorMountStatus = MonitorMountStatusType(
       ::dlsym(handle, "ChromeOSMonitorMountStatus"));
 
@@ -128,6 +149,10 @@ bool LoadCros(const char* path_to_libcros) {
   return MonitorPowerStatus
       && DisconnectPowerStatus
       && RetrievePowerInformation
+      && MonitorLanguageStatus
+      && DisconnectLanguageStatus
+      && GetLanguages
+      && ChangeLanguage
       && MonitorMountStatus
       && FreeMountStatus
       && DisconnectMountStatus
