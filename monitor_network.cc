@@ -74,16 +74,20 @@ int main(int argc, const char** argv) {
 
   LOG(INFO) << "Enabled network devices:";
   int devices = chromeos::GetEnabledNetworkDevices();
-  if (devices & chromeos::TYPE_ETHERNET)
-    LOG(INFO) << "  ethernet";
-  if (devices & chromeos::TYPE_WIFI)
-    LOG(INFO) << "  wifi";
-  if (devices & chromeos::TYPE_WIMAX)
-    LOG(INFO) << "  wimax";
-  if (devices & chromeos::TYPE_BLUETOOTH)
-    LOG(INFO) << "  bluetooth";
-  if (devices & chromeos::TYPE_CELLULAR)
-    LOG(INFO) << "  cellular";
+  if (devices == -1) {
+    LOG(INFO) << "  offline mode";
+  } else {
+    if (devices & chromeos::TYPE_ETHERNET)
+      LOG(INFO) << "  ethernet";
+    if (devices & chromeos::TYPE_WIFI)
+      LOG(INFO) << "  wifi";
+    if (devices & chromeos::TYPE_WIMAX)
+      LOG(INFO) << "  wimax";
+    if (devices & chromeos::TYPE_BLUETOOTH)
+      LOG(INFO) << "  bluetooth";
+    if (devices & chromeos::TYPE_CELLULAR)
+      LOG(INFO) << "  cellular";
+  }
 
   chromeos::ServiceStatus* status = chromeos::GetAvailableNetworks();
   DCHECK(status) << "Unable to scan for networks";

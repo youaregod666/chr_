@@ -102,7 +102,8 @@ extern void (*DisconnectNetworkStatus)(NetworkStatusConnection connection);
 
 // Returns the enabled network devices as a bitwise or value of ConnectionTypes.
 //
-// Returns 0 on error.
+// Returns 0 if no devices are enabled.
+// Returns -1 if offline mode, by definition, means all devices are disabled.
 extern int (*GetEnabledNetworkDevices)();
 
 // Enable or disable the specific network device for connection.

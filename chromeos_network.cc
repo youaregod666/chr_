@@ -385,6 +385,11 @@ int ChromeOSGetEnabledNetworkDevices() {
     return devices;
   }
 
+  bool offline_mode = false;
+  properties.Retrieve(kOfflineModeProperty, &offline_mode);
+  if (offline_mode)
+    return -1;
+
   GHashTable* table = properties.get();
   gpointer ptr = g_hash_table_lookup(table, kEnabledTechnologiesProperty);
   if (ptr == NULL)
