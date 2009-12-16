@@ -21,7 +21,7 @@ env = Environment(
 )
 
 # glib, dbus, and ibus environment
-env.ParseConfig('pkg-config --cflags --libs dbus-1 glib-2.0 dbus-glib-1 ibus-1.0 libpcrecpp')
+env.ParseConfig('pkg-config --cflags --libs dbus-1 glib-2.0 gudev-1.0 dbus-glib-1 ibus-1.0 libpcrecpp')
 
 env.SharedLibrary('cros', SOURCES)
 

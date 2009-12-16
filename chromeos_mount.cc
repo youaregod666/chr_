@@ -15,6 +15,8 @@
 #include "chromeos/dbus/dbus.h"
 #include "chromeos/glib/object.h"
 #include "chromeos/string.h"
+#define G_UDEV_API_IS_SUBJECT_TO_CHANGE
+#include <gudev/gudev.h>
 
 namespace chromeos { // NOLINT
 
@@ -166,34 +168,74 @@ class OpaqueMountStatusConnection {
        object_(object),
        mount_(mount),
        addconnection_(NULL),
+       gudev_client(NULL),
        removeconnection_(NULL) {
   }
 
   void FireEvent(MountEventType evt, const char* path) {
     MountStatus* info;
-    if ((info = ChromeOSRetrieveMountInformation()) != NULL)
+    if ((info = ChromeOSRetrieveMountInformation()) != NULL) {
       monitor_(object_, *info, evt, path);
-    ChromeOSFreeMountStatus(info);
+      ChromeOSFreeMountStatus(info);
+    }
+  }
+
+  std::vector<std::string>::iterator FindDevicePath(std::string path) {
+    for (std::vector<std::string>::iterator i = paths_.begin();
+         i != paths_.end();
+         ++i) {
+      if (path.find(*i) != std::string::npos) {
+        return i;
+      }
+    }
+    return paths_.end();
   }
 
   static void Added(void* object, const char* device) {
     MountStatusConnection self = static_cast<MountStatusConnection>(object);
-    DLOG(INFO) << "device added:" << device;
     self->FireEvent(DISK_ADDED, device);
   }
 
   static void Removed(void* object, const char* device) {
     MountStatusConnection self = static_cast<MountStatusConnection>(object);
-    DLOG(INFO) << "device removed:" << device;
     self->FireEvent(DISK_REMOVED, device);
   }
 
   static void Changed(void* object, const char* device) {
     MountStatusConnection self = static_cast<MountStatusConnection>(object);
-    DLOG(INFO) << "device changed" << device;
     self->FireEvent(DISK_CHANGED, device);
   }
 
+  static void OnUDevEvent (GUdevClient* client,
+                           const char* action,
+                           GUdevDevice* device,
+                           gpointer object) {
+    MountStatusConnection self = static_cast<MountStatusConnection>(object);
+    std::vector<std::string>::iterator iter;
+    // can be scsi or block
+    const char* subsystem = g_udev_device_get_subsystem(device);
+    if (subsystem == NULL || strcmp(subsystem, "scsi") != 0) {
+      return;
+    }
+    if (strcmp(action, "add") == 0) {
+      const char* device_path = g_udev_device_get_sysfs_path(device);
+      iter = self->FindDevicePath(device_path);
+      if (iter != self->paths_.end()) {
+        self->FireEvent(DEVICE_SCANNED, iter->c_str());
+      } else {
+        std::string path = device_path;
+        self->paths_.push_back(path);
+        self->FireEvent(DEVICE_ADDED, device_path);
+      }
+    } else if (strcmp(action, "remove")) {
+      const char* device_path = g_udev_device_get_sysfs_path(device);
+      iter = self->FindDevicePath(device_path);
+      if (iter != self->paths_.end()) {
+        self->paths_.erase(iter);
+      }
+
+    }
+  }
   ConnectionType& addedconnection() {
     return addconnection_;
   }
@@ -206,9 +248,12 @@ class OpaqueMountStatusConnection {
     return changedconnection_;
   }
 
+  GUdevClient* gudev_client;
+
  private:
   MountMonitor monitor_;
   void* object_;
+  std::vector<std::string> paths_;
   dbus::Proxy mount_;
   ConnectionType addconnection_;
   ConnectionType removeconnection_;
@@ -241,6 +286,7 @@ MountStatusConnection ChromeOSMonitorMountStatus(MountMonitor monitor,
 
   ConnectionType* added = new ConnectionType(mount, "DeviceAdded",
       &OpaqueMountStatusConnection::Added, result);
+
   ::dbus_g_proxy_connect_signal(mount.gproxy(), "DeviceAdded",
                                 G_CALLBACK(&ConnectionType::Run),
                                 added, NULL);
@@ -249,6 +295,7 @@ MountStatusConnection ChromeOSMonitorMountStatus(MountMonitor monitor,
 
   ConnectionType* removed = new ConnectionType(mount, "DeviceRemoved",
       &OpaqueMountStatusConnection::Removed, result);
+
   ::dbus_g_proxy_connect_signal(mount.gproxy(), "DeviceRemoved",
                                 G_CALLBACK(&ConnectionType::Run),
                                 removed, NULL);
@@ -257,10 +304,20 @@ MountStatusConnection ChromeOSMonitorMountStatus(MountMonitor monitor,
 
   ConnectionType* changed = new ConnectionType(mount, "DeviceChanged",
       &OpaqueMountStatusConnection::Changed, result);
+
   ::dbus_g_proxy_connect_signal(mount.gproxy(), "DeviceChanged",
                                 G_CALLBACK(&ConnectionType::Run),
                                 changed, NULL);
   result->changedconnection() = changed;
+
+  // Listen to udev events
+
+  const char *subsystems[] = {"scsi","block", NULL};
+  result->gudev_client = g_udev_client_new(subsystems);
+  g_signal_connect(result->gudev_client,
+                   "uevent",
+                   G_CALLBACK (&OpaqueMountStatusConnection::OnUDevEvent),
+                   result);
 
   return result;
 }
@@ -308,6 +365,12 @@ MountStatus* ChromeOSRetrieveMountInformation() {
         } else {
           MountRemoveableDevice(bus, *currentpath);
         }
+      }
+      if (dbus::RetrieveProperty(proxy,
+                                 kDeviceKitDeviceInterface,
+                                 "native-path",
+                                 &path)) {
+        info.systempath = NewStringCopy(path.c_str());
       }
       buffer.push_back(info);
     }

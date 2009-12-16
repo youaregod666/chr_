@@ -12,6 +12,7 @@ namespace chromeos { //NOLINT
 struct DiskStatus {
   const char* path;
   const char* mountpath;
+  const char* systempath;
 };
 
 struct MountStatus {
@@ -22,7 +23,9 @@ struct MountStatus {
 enum MountEventType {
   DISK_ADDED,
   DISK_REMOVED,
-  DISK_CHANGED
+  DISK_CHANGED,
+  DEVICE_ADDED,
+  DEVICE_SCANNED
 };
 
 // An internal listener to a d-bus signal. When notifications are received
