@@ -160,12 +160,18 @@ class LanguageStatusConnection {
 
   // Called by cros API ChromeOSChangeLanguage().
   void SwitchXKB(const char* name) {
+    // TODO(yusukes): implement XKB switching.
+
+    if (input_context_path_.empty()) {
+      LOG(ERROR) << "Input context is unknown";
+      return;
+    }
+
     IBusInputContext* context
         = ibus_input_context_get_input_context(input_context_path_.c_str(),
                                                ibus_bus_get_connection(ibus_));
     ibus_input_context_disable(context);
     g_object_unref(context);
-    // TODO(yusukes): implement XKB switching.
     UpdateUI();
   }
 
