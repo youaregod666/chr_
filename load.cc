@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 
 #include "chromeos_cros_api.h" // NOLINT
+#include "chromeos_ime.h"  // NOLINT
 #include "chromeos_language.h"  // NOLINT
 #include "chromeos_mount.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
@@ -23,6 +24,11 @@ typedef void (*DisconnectLanguageStatusType)(LanguageStatusConnection*);
 typedef InputLanguageList* (*GetLanguagesType)(LanguageStatusConnection*);
 typedef void (*ChangeLanguageType)(
     LanguageStatusConnection*, LanguageCategory, const char*);
+typedef ImeStatusConnection* (*MonitorImeStatusType)(
+    const ImeStatusMonitorFunctions&, void*);
+typedef void (*DisconnectImeStatusType)(ImeStatusConnection*);
+typedef void (*NotifyCandidateClickedType)(ImeStatusConnection*,
+                                           int, int, int);
 typedef MountStatusConnection (*MonitorMountStatusType)(MountMonitor, void*);
 typedef void (*DisconnectMountStatusType)(MountStatusConnection);
 typedef MountStatus* (*RetrieveMountInformationType)();
@@ -50,6 +56,10 @@ MonitorLanguageStatusType MonitorLanguageStatus = 0;
 DisconnectLanguageStatusType DisconnectLanguageStatus = 0;
 GetLanguagesType GetLanguages = 0;
 ChangeLanguageType ChangeLanguage = 0;
+
+MonitorImeStatusType MonitorImeStatus = 0;
+DisconnectImeStatusType DisconnectImeStatus = 0;
+NotifyCandidateClickedType NotifyCandidateClicked = 0;
 
 MonitorMountStatusType MonitorMountStatus = 0;
 DisconnectMountStatusType DisconnectMountStatus = 0;
@@ -107,6 +117,13 @@ bool LoadCros(const char* path_to_libcros) {
   ChangeLanguage = ChangeLanguageType(
       ::dlsym(handle, "ChromeOSChangeLanguage"));
 
+  MonitorImeStatus = MonitorImeStatusType(
+      ::dlsym(handle, "ChromeOSMonitorImeStatus"));
+  DisconnectImeStatus = DisconnectImeStatusType(
+      ::dlsym(handle, "ChromeOSDisconnectImeStatus"));
+  NotifyCandidateClicked = NotifyCandidateClickedType(
+      ::dlsym(handle, "ChromeOSNotifyCandidateClicked"));
+
   MonitorMountStatus = MonitorMountStatusType(
       ::dlsym(handle, "ChromeOSMonitorMountStatus"));
 
@@ -153,6 +170,9 @@ bool LoadCros(const char* path_to_libcros) {
       && DisconnectLanguageStatus
       && GetLanguages
       && ChangeLanguage
+      && MonitorImeStatus
+      && DisconnectImeStatus
+      && NotifyCandidateClicked
       && MonitorMountStatus
       && FreeMountStatus
       && DisconnectMountStatus
