@@ -91,15 +91,31 @@ extern LanguageStatusConnection* (*MonitorLanguageStatus)(
 // Terminates IBus and DBus connections.
 extern void (*DisconnectLanguageStatus)(LanguageStatusConnection* connection);
 
-// Gets all IME languages and XKB layouts that are currently available. Caller
+// Gets all IME languages and XKB layouts that are currently active. Caller
 // has to delete the returned list. This function might return NULL on error.
 extern InputLanguageList* (*GetLanguages)(LanguageStatusConnection* connection);
+
+// Gets all IME languages and XKB layouts that are supported, including ones
+// not active. Caller has to delete the returned list. This function might
+// return NULL on error.
+extern InputLanguageList* (*GetSupportedLanguages)(LanguageStatusConnection*
+                                                   connection);
 
 // Changes the current IME engine to |name| and enable IME (when |category| is
 // LANGUAGE_CATEGORY_IME). Changes the current XKB layout to |name| and disable
 // IME (when |category| is LANGUAGE_CATEGORY_XKB).
 extern void (*ChangeLanguage)(LanguageStatusConnection* connection,
                               LanguageCategory category, const char* name);
+
+// Activates the language specified by |category| and |name|. Returns true on
+// success.
+extern bool (*ActivateLanguage)(LanguageStatusConnection* connection,
+                                LanguageCategory category, const char* name);
+
+// Deactivates the language specified by |category| and |name|. Returns true
+// on success.
+extern bool (*DeactivateLanguage)(LanguageStatusConnection* connection,
+                                  LanguageCategory category, const char* name);
 
 }  // namespace chromeos
 

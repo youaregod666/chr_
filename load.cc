@@ -24,6 +24,10 @@ typedef void (*DisconnectLanguageStatusType)(LanguageStatusConnection*);
 typedef InputLanguageList* (*GetLanguagesType)(LanguageStatusConnection*);
 typedef void (*ChangeLanguageType)(
     LanguageStatusConnection*, LanguageCategory, const char*);
+typedef bool (*ActivateLanguageType)(
+    LanguageStatusConnection*, LanguageCategory, const char*);
+typedef bool (*DeactivateLanguageType)(
+    LanguageStatusConnection*, LanguageCategory, const char*);
 typedef ImeStatusConnection* (*MonitorImeStatusType)(
     const ImeStatusMonitorFunctions&, void*);
 typedef void (*DisconnectImeStatusType)(ImeStatusConnection*);
@@ -55,7 +59,10 @@ RetrievePowerInformationType RetrievePowerInformation = 0;
 MonitorLanguageStatusType MonitorLanguageStatus = 0;
 DisconnectLanguageStatusType DisconnectLanguageStatus = 0;
 GetLanguagesType GetLanguages = 0;
+GetLanguagesType GetSupportedLanguages = 0;
 ChangeLanguageType ChangeLanguage = 0;
+ActivateLanguageType ActivateLanguage = 0;
+DeactivateLanguageType DeactivateLanguage = 0;
 
 MonitorImeStatusType MonitorImeStatus = 0;
 DisconnectImeStatusType DisconnectImeStatus = 0;
@@ -114,8 +121,14 @@ bool LoadCros(const char* path_to_libcros) {
       ::dlsym(handle, "ChromeOSDisconnectLanguageStatus"));
   GetLanguages = GetLanguagesType(
       ::dlsym(handle, "ChromeOSGetLanguages"));
+  GetSupportedLanguages = GetLanguagesType(
+      ::dlsym(handle, "ChromeOSGetSupportedLanguages"));
   ChangeLanguage = ChangeLanguageType(
       ::dlsym(handle, "ChromeOSChangeLanguage"));
+  ActivateLanguage = ActivateLanguageType(
+      ::dlsym(handle, "ChromeOSActivateLanguage"));
+  DeactivateLanguage = DeactivateLanguageType(
+      ::dlsym(handle, "ChromeOSDeactivateLanguage"));
 
   MonitorImeStatus = MonitorImeStatusType(
       ::dlsym(handle, "ChromeOSMonitorImeStatus"));
@@ -169,7 +182,10 @@ bool LoadCros(const char* path_to_libcros) {
       && MonitorLanguageStatus
       && DisconnectLanguageStatus
       && GetLanguages
+      && GetSupportedLanguages
       && ChangeLanguage
+      && ActivateLanguage
+      && DeactivateLanguage
       && MonitorImeStatus
       && DisconnectImeStatus
       && NotifyCandidateClicked

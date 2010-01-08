@@ -22,7 +22,7 @@ const char kCandidateWindowInterface[] = "org.freedesktop.IBus.Panel";
 void AddIMELanguages(const GList* engines, chromeos::InputLanguageList* out) {
   DCHECK(out);
   for (; engines; engines = g_list_next(engines)) {
-    IBusEngineDesc *engine_desc = IBUS_ENGINE_DESC(engines->data);
+    IBusEngineDesc* engine_desc = IBUS_ENGINE_DESC(engines->data);
     out->push_back(chromeos::InputLanguage(
         chromeos::LANGUAGE_CATEGORY_IME,
         engine_desc->name, engine_desc->longname, engine_desc->icon));
@@ -53,6 +53,7 @@ class LanguageStatusConnection {
       : monitor_function_(monitor_function),
         language_library_(language_library),
         ibus_(NULL),
+        ibus_config_(NULL),
         dbus_focus_in_(NULL),
         dbus_focus_out_(NULL),
         dbus_state_changed_(NULL),
@@ -63,6 +64,9 @@ class LanguageStatusConnection {
 
   ~LanguageStatusConnection() {
     // Close IBus and DBus connections.
+    if (ibus_config_) {
+      g_object_unref(ibus_config_);
+    }
     if (ibus_) {
       g_object_unref(ibus_);
     }
@@ -93,6 +97,21 @@ class LanguageStatusConnection {
       LOG(ERROR) << "ibus_bus_is_connected() failed";
       return false;
     }
+
+    // Get the IBus connection, which is owned by ibus_.
+    IBusConnection* ibus_connection = ibus_bus_get_connection(ibus_);
+    if (!ibus_connection) {
+      LOG(ERROR) << "ibus_bus_get_connection() failed";
+      return false;
+    }
+
+    // Create the IBus config.
+    ibus_config_ = ibus_config_new(ibus_connection);
+    if (!ibus_config_) {
+      LOG(ERROR) << "ibus_bus_config_new() failed";
+      return false;
+    }
+
 
     // Establish a DBus connection between the candidate_window process for
     // Chromium OS to handle "FocusIn", "FocusOut", and "StateChanged" signals
@@ -140,13 +159,27 @@ class LanguageStatusConnection {
     return true;
   }
 
+  // GetLanguagesMode is used for GetLanguages().
+  enum GetLanguagesMode {
+    kActiveLanguages,  // Get active languages.
+    kSupportedLanguages,  // Get supported languages.
+  };
+
   // Called by cros API ChromeOSGetLanguages() and returns a list of IMEs and
-  // XKB layouts that are currently available.
-  InputLanguageList* GetLanguages() {
-    GList* engines = ibus_bus_list_active_engines(ibus_);
+  // XKB layouts that are currently active.
+  InputLanguageList* GetLanguages(GetLanguagesMode mode) {
+    GList* engines = NULL;
+    if (mode == kActiveLanguages) {
+      engines = ibus_bus_list_active_engines(ibus_);
+    } else if (mode == kSupportedLanguages) {
+      engines = ibus_bus_list_engines(ibus_);
+    } else {
+      NOTREACHED();
+      return NULL;
+    }
     if (!engines) {
       // IBus connection is broken?
-      LOG(ERROR) << "ibus_bus_list_active_engines() failed.";
+      LOG(ERROR) << "ibus_bus_(active_)list_engines() failed.";
       return NULL;
     }
     InputLanguageList* language_list = new InputLanguageList;
@@ -188,6 +221,103 @@ class LanguageStatusConnection {
     ibus_input_context_set_engine(context, name);
     g_object_unref(context);
     UpdateUI();
+  }
+
+  // UpdateMode is used for specifying whether we are activating or
+  // deactivating an input language. We use this mode to consolidate logic
+  // for activation and deactivation.
+  enum UpdateMode {
+    kActivate,  // Activate an input language.
+    kDeactivate,  // Deactivate an input language.
+  };
+
+  // Called by cros API ChromeOSActivateLanguage().
+  bool UpdateXKB(UpdateMode mode, const char* xkb_name) {
+    // TODO(yusukes,satorux): implement this.
+    return false;
+  }
+
+  // Called by cros API ChromeOSActivateLanguage().
+  bool UpdateIME(UpdateMode mode, const char* ime_name) {
+    GList* engines = ibus_bus_list_active_engines(ibus_);
+    if (!engines) {
+      // IBus connection is broken?
+      LOG(ERROR) << "ibus_bus_list_active_engines() failed.";
+      return false;
+    }
+
+    // Convert |engines| to a GValueArray of names.
+    GValueArray* engine_names = g_value_array_new(0);
+    for (GList* cursor = engines; cursor; cursor = g_list_next(cursor)) {
+      IBusEngineDesc* engine_desc = IBUS_ENGINE_DESC(cursor->data);
+      // Skip the IME if the mode is to deactivate and it matches the given
+      // name.
+      if (mode == kDeactivate && strcmp(engine_desc->name, ime_name) == 0) {
+        continue;
+      }
+      GValue name_value = { 0 };
+      g_value_init(&name_value, G_TYPE_STRING);
+      g_value_set_string(&name_value, engine_desc->name);
+      g_value_array_append(engine_names, &name_value);
+    }
+
+    if (mode == kActivate) {
+      // Add a new IME here.
+      GValue name_value = { 0 };
+      g_value_init(&name_value, G_TYPE_STRING);
+      g_value_set_string(&name_value, ime_name);
+      // Prepend to add the new IME as the first choice.
+      g_value_array_prepend(engine_names, &name_value);
+    }
+
+    // Make the array into a GValue.
+    GValue value = { 0 };
+    g_value_init(&value, G_TYPE_VALUE_ARRAY);
+    g_value_take_boxed(&value, engine_names);
+
+    // Set the config value.
+    const gboolean success = ibus_config_set_value(ibus_config_,
+                                                   "general",
+                                                   "preload_engines",
+                                                   &value);
+    g_value_unset(&value);
+    g_list_free(engines);
+
+    return success;
+  }
+
+  InputLanguage* GetCurrentLanguage() {
+    IBusInputContext* context
+        = ibus_input_context_get_input_context(
+            input_context_path_.c_str(), ibus_bus_get_connection(ibus_));
+
+    const bool ime_is_enabled = ibus_input_context_is_enabled(context);
+    g_object_unref(context);
+
+    InputLanguage* current_language = NULL;
+    if (ime_is_enabled) {
+      DLOG(INFO) << "IME is active";
+      // Set IME name on current_language.
+      const IBusEngineDesc* engine_desc
+          = ibus_input_context_get_engine(context);
+      DCHECK(engine_desc);
+      if (!engine_desc) {
+        return NULL;
+      }
+      current_language = new InputLanguage(LANGUAGE_CATEGORY_IME,
+                                           engine_desc->name,
+                                           engine_desc->longname,
+                                           engine_desc->icon);
+    } else {
+      DLOG(INFO) << "IME is not active";
+      // Set XKB layout name on current_languages.
+      current_language = new InputLanguage(LANGUAGE_CATEGORY_XKB,
+                                           kFallbackXKBId,
+                                           kFallbackXKBDisplayName,
+                                           "" /* no icon */);  // mock
+      // TODO(yusukes): implemente this.
+    }
+    return current_language;
   }
 
  private:
@@ -275,6 +405,7 @@ class LanguageStatusConnection {
   // Connections to IBus and DBus.
   typedef dbus::MonitorConnection<void (const char*)>* DBusConnectionType;
   IBusBus* ibus_;
+  IBusConfig* ibus_config_;
   DBusConnectionType dbus_focus_in_;
   DBusConnectionType dbus_focus_out_;
   DBusConnectionType dbus_state_changed_;
@@ -320,7 +451,20 @@ InputLanguageList* ChromeOSGetLanguages(LanguageStatusConnection* connection) {
     return NULL;
   }
   // Pass ownership to a caller. Note: GetLanguages() might return NULL.
-  return connection->GetLanguages();
+  return connection->GetLanguages(
+      LanguageStatusConnection::kActiveLanguages);
+}
+
+extern "C"
+InputLanguageList* ChromeOSGetSupportedLanguages(LanguageStatusConnection*
+                                                 connection) {
+  if (!connection) {
+    LOG(WARNING) << "LanguageStatusConnection is NULL";
+    return NULL;
+  }
+  // Pass ownership to a caller. Note: GetLanguages() might return NULL.
+  return connection->GetLanguages(
+      LanguageStatusConnection::kSupportedLanguages);
 }
 
 extern "C"
@@ -343,6 +487,50 @@ void ChromeOSChangeLanguage(LanguageStatusConnection* connection,
       connection->SwitchIME(name);
       break;
   }
+}
+
+// Helper function for ChromeOSActivateLanguage() and
+// ChromeOSDeactivateLanguage().
+static bool ActivateOrDeactivateLanguage(
+    LanguageStatusConnection::UpdateMode mode,
+    LanguageStatusConnection* connection,
+    LanguageCategory category,
+    const char* name) {
+  if (!connection) {
+    LOG(WARNING) << "LanguageStatusConnection is NULL";
+    return false;
+  }
+  DCHECK(name);
+  bool success = false;
+  switch (category) {
+    case LANGUAGE_CATEGORY_XKB:
+      success = connection->UpdateXKB(mode, name);
+      break;
+    case LANGUAGE_CATEGORY_IME:
+      success = connection->UpdateIME(mode, name);
+      break;
+  }
+  return success;
+}
+
+extern "C"
+bool ChromeOSActivateLanguage(LanguageStatusConnection* connection,
+                              LanguageCategory category,
+                              const char* name) {
+  DLOG(INFO) << "ActivateLanguage: " << name << " [category "
+             << category << "]";
+  return ActivateOrDeactivateLanguage(
+      LanguageStatusConnection::kActivate, connection, category, name);
+}
+
+extern "C"
+bool ChromeOSDeactivateLanguage(LanguageStatusConnection* connection,
+                                LanguageCategory category,
+                                const char* name) {
+  DLOG(INFO) << "DeactivateLanguage: " << name << " [category "
+             << category << "]";
+  return ActivateOrDeactivateLanguage(
+      LanguageStatusConnection::kDeactivate, connection, category, name);
 }
 
 }  // namespace chromeos

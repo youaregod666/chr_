@@ -6,6 +6,7 @@
 #include <base/scoped_ptr.h>
 #include <dlfcn.h>
 #include <glib-object.h>
+#include <unistd.h>
 
 #include <iostream>  // NOLINT
 
@@ -21,11 +22,12 @@
 // 2. Start the candidate_window for ChromeOS.
 // 3. Start this tool ***in your gnome-terminal***. You need to have X desktop.
 // 4. Verify that all IME languages and XKB layouts are displayed.
-// 5. Focus another X application, then focus back the gnome-terminal in order
+// 5. Verify that the last IME is deactivated and then reactivated.
+// 6. Focus another X application, then focus back the gnome-terminal in order
 //    to make candidate_window send "FocusIn" signal to this process. Please
 //    note that Callback::Run() is called upon "FocusIn" and "StateChanged"
 //    signals from candidate_window.
-// 6. Verify that this tool automatically exits in a second or so.
+// 7. Verify that this tool automatically exits in a second or so.
 
 namespace {
 
@@ -99,6 +101,16 @@ class Callback {
   std::string ime_id_;
 };
 
+// Show the active languages.
+static void ShowActiveLanguages() {
+  const scoped_ptr<chromeos::InputLanguageList> languages(
+      chromeos::GetLanguages(global_connection));
+  for (size_t i = 0; i < languages->size(); ++i) {
+    const chromeos::InputLanguage &language = languages->at(i);
+    std::cout << "* " << language.display_name << std::endl;
+  }
+}
+
 int main(int argc, const char** argv) {
   // Initialize the g_type systems an g_main event loop, normally this would be
   // done by chrome.
@@ -112,21 +124,51 @@ int main(int argc, const char** argv) {
   DCHECK(global_connection) << "MonitorLanguageStatus() failed. "
                             << "candidate_window is not running?";
 
-  const scoped_ptr<chromeos::InputLanguageList> engines(
+  const scoped_ptr<chromeos::InputLanguageList> languages(
       chromeos::GetLanguages(global_connection));
-  DCHECK(engines.get()) << "GetLanguages() failed";
+  DCHECK(languages.get()) << "GetLanguages() failed";
 
-  std::cout << "Available IMEs and XKB layouts:" << std::endl;
-  for (size_t i = 0; i < engines->size(); ++i) {
-    const chromeos::InputLanguage &engine = engines->at(i);
-    std::cout << "* " << engine.display_name << std::endl;
+  if (languages->empty()) {
+    LOG(ERROR) << "No activated languages";
+    return 1;
+  }
+  // Check if we have at least one IME. Languages are sorted in a way that
+  // IMEs come after XKBs, so we check the last language.
+  if (languages->back().category != chromeos::LANGUAGE_CATEGORY_IME) {
+    LOG(ERROR) << "No IME found";
+    return 1;
+  }
+
+  std::cout << "Activated IMEs and XKB layouts:" << std::endl;
+  for (size_t i = 0; i < languages->size(); ++i) {
+    const chromeos::InputLanguage &language = languages->at(i);
+    std::cout << "* " << language.display_name << std::endl;
     // Remember (at least) one XKB id and one IME id.
-    if (engine.category ==  chromeos::LANGUAGE_CATEGORY_XKB) {
-      callback.set_xkb_id(engine.id);
+    if (language.category ==  chromeos::LANGUAGE_CATEGORY_XKB) {
+      callback.set_xkb_id(language.id);
     } else {
-      callback.set_ime_id(engine.id);
+      callback.set_ime_id(language.id);
     }
   }
+
+  // Deactivate the last language for testing.
+  const chromeos::InputLanguage& language = languages->back();
+  DCHECK(chromeos::DeactivateLanguage(global_connection,
+                                      language.category,
+                                      language.id.c_str()));
+  // This is not reliable, but wait for a moment so the config change
+  // takes effect in IBus.
+  sleep(1);
+  std::cout << "Deactivated: " << language.display_name << std::endl;
+  ShowActiveLanguages();
+
+  // Reactivate the language.
+  DCHECK(chromeos::ActivateLanguage(global_connection,
+                                    language.category,
+                                    language.id.c_str()));
+  sleep(1);
+  std::cout << "Reactivated: " << language.display_name << std::endl;
+  ShowActiveLanguages();
 
   ::g_main_loop_run(loop);
   chromeos::DisconnectLanguageStatus(global_connection);
