@@ -6,7 +6,7 @@ Source: chromeos-libcros
 Section: unknown
 Priority: extra
 Maintainer: The Chromium OS Authors <chromium-os-dev@googlegroups.com>
-Build-Depends: debhelper (>= 7)
+Build-Depends: debhelper (>= 7.3.0), dh-chromeos, scons, libchrome-dev, libchromeos-dev, libchromeos-synaptics-dev, libdbus-1-dev, libglib2.0-dev, libgudev-1.0-dev, libdbus-glib-1-dev, libibus-dev, libpcre3-dev
 Standards-Version: 3.8.0
 
 Package: chromeos-libcros
