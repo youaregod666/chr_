@@ -10,11 +10,10 @@ SOURCES=['chromeos_power.cc', 'chromeos_language.cc', 'chromeos_mount.cc',
          'version_check.cc', 'chromeos_synaptics.cc']
 
 env = Environment(
-    CPPPATH=[ '.', '..', '../../third_party/synaptics'],
+    CPPPATH=['.', '..'],
     CCFLAGS=['-fno-exceptions', '-ggdb'],
     LINKFLAGS=['-fPIC'],
     LIBS = ['base', 'chromeos', 'rt', 'synaptics'],
-    LIBPATH=['../../third_party/synaptics'],
 )
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
   value = os.environ.get(key)

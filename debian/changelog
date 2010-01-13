@@ -6,6 +6,8 @@ chromeos-libcros (0.2) UNRELEASED; urgency=low
     directly in ../common and ../third_party/chrome/files.
   * Use cross-tools from environment if set.
   * Drop -m32, but link with -fPIC.
+  * Use packaged synaptics library rather than looking directly in
+    ../third_party/synaptics.
 
  -- Colin Watson <cjwatson@canonical.com>  Sat, 28 Nov 2009 10:36:53 +0000
 
