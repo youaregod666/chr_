@@ -49,6 +49,9 @@ typedef int (*GetEnabledNetworkDevicesType)();
 typedef bool (*EnableNetworkDeviceType)(ConnectionType type, bool enable);
 typedef bool (*SetOfflineModeType)(bool offline);
 typedef void (*SetSynapticsParameterType)(SynapticsParameter param, int value);
+typedef bool (*EmitLoginPromptReadyType)();
+typedef bool (*StartSessionType)(const char*, const char*);
+typedef bool (*StopSessionType)(const char*);
 
 CrosVersionCheckType CrosVersionCheck = 0;
 
@@ -83,6 +86,10 @@ EnableNetworkDeviceType EnableNetworkDevice = 0;
 SetOfflineModeType SetOfflineMode = 0;
 
 SetSynapticsParameterType SetSynapticsParameter = 0;
+
+EmitLoginPromptReadyType EmitLoginPromptReady = 0;
+StartSessionType StartSession = 0;
+StopSessionType StopSession = 0;
 
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
@@ -176,6 +183,13 @@ bool LoadCros(const char* path_to_libcros) {
   SetSynapticsParameter = SetSynapticsParameterType(
       ::dlsym(handle, "ChromeOSSetSynapticsParameter"));
 
+  EmitLoginPromptReady = EmitLoginPromptReadyType(
+      ::dlsym(handle, "ChromeOSEmitLoginPromptReady"));
+  StartSession = StartSessionType(
+      ::dlsym(handle, "ChromeOSStartSession"));
+  StopSession = StopSessionType(
+      ::dlsym(handle, "ChromeOSStopSession"));
+
   return MonitorPowerStatus
       && DisconnectPowerStatus
       && RetrievePowerInformation
@@ -201,7 +215,10 @@ bool LoadCros(const char* path_to_libcros) {
       && GetEnabledNetworkDevices
       && EnableNetworkDevice
       && SetOfflineMode
-      && SetSynapticsParameter;
+      && SetSynapticsParameter
+      && EmitLoginPromptReady
+      && StartSession
+      && StopSession;
 }
 
 }  // namespace chromeos

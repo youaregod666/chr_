@@ -5,9 +5,16 @@
 import os
 import sys
 
-SOURCES=['chromeos_power.cc', 'chromeos_language.cc', 'chromeos_mount.cc',
-         'chromeos_network.cc', 'chromeos_ime.cc', 'marshal.cc',
-         'version_check.cc', 'chromeos_synaptics.cc']
+SOURCES=['chromeos_ime.cc',
+         'chromeos_language.cc',
+         'chromeos_login.cc',
+         'chromeos_mount.cc',
+         'chromeos_network.cc',
+         'chromeos_power.cc',
+         'chromeos_synaptics.cc',
+         'marshal.cc',
+         'version_check.cc',
+]
 
 env = Environment(
     CPPPATH=['.', '..'],
@@ -46,3 +53,4 @@ env_so.Program('monitor_language', ['monitor_language.cc', 'load.cc'])
 env_so.Program('monitor_network', ['monitor_network.cc', 'load.cc'])
 env_so.Program('monitor_mount', ['monitor_mount.cc', 'load.cc'])
 env_so.Program('monitor_ime', ['monitor_ime.cc', 'load.cc'])
+env_so.Program('login_driver', ['drive_login.cc', 'load.cc'])
