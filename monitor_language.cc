@@ -25,14 +25,22 @@
 // 5. Verify that the last IME is deactivated and then reactivated.
 // 6. Focus another X application, then focus back the gnome-terminal in order
 //    to make candidate_window send "FocusIn" signal to this process. Please
-//    note that Callback::Run() is called upon "FocusIn" and "StateChanged"
-//    signals from candidate_window.
+//    note that Callback::UpdateCurrentLanguage() is called upon "FocusIn" and
+//    "StateChanged" signals from candidate_window. Likewise,
+//    Callback::RegisterProperties() is for "RegisterProperties" signal and
+//    Callback::UpdateProperty() is for "UpdateProperty" signal from the window.
 // 7. Verify that this tool automatically exits in a second or so.
 
 namespace {
 
 const size_t kTestCount = 5;
 chromeos::LanguageStatusConnection* global_connection = NULL;
+
+void DumpProperties(const chromeos::ImePropertyList& prop_list) {
+  for (size_t i = 0; i < prop_list.size(); ++i) {
+    DLOG(INFO) << "Property #" << i << ": " << prop_list[i].ToString();
+  }
+}
 
 }  // namespace
 
@@ -44,12 +52,13 @@ class Callback {
       : count_(0), loop_(loop) {
   }
 
-  static void Run(void* object, const chromeos::InputLanguage& language) {
+  static void UpdateCurrentLanguage(void* object,
+                                    const chromeos::InputLanguage& language) {
     Callback* self = static_cast<Callback*>(object);
 
     ++self->count_;
     if (self->count_ == kTestCount) {
-      std::cout << "*** Done ***" << std::endl;
+      LOG(INFO) << "*** Done ***";
       ::g_main_loop_quit(self->loop_);
     } else {
       // Change the current IME engine or XKB layout by calling
@@ -62,12 +71,12 @@ class Callback {
       //    candidate_window.
       // 4. candidate_window sends "StateChanged" signal to this process.
       // 5. Since |self| is registered as a monitor function, libcros calls
-      //    Callback::Run() function again.
+      //    Callback::UpdateCurrentLanguage() function again.
       //
       // As a result, "SetEngine" method and "Disable" method in ibus-daemon
       // are called in turn rapidly.
       if (language.category == chromeos::LANGUAGE_CATEGORY_XKB) {
-        // This triggers the Run() function to be called again
+        // This triggers the UpdateCurrentLanguage() function to be called again
         // (see the comment above).
         chromeos::ChangeLanguage(global_connection,
                                  chromeos::LANGUAGE_CATEGORY_IME,
@@ -79,6 +88,18 @@ class Callback {
                                  self->xkb_id().c_str());
       }
     }
+  }
+
+  static void RegisterProperties(void* object,
+                                 const chromeos::ImePropertyList& prop_list) {
+    DLOG(INFO) << "In callback function for the RegisterProperties signal";
+    DumpProperties(prop_list);
+  }
+
+  static void UpdateProperty(void* object,
+                             const chromeos::ImePropertyList& prop_list) {
+    DLOG(INFO) << "In callback function for the UpdateProperty signal";
+    DumpProperties(prop_list);
   }
 
   std::string xkb_id() const {
@@ -107,7 +128,7 @@ static void ShowActiveLanguages() {
       chromeos::GetLanguages(global_connection));
   for (size_t i = 0; i < languages->size(); ++i) {
     const chromeos::InputLanguage &language = languages->at(i);
-    std::cout << "* " << language.display_name << std::endl;
+    LOG(INFO) << "* " << language.display_name;
   }
 }
 
@@ -118,9 +139,14 @@ int main(int argc, const char** argv) {
   GMainLoop* loop = ::g_main_loop_new(NULL, false);
   DCHECK(LoadCrosLibrary(argv)) << "Failed to load cros.so";
 
+  chromeos::LanguageStatusMonitorFunctions monitor;
+  monitor.current_language = &Callback::UpdateCurrentLanguage;
+  monitor.register_ime_properties = &Callback::RegisterProperties;
+  monitor.update_ime_property = &Callback::UpdateProperty;
+
   Callback callback(loop);
   global_connection
-      = chromeos::MonitorLanguageStatus(&Callback::Run, &callback);
+      = chromeos::MonitorLanguageStatus(monitor, &callback);
   DCHECK(global_connection) << "MonitorLanguageStatus() failed. "
                             << "candidate_window is not running?";
 
@@ -139,10 +165,10 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
-  std::cout << "Activated IMEs and XKB layouts:" << std::endl;
+  LOG(INFO) << "Activated IMEs and XKB layouts:";
   for (size_t i = 0; i < languages->size(); ++i) {
     const chromeos::InputLanguage &language = languages->at(i);
-    std::cout << "* " << language.display_name << std::endl;
+    LOG(INFO) << "* " << language.display_name;
     // Remember (at least) one XKB id and one IME id.
     if (language.category ==  chromeos::LANGUAGE_CATEGORY_XKB) {
       callback.set_xkb_id(language.id);
@@ -159,7 +185,7 @@ int main(int argc, const char** argv) {
   // This is not reliable, but wait for a moment so the config change
   // takes effect in IBus.
   sleep(1);
-  std::cout << "Deactivated: " << language.display_name << std::endl;
+  LOG(INFO) << "Deactivated: " << language.display_name;
   ShowActiveLanguages();
 
   // Reactivate the language.
@@ -167,7 +193,7 @@ int main(int argc, const char** argv) {
                                     language.category,
                                     language.id.c_str()));
   sleep(1);
-  std::cout << "Reactivated: " << language.display_name << std::endl;
+  LOG(INFO) << "Reactivated: " << language.display_name;
   ShowActiveLanguages();
 
   ::g_main_loop_run(loop);

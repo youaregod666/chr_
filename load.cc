@@ -19,7 +19,7 @@ typedef PowerStatusConnection (*MonitorPowerStatusType)(PowerMonitor, void*);
 typedef void (*DisconnectPowerStatusType)(PowerStatusConnection);
 typedef bool (*RetrievePowerInformationType)(PowerInformation* information);
 typedef LanguageStatusConnection* (*MonitorLanguageStatusType)(
-    LanguageStatusMonitorFunction, void*);
+    LanguageStatusMonitorFunctions, void*);
 typedef void (*DisconnectLanguageStatusType)(LanguageStatusConnection*);
 typedef InputLanguageList* (*GetLanguagesType)(LanguageStatusConnection*);
 typedef void (*ChangeLanguageType)(
@@ -28,6 +28,10 @@ typedef bool (*ActivateLanguageType)(
     LanguageStatusConnection*, LanguageCategory, const char*);
 typedef bool (*DeactivateLanguageType)(
     LanguageStatusConnection*, LanguageCategory, const char*);
+typedef void (*ActivateImePropertyType)(
+    LanguageStatusConnection*, const char*);
+typedef void (*DeactivateImePropertyType)(
+    LanguageStatusConnection*, const char*);
 typedef ImeStatusConnection* (*MonitorImeStatusType)(
     const ImeStatusMonitorFunctions&, void*);
 typedef void (*DisconnectImeStatusType)(ImeStatusConnection*);
@@ -66,6 +70,8 @@ GetLanguagesType GetSupportedLanguages = 0;
 ChangeLanguageType ChangeLanguage = 0;
 ActivateLanguageType ActivateLanguage = 0;
 DeactivateLanguageType DeactivateLanguage = 0;
+ActivateImePropertyType ActivateImeProperty = 0;
+DeactivateImePropertyType DeactivateImeProperty = 0;
 
 MonitorImeStatusType MonitorImeStatus = 0;
 DisconnectImeStatusType DisconnectImeStatus = 0;
@@ -136,6 +142,10 @@ bool LoadCros(const char* path_to_libcros) {
       ::dlsym(handle, "ChromeOSActivateLanguage"));
   DeactivateLanguage = DeactivateLanguageType(
       ::dlsym(handle, "ChromeOSDeactivateLanguage"));
+  ActivateImeProperty = ActivateImePropertyType(
+      ::dlsym(handle, "ChromeOSActivateImeProperty"));
+  DeactivateImeProperty = DeactivateImePropertyType(
+      ::dlsym(handle, "ChromeOSDeactivateImeProperty"));
 
   MonitorImeStatus = MonitorImeStatusType(
       ::dlsym(handle, "ChromeOSMonitorImeStatus"));
@@ -200,6 +210,8 @@ bool LoadCros(const char* path_to_libcros) {
       && ChangeLanguage
       && ActivateLanguage
       && DeactivateLanguage
+      && ActivateImeProperty
+      && DeactivateImeProperty
       && MonitorImeStatus
       && DisconnectImeStatus
       && NotifyCandidateClicked
