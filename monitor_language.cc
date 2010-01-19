@@ -125,7 +125,7 @@ class Callback {
 // Show the active languages.
 static void ShowActiveLanguages() {
   const scoped_ptr<chromeos::InputLanguageList> languages(
-      chromeos::GetLanguages(global_connection));
+      chromeos::GetActiveLanguages(global_connection));
   for (size_t i = 0; i < languages->size(); ++i) {
     const chromeos::InputLanguage &language = languages->at(i);
     LOG(INFO) << "* " << language.display_name;
@@ -151,8 +151,8 @@ int main(int argc, const char** argv) {
                             << "candidate_window is not running?";
 
   const scoped_ptr<chromeos::InputLanguageList> languages(
-      chromeos::GetLanguages(global_connection));
-  DCHECK(languages.get()) << "GetLanguages() failed";
+      chromeos::GetActiveLanguages(global_connection));
+  DCHECK(languages.get()) << "GetActiveLanguages() failed";
 
   if (languages->empty()) {
     LOG(ERROR) << "No activated languages";

@@ -420,8 +420,8 @@ class LanguageStatusConnection {
     kSupportedLanguages,  // Get supported languages.
   };
 
-  // Called by cros API ChromeOSGetLanguages() and returns a list of IMEs and
-  // XKB layouts that are currently active.
+  // Returns a list of IMEs and XKB layouts that are currently active or
+  // supported depending on |mode|. Returns NULL on error.
   InputLanguageList* GetLanguages(GetLanguagesMode mode) {
     GList* engines = NULL;
     if (mode == kActiveLanguages) {
@@ -873,7 +873,8 @@ void ChromeOSDisconnectLanguageStatus(LanguageStatusConnection* connection) {
 }
 
 extern "C"
-InputLanguageList* ChromeOSGetLanguages(LanguageStatusConnection* connection) {
+InputLanguageList* ChromeOSGetActiveLanguages(LanguageStatusConnection*
+                                              connection) {
   // TODO(yusukes): Add DCHECK(connection); here when candidate_window for
   // Chrome OS gets ready.
   if (!connection) {
