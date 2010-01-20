@@ -66,7 +66,6 @@ RetrievePowerInformationType RetrievePowerInformation = 0;
 MonitorLanguageStatusType MonitorLanguageStatus = 0;
 DisconnectLanguageStatusType DisconnectLanguageStatus = 0;
 GetLanguagesType GetActiveLanguages = 0;
-GetLanguagesType GetLanguages = 0;  // TODO(satorux): Remove this.
 GetLanguagesType GetSupportedLanguages = 0;
 ChangeLanguageType ChangeLanguage = 0;
 ActivateLanguageType ActivateLanguage = 0;
@@ -135,7 +134,6 @@ bool LoadCros(const char* path_to_libcros) {
       ::dlsym(handle, "ChromeOSDisconnectLanguageStatus"));
   GetActiveLanguages = GetLanguagesType(
       ::dlsym(handle, "ChromeOSGetActiveLanguages"));
-  GetLanguages = GetActiveLanguages;  // TODO(satorux): Remove this.
   GetSupportedLanguages = GetLanguagesType(
       ::dlsym(handle, "ChromeOSGetSupportedLanguages"));
   ChangeLanguage = ChangeLanguageType(
@@ -208,7 +206,6 @@ bool LoadCros(const char* path_to_libcros) {
       && MonitorLanguageStatus
       && DisconnectLanguageStatus
       && GetActiveLanguages
-      && GetLanguages  // TODO(satorux): Remove this.
       && GetSupportedLanguages
       && ChangeLanguage
       && ActivateLanguage

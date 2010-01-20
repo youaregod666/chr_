@@ -212,9 +212,6 @@ extern void (*DisconnectLanguageStatus)(LanguageStatusConnection* connection);
 extern InputLanguageList* (*GetActiveLanguages)(LanguageStatusConnection*
                                                 connection);
 
-// DEPRECATED. TODO(satorux): Remove this.
-extern InputLanguageList* (*GetLanguages)(LanguageStatusConnection* connection);
-
 // Gets all IME languages and XKB layouts that are supported, including ones
 // not active. Caller has to delete the returned list. This function might
 // return NULL on error.
