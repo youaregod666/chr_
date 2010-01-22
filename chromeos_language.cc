@@ -21,6 +21,22 @@ const char kCandidateWindowService[] = "org.freedesktop.IBus.Panel";
 const char kCandidateWindowObjectPath[] = "/org/chromium/Chrome/LanguageBar";
 const char kCandidateWindowInterface[] = "org.freedesktop.IBus.Panel";
 
+// The list of IME IDs that we handle. This filtering is necessary since some
+// IMEs are definitely unnecessary for us. For example, we should disable
+// "ja:anthy", "zh:cangjie", "cangjie3", "cangjie5", and "zh:pinyin" engines  
+// in ibus-m17n since we (will) have better equivalents outside of ibus-m17n.
+const char* kImeIdsWhitelist[] = {
+  "chewing",  // ibus-chewing
+  "pinyin",  // ibus-pinyin
+  "anthy",  // ibus-anthy
+  "hangul",  // ibus-hangul
+  // TODO(yusukes): Add ibus-table modules here (e.g. Cangjie) once it's ready.
+  "t:latn-pre",  // ibus-m17n (for debugging)
+  "t:latn-post",  // ibus-m17n (for debugging)
+  // TODO(yusukes): Add IMEs in ibus-m17n that are necessary to support the 40+
+  //                languages.
+};
+
 // The list of IME property keys that we don't handle.
 const char* kImePropertyKeysBlacklist[] = {
   "setup",  // menu for showing setup dialog used in anthy and hangul.
@@ -28,14 +44,37 @@ const char* kImePropertyKeysBlacklist[] = {
   "status",  // used in m17n.
 };
 
+// Returns true if |key| is blacklisted.
+bool PropertyKeyIsBlacklisted(const char* key) {
+  for (size_t i = 0; i < arraysize(kImePropertyKeysBlacklist); ++i) {
+    if (!std::strcmp(key, kImePropertyKeysBlacklist[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Returns true if |ime_id| is whitelisted.
+bool ImeIdIsWhitelisted(const char* ime_id) {
+  // TODO(yusukes): Use hash_set if necessary.
+  for (size_t i = 0; i < arraysize(kImeIdsWhitelist); ++i) {
+    if (!std::strcmp(ime_id, kImeIdsWhitelist[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Copies IME names in |engines| to |out|.
 void AddIMELanguages(const GList* engines, chromeos::InputLanguageList* out) {
   DCHECK(out);
   for (; engines; engines = g_list_next(engines)) {
     IBusEngineDesc* engine_desc = IBUS_ENGINE_DESC(engines->data);
-    out->push_back(chromeos::InputLanguage(
-        chromeos::LANGUAGE_CATEGORY_IME,
-        engine_desc->name, engine_desc->longname, engine_desc->icon));
+    if (ImeIdIsWhitelisted(engine_desc->name)) {
+      out->push_back(chromeos::InputLanguage(
+          chromeos::LANGUAGE_CATEGORY_IME,
+          engine_desc->name, engine_desc->longname, engine_desc->icon));
+    }
     g_object_unref(engine_desc);
   }
 }
@@ -60,16 +99,6 @@ IBusInputContext* GetInputContext(
     LOG(ERROR) << "IBusInputContext is null: " << input_context_path;
   }
   return context;
-}
-
-// Returns true if |key| is blacklisted.
-bool KeyIsBlacklisted(const char* key) {
-  for (size_t i = 0; i < arraysize(kImePropertyKeysBlacklist); ++i) {
-    if (!std::strcmp(key, kImePropertyKeysBlacklist[i])) {
-      return true;
-    }
-  }
-  return false;
 }
 
 // Returns true if |prop| has children.
@@ -161,7 +190,7 @@ bool FlattenProperty(
     prop_stack.pop();
 
     // Filter out unnecessary properties.
-    if (KeyIsBlacklisted(prop->key)) {
+    if (PropertyKeyIsBlacklisted(prop->key)) {
       continue;
     }
 
@@ -235,7 +264,7 @@ bool FlattenPropertyList(
   return result;
 }
 
-// Debug print functions.
+// Debug print function.
 const char* PropTypeToString(int prop_type) {
   switch (static_cast<IBusPropType>(prop_type)) {
     case PROP_TYPE_NORMAL:
@@ -252,6 +281,7 @@ const char* PropTypeToString(int prop_type) {
   return "UNKNOWN";
 }
 
+// Debug print function.
 const char* PropStateToString(int prop_state) {
   switch (static_cast<IBusPropState>(prop_state)) {
     case PROP_STATE_UNCHECKED:
@@ -264,11 +294,13 @@ const char* PropStateToString(int prop_state) {
   return "UNKNOWN";
 }
 
+// Debug print function.
 std::string Spacer(int n) {
   return std::string(n, ' ');
 }
 
 std::string PrintPropList(IBusPropList *prop_list, int tree_level);
+// Debug print function.
 std::string PrintProp(IBusProperty *prop, int tree_level) {
   if (!prop) {
     return "";
@@ -300,6 +332,7 @@ std::string PrintProp(IBusProperty *prop, int tree_level) {
   return stream.str();
 }
 
+// Debug print function.
 std::string PrintPropList(IBusPropList *prop_list, int tree_level) {
   if (!prop_list) {
     return "";
