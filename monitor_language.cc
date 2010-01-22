@@ -42,7 +42,27 @@ void DumpProperties(const chromeos::ImePropertyList& prop_list) {
   }
 }
 
-}  // namespace
+// Shows the active languages.
+void ShowActiveLanguages() {
+  const scoped_ptr<chromeos::InputLanguageList> languages(
+      chromeos::GetActiveLanguages(global_connection));
+  for (size_t i = 0; i < languages->size(); ++i) {
+    const chromeos::InputLanguage &language = languages->at(i);
+    LOG(INFO) << "* " << language.display_name
+              << " (id=" << language.id << ")";
+  }
+}
+
+// Shows the supported languages.
+void ShowSupportedLanguages() {
+  const scoped_ptr<chromeos::InputLanguageList> languages(
+      chromeos::GetSupportedLanguages(global_connection));
+  for (size_t i = 0; i < languages->size(); ++i) {
+    const chromeos::InputLanguage &language = languages->at(i);
+    LOG(INFO) << "* " << language.display_name
+              << " (id=" << language.id << ")";
+  }
+}
 
 // Callback is an example object which can be passed to MonitorLanguageStatus.
 class Callback {
@@ -122,15 +142,7 @@ class Callback {
   std::string ime_id_;
 };
 
-// Show the active languages.
-static void ShowActiveLanguages() {
-  const scoped_ptr<chromeos::InputLanguageList> languages(
-      chromeos::GetActiveLanguages(global_connection));
-  for (size_t i = 0; i < languages->size(); ++i) {
-    const chromeos::InputLanguage &language = languages->at(i);
-    LOG(INFO) << "* " << language.display_name;
-  }
-}
+}  // namespace
 
 int main(int argc, const char** argv) {
   // Initialize the g_type systems an g_main event loop, normally this would be
@@ -165,11 +177,17 @@ int main(int argc, const char** argv) {
     return 1;
   }
 
+  LOG(INFO) << "---------------------";
+  LOG(INFO) << "Supported IMEs and XKB layouts: ";
+  ShowSupportedLanguages();
+  LOG(INFO) << "---------------------";
   LOG(INFO) << "Activated IMEs and XKB layouts:";
+  ShowActiveLanguages();
+  LOG(INFO) << "---------------------";
+
+  // Remember (at least) one XKB id and one IME id.
   for (size_t i = 0; i < languages->size(); ++i) {
     const chromeos::InputLanguage &language = languages->at(i);
-    LOG(INFO) << "* " << language.display_name;
-    // Remember (at least) one XKB id and one IME id.
     if (language.category ==  chromeos::LANGUAGE_CATEGORY_XKB) {
       callback.set_xkb_id(language.id);
     } else {
