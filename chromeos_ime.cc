@@ -93,36 +93,6 @@ gboolean ibus_chromeos_panel_service_focus_out(IBusPanelService *panel,
   return TRUE;
 }
 
-// Handles IBus's |RegisterProperties| method call.
-// Just sends a signal to the language bar.
-gboolean ibus_chromeos_panel_service_register_properties(
-    IBusPanelService* panel, IBusPropList* prop_list, IBusError** error) {
-  IBusConnection* ibus_connection =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
-  ibus_connection_send_signal(ibus_connection,
-                              kLanguageBarObjectPath,
-                              IBUS_INTERFACE_PANEL,
-                              "RegisterProperties",
-                              IBUS_TYPE_PROP_LIST, &prop_list,
-                              G_TYPE_INVALID);
-  return TRUE;
-}
-
-// Handles IBus's |UpdateProperty| method call.
-// Just sends a signal to the language bar.
-gboolean ibus_chromeos_panel_service_update_property(
-    IBusPanelService* panel, IBusProperty* prop, IBusError** error) {
-  IBusConnection* ibus_connection =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
-  ibus_connection_send_signal(ibus_connection,
-                              kLanguageBarObjectPath,
-                              IBUS_INTERFACE_PANEL,
-                              "UpdateProperty",
-                              IBUS_TYPE_PROPERTY, &prop,
-                              G_TYPE_INVALID);
-  return TRUE;
-}
-
 // Handles IBus's |HideLookupTable| method call.
 // Calls |hide_lookup_table| in |monitor_functions|.
 gboolean ibus_chromeos_panel_service_hide_lookup_table(IBusPanelService *panel,
@@ -135,6 +105,21 @@ gboolean ibus_chromeos_panel_service_hide_lookup_table(IBusPanelService *panel,
   if (monitor_functions.hide_lookup_table) {
     monitor_functions.hide_lookup_table(ime_library);
   }
+  return TRUE;
+}
+
+// Handles IBus's |RegisterProperties| method call.
+// Just sends a signal to the language bar.
+gboolean ibus_chromeos_panel_service_register_properties(
+    IBusPanelService* panel, IBusPropList* prop_list, IBusError** error) {
+  IBusConnection* ibus_connection =
+      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
+  ibus_connection_send_signal(ibus_connection,
+                              kLanguageBarObjectPath,
+                              IBUS_INTERFACE_PANEL,
+                              "RegisterProperties",
+                              IBUS_TYPE_PROP_LIST, &prop_list,
+                              G_TYPE_INVALID);
   return TRUE;
 }
 
@@ -195,6 +180,21 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
   if (monitor_functions.update_lookup_table) {
     monitor_functions.update_lookup_table(ime_library, lookup_table);
   }
+  return TRUE;
+}
+
+// Handles IBus's |UpdateProperty| method call.
+// Just sends a signal to the language bar.
+gboolean ibus_chromeos_panel_service_update_property(
+    IBusPanelService* panel, IBusProperty* prop, IBusError** error) {
+  IBusConnection* ibus_connection =
+      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
+  ibus_connection_send_signal(ibus_connection,
+                              kLanguageBarObjectPath,
+                              IBUS_INTERFACE_PANEL,
+                              "UpdateProperty",
+                              IBUS_TYPE_PROPERTY, &prop,
+                              G_TYPE_INVALID);
   return TRUE;
 }
 
@@ -272,20 +272,20 @@ void ibus_chromeos_panel_service_class_init(
     IBusChromeOSPanelServiceClass* klass) {
   IBusPanelServiceClass* panel_class =
       reinterpret_cast<IBusPanelServiceClass*>(klass);
-  // Install member functions.
+  // Install member functions. Sorted in alphabetical order.
   panel_class->focus_in = ibus_chromeos_panel_service_focus_in;
   panel_class->focus_out = ibus_chromeos_panel_service_focus_out;
-  panel_class->register_properties =
-      ibus_chromeos_panel_service_register_properties;
-  panel_class->update_property = ibus_chromeos_panel_service_update_property;
   panel_class->hide_lookup_table =
       ibus_chromeos_panel_service_hide_lookup_table;
+  panel_class->register_properties =
+      ibus_chromeos_panel_service_register_properties;
   panel_class->set_cursor_location =
       ibus_chromeos_panel_service_set_cursor_location;
   panel_class->state_changed =
       ibus_chromeos_panel_service_state_changed;
   panel_class->update_lookup_table =
       ibus_chromeos_panel_service_update_lookup_table;
+  panel_class->update_property = ibus_chromeos_panel_service_update_property;
 
   // Set the destructor function.
   IBusObjectClass* object_class =
