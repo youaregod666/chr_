@@ -33,7 +33,7 @@
 
 namespace {
 
-const size_t kTestCount = 5;
+const int kTestCount = 5;
 chromeos::LanguageStatusConnection* global_connection = NULL;
 
 void DumpProperties(const chromeos::ImePropertyList& prop_list) {

@@ -258,6 +258,8 @@ IBusPanelService* ibus_chromeos_panel_service_new(
       ime_library;
   IBUS_CHROMEOS_PANEL_SERVICE(service)->monitor_functions =
       monitor_functions;
+
+  return service;
 }
 
 // Destroys the given IBusChromeOSPanelService object.
