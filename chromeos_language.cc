@@ -465,17 +465,17 @@ class LanguageStatusConnection {
       NOTREACHED();
       return NULL;
     }
-    if (!engines) {
-      // IBus connection is broken?
-      LOG(ERROR) << "ibus_bus_(active_)list_engines() failed.";
-      return NULL;
-    }
+    // Note that it's not an error for |engines| to be NULL.
+    // NULL simply means an empty GList.
+
     InputLanguageList* language_list = new InputLanguageList;
     AddIMELanguages(engines, language_list);
     AddXKBLayouts(language_list);
     std::sort(language_list->begin(), language_list->end());
 
-    g_list_free(engines);
+    if (engines) {
+      g_list_free(engines);
+    }
     return language_list;
   }
 
@@ -538,11 +538,6 @@ class LanguageStatusConnection {
   // Called by cros API ChromeOSActivateLanguage().
   bool UpdateIME(UpdateMode mode, const char* ime_name) {
     GList* engines = ibus_bus_list_active_engines(ibus_);
-    if (!engines) {
-      // IBus connection is broken?
-      LOG(ERROR) << "ibus_bus_list_active_engines() failed.";
-      return false;
-    }
 
     // Convert |engines| to a GValueArray of names.
     GValueArray* engine_names = g_value_array_new(0);
@@ -579,7 +574,9 @@ class LanguageStatusConnection {
                                                    "preload_engines",
                                                    &value);
     g_value_unset(&value);
-    g_list_free(engines);
+    if (engines) {
+      g_list_free(engines);
+    }
 
     return success;
   }
