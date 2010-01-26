@@ -18,6 +18,7 @@ int main(int argc, const char** argv) {
   // done by chrome.
   ::g_type_init();
   GMainLoop* loop = ::g_main_loop_new(NULL, false);
+  DCHECK(loop);
 
   DCHECK(LoadCrosLibrary(argv)) << "Failed to load cros .so";
 

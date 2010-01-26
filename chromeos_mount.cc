@@ -81,6 +81,7 @@ bool DeviceIsRemoveable(const dbus::BusConnection& bus, dbus::Proxy& proxy) {
     }
     return removeable;
   }
+  return false;
 }
 
 bool DeviceIsMounted(const dbus::BusConnection& bus,
@@ -120,7 +121,6 @@ bool MountRemoveableDevice(const dbus::BusConnection& bus, const char* path) {
                     kDeviceKitDeviceInterface);
   glib::ScopedError error;
   char* val;
-  const char** options = {NULL};
   if (!::dbus_g_proxy_call(proxy.gproxy(),
                            "FilesystemMount",
                            &Resetter(&error).lvalue(),
@@ -164,11 +164,11 @@ class OpaqueMountStatusConnection {
   OpaqueMountStatusConnection(const MountMonitor& monitor,
                               const dbus::Proxy& mount,
                               void* object)
-     : monitor_(monitor),
+     : gudev_client(NULL),
+       monitor_(monitor),
        object_(object),
        mount_(mount),
        addconnection_(NULL),
-       gudev_client(NULL),
        removeconnection_(NULL) {
   }
 

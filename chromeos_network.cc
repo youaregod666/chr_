@@ -193,7 +193,7 @@ ServiceStatus* GetServiceStatus(const GPtrArray* array) {
   // loop. For now I think the loop will be generally more readable than
   // std::transform().
   const char* path = NULL;
-  for (int i = 0; i < array->len; i++) {
+  for (size_t i = 0; i < array->len; i++) {
     path = static_cast<const char*>(g_ptr_array_index(array, i));
     ServiceInfo info = {};
     if (!ParseServiceInfo(path, &info))
@@ -437,7 +437,6 @@ bool ChromeOSEnableNetworkDevice(ConnectionType type, bool enable) {
   }
 
   glib::ScopedError error;
-  ::DBusGProxy obj;
   if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
                            enable ? kEnableTechnologyFunction :
                                     kDisableTechnologyFunction,
@@ -467,7 +466,6 @@ bool ChromeOSSetOfflineMode(bool offline) {
   glib::Value value_offline(offline);
 
   glib::ScopedError error;
-  ::DBusGProxy obj;
   if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
                            kSetPropertyFunction,
                            &Resetter(&error).lvalue(),
