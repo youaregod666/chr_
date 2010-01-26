@@ -110,10 +110,9 @@ gboolean ibus_chromeos_panel_service_hide_auxiliary_text(
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
   void* ime_library =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->ime_library;
+  g_return_val_if_fail(monitor_functions.hide_auxiliary_text, FALSE);
 
-  if (monitor_functions.hide_auxiliary_text) {
-    monitor_functions.hide_auxiliary_text(ime_library);
-  }
+  monitor_functions.hide_auxiliary_text(ime_library);
   return TRUE;
 }
 
@@ -127,10 +126,9 @@ gboolean ibus_chromeos_panel_service_hide_lookup_table(IBusPanelService *panel,
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
   void* ime_library =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->ime_library;
+  g_return_val_if_fail(monitor_functions.hide_lookup_table, FALSE);
 
-  if (monitor_functions.hide_lookup_table) {
-    monitor_functions.hide_lookup_table(ime_library);
-  }
+  monitor_functions.hide_lookup_table(ime_library);
   return TRUE;
 }
 
@@ -168,16 +166,13 @@ gboolean ibus_chromeos_panel_service_update_auxiliary_text(
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
   void* ime_library =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->ime_library;
+  g_return_val_if_fail(monitor_functions.update_auxiliary_text, FALSE);
 
-  if (monitor_functions.update_auxiliary_text) {
-    // Convert IBusText to a std::string. IBusText is an attributed text,
-    // but we just ignore the attributes for now.
-    const std::string simple_text = text->text;
-
-    monitor_functions.update_auxiliary_text(ime_library,
-                                            simple_text,
-                                            visible == TRUE);
-  }
+  // Convert IBusText to a std::string. IBusText is an attributed text,
+  const std::string simple_text = text->text;
+  monitor_functions.update_auxiliary_text(ime_library,
+                                          simple_text,
+                                          visible == TRUE);
   return TRUE;
 }
 
@@ -191,6 +186,12 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
     IBusError **error) {
   g_return_val_if_fail(panel, FALSE);
   g_return_val_if_fail(table, FALSE);
+
+  const ImeStatusMonitorFunctions& monitor_functions =
+      IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
+  void* ime_library =
+      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ime_library;
+  g_return_val_if_fail(monitor_functions.update_lookup_table, FALSE);
 
   ImeLookupTable lookup_table;
   lookup_table.visible = (visible == TRUE);
@@ -233,14 +234,7 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
         lookup_table.candidates.size() % lookup_table.page_size;
   }
 
-  const ImeStatusMonitorFunctions& monitor_functions =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
-  void* ime_library =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ime_library;
-
-  if (monitor_functions.update_lookup_table) {
-    monitor_functions.update_lookup_table(ime_library, lookup_table);
-  }
+  monitor_functions.update_lookup_table(ime_library, lookup_table);
   return TRUE;
 }
 
@@ -299,10 +293,9 @@ gboolean ibus_chromeos_panel_service_set_cursor_location(
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
   void* ime_library =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->ime_library;
+  g_return_val_if_fail(monitor_functions.set_cursor_location, FALSE);
 
-  if (monitor_functions.set_cursor_location) {
-    monitor_functions.set_cursor_location(ime_library, x, y, width, height);
-  }
+  monitor_functions.set_cursor_location(ime_library, x, y, width, height);
   return TRUE;
 }
 
