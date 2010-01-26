@@ -66,6 +66,9 @@ G_DEFINE_TYPE(IBusChromeOSPanelService, ibus_chromeos_panel_service,
 gboolean ibus_chromeos_panel_service_focus_in(IBusPanelService *panel,
                                               const gchar* input_context_path,
                                               IBusError **error) {
+  g_return_val_if_fail(panel, FALSE);
+  g_return_val_if_fail(input_context_path, FALSE);
+
   IBusConnection* ibus_connection =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
   ibus_connection_send_signal(ibus_connection,
@@ -82,6 +85,9 @@ gboolean ibus_chromeos_panel_service_focus_in(IBusPanelService *panel,
 gboolean ibus_chromeos_panel_service_focus_out(IBusPanelService *panel,
                                                const gchar* input_context_path,
                                                IBusError **error) {
+  g_return_val_if_fail(panel, FALSE);
+  g_return_val_if_fail(input_context_path, FALSE);
+
   IBusConnection* ibus_connection =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
   ibus_connection_send_signal(ibus_connection,
@@ -93,10 +99,30 @@ gboolean ibus_chromeos_panel_service_focus_out(IBusPanelService *panel,
   return TRUE;
 }
 
+// Handles IBus's |HideAuxiliaryText| method call.
+// Calls |hide_auxiliary_text| in |monitor_functions|.
+gboolean ibus_chromeos_panel_service_hide_auxiliary_text(
+    IBusPanelService *panel,
+    IBusError **error) {
+  g_return_val_if_fail(panel, FALSE);
+
+  const ImeStatusMonitorFunctions& monitor_functions =
+      IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
+  void* ime_library =
+      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ime_library;
+
+  if (monitor_functions.hide_auxiliary_text) {
+    monitor_functions.hide_auxiliary_text(ime_library);
+  }
+  return TRUE;
+}
+
 // Handles IBus's |HideLookupTable| method call.
 // Calls |hide_lookup_table| in |monitor_functions|.
 gboolean ibus_chromeos_panel_service_hide_lookup_table(IBusPanelService *panel,
                                                        IBusError **error) {
+  g_return_val_if_fail(panel, FALSE);
+
   const ImeStatusMonitorFunctions& monitor_functions =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
   void* ime_library =
@@ -112,6 +138,9 @@ gboolean ibus_chromeos_panel_service_hide_lookup_table(IBusPanelService *panel,
 // Just sends a signal to the language bar.
 gboolean ibus_chromeos_panel_service_register_properties(
     IBusPanelService* panel, IBusPropList* prop_list, IBusError** error) {
+  g_return_val_if_fail(panel, FALSE);
+  g_return_val_if_fail(prop_list, FALSE);
+
   IBusConnection* ibus_connection =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
   ibus_connection_send_signal(ibus_connection,
@@ -123,6 +152,35 @@ gboolean ibus_chromeos_panel_service_register_properties(
   return TRUE;
 }
 
+// Handles IBus's |UpdateAuxiliaryText| method call.
+// Converts IBusText to a std::string, and calls |update_auxiliary_text| in
+// |monitor_functions|
+gboolean ibus_chromeos_panel_service_update_auxiliary_text(
+    IBusPanelService *panel,
+    IBusText *text,
+    gboolean visible,
+    IBusError **error) {
+  g_return_val_if_fail(panel, FALSE);
+  g_return_val_if_fail(text, FALSE);
+  g_return_val_if_fail(text->text, FALSE);
+
+  const ImeStatusMonitorFunctions& monitor_functions =
+      IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
+  void* ime_library =
+      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ime_library;
+
+  if (monitor_functions.update_auxiliary_text) {
+    // Convert IBusText to a std::string. IBusText is an attributed text,
+    // but we just ignore the attributes for now.
+    const std::string simple_text = text->text;
+
+    monitor_functions.update_auxiliary_text(ime_library,
+                                            simple_text,
+                                            visible == TRUE);
+  }
+  return TRUE;
+}
+
 // Handles IBus's |UpdateLookupTable| method call.
 // Creates a ImeLookupTable object and calls |update_lookup_table| in
 // |monitor_functions|
@@ -131,6 +189,9 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
     IBusLookupTable *table,
     gboolean visible,
     IBusError **error) {
+  g_return_val_if_fail(panel, FALSE);
+  g_return_val_if_fail(table, FALSE);
+
   ImeLookupTable lookup_table;
   lookup_table.visible = (visible == TRUE);
 
@@ -187,6 +248,9 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
 // Just sends a signal to the language bar.
 gboolean ibus_chromeos_panel_service_update_property(
     IBusPanelService* panel, IBusProperty* prop, IBusError** error) {
+  g_return_val_if_fail(panel, FALSE);
+  g_return_val_if_fail(prop, FALSE);
+
   IBusConnection* ibus_connection =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
   ibus_connection_send_signal(ibus_connection,
@@ -202,6 +266,8 @@ gboolean ibus_chromeos_panel_service_update_property(
 // Just sends a signal to the language bar.
 gboolean ibus_chromeos_panel_service_state_changed(IBusPanelService *panel,
                                                    IBusError **error) {
+  g_return_val_if_fail(panel, FALSE);
+
   IBusConnection* ibus_connection =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
   // TODO(yusukes): Get rid of the dummy string. As of writing, the
@@ -227,6 +293,8 @@ gboolean ibus_chromeos_panel_service_set_cursor_location(
     gint width,
     gint height,
     IBusError **error) {
+  g_return_val_if_fail(panel, FALSE);
+
   const ImeStatusMonitorFunctions& monitor_functions =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
   void* ime_library =
@@ -277,6 +345,8 @@ void ibus_chromeos_panel_service_class_init(
   // Install member functions. Sorted in alphabetical order.
   panel_class->focus_in = ibus_chromeos_panel_service_focus_in;
   panel_class->focus_out = ibus_chromeos_panel_service_focus_out;
+  panel_class->hide_auxiliary_text =
+      ibus_chromeos_panel_service_hide_auxiliary_text;
   panel_class->hide_lookup_table =
       ibus_chromeos_panel_service_hide_lookup_table;
   panel_class->register_properties =
@@ -285,6 +355,8 @@ void ibus_chromeos_panel_service_class_init(
       ibus_chromeos_panel_service_set_cursor_location;
   panel_class->state_changed =
       ibus_chromeos_panel_service_state_changed;
+  panel_class->update_auxiliary_text =
+      ibus_chromeos_panel_service_update_auxiliary_text;
   panel_class->update_lookup_table =
       ibus_chromeos_panel_service_update_lookup_table;
   panel_class->update_property = ibus_chromeos_panel_service_update_property;

@@ -18,7 +18,7 @@
 namespace chromeos {
 
 // The struct represents the IME lookup table (list of candidates).
-// Used for ImeUpdateLookupTableFunction.
+// Used for ImeUpdateLookupTableMonitorFunction.
 struct ImeLookupTable {
   ImeLookupTable()
       : visible(false),
@@ -86,6 +86,9 @@ struct ImeLookupTable {
   std::vector<std::string> candidates;
 };
 
+// Callback function type for handling IBus's |HideAuxiliaryText| signal.
+typedef void (*ImeHideAuxiliaryTextMonitorFunction)(void* ime_library);
+
 // Callback function type for handling IBus's |HideLookupTable| signal.
 typedef void (*ImeHideLookupTableMonitorFunction)(void* ime_library);
 
@@ -94,21 +97,31 @@ typedef void (*ImeSetCursorLocationMonitorFunction)(
     void* ime_library,
     int x, int y, int width, int height);
 
+// Callback function type for handling IBus's |UpdateAuxiliaryText| signal.
+typedef void (*ImeUpdateAuxiliaryTextMonitorFunction)(void* ime_library,
+                                                      const std::string& text,
+                                                      bool visible);
+
 // Callback function type for handling IBus's |UpdateLookupTable| signal.
-typedef void (*ImeUpdateLookupTableFunction)(void* ime_library,
-                                             const ImeLookupTable& table);
+typedef void (*ImeUpdateLookupTableMonitorFunction)(
+    void* ime_library,
+    const ImeLookupTable& table);
 
 // A set of function pointers used for monitoring the IME status.
 struct ImeStatusMonitorFunctions {
   ImeStatusMonitorFunctions()
-      : hide_lookup_table(NULL),
+      : hide_auxiliary_text(NULL),
+        hide_lookup_table(NULL),
         set_cursor_location(NULL),
+        update_auxiliary_text(NULL),
         update_lookup_table(NULL) {
   }
 
+  ImeHideAuxiliaryTextMonitorFunction hide_auxiliary_text;
   ImeHideLookupTableMonitorFunction hide_lookup_table;
   ImeSetCursorLocationMonitorFunction set_cursor_location;
-  ImeUpdateLookupTableFunction update_lookup_table;
+  ImeUpdateAuxiliaryTextMonitorFunction update_auxiliary_text;
+  ImeUpdateLookupTableMonitorFunction update_lookup_table;
 };
 
 // Establishes IBus connection to the ibus-daemon.

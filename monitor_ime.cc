@@ -29,13 +29,15 @@ namespace {
 
 chromeos::ImeStatusConnection* global_connection = NULL;
 
-}  // namespace
-
 // Callback is an example object which can be passed to MonitorImeStatus.
 class Callback {
  public:
   explicit Callback(GMainLoop* loop)
       : count_(0), loop_(loop) {
+  }
+
+  static void HideAuxiliaryText(void* object) {
+    LOG(INFO) << "HideAuxiliaryText";
   }
 
   static void HideLookupTable(void* object) {
@@ -49,6 +51,13 @@ class Callback {
               << "y=" << y << ", "
               << "width=" << width << ", "
               << "height=" << height;
+  }
+
+  static void UpdateAuxiliaryText(void* object,
+                                const std::string& text,
+                                bool visible) {
+    LOG(INFO) << "UpdateAuxiliaryText: ["
+              << text << "]: " << visible;
   }
 
   static void UpdateLookupTable(void* object,
@@ -67,6 +76,8 @@ class Callback {
   GMainLoop* loop_;
 };
 
+}  // namespace
+
 int main(int argc, const char** argv) {
   // Initialize the g_type systems an g_main event loop, normally this would be
   // done by chrome.
@@ -75,8 +86,10 @@ int main(int argc, const char** argv) {
   DCHECK(LoadCrosLibrary(argv)) << "Failed to load cros.so";
 
   chromeos::ImeStatusMonitorFunctions monitor_functions;
+  monitor_functions.hide_auxiliary_text = Callback::HideAuxiliaryText;
   monitor_functions.hide_lookup_table = Callback::HideLookupTable;
   monitor_functions.set_cursor_location = Callback::SetCursorLocation;
+  monitor_functions.update_auxiliary_text = Callback::UpdateAuxiliaryText;
   monitor_functions.update_lookup_table = Callback::UpdateLookupTable;
 
   Callback callback(loop);
