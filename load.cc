@@ -11,6 +11,7 @@
 #include "chromeos_network.h"  // NOLINT
 #include "chromeos_power.h"  // NOLINT
 #include "chromeos_synaptics.h"  // NOLINT
+#include "chromeos_update.h"  // NOLINT
 
 namespace chromeos {  // NOLINT
 
@@ -65,6 +66,10 @@ typedef bool (*EmitLoginPromptReadyType)();
 typedef bool (*StartSessionType)(const char*, const char*);
 typedef bool (*StopSessionType)(const char*);
 
+// Update library
+typedef bool (*UpdateType)(UpdateInformation*);
+typedef bool (*CheckForUpdateType)(UpdateInformation*);
+
 CrosVersionCheckType CrosVersionCheck = 0;
 
 MonitorPowerStatusType MonitorPowerStatus = 0;
@@ -106,6 +111,10 @@ SetSynapticsParameterType SetSynapticsParameter = 0;
 EmitLoginPromptReadyType EmitLoginPromptReady = 0;
 StartSessionType StartSession = 0;
 StopSessionType StopSession = 0;
+
+// Update Library
+UpdateType Update = 0;
+CheckForUpdateType CheckForUpdate = 0;
 
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
@@ -214,6 +223,12 @@ bool LoadCros(const char* path_to_libcros) {
   StopSession = StopSessionType(
       ::dlsym(handle, "ChromeOSStopSession"));
 
+  // Update Library
+  Update = UpdateType(
+      ::dlsym(handle, "ChromeOSUpdate"));
+  CheckForUpdate = CheckForUpdateType(
+      ::dlsym(handle, "ChromeOSCheckForUpdate"));
+
   return MonitorPowerStatus
       && DisconnectPowerStatus
       && RetrievePowerInformation
@@ -246,7 +261,9 @@ bool LoadCros(const char* path_to_libcros) {
       && SetSynapticsParameter
       && EmitLoginPromptReady
       && StartSession
-      && StopSession;
+      && StopSession
+      && Update
+      && CheckForUpdate;
 }
 
 }  // namespace chromeos
