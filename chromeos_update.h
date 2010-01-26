@@ -28,7 +28,7 @@ enum UpdateStatus {
 // This simple class is DLL safe. We "virtualize" the destructor with
 // a proc-pointer to avoid cross DLL dependencies on allocators (and vtables).
 
-class UpdateInformation {
+struct UpdateInformation {
   UpdateInformation() : status_(UPDATE_ERROR), version_(NULL), destruct_(NULL) {
   }
   ~UpdateInformation() {
@@ -36,7 +36,8 @@ class UpdateInformation {
   }
   UpdateStatus status_;
   const char* version_;
- private:
+
+// private:
   void (*destruct_)(const UpdateInformation&);
 };
 

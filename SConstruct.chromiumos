@@ -12,6 +12,7 @@ SOURCES=['chromeos_ime.cc',
          'chromeos_network.cc',
          'chromeos_power.cc',
          'chromeos_synaptics.cc',
+         'chromeos_update.cc',
          'marshal.cc',
          'version_check.cc',
 ]

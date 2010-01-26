@@ -4,6 +4,8 @@
 
 #include "chromeos_update.h"
 
+#include "chromeos/string.h"
+
 #include <unistd.h>
 
 #include <cstdlib>
@@ -40,7 +42,7 @@ bool ChromeOSUpdate(UpdateInformation* information) {
   }
   if (call == 2) {
     information->status_ = UPDATE_ERROR;
-    information->status_ = NewStringCopy("Aw, Snap! 1.5");
+    information->version_ = NewStringCopy("Aw, Snap! 1.5");
   }
 
   ++call; call %= 3;
@@ -69,7 +71,7 @@ bool ChromeOSCheckForUpdate(UpdateInformation* information) {
   }
   if (call == 2) {
     information->status_ = UPDATE_ERROR;
-    information->status_ = NewStringCopy("Aw, Snap! 1.6");
+    information->version_ = NewStringCopy("Aw, Snap! 1.6");
   }
 
   ++call; call %= 3;
