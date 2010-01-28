@@ -119,6 +119,53 @@ struct ImeProperty {
 };
 typedef std::vector<ImeProperty> ImePropertyList;
 
+// A structure which represents a value of an IME configuration item.
+// This struct is used by GetImeConfig() and SetImeConfig() cros APIs.
+struct ImeConfigValue {
+  ImeConfigValue()
+      : type(kValueTypeString),
+        int_value(0),
+        bool_value(false) {
+  }
+
+  // Debug print function.
+  std::string ToString() const {
+    std::stringstream stream;
+    stream << "type=" << type;
+    switch (type) {
+      case kValueTypeString:
+        stream << ", string_value=" << string_value;
+        break;
+      case kValueTypeInt:
+        stream << ", int_value=" << int_value;
+        break;
+      case kValueTypeBool:
+        stream << ", bool_value=" << (bool_value ? "true" : "false");
+        break;
+      case kValueTypeStringList:
+        // TODO(yusukes): Support this type.
+        break;
+    }
+    return stream.str();
+  }
+
+  enum ValueType {
+    kValueTypeString = 0,
+    kValueTypeInt,
+    kValueTypeBool,
+    kValueTypeStringList,
+  };
+
+  // A value is stored on |string_value| member if |type| is kValueTypeString.
+  // The same is true for other enum values.
+  ValueType type;
+
+  std::string string_value;
+  int int_value;
+  bool bool_value;
+  std::vector<std::string> string_list_value;
+};
+
 // Creates dummy InputLanguageList object. Usually, this function is called only
 // on development enviromnent where libcros.so does not exist. So, obviously
 // you can not move this function to libcros.so. This function is called by
@@ -243,6 +290,32 @@ extern void (*ActivateImeProperty)(LanguageStatusConnection* connection,
 // Deactivates an IME property identified by |key|.
 extern void (*DeactivateImeProperty)(LanguageStatusConnection* connection,
                                      const char* key);
+
+// Get a configuration of ibus-daemon or IBus engines and stores it on
+// |out_value|. Returns true if |out_value| is successfully updated.
+//
+// To retrieve 'panel/custom_font' (see below), |section| should be "panel",
+// and |config_name| should be "custom_font".
+//
+// % gconftool-2 --dump /desktop/ibus | grep -A 3 -B 1 '<key>panel/custom_font'
+//     <entry>
+//       <key>panel/custom_font</key>
+//       <value>
+//         <string>Sans 10</string>
+//       </value>
+extern bool (*GetImeConfig)(LanguageStatusConnection* connection,
+                            const char* section,
+                            const char* config_name,
+                            ImeConfigValue* out_value);
+
+// Updates a configuration of ibus-daemon or IBus engines with |value|.
+// Returns true if the configuration is successfully updated.
+// You can specify |section| and |config_name| arguments in the same way
+// as GetImeConfig() above.
+extern bool (*SetImeConfig)(LanguageStatusConnection* connection,
+                            const char* section,
+                            const char* config_name,
+                            const ImeConfigValue& value);
 
 }  // namespace chromeos
 

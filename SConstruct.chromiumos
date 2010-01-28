@@ -41,7 +41,7 @@ env.SharedLibrary('cros', SOURCES)
 env_so = Environment (
     CPPPATH=[ '.', '..'],
     CCFLAGS=['-fno-exceptions', '-fPIC', '-Wall', '-Werror'],
-    LIBS = ['base', 'dl', 'rt'],
+    LIBS = ['base', 'dl', 'rt', 'gtest'],
 )
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
   value = os.environ.get(key)

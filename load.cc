@@ -32,6 +32,14 @@ typedef void (*ActivateImePropertyType)(
     LanguageStatusConnection*, const char*);
 typedef void (*DeactivateImePropertyType)(
     LanguageStatusConnection*, const char*);
+typedef bool (*GetImeConfigType)(LanguageStatusConnection*,
+                                 const char*,
+                                 const char*,
+                                 ImeConfigValue*);
+typedef bool (*SetImeConfigType)(LanguageStatusConnection*,
+                                 const char*,
+                                 const char*,
+                                 const ImeConfigValue&);
 typedef ImeStatusConnection* (*MonitorImeStatusType)(
     const ImeStatusMonitorFunctions&, void*);
 typedef void (*DisconnectImeStatusType)(ImeStatusConnection*);
@@ -72,6 +80,8 @@ ActivateLanguageType ActivateLanguage = 0;
 DeactivateLanguageType DeactivateLanguage = 0;
 ActivateImePropertyType ActivateImeProperty = 0;
 DeactivateImePropertyType DeactivateImeProperty = 0;
+GetImeConfigType GetImeConfig = 0;
+SetImeConfigType SetImeConfig = 0;
 
 MonitorImeStatusType MonitorImeStatus = 0;
 DisconnectImeStatusType DisconnectImeStatus = 0;
@@ -146,6 +156,10 @@ bool LoadCros(const char* path_to_libcros) {
       ::dlsym(handle, "ChromeOSActivateImeProperty"));
   DeactivateImeProperty = DeactivateImePropertyType(
       ::dlsym(handle, "ChromeOSDeactivateImeProperty"));
+  GetImeConfig = GetImeConfigType(
+      ::dlsym(handle, "ChromeOSGetImeConfig"));
+  SetImeConfig = SetImeConfigType(
+      ::dlsym(handle, "ChromeOSSetImeConfig"));
 
   MonitorImeStatus = MonitorImeStatusType(
       ::dlsym(handle, "ChromeOSMonitorImeStatus"));
@@ -212,6 +226,8 @@ bool LoadCros(const char* path_to_libcros) {
       && DeactivateLanguage
       && ActivateImeProperty
       && DeactivateImeProperty
+      && GetImeConfig
+      && SetImeConfig
       && MonitorImeStatus
       && DisconnectImeStatus
       && NotifyCandidateClicked

@@ -6,6 +6,7 @@
 #include <base/scoped_ptr.h>
 #include <dlfcn.h>
 #include <glib-object.h>
+#include <gtest/gtest.h>
 #include <unistd.h>
 
 #include <iostream>  // NOLINT
@@ -30,11 +31,104 @@
 //    Callback::RegisterProperties() is for "RegisterProperties" signal and
 //    Callback::UpdateProperty() is for "UpdateProperty" signal from the window.
 // 7. Verify that this tool automatically exits in a second or so.
+// 8. Verify that all TEST()s pass.
 
 namespace {
 
 const int kTestCount = 5;
 chromeos::LanguageStatusConnection* global_connection = NULL;
+
+TEST(GetSetImeConfigTest, String) {
+  // Write a dummy value to "/desktop/ibus/dummy/dummy_string" in gconf.
+  static const char kSection[] = "dummy";
+  static const char kConfigName[] = "dummy_string";
+
+  // Get current value. For the first run, GetImeConfig() will return false and
+  // you might get warnings like:
+  //  (process:1898): IBUS-WARNING **: org.freedesktop.DBus.Error.Failed:
+  //                                     Can not get value [dummy->dummy_string]
+  //  (process:1898): GLib-GObject-CRITICAL **: g_value_unset:
+  //                                     assertion `G_IS_VALUE (value)' failed
+  // But you can safely ignore these messages.
+  std::string dummy_value = "ABCDE";
+  chromeos::ImeConfigValue config;
+  if (chromeos::GetImeConfig(global_connection, kSection, kConfigName, &config)
+      && (config.string_value.length() == dummy_value.length())) {
+    LOG(INFO) << "Current configuration of " << kSection << "/" << kConfigName
+              << ": " << config.ToString();
+    // Rotate the current string to the left.
+    dummy_value = config.string_value.substr(1) + config.string_value[0];
+  }
+
+  // Set |dummy_value|.
+  config.type = chromeos::ImeConfigValue::kValueTypeString;
+  config.string_value = dummy_value;
+  EXPECT_TRUE(chromeos::SetImeConfig(
+      global_connection, kSection, kConfigName, config));
+
+  // Get and compare.
+  chromeos::ImeConfigValue updated_config;
+  EXPECT_TRUE(chromeos::GetImeConfig(
+      global_connection, kSection, kConfigName, &updated_config));
+  EXPECT_EQ(updated_config.type, chromeos::ImeConfigValue::kValueTypeString);
+  EXPECT_EQ(updated_config.string_value, dummy_value);
+}
+
+TEST(GetSetImeConfigTest, Int) {
+  static const char kSection[] = "dummy";
+  static const char kConfigName[] = "dummy_int";
+
+  // Get current value.
+  int dummy_value = 12345;
+  chromeos::ImeConfigValue config;
+  if (chromeos::GetImeConfig(global_connection, kSection, kConfigName, &config)
+      && (config.type == chromeos::ImeConfigValue::kValueTypeInt)) {
+    LOG(INFO) << "Current configuration of " << kSection << "/" << kConfigName
+              << ": " << config.ToString();
+    dummy_value = config.int_value + 1;
+  }
+
+  // Set |dummy_value|.
+  config.type = chromeos::ImeConfigValue::kValueTypeInt;
+  config.int_value = dummy_value;
+  EXPECT_TRUE(chromeos::SetImeConfig(
+      global_connection, kSection, kConfigName, config));
+
+  // Get and compare.
+  chromeos::ImeConfigValue updated_config;
+  EXPECT_TRUE(chromeos::GetImeConfig(
+      global_connection, kSection, kConfigName, &updated_config));
+  EXPECT_EQ(updated_config.type, chromeos::ImeConfigValue::kValueTypeInt);
+  EXPECT_EQ(updated_config.int_value, dummy_value);
+}
+
+TEST(GetSetImeConfigTest, Bool) {
+  static const char kSection[] = "dummy";
+  static const char kConfigName[] = "dummy_bool";
+
+  // Get current value.
+  bool dummy_value = true;
+  chromeos::ImeConfigValue config;
+  if (chromeos::GetImeConfig(global_connection, kSection, kConfigName, &config)
+      && (config.type == chromeos::ImeConfigValue::kValueTypeBool)) {
+    LOG(INFO) << "Current configuration of " << kSection << "/" << kConfigName
+              << ": " << config.ToString();
+    dummy_value = !config.bool_value;
+  }
+
+  // Set |dummy_value|.
+  config.type = chromeos::ImeConfigValue::kValueTypeBool;
+  config.bool_value = dummy_value;
+  EXPECT_TRUE(chromeos::SetImeConfig(
+      global_connection, kSection, kConfigName, config));
+
+  // Get and compare.
+  chromeos::ImeConfigValue updated_config;
+  EXPECT_TRUE(chromeos::GetImeConfig(
+      global_connection, kSection, kConfigName, &updated_config));
+  EXPECT_EQ(updated_config.type, chromeos::ImeConfigValue::kValueTypeBool);
+  EXPECT_EQ(updated_config.bool_value, dummy_value);
+}
 
 void DumpProperties(const chromeos::ImePropertyList& prop_list) {
   for (size_t i = 0; i < prop_list.size(); ++i) {
@@ -144,12 +238,13 @@ class Callback {
 
 }  // namespace
 
-int main(int argc, const char** argv) {
+int main(int argc, char** argv) {
   // Initialize the g_type systems an g_main event loop, normally this would be
   // done by chrome.
   ::g_type_init();
   GMainLoop* loop = ::g_main_loop_new(NULL, false);
-  DCHECK(LoadCrosLibrary(argv)) << "Failed to load cros.so";
+  DCHECK(LoadCrosLibrary(const_cast<const char**>(argv)))
+      << "Failed to load cros.so";
 
   chromeos::LanguageStatusMonitorFunctions monitor;
   monitor.current_language = &Callback::UpdateCurrentLanguage;
@@ -166,16 +261,11 @@ int main(int argc, const char** argv) {
       chromeos::GetActiveLanguages(global_connection));
   DCHECK(languages.get()) << "GetActiveLanguages() failed";
 
-  if (languages->empty()) {
-    LOG(ERROR) << "No activated languages";
-    return 1;
-  }
   // Check if we have at least one IME. Languages are sorted in a way that
   // IMEs come after XKBs, so we check the last language.
-  if (languages->back().category != chromeos::LANGUAGE_CATEGORY_IME) {
-    LOG(ERROR) << "No IME found";
-    return 1;
-  }
+  DCHECK(!languages->empty()) << "No activated languages";
+  DCHECK(languages->back().category == chromeos::LANGUAGE_CATEGORY_IME)
+      << "No IME found";
 
   LOG(INFO) << "---------------------";
   LOG(INFO) << "Supported IMEs and XKB layouts: ";
@@ -215,8 +305,13 @@ int main(int argc, const char** argv) {
   ShowActiveLanguages();
 
   ::g_main_loop_run(loop);
+
+  // Test if we can read/write IME configurations. This should be done before
+  // |global_connection| is terminated.
+  ::testing::InitGoogleTest(&argc, argv);
+  const int result = RUN_ALL_TESTS();
+
   chromeos::DisconnectLanguageStatus(global_connection);
   ::g_main_loop_unref(loop);
-
-  return 0;
+  return result;
 }

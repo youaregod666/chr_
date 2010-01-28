@@ -571,10 +571,7 @@ class LanguageStatusConnection {
     g_value_take_boxed(&value, engine_names);
 
     // Set the config value.
-    const gboolean success = ibus_config_set_value(ibus_config_,
-                                                   "general",
-                                                   "preload_engines",
-                                                   &value);
+    const bool success = SetImeConfig("general", "preload_engines", &value);
     g_value_unset(&value);
     if (engines) {
       g_list_free(engines);
@@ -616,6 +613,40 @@ class LanguageStatusConnection {
       // TODO(yusukes): implemente this.
     }
     return current_language;
+  }
+
+  // Get a configuration of ibus-daemon or IBus engines and stores it on
+  // |gvalue|. Returns true if |gvalue| is successfully updated.
+  //
+  // For more information, please read a comment for GetImeConfig() function
+  // in chromeos_language.h.
+  bool GetImeConfig(const char* section,
+                    const char* config_name,
+                    GValue* gvalue) {
+    DCHECK(section);
+    DCHECK(config_name);
+    const gboolean success = ibus_config_get_value(ibus_config_,
+                                                   section,
+                                                   config_name,
+                                                   gvalue);
+    return (success == TRUE);
+  }
+
+  // Updates a configuration of ibus-daemon or IBus engines with |gvalue|.
+  // Returns true if the configuration is successfully updated.
+  //
+  // For more information, please read a comment for SetImeConfig() function
+  // in chromeos_language.h.
+  bool SetImeConfig(const char* section,
+                    const char* config_name,
+                    const GValue* gvalue) {
+    DCHECK(section);
+    DCHECK(config_name);
+    const gboolean success = ibus_config_set_value(ibus_config_,
+                                                   section,
+                                                   config_name,
+                                                   gvalue);
+    return (success == TRUE);
   }
 
  private:
@@ -683,7 +714,7 @@ class LanguageStatusConnection {
     ImePropertyList prop_list;  // our representation.
     if (ibus_prop_list) {
       // You can call
-      //  LOG(INFO) << "\n" << PrintPropList(ibus_prop_list, 0);
+      //   LOG(INFO) << "\n" << PrintPropList(ibus_prop_list, 0);
       // here to dump |ibus_prop_list|.
       if (!FlattenPropertyList(ibus_prop_list, &prop_list)) {
         LOG(WARNING) << "Malformed properties are detected";
@@ -907,12 +938,7 @@ void ChromeOSDisconnectLanguageStatus(LanguageStatusConnection* connection) {
 extern "C"
 InputLanguageList* ChromeOSGetActiveLanguages(LanguageStatusConnection*
                                               connection) {
-  // TODO(yusukes): Add DCHECK(connection); here when candidate_window for
-  // Chrome OS gets ready.
-  if (!connection) {
-    LOG(WARNING) << "LanguageStatusConnection is NULL";
-    return NULL;
-  }
+  g_return_val_if_fail(connection, NULL);
   // Pass ownership to a caller. Note: GetLanguages() might return NULL.
   return connection->GetLanguages(
       LanguageStatusConnection::kActiveLanguages);
@@ -921,10 +947,7 @@ InputLanguageList* ChromeOSGetActiveLanguages(LanguageStatusConnection*
 extern "C"
 InputLanguageList* ChromeOSGetSupportedLanguages(LanguageStatusConnection*
                                                  connection) {
-  if (!connection) {
-    LOG(WARNING) << "LanguageStatusConnection is NULL";
-    return NULL;
-  }
+  g_return_val_if_fail(connection, NULL);
   // Pass ownership to a caller. Note: GetLanguages() might return NULL.
   return connection->GetLanguages(
       LanguageStatusConnection::kSupportedLanguages);
@@ -935,12 +958,7 @@ void ChromeOSActivateImeProperty(
     LanguageStatusConnection* connection, const char* key) {
   DLOG(INFO) << "ActivateImeProperty";
   DCHECK(key);
-  // TODO(yusukes): Add DCHECK(connection); here when candidate_window for
-  // Chrome OS gets ready.
-  if (!connection) {
-    LOG(WARNING) << "LanguageStatusConnection is NULL";
-    return;
-  }
+  g_return_if_fail(connection);
   connection->ActivateOrDeactiveImeProperty(key, true);
 }
 
@@ -949,12 +967,7 @@ void ChromeOSDeactivateImeProperty(
     LanguageStatusConnection* connection, const char* key) {
   DLOG(INFO) << "DeactivateImeProperty";
   DCHECK(key);
-  // TODO(yusukes): Add DCHECK(connection); here when candidate_window for
-  // Chrome OS gets ready.
-  if (!connection) {
-    LOG(WARNING) << "LanguageStatusConnection is NULL";
-    return;
-  }
+  g_return_if_fail(connection);
   connection->ActivateOrDeactiveImeProperty(key, false);
 }
 
@@ -964,13 +977,9 @@ void ChromeOSChangeLanguage(LanguageStatusConnection* connection,
                             const char* name) {
   DCHECK(name);
   DLOG(INFO) << "ChangeLanguage: " << name;
-  // TODO(yusukes): Add DCHECK(connection); here when candidate_window for
-  // Chrome OS gets ready.
-  if (!connection) {
-    LOG(WARNING) << "LanguageStatusConnection is NULL";
-    return;
-  }
+  g_return_if_fail(connection);
   connection->ChangeLanguage(category, name);
+  // TODO(yusukes): The return type of this function should be bool.
 }
 
 // Helper function for ChromeOSActivateLanguage() and
@@ -980,11 +989,8 @@ static bool ActivateOrDeactivateLanguage(
     LanguageStatusConnection* connection,
     LanguageCategory category,
     const char* name) {
-  if (!connection) {
-    LOG(WARNING) << "LanguageStatusConnection is NULL";
-    return false;
-  }
   DCHECK(name);
+  g_return_val_if_fail(connection, FALSE);
   bool success = false;
   switch (category) {
     case LANGUAGE_CATEGORY_XKB:
@@ -1015,6 +1021,86 @@ bool ChromeOSDeactivateLanguage(LanguageStatusConnection* connection,
              << category << "]";
   return ActivateOrDeactivateLanguage(
       LanguageStatusConnection::kDeactivate, connection, category, name);
+}
+
+extern "C"
+bool ChromeOSGetImeConfig(LanguageStatusConnection* connection,
+                          const char* section,
+                          const char* config_name,
+                          ImeConfigValue* out_value) {
+  DCHECK(out_value);
+  g_return_val_if_fail(connection, FALSE);
+
+  GValue gvalue = { 0 };  // g_value_init() is not necessary.
+  if (!connection->GetImeConfig(section, config_name, &gvalue)) {
+    g_value_unset(&gvalue);
+    return false;
+  }
+
+  // Convert the type of the result from GValue to our structure.
+  // TODO(yusukes): Support string list.
+  bool success = true;
+  switch (G_VALUE_TYPE(&gvalue)) {
+    case G_TYPE_STRING: {
+      const char* value = g_value_get_string(&gvalue);
+      DCHECK(value);
+      out_value->type = ImeConfigValue::kValueTypeString;
+      out_value->string_value = value;
+      break;
+    }
+    case G_TYPE_INT: {
+      out_value->type = ImeConfigValue::kValueTypeInt;
+      out_value->int_value = g_value_get_int(&gvalue);
+      break;
+    }
+    case G_TYPE_BOOLEAN: {
+      out_value->type = ImeConfigValue::kValueTypeBool;
+      out_value->bool_value = g_value_get_boolean(&gvalue);
+      break;
+    }
+    default: {
+      LOG(ERROR) << "Unsupported config type: " << G_VALUE_TYPE(&gvalue);
+      success = false;
+      break;
+    }      
+  }
+
+  g_value_unset(&gvalue);
+  return success;
+}
+
+extern "C"
+bool ChromeOSSetImeConfig(LanguageStatusConnection* connection,
+                          const char* section,
+                          const char* config_name,
+                          const ImeConfigValue& value) {
+  g_return_val_if_fail(connection, FALSE);
+
+  // Convert the type of |value| from our structure to GValue.
+  // TODO(yusukes): Support ImeConfigValue::kValueTypeStringList.
+  GValue gvalue = { 0 };
+  switch (value.type) {
+    case ImeConfigValue::kValueTypeString:
+      g_value_init(&gvalue, G_TYPE_STRING);
+      g_value_set_string(&gvalue, value.string_value.c_str());
+      break;
+    case ImeConfigValue::kValueTypeInt:
+      g_value_init(&gvalue, G_TYPE_INT);
+      g_value_set_int(&gvalue, value.int_value);
+      break;
+    case ImeConfigValue::kValueTypeBool:
+      g_value_init(&gvalue, G_TYPE_BOOLEAN);
+      g_value_set_boolean(&gvalue, value.bool_value);
+      break;
+    default:
+      LOG(ERROR) << "Unsupported config type: " << value.type;
+      return false;
+  }
+
+  const bool success = connection->SetImeConfig(section, config_name, &gvalue);
+  g_value_unset(&gvalue);
+
+  return success;
 }
 
 }  // namespace chromeos
