@@ -66,6 +66,10 @@ G_DEFINE_TYPE(IBusChromeOSPanelService, ibus_chromeos_panel_service,
 gboolean ibus_chromeos_panel_service_focus_in(IBusPanelService *panel,
                                               const gchar* input_context_path,
                                               IBusError **error) {
+  // TODO(satorux): We should create an IBusError object and return it as
+  // |error| if we return FALSE.  Otherwise, the program will crash in
+  // ibuspanelservice.cc as the caller expects an error object to be
+  // returned.
   g_return_val_if_fail(panel, FALSE);
   g_return_val_if_fail(input_context_path, FALSE);
 
