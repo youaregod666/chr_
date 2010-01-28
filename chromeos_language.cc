@@ -23,14 +23,16 @@ const char kCandidateWindowInterface[] = "org.freedesktop.IBus.Panel";
 
 // The list of IME IDs that we handle. This filtering is necessary since some
 // IMEs are definitely unnecessary for us. For example, we should disable
-// "ja:anthy", "zh:cangjie", "cangjie3", "cangjie5", and "zh:pinyin" engines  
-// in ibus-m17n since we (will) have better equivalents outside of ibus-m17n.
+// "ja:anthy", "zh:cangjie", and "zh:pinyin" engines in ibus-m17n since we
+// (will) have better equivalents outside of ibus-m17n.
 const char* kImeIdsWhitelist[] = {
   "chewing",  // ibus-chewing
   "pinyin",  // ibus-pinyin
   "anthy",  // ibus-anthy
   "hangul",  // ibus-hangul
-  // TODO(yusukes): Add ibus-table modules here (e.g. Cangjie) once it's ready.
+  "cangjie3",  // ibus-table-cangjie
+  "cangjie5",  // ibus-table-cangjie
+  // TODO(yusukes): Add additional ibus-table modules here once they're ready.
   "t:latn-pre",  // ibus-m17n (for debugging)
   "t:latn-post",  // ibus-m17n (for debugging)
   // TODO(yusukes): Add IMEs in ibus-m17n that are necessary to support the 40+
