@@ -233,7 +233,6 @@ class OpaqueMountStatusConnection {
       if (iter != self->paths_.end()) {
         self->paths_.erase(iter);
       }
-
     }
   }
   ConnectionType& addedconnection() {

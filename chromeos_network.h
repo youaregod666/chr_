@@ -38,8 +38,18 @@ enum EncryptionType {
   RSN
 };
 
+enum IPConfigType {
+ IPCONFIG_TYPE_DHCP,
+ IPCONFIG_TYPE_IPV4,
+ IPCONFIG_TYPE_IPV6,
+ IPCONFIG_TYPE_BOOTP, //Not Used
+ IPCONFIG_TYPE_PPP,
+ IPCONFIG_TYPE_ZEROCONF
+};
+
 struct ServiceInfo {
   const char* ssid;
+  const char* device_path;
   ConnectionType type;
   ConnectionState state;
   int64 signal_strength;
@@ -49,6 +59,16 @@ struct ServiceInfo {
 
 struct ServiceStatus {
   ServiceInfo *services;
+  int size;
+};
+
+struct IPConfig {
+  // Used for calls into the 
+  const char* path;
+};
+
+struct IPConfigStatus {
+  IPConfig* ips;
   int size;
 };
 
@@ -116,7 +136,33 @@ extern bool (*EnableNetworkDevice)(ConnectionType type, bool enable);
 // Returns false on failure and true on success.
 extern bool (*SetOfflineMode)(bool offline);
 
+// Gets a list of all the IPConfigs using a given device path
+extern IPConfigStatus* (*ListIPConfigs)(const char* device_path);
+
+// Add a IPConfig of the given type to the device
+extern bool (*AddIPConfig)(const char* device_path, IPConfigType type);
+
+// Sets a property of the IPConfig
+// Address Mtu PrefixLen Broadcast PeerAddress Gateway DomainName
+extern bool (*SetIPConfigProperty)(IPConfig* config,
+                                   const char* key,
+                                   const char* value);
+
+// Gets a property of this Ip address.  Valid keys are:
+// Address Mtu PrefixLen Broadcast PeerAddress Gateway DomainName
+extern bool (*GetIPConfigProperty)(IPConfig* config,
+                                   const char* key,
+                                   char* val,
+                                   size_t valsz);
+// Remove an existing IP Config
+extern bool (*RemoveIPConfig)(IPConfig* config);
+
+// Free a found IPConfig
+extern void (*FreeIPConfig)(IPConfig* config);
+
+// Free out a full status
+extern void (*FreeIPConfigStatus)(IPConfigStatus* status);
+
 }  // namespace chromeos
 
 #endif  // CHROMEOS_NETWORK_H_
-

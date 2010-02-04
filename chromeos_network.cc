@@ -22,6 +22,8 @@ namespace { // NOLINT
 const char* kConnmanManagerInterface = "org.moblin.connman.Manager";
 const char* kConnmanServiceInterface = "org.moblin.connman.Service";
 const char* kConnmanServiceName = "org.moblin.connman";
+const char* kConnmanIPConfigInterface = "org.moblin.connman.IPConfig";
+const char* kConnmanDeviceInterface = "org.moblin.connman.Device";
 
 // Connman function names.
 const char* kGetPropertiesFunction = "GetProperties";
@@ -29,6 +31,8 @@ const char* kSetPropertyFunction = "SetProperty";
 const char* kConnectServiceFunction = "ConnectService";
 const char* kEnableTechnologyFunction = "EnableTechnology";
 const char* kDisableTechnologyFunction = "DisableTechnology";
+const char* kAddIPConfigFunction = "AddIPConfig";
+const char* kRemoveConfigFunction = "Remove";
 
 // Connman property names.
 const char* kEncryptionProperty = "Security";
@@ -41,6 +45,8 @@ const char* kSsidProperty = "Name";
 const char* kStateProperty = "State";
 const char* kTypeProperty = "Type";
 const char* kUnknownString = "UNKNOWN";
+const char* kIPConfigsProperty = "IPConfigs";
+const char* kDeviceProperty = "Device";
 
 // Connman type options.
 const char* kTypeEthernet = "ethernet";
@@ -135,6 +141,12 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   properties.Retrieve(kSsidProperty, &default_string);
   info->ssid = NewStringCopy(default_string);
 
+  glib::Value val;
+  properties.Retrieve(kDeviceProperty, &val);
+  const gchar* device_path =
+      static_cast<const gchar*>(g_value_get_string(&val));
+  info->device_path = NewStringCopy(device_path);
+
   default_string = kUnknownString;
   properties.Retrieve(kStateProperty, &default_string);
   info->state = ParseState(default_string);
@@ -185,6 +197,7 @@ ServiceStatus* CopyFromVector(const std::vector<ServiceInfo>& services) {
 // Deletes all of the heap allocated members of a given ServiceInfo instance.
 void DeleteServiceInfoProperties(ServiceInfo info) {
   delete info.ssid;
+  delete info.device_path;
 }
 
 ServiceStatus* GetServiceStatus(const GPtrArray* array) {
@@ -260,6 +273,213 @@ class OpaqueNetworkStatusConnection {
   void* object_;
   ConnectionType connection_;
 };
+
+extern "C"
+IPConfigStatus* ChromeOSListIPConfigs(const char* device_path) {
+
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy device_proxy(bus,
+                            kConnmanServiceName,
+                            device_path,
+                            kConnmanDeviceInterface);
+
+  glib::ScopedHashTable properties;
+  if (!GetProperties(device_proxy, &properties)) {
+    return NULL;
+  }
+
+  GHashTable* table = properties.get();
+  gpointer ptr = g_hash_table_lookup(table, kIPConfigsProperty);
+  if (ptr == NULL)
+    return NULL;
+
+  GPtrArray* ips_value =
+      static_cast<GPtrArray*>(g_value_get_boxed(static_cast<GValue*>(ptr)));
+
+  std::vector<IPConfig> buffer;
+
+  const char* path = NULL;
+  for (size_t i = 0; i < ips_value->len; i++) {
+    path = static_cast<const char*>(g_ptr_array_index(ips_value, i));
+    IPConfig ip = {};
+    ip.path = NewStringCopy(path);
+    buffer.push_back(ip);
+  }
+  IPConfigStatus* result = new IPConfigStatus();
+  if (buffer.size() == 0) {
+    result->ips = NULL;
+  } else {
+    result->ips = new IPConfig[buffer.size()];
+  }
+  result->size = buffer.size();
+  std::copy(buffer.begin(), buffer.end(), result->ips);
+  return result;
+}
+
+extern "C"
+bool ChromeOSAddIPConfig(const char* device_path, IPConfigType type) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy device_proxy(bus,
+                           kConnmanServiceName,
+                           device_path,
+                           kConnmanDeviceInterface);
+
+  glib::ScopedError error;
+  ::DBusGProxy obj;
+  const char* type_str = NULL;
+  switch(type) {
+    case IPCONFIG_TYPE_DHCP:
+      type_str = "dhcp";
+      break;
+    case IPCONFIG_TYPE_IPV4:
+      type_str = "ipv4";
+      break;
+    case IPCONFIG_TYPE_IPV6:
+      type_str = "ipv6";
+      break;
+    case IPCONFIG_TYPE_BOOTP:
+      type_str = "bootp";
+      break;
+    case IPCONFIG_TYPE_PPP:
+      type_str = "ppp";
+      break;
+    case IPCONFIG_TYPE_ZEROCONF:
+      type_str = "zeroconf";
+      break;
+    default:
+      return false;
+  };
+
+  if (!::dbus_g_proxy_call(device_proxy.gproxy(),
+                           kAddIPConfigFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           type_str,
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_PROXY,
+                           &obj,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) <<"Add IPConfig failed: "
+        << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+  return true;
+}
+
+extern "C"
+bool ChromeOSSetIPConfigProperty(IPConfig* config,
+                                 const char* key,
+                                 const char* value) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy device_proxy(bus,
+                           kConnmanServiceName,
+                           config->path,
+                           kConnmanIPConfigInterface);
+  glib::Value value_set;
+  if (strcmp(key, "Mtu") == 0 ||
+      strcmp(key, "PrefixLen") == 0) {
+    uint32 val = atoi(value);
+    value_set = val;
+  } else {
+    value_set = value;
+  }
+
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(device_proxy.gproxy(),
+                           kSetPropertyFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           key,
+                           G_TYPE_VALUE,
+                           &value_set,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) <<"Set IPConfig Property failed: "
+        << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+  return true;
+}
+
+extern "C"
+bool ChromeOSGetIPConfigProperty(IPConfig* config,
+                                 const char* key,
+                                 char* val,
+                                 size_t valsz) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy config_proxy(bus,
+                           kConnmanServiceName,
+                           config->path,
+                           kConnmanIPConfigInterface);
+
+  glib::ScopedHashTable properties;
+  if (!GetProperties(config_proxy, &properties)) {
+    return false;
+  }
+  const char* default_string = kUnknownString;
+  if (strcmp(key, "Mtu") == 0 ||
+      strcmp(key, "PrefixLen") == 0) {
+    uint32 int_val;
+    if (properties.Retrieve(key, &int_val)) {
+      std::string new_val = "";
+      new_val += int_val;
+      strncpy(val, new_val.c_str(), valsz);
+    } else {
+      return false;
+    }
+  } else {
+    properties.Retrieve(key, &default_string);
+
+    if (default_string == kUnknownString) {
+      return false;
+    }
+    strncpy(val, default_string, valsz);
+  }
+  return true;
+}
+
+extern "C"
+bool ChromeOSRemoveIPConfig(IPConfig* config) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy config_proxy(bus,
+                           kConnmanServiceName,
+                           config->path,
+                           kConnmanIPConfigInterface);
+
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(config_proxy.gproxy(),
+                           kRemoveConfigFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) <<"Set IPConfig Property failed: "
+        << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+  return true;
+}
+
+void DeleteIPConfigProperties(IPConfig config) {
+  delete config.path;
+}
+
+extern "C"
+void ChromeOSFreeIPConfig(IPConfig* config) {
+  DeleteIPConfigProperties(*config);
+  delete config;
+}
+
+extern "C"
+void ChromeOSFreeIPConfigStatus(IPConfigStatus* status) {
+  std::for_each(status->ips,
+                status->ips + status->size,
+                &DeleteIPConfigProperties);
+  delete [] status->ips;
+  delete status;
+
+}
 
 extern "C"
 NetworkStatusConnection ChromeOSMonitorNetworkStatus(NetworkMonitor monitor,
@@ -484,4 +704,3 @@ bool ChromeOSSetOfflineMode(bool offline) {
 }
 
 }  // namespace chromeos
-
