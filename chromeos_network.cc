@@ -141,11 +141,10 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   properties.Retrieve(kSsidProperty, &default_string);
   info->ssid = NewStringCopy(default_string);
 
+  //TODO(dhg): Get the device
   glib::Value val;
   properties.Retrieve(kDeviceProperty, &val);
-  const gchar* device_path =
-      static_cast<const gchar*>(g_value_get_string(&val));
-  info->device_path = NewStringCopy(device_path);
+  info->device_path = NULL;
 
   default_string = kUnknownString;
   properties.Retrieve(kStateProperty, &default_string);
@@ -197,7 +196,9 @@ ServiceStatus* CopyFromVector(const std::vector<ServiceInfo>& services) {
 // Deletes all of the heap allocated members of a given ServiceInfo instance.
 void DeleteServiceInfoProperties(ServiceInfo info) {
   delete info.ssid;
-  delete info.device_path;
+  if (info.device_path) {
+    delete info.device_path;
+  }
 }
 
 ServiceStatus* GetServiceStatus(const GPtrArray* array) {

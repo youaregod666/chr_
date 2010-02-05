@@ -15,16 +15,13 @@
 
 // Dumps the contents of a single service to the logs.
 void DumpService(const chromeos::ServiceInfo& info) {
-  chromeos::IPConfigStatus* status = chromeos::ListIPConfigs(info.device_path);
   LOG(INFO) << "  " << info.ssid <<
                ", State=" << info.state <<
                ", Type=" <<info.type <<
                ", Device=" << info.device_path <<
                ", Encryption=" << info.encryption <<
                ", Signal=" << info.signal_strength <<
-               ", Password=" << info.needs_passphrase <<
-               ", No.IPConfigs=" << status->size;
-  chromeos::FreeIPConfigStatus(status);
+               ", Password=" << info.needs_passphrase;
 }
 
 // Dumps the contents of ServiceStatus to the log.
