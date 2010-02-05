@@ -81,7 +81,7 @@ bool GetProperties(const dbus::Proxy& proxy, glib::ScopedHashTable* result) {
                                                  G_TYPE_VALUE),
                            &Resetter(result).lvalue(), G_TYPE_INVALID)) {
     LOG(WARNING) << "GetProperties failed: "
-        << (error->message ? error->message : "Unknown Error.");
+                 << (error->message ? error->message : "Unknown Error.");
     return false;
   }
   return true;

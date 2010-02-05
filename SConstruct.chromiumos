@@ -48,7 +48,7 @@ for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
   value = os.environ.get(key)
   if value != None:
     env_so[key] = value
-env_so.ParseConfig('pkg-config --cflags --libs gobject-2.0')
+env_so.ParseConfig('pkg-config --cflags --libs gobject-2.0 dbus-1')
 env_so.Program('monitor_power', ['monitor_power.cc', 'load.cc'])
 env_so.Program('monitor_language', ['monitor_language.cc', 'load.cc'])
 env_so.Program('monitor_network', ['monitor_network.cc', 'load.cc'])

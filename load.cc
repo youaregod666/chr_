@@ -7,6 +7,7 @@
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_ime.h"  // NOLINT
 #include "chromeos_language.h"  // NOLINT
+#include "chromeos_login.h"  // NOLINT
 #include "chromeos_mount.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
 #include "chromeos_power.h"  // NOLINT
