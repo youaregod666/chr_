@@ -19,17 +19,18 @@ SOURCES=['chromeos_ime.cc',
 
 env = Environment(
     CPPPATH=['.', '..'],
-    CCFLAGS=['-fno-exceptions', '-ggdb', '-Wall', '-Werror'],
+    CCFLAGS=['-g'],
     LINKFLAGS=['-fPIC'],
     LIBS = ['base', 'chromeos', 'rt', 'synaptics'],
 )
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
   value = os.environ.get(key)
   if value != None:
-    env[key] = value
+    env[key] = Split(value)
+env['CCFLAGS'] += ['-fPIC', '-fno-exceptions', '-Wall', '-Werror']
 
-# Fix issue with scons not passing pkg-config vars through the environment.
-for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH'):
+# Fix issue with scons not passing some vars through the environment.
+for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
   if os.environ.has_key(key):
     env['ENV'][key] = os.environ[key]
 
@@ -41,13 +42,20 @@ env.SharedLibrary('cros', SOURCES)
 # so test
 env_so = Environment (
     CPPPATH=[ '.', '..'],
-    CCFLAGS=['-fno-exceptions', '-fPIC', '-Wall', '-Werror'],
+    CCFLAGS=['-g'],
     LIBS = ['base', 'dl', 'rt', 'gtest'],
 )
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS'):
   value = os.environ.get(key)
   if value != None:
-    env_so[key] = value
+    env_so[key] = Split(value)
+env_so['CCFLAGS'] += ['-fPIC', '-fno-exceptions', '-Wall', '-Werror']
+
+# Fix issue with scons not passing some vars through the environment.
+for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
+  if os.environ.has_key(key):
+    env_so['ENV'][key] = os.environ[key]
+
 env_so.ParseConfig('pkg-config --cflags --libs gobject-2.0 dbus-1')
 env_so.Program('monitor_power', ['monitor_power.cc', 'load.cc'])
 env_so.Program('monitor_language', ['monitor_language.cc', 'load.cc'])
