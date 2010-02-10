@@ -258,9 +258,11 @@ bool FlattenPropertyList(
                                                    FALSE, /* visible */
                                                    PROP_STATE_UNCHECKED,
                                                    ibus_prop_list);
-
-  const bool result
-      = fake_root_prop && FlattenProperty(fake_root_prop, out_prop_list);
+  g_return_val_if_fail(fake_root_prop, false);
+  // Increase the ref count so it won't get deleted when |fake_root_prop|
+  // is deleted.
+  g_object_ref(ibus_prop_list);
+  const bool result = FlattenProperty(fake_root_prop, out_prop_list);
   g_object_unref(fake_root_prop);
 
   return result;
@@ -1033,7 +1035,9 @@ bool ChromeOSGetImeConfig(LanguageStatusConnection* connection,
 
   GValue gvalue = { 0 };  // g_value_init() is not necessary.
   if (!connection->GetImeConfig(section, config_name, &gvalue)) {
-    g_value_unset(&gvalue);
+    if (G_IS_VALUE(&gvalue)) {
+      g_value_unset(&gvalue);
+    }
     return false;
   }
 
