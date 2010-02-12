@@ -141,10 +141,13 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   properties.Retrieve(kSsidProperty, &default_string);
   info->ssid = NewStringCopy(default_string);
 
-  //TODO(dhg): Get the device
   glib::Value val;
-  properties.Retrieve(kDeviceProperty, &val);
-  info->device_path = NULL;
+  if (properties.Retrieve(kDeviceProperty, &val)) {
+    const gchar* path = static_cast<const gchar*>(g_value_get_boxed (&val));
+    info->device_path = NewStringCopy(path);
+  } else {
+    info->device_path = NULL;
+  }
 
   default_string = kUnknownString;
   properties.Retrieve(kStateProperty, &default_string);
