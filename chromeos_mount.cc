@@ -227,11 +227,12 @@ class OpaqueMountStatusConnection {
         self->paths_.push_back(path);
         self->FireEvent(DEVICE_ADDED, device_path);
       }
-    } else if (strcmp(action, "remove")) {
+    } else if (strcmp(action, "remove") == 0) {
       const char* device_path = g_udev_device_get_sysfs_path(device);
       iter = self->FindDevicePath(device_path);
       if (iter != self->paths_.end()) {
         self->paths_.erase(iter);
+        self->FireEvent(DEVICE_REMOVED, device_path);
       }
     }
   }
