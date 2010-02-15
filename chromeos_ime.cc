@@ -180,6 +180,25 @@ gboolean ibus_chromeos_panel_service_update_auxiliary_text(
   return TRUE;
 }
 
+// Returns an string representation of |table| for debugging.
+std::string IBusLookupTableToString(IBusLookupTable* table) {
+  std::stringstream stream;
+  stream << "page_size: " << table->page_size << "\n";
+  stream << "cursor_pos: " << table->cursor_pos << "\n";
+  stream << "cursor_visible: " << table->cursor_visible << "\n";
+  stream << "round: " << table->round << "\n";
+  stream << "orientation: " << table->orientation << "\n";
+  stream << "candidates:";
+  for (int i = 0; ; i++) {
+    IBusText *text = ibus_lookup_table_get_candidate(table, i);
+    if (!text) {
+      break;
+    }
+    stream << " " << text->text;
+  }
+  return stream.str();
+}
+
 // Handles IBus's |UpdateLookupTable| method call.
 // Creates a ImeLookupTable object and calls |update_lookup_table| in
 // |monitor_functions|
@@ -216,26 +235,6 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
   if (lookup_table.page_size <= 0) {
     LOG(DFATAL) << "Invalid page size: " << lookup_table.page_size;
     lookup_table.page_size = 1;
-  }
-
-  lookup_table.cursor_row_index =
-      lookup_table.cursor_absolute_index % lookup_table.page_size;
-  lookup_table.current_page_index =
-      lookup_table.cursor_absolute_index / lookup_table.page_size;
-
-  // Compute the number of pages. This is a bit tricky.
-  lookup_table.num_pages =
-      lookup_table.candidates.size() / lookup_table.page_size;
-  if (lookup_table.num_pages % lookup_table.page_size != 0) {
-    lookup_table.num_pages += 1;
-  }
-
-  // Compute the number of candidates in the current page.
-  lookup_table.num_candidates_in_current_page = lookup_table.page_size;
-  if (lookup_table.current_page_index + 1 == lookup_table.num_pages) {
-    // On the last page, the number can be smaller than the page size.
-    lookup_table.num_candidates_in_current_page =
-        lookup_table.candidates.size() % lookup_table.page_size;
   }
 
   monitor_functions.update_lookup_table(ime_library, lookup_table);

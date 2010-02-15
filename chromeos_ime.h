@@ -23,10 +23,6 @@ struct ImeLookupTable {
   ImeLookupTable()
       : visible(false),
         cursor_absolute_index(0),
-        cursor_row_index(0),
-        current_page_index(0),
-        num_candidates_in_current_page(0),
-        num_pages(0),
         page_size(0) {
   }
 
@@ -40,11 +36,6 @@ struct ImeLookupTable {
     std::stringstream stream;
     stream << "visible: " << visible << "\n";
     stream << "cursor_absolute_index: " << cursor_absolute_index << "\n";
-    stream << "cursor_row_index: " << cursor_row_index << "\n";
-    stream << "current_page_index: " << current_page_index << "\n";
-    stream << "num_candidates_in_current_page: "
-           << num_candidates_in_current_page << "\n";
-    stream << "num_pages: " << num_pages << "\n";
     stream << "page_size: " << page_size << "\n";
     stream << "candidates:";
     for (size_t i = 0; i < candidates.size(); ++i) {
@@ -61,22 +52,6 @@ struct ImeLookupTable {
   // second page when the page size is 10, the value will be 12 as it's
   // 13th candidate.
   int cursor_absolute_index;
-
-  // Zero-origin index of the current cursor position in the current
-  // page. If the cursor is pointing to the third candidate in the second
-  // page when the page size is 10, the value will be 2 as it's third
-  // candidate in the page.
-  int cursor_row_index;
-
-  // Zero-origin index of the current page of candidates. If the cursor is
-  // on the first page, the value will be 0.
-  int current_page_index;
-
-  // Number of candidates in the current page.
-  int num_candidates_in_current_page;
-
-  // Number of pages needed for showing the all candidates.
-  int num_pages;
 
   // Page size is the max number of candidates shown in a page. Usually
   // it's about 10, depending on the backend conversion engine.
