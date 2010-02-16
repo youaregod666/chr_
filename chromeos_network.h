@@ -38,13 +38,16 @@ enum EncryptionType {
   RSN
 };
 
+// ipconfig types (see flimflam/files/doc/ipconfig-api.txt
 enum IPConfigType {
- IPCONFIG_TYPE_DHCP,
- IPCONFIG_TYPE_IPV4,
- IPCONFIG_TYPE_IPV6,
- IPCONFIG_TYPE_BOOTP, //Not Used
- IPCONFIG_TYPE_PPP,
- IPCONFIG_TYPE_ZEROCONF
+  IPCONFIG_TYPE_UNKNOWN,
+  IPCONFIG_TYPE_IPV4,
+  IPCONFIG_TYPE_IPV6,
+  IPCONFIG_TYPE_DHCP,
+  IPCONFIG_TYPE_BOOTP, //Not Used
+  IPCONFIG_TYPE_ZEROCONF,
+  IPCONFIG_TYPE_DHCP6,
+  IPCONFIG_TYPE_PPP,
 };
 
 struct ServiceInfo {
@@ -63,8 +66,16 @@ struct ServiceStatus {
 };
 
 struct IPConfig {
-  // Used for calls into the 
   const char* path;
+  IPConfigType type;
+  const char* address;
+  int32 mtu;
+  const char* netmask;
+  const char* broadcast;
+  const char* peer_address;
+  const char* gateway;
+  const char* domainname;
+  const char* name_servers;
 };
 
 struct IPConfigStatus {
@@ -142,18 +153,9 @@ extern IPConfigStatus* (*ListIPConfigs)(const char* device_path);
 // Add a IPConfig of the given type to the device
 extern bool (*AddIPConfig)(const char* device_path, IPConfigType type);
 
-// Sets a property of the IPConfig
-// Address Mtu PrefixLen Broadcast PeerAddress Gateway DomainName
-extern bool (*SetIPConfigProperty)(IPConfig* config,
-                                   const char* key,
-                                   const char* value);
+// Save the IP config data
+extern bool (*SaveIPConfig)(IPConfig* config);
 
-// Gets a property of this Ip address.  Valid keys are:
-// Address Mtu PrefixLen Broadcast PeerAddress Gateway DomainName
-extern bool (*GetIPConfigProperty)(IPConfig* config,
-                                   const char* key,
-                                   char* val,
-                                   size_t valsz);
 // Remove an existing IP Config
 extern bool (*RemoveIPConfig)(IPConfig* config);
 

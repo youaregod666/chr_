@@ -9,6 +9,7 @@
 #include <cstring>
 
 #include "marshal.h"  // NOLINT
+#include "base/string_util.h"
 #include "chromeos/dbus/dbus.h"  // NOLINT
 #include "chromeos/glib/object.h"  // NOLINT
 #include "chromeos/string.h"
@@ -68,6 +69,26 @@ const char* kStateFailure = "failure";
 const char* kWpaEnabled = "wpa";
 const char* kWepEnabled = "wep";
 const char* kRsnEnabled = "rsn";
+
+// IPConfig property names.
+const char* kMethodProperty = "Method";
+const char* kAddressProperty = "Address";
+const char* kMtuProperty = "Mtu";
+const char* kPrefixlenProperty = "Prefixlen";
+const char* kBroadcastProperty = "Broadcast";
+const char* kPeerAddressProperty = "PeerAddress";
+const char* kGatewayProperty = "Gateway";
+const char* kDomainNameProperty = "DomainName";
+const char* kNameServersProperty = "NameServers";
+
+// IPConfig type options.
+const char* kTypeIPv4 = "ipv4";
+const char* kTypeIPv6 = "ipv6";
+const char* kTypeDHCP = "dhcp";
+const char* kTypeBOOTP = "bootp";
+const char* kTypeZeroConf = "zeroconf";
+const char* kTypeDHCP6 = "dhcp6";
+const char* kTypePPP = "ppp";
 
 // Invokes the given method on the proxy and stores the result
 // in the ScopedHashTable. The hash table will map strings to glib values.
@@ -278,6 +299,116 @@ class OpaqueNetworkStatusConnection {
   ConnectionType connection_;
 };
 
+IPConfigType ParseIPConfigType(const std::string& type) {
+  if (type == kTypeIPv4)
+    return IPCONFIG_TYPE_IPV4;
+  if (type == kTypeIPv6)
+    return IPCONFIG_TYPE_IPV6;
+  if (type == kTypeDHCP)
+    return IPCONFIG_TYPE_DHCP;
+  if (type == kTypeBOOTP)
+    return IPCONFIG_TYPE_BOOTP;
+  if (type == kTypeZeroConf)
+    return IPCONFIG_TYPE_ZEROCONF;
+  if (type == kTypeDHCP6)
+    return IPCONFIG_TYPE_DHCP6;
+  if (type == kTypePPP)
+    return IPCONFIG_TYPE_PPP;
+  return IPCONFIG_TYPE_UNKNOWN;
+}
+
+// Converts a prefix length to a netmask. (for ipv4)
+// e.g. a netmask of 255.255.255.0 has a prefixlen of 24
+std::string PrefixlenToNetmask(int32 prefixlen) {
+  std::string netmask;
+  for (int i = 0; i < 4; i++) {
+    int len = 8;
+    if (prefixlen >= 8) {
+      prefixlen -= 8;
+    } else {
+      len = prefixlen;
+      prefixlen = 0;
+    }
+    if (i > 0)
+      netmask += ".";
+    int num = len == 0 ? 0 : ((2L << (len - 1)) - 1) << (8 - len);
+    netmask += StringPrintf("%d", num); 
+  }
+  return netmask;
+}
+
+// Populates an instance of a IPConfig with the properties from an IPConfig
+void ParseIPConfigProperties(const glib::ScopedHashTable& properties,
+                            IPConfig* ipconfig) {
+  const char* default_string = kUnknownString;
+  properties.Retrieve(kMethodProperty, &default_string);
+  ipconfig->type = ParseIPConfigType(default_string);
+
+  default_string = "";
+  properties.Retrieve(kAddressProperty, &default_string);
+  ipconfig->address = NewStringCopy(default_string);
+
+  int32 default_int32 = 0;
+  properties.Retrieve(kMtuProperty, &default_int32);
+  ipconfig->mtu = default_int32;
+
+  default_int32 = 0;
+  properties.Retrieve(kPrefixlenProperty, &default_int32);
+  ipconfig->netmask = NewStringCopy(PrefixlenToNetmask(default_int32).c_str());
+
+  default_string = "";
+  properties.Retrieve(kBroadcastProperty, &default_string);
+  ipconfig->broadcast = NewStringCopy(default_string);
+
+  default_string = "";
+  properties.Retrieve(kPeerAddressProperty, &default_string);
+  ipconfig->peer_address = NewStringCopy(default_string);
+
+  default_string = "";
+  properties.Retrieve(kGatewayProperty, &default_string);
+  ipconfig->gateway = NewStringCopy(default_string);
+
+  default_string = "";
+  properties.Retrieve(kDomainNameProperty, &default_string);
+  ipconfig->domainname = NewStringCopy(default_string);
+
+  glib::Value val;
+  std::string value = "";
+  // store nameservers as a comma delimited list
+  if (properties.Retrieve(kNameServersProperty, &val)) {
+    const char** nameservers =
+        static_cast<const char**>(g_value_get_boxed (&val));
+    if (*nameservers) {
+      value += *nameservers;
+      nameservers++;
+      while (*nameservers) {
+        value += ",";
+        value += *nameservers;
+        nameservers++;
+      }
+    }
+  }
+  ipconfig->name_servers = NewStringCopy(value.c_str());
+}
+
+// Returns a IPConfig object populated with data from a
+// given DBus object path.
+//
+// returns true on success.
+bool ParseIPConfig(const char* path, IPConfig *ipconfig) {
+  ipconfig->path = NewStringCopy(path);
+
+  dbus::Proxy config_proxy(dbus::GetSystemBusConnection(),
+                           kConnmanServiceName,
+                           path,
+                           kConnmanIPConfigInterface);
+  glib::ScopedHashTable properties;
+  if (!GetProperties(config_proxy, &properties))
+    return false;
+  ParseIPConfigProperties(properties, ipconfig);
+  return true;
+}
+
 extern "C"
 IPConfigStatus* ChromeOSListIPConfigs(const char* device_path) {
 
@@ -300,23 +431,18 @@ IPConfigStatus* ChromeOSListIPConfigs(const char* device_path) {
   GPtrArray* ips_value =
       static_cast<GPtrArray*>(g_value_get_boxed(static_cast<GValue*>(ptr)));
 
-  std::vector<IPConfig> buffer;
-
-  const char* path = NULL;
-  for (size_t i = 0; i < ips_value->len; i++) {
-    path = static_cast<const char*>(g_ptr_array_index(ips_value, i));
-    IPConfig ip = {};
-    ip.path = NewStringCopy(path);
-    buffer.push_back(ip);
-  }
   IPConfigStatus* result = new IPConfigStatus();
-  if (buffer.size() == 0) {
+  result->size = ips_value->len;
+  if (result->size == 0) {
     result->ips = NULL;
   } else {
-    result->ips = new IPConfig[buffer.size()];
+    result->ips = new IPConfig[result->size];
+    for (size_t i = 0; i < ips_value->len; i++) {
+      const char* path =
+          static_cast<const char*>(g_ptr_array_index(ips_value, i));
+      ParseIPConfig(path, &result->ips[i]);
+    }
   }
-  result->size = buffer.size();
-  std::copy(buffer.begin(), buffer.end(), result->ips);
   return result;
 }
 
@@ -332,23 +458,26 @@ bool ChromeOSAddIPConfig(const char* device_path, IPConfigType type) {
   ::DBusGProxy obj;
   const char* type_str = NULL;
   switch(type) {
-    case IPCONFIG_TYPE_DHCP:
-      type_str = "dhcp";
-      break;
     case IPCONFIG_TYPE_IPV4:
-      type_str = "ipv4";
+      type_str = kTypeIPv4;
       break;
     case IPCONFIG_TYPE_IPV6:
-      type_str = "ipv6";
+      type_str = kTypeIPv6;
+      break;
+    case IPCONFIG_TYPE_DHCP:
+      type_str = kTypeDHCP;
       break;
     case IPCONFIG_TYPE_BOOTP:
-      type_str = "bootp";
-      break;
-    case IPCONFIG_TYPE_PPP:
-      type_str = "ppp";
+      type_str = kTypeBOOTP;
       break;
     case IPCONFIG_TYPE_ZEROCONF:
-      type_str = "zeroconf";
+      type_str = kTypeZeroConf;
+      break;
+    case IPCONFIG_TYPE_DHCP6:
+      type_str = kTypeDHCP6;
+      break;
+    case IPCONFIG_TYPE_PPP:
+      type_str = kTypePPP;
       break;
     default:
       return false;
@@ -371,22 +500,16 @@ bool ChromeOSAddIPConfig(const char* device_path, IPConfigType type) {
 }
 
 extern "C"
-bool ChromeOSSetIPConfigProperty(IPConfig* config,
-                                 const char* key,
-                                 const char* value) {
+bool ChromeOSSaveIPConfig(IPConfig* config) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy device_proxy(bus,
                            kConnmanServiceName,
                            config->path,
                            kConnmanIPConfigInterface);
+/*
+  TODO(chocobo): Save all the values
+  
   glib::Value value_set;
-  if (strcmp(key, "Mtu") == 0 ||
-      strcmp(key, "PrefixLen") == 0) {
-    uint32 val = atoi(value);
-    value_set = val;
-  } else {
-    value_set = value;
-  }
 
   glib::ScopedError error;
 
@@ -403,43 +526,7 @@ bool ChromeOSSetIPConfigProperty(IPConfig* config,
         << (error->message ? error->message : "Unknown Error.");
     return false;
   }
-  return true;
-}
-
-extern "C"
-bool ChromeOSGetIPConfigProperty(IPConfig* config,
-                                 const char* key,
-                                 char* val,
-                                 size_t valsz) {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy config_proxy(bus,
-                           kConnmanServiceName,
-                           config->path,
-                           kConnmanIPConfigInterface);
-
-  glib::ScopedHashTable properties;
-  if (!GetProperties(config_proxy, &properties)) {
-    return false;
-  }
-  const char* default_string = kUnknownString;
-  if (strcmp(key, "Mtu") == 0 ||
-      strcmp(key, "PrefixLen") == 0) {
-    uint32 int_val;
-    if (properties.Retrieve(key, &int_val)) {
-      std::string new_val = "";
-      new_val += int_val;
-      strncpy(val, new_val.c_str(), valsz);
-    } else {
-      return false;
-    }
-  } else {
-    properties.Retrieve(key, &default_string);
-
-    if (default_string == kUnknownString) {
-      return false;
-    }
-    strncpy(val, default_string, valsz);
-  }
+*/
   return true;
 }
 
@@ -467,6 +554,12 @@ bool ChromeOSRemoveIPConfig(IPConfig* config) {
 
 void DeleteIPConfigProperties(IPConfig config) {
   delete config.path;
+  delete config.address;
+  delete config.broadcast;
+  delete config.netmask;
+  delete config.gateway;
+  delete config.domainname;
+  delete config.name_servers;
 }
 
 extern "C"
