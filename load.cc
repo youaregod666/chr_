@@ -64,7 +64,13 @@ typedef bool (*EnableNetworkDeviceType)(ConnectionType type, bool enable);
 typedef bool (*SetOfflineModeType)(bool offline);
 typedef IPConfigStatus* (*ListIPConfigsType)(const char* device_path);
 typedef bool (*AddIPConfigType)(const char* device_path, IPConfigType type);
-typedef bool (*SaveIPConfigType)(IPConfig* config);
+typedef bool (*SetIPConfigPropertyType)(IPConfig* config,
+                                        const char* key,
+                                        const char* value);
+typedef bool (*GetIPConfigPropertyType)(IPConfig* config,
+                                        const char* key,
+                                        char* vale,
+                                        size_t valsz);
 typedef bool (*RemoveIPConfigType)(IPConfig* config);
 typedef void (*FreeIPConfigType)(IPConfig* config);
 typedef void (*FreeIPConfigStatusType)(IPConfigStatus* status);
@@ -116,7 +122,8 @@ ListIPConfigsType ListIPConfigs = 0;
 AddIPConfigType AddIPConfig = 0;
 FreeIPConfigType FreeIPConfig = 0;
 FreeIPConfigStatusType FreeIPConfigStatus = 0;
-SaveIPConfigType SaveIPConfig = 0;
+SetIPConfigPropertyType SetIPConfigProperty = 0;
+GetIPConfigPropertyType GetIPConfigProperty = 0;
 RemoveIPConfigType RemoveIPConfig = 0;
 
 SetSynapticsParameterType SetSynapticsParameter = 0;
@@ -240,11 +247,18 @@ bool LoadCros(const char* path_to_libcros) {
     LOG(ERROR) <<"AddIPConfig not found";
   }
 
-  SaveIPConfig = SaveIPConfigType(
-      ::dlsym(handle, "ChromeOSSaveIPConfig"));
+  SetIPConfigProperty = SetIPConfigPropertyType(
+      ::dlsym(handle, "ChromeOSSetIPConfigProperty"));
 
-  if (!SaveIPConfig) {
-    LOG(ERROR) <<"SaveIPConfig not found";
+  if (!SetIPConfigProperty) {
+    LOG(ERROR) <<"SetIPConfigProperty not found";
+  }
+
+  GetIPConfigProperty = GetIPConfigPropertyType(
+      ::dlsym(handle, "ChromeOSGetIPConfigProperty"));
+
+  if (!GetIPConfigProperty) {
+    LOG(ERROR) <<"GetIPConfigProperty not found";
   }
 
   RemoveIPConfig = RemoveIPConfigType(
@@ -315,7 +329,8 @@ bool LoadCros(const char* path_to_libcros) {
       && SetOfflineMode
       && ListIPConfigs
       && AddIPConfig
-      && SaveIPConfig
+      && SetIPConfigProperty
+      && GetIPConfigProperty
       && RemoveIPConfig
       && FreeIPConfig
       && FreeIPConfigStatus

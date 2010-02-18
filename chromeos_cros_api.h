@@ -26,13 +26,12 @@
 //  2: Changed the interface for network monitoring callbacks.
 //  3: Added support disconnecting the network monitor.
 //  4: Added Update API
-//  5: Added IPConfig code
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 4,
-  kCrosAPIVersion = 5
+  kCrosAPIMinVersion = 2,
+  kCrosAPIVersion = 4
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
