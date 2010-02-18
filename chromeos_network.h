@@ -38,13 +38,16 @@ enum EncryptionType {
   RSN
 };
 
+// ipconfig types (see flimflam/files/doc/ipconfig-api.txt
 enum IPConfigType {
- IPCONFIG_TYPE_DHCP,
- IPCONFIG_TYPE_IPV4,
- IPCONFIG_TYPE_IPV6,
- IPCONFIG_TYPE_BOOTP, //Not Used
- IPCONFIG_TYPE_PPP,
- IPCONFIG_TYPE_ZEROCONF
+  IPCONFIG_TYPE_UNKNOWN,
+  IPCONFIG_TYPE_IPV4,
+  IPCONFIG_TYPE_IPV6,
+  IPCONFIG_TYPE_DHCP,
+  IPCONFIG_TYPE_BOOTP, //Not Used
+  IPCONFIG_TYPE_ZEROCONF,
+  IPCONFIG_TYPE_DHCP6,
+  IPCONFIG_TYPE_PPP,
 };
 
 struct ServiceInfo {
@@ -63,8 +66,16 @@ struct ServiceStatus {
 };
 
 struct IPConfig {
-  // Used for calls into the 
   const char* path;
+  IPConfigType type;
+  const char* address;
+  int32 mtu;
+  const char* netmask;
+  const char* broadcast;
+  const char* peer_address;
+  const char* gateway;
+  const char* domainname;
+  const char* name_servers;
 };
 
 struct IPConfigStatus {
@@ -154,6 +165,10 @@ extern bool (*GetIPConfigProperty)(IPConfig* config,
                                    const char* key,
                                    char* val,
                                    size_t valsz);
+
+// Save the IP config data
+extern bool (*SaveIPConfig)(IPConfig* config);
+
 // Remove an existing IP Config
 extern bool (*RemoveIPConfig)(IPConfig* config);
 

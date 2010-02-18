@@ -71,6 +71,7 @@ typedef bool (*GetIPConfigPropertyType)(IPConfig* config,
                                         const char* key,
                                         char* vale,
                                         size_t valsz);
+typedef bool (*SaveIPConfigType)(IPConfig* config);
 typedef bool (*RemoveIPConfigType)(IPConfig* config);
 typedef void (*FreeIPConfigType)(IPConfig* config);
 typedef void (*FreeIPConfigStatusType)(IPConfigStatus* status);
@@ -124,6 +125,7 @@ FreeIPConfigType FreeIPConfig = 0;
 FreeIPConfigStatusType FreeIPConfigStatus = 0;
 SetIPConfigPropertyType SetIPConfigProperty = 0;
 GetIPConfigPropertyType GetIPConfigProperty = 0;
+SaveIPConfigType SaveIPConfig = 0;
 RemoveIPConfigType RemoveIPConfig = 0;
 
 SetSynapticsParameterType SetSynapticsParameter = 0;
@@ -261,6 +263,13 @@ bool LoadCros(const char* path_to_libcros) {
     LOG(ERROR) <<"GetIPConfigProperty not found";
   }
 
+  SaveIPConfig = SaveIPConfigType(
+      ::dlsym(handle, "ChromeOSSaveIPConfig"));
+
+  if (!SaveIPConfig) {
+    LOG(ERROR) <<"SaveIPConfig not found";
+  }
+
   RemoveIPConfig = RemoveIPConfigType(
       ::dlsym(handle, "ChromeOSRemoveIPConfig"));
 
@@ -331,6 +340,7 @@ bool LoadCros(const char* path_to_libcros) {
       && AddIPConfig
       && SetIPConfigProperty
       && GetIPConfigProperty
+      && SaveIPConfig
       && RemoveIPConfig
       && FreeIPConfig
       && FreeIPConfigStatus
