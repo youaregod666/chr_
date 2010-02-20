@@ -64,13 +64,6 @@ typedef bool (*EnableNetworkDeviceType)(ConnectionType type, bool enable);
 typedef bool (*SetOfflineModeType)(bool offline);
 typedef IPConfigStatus* (*ListIPConfigsType)(const char* device_path);
 typedef bool (*AddIPConfigType)(const char* device_path, IPConfigType type);
-typedef bool (*SetIPConfigPropertyType)(IPConfig* config,
-                                        const char* key,
-                                        const char* value);
-typedef bool (*GetIPConfigPropertyType)(IPConfig* config,
-                                        const char* key,
-                                        char* vale,
-                                        size_t valsz);
 typedef bool (*SaveIPConfigType)(IPConfig* config);
 typedef bool (*RemoveIPConfigType)(IPConfig* config);
 typedef void (*FreeIPConfigType)(IPConfig* config);
@@ -123,8 +116,6 @@ ListIPConfigsType ListIPConfigs = 0;
 AddIPConfigType AddIPConfig = 0;
 FreeIPConfigType FreeIPConfig = 0;
 FreeIPConfigStatusType FreeIPConfigStatus = 0;
-SetIPConfigPropertyType SetIPConfigProperty = 0;
-GetIPConfigPropertyType GetIPConfigProperty = 0;
 SaveIPConfigType SaveIPConfig = 0;
 RemoveIPConfigType RemoveIPConfig = 0;
 
@@ -237,59 +228,16 @@ bool LoadCros(const char* path_to_libcros) {
 
   ListIPConfigs = ListIPConfigsType(
       ::dlsym(handle, "ChromeOSListIPConfigs"));
-
-  if (!ListIPConfigs) {
-    LOG(ERROR) <<"ListIPConfigs not found";
-  }
-
   AddIPConfig = AddIPConfigType(
       ::dlsym(handle, "ChromeOSAddIPConfig"));
-
-  if (!AddIPConfig) {
-    LOG(ERROR) <<"AddIPConfig not found";
-  }
-
-  SetIPConfigProperty = SetIPConfigPropertyType(
-      ::dlsym(handle, "ChromeOSSetIPConfigProperty"));
-
-  if (!SetIPConfigProperty) {
-    LOG(ERROR) <<"SetIPConfigProperty not found";
-  }
-
-  GetIPConfigProperty = GetIPConfigPropertyType(
-      ::dlsym(handle, "ChromeOSGetIPConfigProperty"));
-
-  if (!GetIPConfigProperty) {
-    LOG(ERROR) <<"GetIPConfigProperty not found";
-  }
-
   SaveIPConfig = SaveIPConfigType(
       ::dlsym(handle, "ChromeOSSaveIPConfig"));
-
-  if (!SaveIPConfig) {
-    LOG(ERROR) <<"SaveIPConfig not found";
-  }
-
   RemoveIPConfig = RemoveIPConfigType(
       ::dlsym(handle, "ChromeOSRemoveIPConfig"));
-
-  if (!RemoveIPConfig) {
-    LOG(ERROR) <<"RemoveIPConfig not found";
-  }
-
   FreeIPConfig = FreeIPConfigType(
       ::dlsym(handle, "ChromeOSFreeIPConfig"));
-
-  if (!FreeIPConfig) {
-    LOG(ERROR) <<"FreeIPConfig not found";
-  }
-
   FreeIPConfigStatus = FreeIPConfigStatusType(
       ::dlsym(handle, "ChromeOSFreeIPConfigStatus"));
-
-  if (!FreeIPConfigStatus) {
-    LOG(ERROR) <<"FreeIPConfigStatus not found";
-  }
 
   SetSynapticsParameter = SetSynapticsParameterType(
       ::dlsym(handle, "ChromeOSSetSynapticsParameter"));
@@ -338,8 +286,6 @@ bool LoadCros(const char* path_to_libcros) {
       && SetOfflineMode
       && ListIPConfigs
       && AddIPConfig
-      && SetIPConfigProperty
-      && GetIPConfigProperty
       && SaveIPConfig
       && RemoveIPConfig
       && FreeIPConfig

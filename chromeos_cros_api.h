@@ -19,6 +19,28 @@
 // versions should only be done if there isn't any advantage to breaking the
 // older versions (for example, cleaning out otherwise dead code).
 
+// Removing an API method is a bit tricky. It takes a few steps:
+// 1) First remove all calls to that method in Chrome.
+// 2) Deprecate the method but keep the method implementation. Remove the
+//      binding of the method in load.cc and increment kCrosAPIVersion in this
+//      file. Check this in.
+// 3) Once ChromeOS looks good, update cros_deps/DEPS in Chrome source tree.
+//      This new libcros.so will work with new Chrome (which does not bind with
+//      the deprecated method) and it will still work with an older Chrome
+//      (which does bind with the deprecated method but does not call it).
+// 4) Wait until all versions of Chrome (i.e. the binary release of Chrome)
+//      is using this new libcros.so.
+// 5) Now, delete the method implementation. Increment kCrosAPIVersion and set
+//      kCrosAPIMinVersion to what kCrosAPIVersion was. Check this in.
+// 6) Once ChromeOS looks good, update cros_deps/DEPS in Chrome source tree.
+//      This new libcros.so will work with both the new Chrome and the one
+//      version back Chrome, since neither Chrome will be trying to bind to
+//      this now deleted method.
+
+// It is not recommended to change the signature of a method as that can never
+// be backwards compatible. So just name it differently. Add the new method and
+// remove the old method as described above.
+
 // Current version numbers:
 //  0: Version number prior to the version scheme.
 //  1: Added CrosVersionCheck API.
@@ -27,12 +49,13 @@
 //  3: Added support disconnecting the network monitor.
 //  4: Added Update API
 //  5: Added IPConfig code
+//  6: Deprecated GetIPConfigProperty and SetIPConfigProperty.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 4,
-  kCrosAPIVersion = 5
+  kCrosAPIVersion = 6
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
