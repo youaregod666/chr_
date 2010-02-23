@@ -2,7 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <cstdio>
 #include <dlfcn.h>
+#include <string.h>
 
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_ime.h"  // NOLINT
@@ -14,288 +16,233 @@
 #include "chromeos_synaptics.h"  // NOLINT
 #include "chromeos_update.h"  // NOLINT
 
-namespace chromeos {  // NOLINT
+namespace chromeos {  // NOLINT //
 
-typedef bool (*CrosVersionCheckType)(chromeos::CrosAPIVersion);
-typedef PowerStatusConnection (*MonitorPowerStatusType)(PowerMonitor, void*);
-typedef void (*DisconnectPowerStatusType)(PowerStatusConnection);
-typedef bool (*RetrievePowerInformationType)(PowerInformation* information);
-typedef LanguageStatusConnection* (*MonitorLanguageStatusType)(
-    LanguageStatusMonitorFunctions, void*);
-typedef void (*DisconnectLanguageStatusType)(LanguageStatusConnection*);
-typedef InputLanguageList* (*GetLanguagesType)(LanguageStatusConnection*);
-typedef void (*ChangeLanguageType)(
-    LanguageStatusConnection*, LanguageCategory, const char*);
-typedef bool (*ActivateLanguageType)(
-    LanguageStatusConnection*, LanguageCategory, const char*);
-typedef bool (*DeactivateLanguageType)(
-    LanguageStatusConnection*, LanguageCategory, const char*);
-typedef void (*ActivateImePropertyType)(
-    LanguageStatusConnection*, const char*);
-typedef void (*DeactivateImePropertyType)(
-    LanguageStatusConnection*, const char*);
-typedef bool (*GetImeConfigType)(LanguageStatusConnection*,
-                                 const char*,
-                                 const char*,
-                                 ImeConfigValue*);
-typedef bool (*SetImeConfigType)(LanguageStatusConnection*,
-                                 const char*,
-                                 const char*,
-                                 const ImeConfigValue&);
-typedef ImeStatusConnection* (*MonitorImeStatusType)(
-    const ImeStatusMonitorFunctions&, void*);
-typedef void (*DisconnectImeStatusType)(ImeStatusConnection*);
-typedef void (*NotifyCandidateClickedType)(ImeStatusConnection*,
-                                           int, int, int);
-typedef MountStatusConnection (*MonitorMountStatusType)(MountMonitor, void*);
-typedef void (*DisconnectMountStatusType)(MountStatusConnection);
-typedef MountStatus* (*RetrieveMountInformationType)();
-typedef void (*FreeMountStatusType)(MountStatus*);
-typedef bool (*ConnectToWifiNetworkType)(const char*,
-                                         const char*,
-                                         const char*);
-typedef ServiceStatus* (*GetAvailableNetworksType)();
-typedef void (*FreeServiceStatusType)(ServiceStatus*);
-typedef NetworkStatusConnection
-    (*MonitorNetworkStatusType)(NetworkMonitor, void*);
-typedef void (*DisconnectNetworkStatusType)(NetworkStatusConnection);
-typedef int (*GetEnabledNetworkDevicesType)();
-typedef bool (*EnableNetworkDeviceType)(ConnectionType type, bool enable);
-typedef bool (*SetOfflineModeType)(bool offline);
-typedef IPConfigStatus* (*ListIPConfigsType)(const char* device_path);
-typedef bool (*AddIPConfigType)(const char* device_path, IPConfigType type);
-typedef bool (*SaveIPConfigType)(IPConfig* config);
-typedef bool (*RemoveIPConfigType)(IPConfig* config);
-typedef void (*FreeIPConfigType)(IPConfig* config);
-typedef void (*FreeIPConfigStatusType)(IPConfigStatus* status);
-typedef void (*SetSynapticsParameterType)(SynapticsParameter param, int value);
-typedef bool (*EmitLoginPromptReadyType)();
-typedef bool (*StartSessionType)(const char*, const char*);
-typedef bool (*StopSessionType)(const char*);
+static std::string error_string;
+
+// Declare Function. These macros are used to define the imported functions
+// from libcros. They will declare the proper type and define an exported
+// variable to be used to call the function.
+// |name| is the name of the function.
+// |ret| is the return type.
+// |arg[1-4]| are the types are the arguments.
+// These are compile time declarations only.
+// INIT_FUNC(name) needs to be called at runtime.
+#define DECL_FUNC_0(name, ret) \
+  typedef ret (*name##Type)(); \
+  name##Type name = 0;
+
+#define DECL_FUNC_1(name, ret, arg1) \
+  typedef ret (*name##Type)(arg1); \
+  name##Type name = 0;
+
+#define DECL_FUNC_2(name, ret, arg1, arg2) \
+  typedef ret (*name##Type)(arg1, arg2); \
+  name##Type name = 0;
+
+#define DECL_FUNC_3(name, ret, arg1, arg2, arg3) \
+  typedef ret (*name##Type)(arg1, arg2, arg3); \
+  name##Type name = 0;
+
+#define DECL_FUNC_4(name, ret, arg1, arg2, arg3, arg4) \
+  typedef ret (*name##Type)(arg1, arg2, arg3, arg4); \
+  name##Type name = 0;
+
+// Version
+DECL_FUNC_1(CrosVersionCheck, bool, chromeos::CrosAPIVersion);
+
+// Power
+DECL_FUNC_2(MonitorPowerStatus, PowerStatusConnection, PowerMonitor, void*);
+DECL_FUNC_1(DisconnectPowerStatus, void, PowerStatusConnection);
+DECL_FUNC_1(RetrievePowerInformation, bool, PowerInformation*);
+
+// IME
+DECL_FUNC_2(MonitorLanguageStatus,
+    LanguageStatusConnection*, LanguageStatusMonitorFunctions, void*);
+DECL_FUNC_1(DisconnectLanguageStatus, void, LanguageStatusConnection*);
+DECL_FUNC_1(GetSupportedLanguages,
+    InputLanguageList*, LanguageStatusConnection*);
+DECL_FUNC_1(GetActiveLanguages, InputLanguageList*, LanguageStatusConnection*);
+DECL_FUNC_3(ChangeLanguage,
+    void, LanguageStatusConnection*, LanguageCategory, const char*);
+DECL_FUNC_3(ActivateLanguage,
+    bool, LanguageStatusConnection*, LanguageCategory, const char*);
+DECL_FUNC_3(DeactivateLanguage,
+    bool, LanguageStatusConnection*, LanguageCategory, const char*);
+DECL_FUNC_2(ActivateImeProperty, void, LanguageStatusConnection*, const char*);
+DECL_FUNC_2(DeactivateImeProperty,
+    void, LanguageStatusConnection*, const char*);
+DECL_FUNC_4(GetImeConfig,
+    bool,
+    LanguageStatusConnection*,
+    const char*,
+    const char*,
+    chromeos::ImeConfigValue*);
+DECL_FUNC_4(SetImeConfig,
+    bool,
+    LanguageStatusConnection*, const char*, const char*, const ImeConfigValue&);
+DECL_FUNC_2(MonitorImeStatus,
+    ImeStatusConnection*, const ImeStatusMonitorFunctions&, void*);
+DECL_FUNC_1(DisconnectImeStatus, void, ImeStatusConnection*);
+DECL_FUNC_4(NotifyCandidateClicked, void, ImeStatusConnection*, int, int, int);
+
+// Mount
+DECL_FUNC_2(MonitorMountStatus, MountStatusConnection, MountMonitor, void*);
+DECL_FUNC_1(DisconnectMountStatus, void, MountStatusConnection);
+DECL_FUNC_0(RetrieveMountInformation, MountStatus*);
+DECL_FUNC_1(FreeMountStatus, void, MountStatus*);
+
+// Networking
+DECL_FUNC_3(ConnectToWifiNetwork, bool, const char*, const char*, const char*);
+DECL_FUNC_0(GetAvailableNetworks, ServiceStatus*);
+DECL_FUNC_1(FreeServiceStatus, void, ServiceStatus*);
+DECL_FUNC_2(MonitorNetworkStatus,
+    NetworkStatusConnection, NetworkMonitor, void*);
+DECL_FUNC_1(DisconnectNetworkStatus, void, NetworkStatusConnection);
+DECL_FUNC_0(GetEnabledNetworkDevices, int);
+DECL_FUNC_2(EnableNetworkDevice, bool, ConnectionType, bool);
+DECL_FUNC_1(SetOfflineMode, bool, bool);
+DECL_FUNC_1(ListIPConfigs, IPConfigStatus*, const char*);
+DECL_FUNC_2(AddIPConfig, bool, const char*, IPConfigType);
+DECL_FUNC_1(SaveIPConfig, bool, IPConfig*);
+DECL_FUNC_1(RemoveIPConfig, bool, IPConfig*);
+DECL_FUNC_1(FreeIPConfig, void, IPConfig*);
+DECL_FUNC_1(FreeIPConfigStatus, void, IPConfigStatus*);
+
+// Touchpad
+DECL_FUNC_2(SetSynapticsParameter, void, SynapticsParameter, int);
+
+// Login
+DECL_FUNC_0(EmitLoginPromptReady, bool);
+DECL_FUNC_2(StartSession, bool, const char*, const char*);
+DECL_FUNC_1(StopSession, bool, const char*);
 
 // Update library
-typedef bool (*UpdateType)(UpdateInformation*);
-typedef bool (*CheckForUpdateType)(UpdateInformation*);
-
-CrosVersionCheckType CrosVersionCheck = 0;
-
-MonitorPowerStatusType MonitorPowerStatus = 0;
-DisconnectPowerStatusType DisconnectPowerStatus = 0;
-RetrievePowerInformationType RetrievePowerInformation = 0;
-
-MonitorLanguageStatusType MonitorLanguageStatus = 0;
-DisconnectLanguageStatusType DisconnectLanguageStatus = 0;
-GetLanguagesType GetActiveLanguages = 0;
-GetLanguagesType GetSupportedLanguages = 0;
-ChangeLanguageType ChangeLanguage = 0;
-ActivateLanguageType ActivateLanguage = 0;
-DeactivateLanguageType DeactivateLanguage = 0;
-ActivateImePropertyType ActivateImeProperty = 0;
-DeactivateImePropertyType DeactivateImeProperty = 0;
-GetImeConfigType GetImeConfig = 0;
-SetImeConfigType SetImeConfig = 0;
-
-MonitorImeStatusType MonitorImeStatus = 0;
-DisconnectImeStatusType DisconnectImeStatus = 0;
-NotifyCandidateClickedType NotifyCandidateClicked = 0;
-
-MonitorMountStatusType MonitorMountStatus = 0;
-DisconnectMountStatusType DisconnectMountStatus = 0;
-RetrieveMountInformationType RetrieveMountInformation = 0;
-FreeMountStatusType FreeMountStatus = 0;
-
-ConnectToWifiNetworkType ConnectToWifiNetwork = 0;
-GetAvailableNetworksType GetAvailableNetworks = 0;
-FreeServiceStatusType FreeServiceStatus = 0;
-MonitorNetworkStatusType MonitorNetworkStatus = 0;
-DisconnectNetworkStatusType DisconnectNetworkStatus = 0;
-GetEnabledNetworkDevicesType GetEnabledNetworkDevices = 0;
-EnableNetworkDeviceType EnableNetworkDevice = 0;
-SetOfflineModeType SetOfflineMode = 0;
-ListIPConfigsType ListIPConfigs = 0;
-AddIPConfigType AddIPConfig = 0;
-FreeIPConfigType FreeIPConfig = 0;
-FreeIPConfigStatusType FreeIPConfigStatus = 0;
-SaveIPConfigType SaveIPConfig = 0;
-RemoveIPConfigType RemoveIPConfig = 0;
-
-SetSynapticsParameterType SetSynapticsParameter = 0;
-
-EmitLoginPromptReadyType EmitLoginPromptReady = 0;
-StartSessionType StartSession = 0;
-StopSessionType StopSession = 0;
-
-// Update Library
-UpdateType Update = 0;
-CheckForUpdateType CheckForUpdate = 0;
+DECL_FUNC_1(Update, bool, UpdateInformation*);
+DECL_FUNC_1(CheckForUpdate, bool, UpdateInformation*);
 
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
-// TODO(rtc/davemoore/seanparent): Give the caller some mechanism to help them
-// understand why this call failed.
-bool LoadCros(const char* path_to_libcros) {
-  if (!path_to_libcros)
-    return false;
+// Initializes the variable by looking up the function by |name|.
+// This macro uses the variable 'handle' and 'error_string'.
+#define INIT_FUNC(name) \
+  name = name##Type(::dlsym(handle, "ChromeOS"#name)); \
+  if (!name) { \
+    error_string += "Couldn't load: "#name","; \
+  }
 
-  void* handle = ::dlopen(path_to_libcros, RTLD_NOW);
-  if (handle == NULL) {
+// TODO(davemoore) remove this after Chrome has changed to call the new
+// function.
+bool LoadCros(const char* path_to_libcros) {
+  std::string error_string = std::string();
+  return LoadLibcros(path_to_libcros, error_string);
+}
+
+bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
+  error_string = std::string();
+
+  if (!path_to_libcros) {
+    error_string = "path_to_libcros can't be NULL";
     return false;
   }
 
-  CrosVersionCheck =
-      CrosVersionCheckType(::dlsym(handle, "ChromeOSCrosVersionCheck"));
-
-  if (!CrosVersionCheck)
+  void* handle = ::dlopen(path_to_libcros, RTLD_NOW);
+  if (handle == NULL) {
+    error_string = "Couldn't load libcros from: ";
+    error_string += path_to_libcros;
+    error_string += " error: ";
+    error_string += dlerror();
     return false;
+  }
 
-  if (!CrosVersionCheck(chromeos::kCrosAPIVersion))
+  INIT_FUNC(CrosVersionCheck);
+  if (!CrosVersionCheck) {
+    // error_string will already be set.
     return false;
+  }
 
-  MonitorPowerStatus = MonitorPowerStatusType(
-      ::dlsym(handle, "ChromeOSMonitorPowerStatus"));
+  if (!CrosVersionCheck(chromeos::kCrosAPIVersion)) {
+    const int buf_size = sizeof(int)*8+1;
+    char buf[buf_size];
+    typedef int (*VersionFuncType)();
 
-  DisconnectPowerStatus = DisconnectPowerStatusType(
-      ::dlsym(handle, "ChromeOSDisconnectPowerStatus"));
+    // These weren't exported from older copies of the library. It's not an
+    // error so we don't use INIT_FUNC()
+    VersionFuncType GetMinCrosVersion =
+        VersionFuncType(::dlsym(handle, "ChromeOSGetMinCrosVersion"));
+    VersionFuncType GetCrosVersion =
+        VersionFuncType(::dlsym(handle, "ChromeOSGetCrosVersion"));
 
-  RetrievePowerInformation = RetrievePowerInformationType(
-      ::dlsym(handle, "ChromeOSRetrievePowerInformation"));
+    error_string = "Incompatible libcros version. Client: ";
+    snprintf(buf, buf_size, "%d", chromeos::kCrosAPIVersion);
+    error_string += buf;
+    if (GetMinCrosVersion && GetCrosVersion) {
+      snprintf(buf, buf_size, "%d", GetMinCrosVersion());
+      error_string += " Min: ";
+      error_string += buf;
+      snprintf(buf, buf_size, "%d", GetCrosVersion());
+      error_string += " Max: ";
+      error_string += buf;
+    }
+    return false;
+  }
 
-  MonitorLanguageStatus = MonitorLanguageStatusType(
-      ::dlsym(handle, "ChromeOSMonitorLanguageStatus"));
-  DisconnectLanguageStatus = DisconnectLanguageStatusType(
-      ::dlsym(handle, "ChromeOSDisconnectLanguageStatus"));
-  GetActiveLanguages = GetLanguagesType(
-      ::dlsym(handle, "ChromeOSGetActiveLanguages"));
-  GetSupportedLanguages = GetLanguagesType(
-      ::dlsym(handle, "ChromeOSGetSupportedLanguages"));
-  ChangeLanguage = ChangeLanguageType(
-      ::dlsym(handle, "ChromeOSChangeLanguage"));
-  ActivateLanguage = ActivateLanguageType(
-      ::dlsym(handle, "ChromeOSActivateLanguage"));
-  DeactivateLanguage = DeactivateLanguageType(
-      ::dlsym(handle, "ChromeOSDeactivateLanguage"));
-  ActivateImeProperty = ActivateImePropertyType(
-      ::dlsym(handle, "ChromeOSActivateImeProperty"));
-  DeactivateImeProperty = DeactivateImePropertyType(
-      ::dlsym(handle, "ChromeOSDeactivateImeProperty"));
-  GetImeConfig = GetImeConfigType(
-      ::dlsym(handle, "ChromeOSGetImeConfig"));
-  SetImeConfig = SetImeConfigType(
-      ::dlsym(handle, "ChromeOSSetImeConfig"));
+  // Power
+  INIT_FUNC(MonitorPowerStatus);
+  INIT_FUNC(DisconnectPowerStatus);
+  INIT_FUNC(RetrievePowerInformation);
 
-  MonitorImeStatus = MonitorImeStatusType(
-      ::dlsym(handle, "ChromeOSMonitorImeStatus"));
-  DisconnectImeStatus = DisconnectImeStatusType(
-      ::dlsym(handle, "ChromeOSDisconnectImeStatus"));
-  NotifyCandidateClicked = NotifyCandidateClickedType(
-      ::dlsym(handle, "ChromeOSNotifyCandidateClicked"));
+  // IME
+  INIT_FUNC(MonitorLanguageStatus);
+  INIT_FUNC(DisconnectLanguageStatus);
+  INIT_FUNC(GetSupportedLanguages);
+  INIT_FUNC(GetActiveLanguages);
+  INIT_FUNC(ChangeLanguage);
+  INIT_FUNC(ActivateLanguage);
+  INIT_FUNC(DeactivateLanguage);
+  INIT_FUNC(ActivateImeProperty);
+  INIT_FUNC(DeactivateImeProperty);
+  INIT_FUNC(GetImeConfig);
+  INIT_FUNC(SetImeConfig);
+  INIT_FUNC(MonitorImeStatus);
+  INIT_FUNC(DisconnectImeStatus);
+  INIT_FUNC(NotifyCandidateClicked);
 
-  MonitorMountStatus = MonitorMountStatusType(
-      ::dlsym(handle, "ChromeOSMonitorMountStatus"));
+  // Mount
+  INIT_FUNC(MonitorMountStatus);
+  INIT_FUNC(DisconnectMountStatus);
+  INIT_FUNC(RetrieveMountInformation);
+  INIT_FUNC(FreeMountStatus);
 
-  FreeMountStatus = FreeMountStatusType(
-      ::dlsym(handle, "ChromeOSFreeMountStatus"));
+  // Networking
+  INIT_FUNC(ConnectToWifiNetwork);
+  INIT_FUNC(GetAvailableNetworks);
+  INIT_FUNC(FreeServiceStatus);
+  INIT_FUNC(MonitorNetworkStatus);
+  INIT_FUNC(DisconnectNetworkStatus);
+  INIT_FUNC(GetEnabledNetworkDevices);
+  INIT_FUNC(EnableNetworkDevice);
+  INIT_FUNC(SetOfflineMode);
+  INIT_FUNC(ListIPConfigs);
+  INIT_FUNC(AddIPConfig);
+  INIT_FUNC(SaveIPConfig);
+  INIT_FUNC(RemoveIPConfig);
+  INIT_FUNC(FreeIPConfig);
+  INIT_FUNC(FreeIPConfigStatus);
 
-  DisconnectMountStatus = DisconnectMountStatusType(
-      ::dlsym(handle, "ChromeOSDisconnectMountStatus"));
+  // Touchpad
+  INIT_FUNC(SetSynapticsParameter);
 
-  RetrieveMountInformation = RetrieveMountInformationType(
-      ::dlsym(handle, "ChromeOSRetrieveMountInformation"));
+  // Login
+  INIT_FUNC(EmitLoginPromptReady);
+  INIT_FUNC(StartSession);
+  INIT_FUNC(StopSession);
 
-  ConnectToWifiNetwork = ConnectToWifiNetworkType(
-      ::dlsym(handle, "ChromeOSConnectToWifiNetwork"));
+  // Update
+  INIT_FUNC(Update);
+  INIT_FUNC(CheckForUpdate);
 
-  GetAvailableNetworks = GetAvailableNetworksType(
-      ::dlsym(handle, "ChromeOSGetAvailableNetworks"));
-
-  FreeServiceStatus = FreeServiceStatusType(
-      ::dlsym(handle, "ChromeOSFreeServiceStatus"));
-
-  MonitorNetworkStatus =
-      MonitorNetworkStatusType(::dlsym(handle, "ChromeOSMonitorNetworkStatus"));
-
-  DisconnectNetworkStatus = DisconnectNetworkStatusType(
-      ::dlsym(handle, "ChromeOSDisconnectNetworkStatus"));
-
-  GetEnabledNetworkDevices = GetEnabledNetworkDevicesType(
-      ::dlsym(handle, "ChromeOSGetEnabledNetworkDevices"));
-
-  EnableNetworkDevice = EnableNetworkDeviceType(
-      ::dlsym(handle, "ChromeOSEnableNetworkDevice"));
-
-  SetOfflineMode = SetOfflineModeType(
-      ::dlsym(handle, "ChromeOSSetOfflineMode"));
-
-  ListIPConfigs = ListIPConfigsType(
-      ::dlsym(handle, "ChromeOSListIPConfigs"));
-  AddIPConfig = AddIPConfigType(
-      ::dlsym(handle, "ChromeOSAddIPConfig"));
-  SaveIPConfig = SaveIPConfigType(
-      ::dlsym(handle, "ChromeOSSaveIPConfig"));
-  RemoveIPConfig = RemoveIPConfigType(
-      ::dlsym(handle, "ChromeOSRemoveIPConfig"));
-  FreeIPConfig = FreeIPConfigType(
-      ::dlsym(handle, "ChromeOSFreeIPConfig"));
-  FreeIPConfigStatus = FreeIPConfigStatusType(
-      ::dlsym(handle, "ChromeOSFreeIPConfigStatus"));
-
-  SetSynapticsParameter = SetSynapticsParameterType(
-      ::dlsym(handle, "ChromeOSSetSynapticsParameter"));
-
-  EmitLoginPromptReady = EmitLoginPromptReadyType(
-      ::dlsym(handle, "ChromeOSEmitLoginPromptReady"));
-  StartSession = StartSessionType(
-      ::dlsym(handle, "ChromeOSStartSession"));
-  StopSession = StopSessionType(
-      ::dlsym(handle, "ChromeOSStopSession"));
-
-  // Update Library
-  Update = UpdateType(
-      ::dlsym(handle, "ChromeOSUpdate"));
-  CheckForUpdate = CheckForUpdateType(
-      ::dlsym(handle, "ChromeOSCheckForUpdate"));
-
-  return MonitorPowerStatus
-      && DisconnectPowerStatus
-      && RetrievePowerInformation
-      && MonitorLanguageStatus
-      && DisconnectLanguageStatus
-      && GetActiveLanguages
-      && GetSupportedLanguages
-      && ChangeLanguage
-      && ActivateLanguage
-      && DeactivateLanguage
-      && ActivateImeProperty
-      && DeactivateImeProperty
-      && GetImeConfig
-      && SetImeConfig
-      && MonitorImeStatus
-      && DisconnectImeStatus
-      && NotifyCandidateClicked
-      && MonitorMountStatus
-      && FreeMountStatus
-      && DisconnectMountStatus
-      && RetrieveMountInformation
-      && ConnectToWifiNetwork
-      && GetAvailableNetworks
-      && FreeServiceStatus
-      && MonitorNetworkStatus
-      && DisconnectNetworkStatus
-      && GetEnabledNetworkDevices
-      && EnableNetworkDevice
-      && SetOfflineMode
-      && ListIPConfigs
-      && AddIPConfig
-      && SaveIPConfig
-      && RemoveIPConfig
-      && FreeIPConfig
-      && FreeIPConfigStatus
-      && SetSynapticsParameter
-      && EmitLoginPromptReady
-      && StartSession
-      && StopSession
-      && Update
-      && CheckForUpdate;
+  return error_string.empty();
 }
 
 }  // namespace chromeos

@@ -71,3 +71,14 @@ bool ChromeOSCrosVersionCheck(chromeos::CrosAPIVersion version) {
   return chromeos::kCrosAPIMinVersion <= version
       && version <= chromeos::kCrosAPIVersion;
 }
+
+extern "C"
+int ChromeOSGetMinCrosVersion() {
+  return chromeos::kCrosAPIMinVersion;
+}
+
+extern "C"
+int ChromeOSGetCrosVersion() {
+  return chromeos::kCrosAPIVersion;
+}
+

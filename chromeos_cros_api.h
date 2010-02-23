@@ -5,6 +5,8 @@
 #ifndef CHROMEOS_CROS_API_VERSION_H_
 #define CHROMEOS_CROS_API_VERSION_H_
 
+#include <string>
+
 // This file defines two version numbers for the CrosAPI.
 //
 // We have two components, the libcros.so (so) and the libcros API which is
@@ -61,9 +63,14 @@ enum CrosAPIVersion {
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
 extern char const * const kCrosDefaultPath;
 
-// \param path_to_libcros is the path to the libcros.so file.
-// \result true indicates success, false failure.
+// TODO(davemoore) Vestigial API. Remove when Chrome is calling the new API.
 bool LoadCros(const char* path_to_libcros);
+
+// |path_to_libcros| is the path to the libcros.so file.
+// Returns true to indicate success.
+// If returns false, |load_error| will contain a string describing the
+// problem.
+bool LoadLibcros(const char* path_to_libcros, std::string& load_error);
 
 }  // namespace chromeos
 
