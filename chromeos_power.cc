@@ -221,8 +221,10 @@ PowerStatusConnection ChromeOSMonitorPowerStatus(PowerMonitor monitor,
 
 extern "C"
 void ChromeOSDisconnectPowerStatus(PowerStatusConnection connection) {
-  dbus::Disconnect(connection->connection());
-  delete connection;
+  if (connection) {
+    dbus::Disconnect(connection->connection());
+    delete connection;
+  }
 }
 
 extern "C"
