@@ -24,16 +24,16 @@ bool RetrieveBatteryStatus(const glib::ScopedHashTable& table,
                            PowerStatus* status) {
   bool success = true;
 
-  success &= table.Retrieve("Energy", &status->battery_energy);
-  success &= table.Retrieve("EnergyRate", &status->battery_energy_rate);
-  success &= table.Retrieve("Voltage", &status->battery_voltage);
-  success &= table.Retrieve("TimeToEmpty", &status->battery_time_to_empty);
-  success &= table.Retrieve("TimeToFull", &status->battery_time_to_full);
-  success &= table.Retrieve("Percentage", &status->battery_percentage);
-  success &= table.Retrieve("IsPresent", &status->battery_is_present);
+  success &= table.Retrieve("energy", &status->battery_energy);
+  success &= table.Retrieve("energy-rate", &status->battery_energy_rate);
+  success &= table.Retrieve("voltage", &status->battery_voltage);
+  success &= table.Retrieve("time-to-empty", &status->battery_time_to_empty);
+  success &= table.Retrieve("time-to-full", &status->battery_time_to_full);
+  success &= table.Retrieve("percentage", &status->battery_percentage);
+  success &= table.Retrieve("is-present", &status->battery_is_present);
 
   ::uint32 state = 0;
-  success &= table.Retrieve("State", &state);
+  success &= table.Retrieve("state", &state);
   status->battery_state = BatteryState(state);
 
   return success;
@@ -69,7 +69,7 @@ bool RetrieveLinePowerStatus(const dbus::Proxy& line_power,
   }
   return dbus::RetrieveProperty(line_power,
                                 "org.freedesktop.DeviceKit.Power.Device",
-                                "Online",
+                                "online",
                                 &status->line_power_on);
 }
 
@@ -110,7 +110,7 @@ bool RetrievePowerDeviceProxies(const dbus::BusConnection& bus,
     ::uint32 type;
     if (!dbus::RetrieveProperty(proxy,
                                 "org.freedesktop.DeviceKit.Power.Device",
-                                "Type",
+                                "type",
                                 &type))
       return NULL;
 
@@ -263,38 +263,38 @@ bool ChromeOSRetrievePowerInformation(PowerInformation* info) {
   bool success = true;
 
   if (!init) {
-    success &= battery_table.Retrieve("EnergyEmpty",
+    success &= battery_table.Retrieve("energy-empty",
                                       &info_g.battery_energy_empty);
-    success &= battery_table.Retrieve("EnergyFull",
+    success &= battery_table.Retrieve("energy-full",
                                       &info_g.battery_energy_full);
-    success &= battery_table.Retrieve("EnergyFullDesign",
+    success &= battery_table.Retrieve("energy-full-design",
                                       &info_g.battery_energy_full_design);
-    success &= battery_table.Retrieve("IsRechargeable",
+    success &= battery_table.Retrieve("is-rechargable",
                                       &info_g.battery_is_rechargeable);
 
     ::uint32 technology = 0;
-    success &= battery_table.Retrieve("Technology", &technology);
+    success &= battery_table.Retrieve("technology", &technology);
     info_g.battery_technology = BatteryTechnology(technology);
 
     // We malloc space for the strings and simply leak them.
     const char* tmp = "";
 
-    success &= battery_table.Retrieve("Vendor", &tmp);
+    success &= battery_table.Retrieve("vendor", &tmp);
     info_g.battery_vendor = NewStringCopy(tmp);
 
-    success &= battery_table.Retrieve("Model", &tmp);
+    success &= battery_table.Retrieve("model", &tmp);
     info_g.battery_model = NewStringCopy(tmp);
 
-    success &= battery_table.Retrieve("Serial", &tmp);
+    success &= battery_table.Retrieve("serial", &tmp);
     info_g.battery_serial = NewStringCopy(tmp);
 
-    success &= line_power_table.Retrieve("Vendor", &tmp);
+    success &= line_power_table.Retrieve("vendor", &tmp);
     info_g.line_power_vendor = NewStringCopy(tmp);
 
-    success &= line_power_table.Retrieve("Model", &tmp);
+    success &= line_power_table.Retrieve("model", &tmp);
     info_g.line_power_model = NewStringCopy(tmp);
 
-    success &= line_power_table.Retrieve("Serial", &tmp);
+    success &= line_power_table.Retrieve("serial", &tmp);
     info_g.line_power_serial = NewStringCopy(tmp);
 
     init = success;
@@ -304,7 +304,7 @@ bool ChromeOSRetrievePowerInformation(PowerInformation* info) {
 
   success &= RetrieveBatteryStatus(battery_table,
                                    &info->power_status);
-  success &= line_power_table.Retrieve("Online",
+  success &= line_power_table.Retrieve("online",
                                        &info->power_status.line_power_on);
 
   return success;
