@@ -158,12 +158,13 @@ bool ConvertProperty(IBusProperty* ibus_prop,
         ibus_prop->tooltip->text) ? ibus_prop->tooltip->text : "");
   if (label.empty()) {
     // Usually tooltips are more descriptive than labels.
-    label = (ibus_prop->label ? ibus_prop->label->text : "");
+    label = (ibus_prop->label && ibus_prop->label->text)
+        ? ibus_prop->label->text : "";
   }
   if (label.empty()) {
     // ibus-pinyin has a property whose label and tooltip are empty. Fall back
     // to the key.
-    label = ibus_prop->key;
+    label = ibus_prop->key ? ibus_prop->key : "";
   }
 
   out_prop_list->push_back(chromeos::ImeProperty(ibus_prop->key,
@@ -693,7 +694,7 @@ class LanguageStatusConnection {
     DLOG(INFO) << "FocusIn: " << input_context_path;
 
     // Remember the current ic path.
-    input_context_path_ = input_context_path;
+    input_context_path_ = input_context_path ? input_context_path : "";
     UpdateUI();  // This is necessary since IME status is held per ic.
   }
 
