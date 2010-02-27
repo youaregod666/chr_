@@ -153,7 +153,9 @@ bool ConvertProperty(IBusProperty* ibus_prop,
   }
 
   // TODO(yusukes): Probably it's better to generate our own label from the key?
-  std::string label = (ibus_prop->tooltip ? ibus_prop->tooltip->text : "");
+  std::string label =
+      ((ibus_prop->tooltip &&
+        ibus_prop->tooltip->text) ? ibus_prop->tooltip->text : "");
   if (label.empty()) {
     // Usually tooltips are more descriptive than labels.
     label = (ibus_prop->label ? ibus_prop->label->text : "");
