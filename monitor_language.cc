@@ -142,8 +142,7 @@ void ShowActiveLanguages() {
       chromeos::GetActiveLanguages(global_connection));
   for (size_t i = 0; i < languages->size(); ++i) {
     const chromeos::InputLanguage &language = languages->at(i);
-    LOG(INFO) << "* " << language.display_name
-              << " (id=" << language.id << ")";
+    LOG(INFO) << "* " << language.ToString();
   }
 }
 
@@ -153,8 +152,7 @@ void ShowSupportedLanguages() {
       chromeos::GetSupportedLanguages(global_connection));
   for (size_t i = 0; i < languages->size(); ++i) {
     const chromeos::InputLanguage &language = languages->at(i);
-    LOG(INFO) << "* " << language.display_name
-              << " (id=" << language.id << ")";
+    LOG(INFO) << "* " << language.ToString();
   }
 }
 

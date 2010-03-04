@@ -75,7 +75,8 @@ void AddIMELanguages(const GList* engines, chromeos::InputLanguageList* out) {
     if (ImeIdIsWhitelisted(engine_desc->name)) {
       out->push_back(chromeos::InputLanguage(
           chromeos::LANGUAGE_CATEGORY_IME,
-          engine_desc->name, engine_desc->longname, engine_desc->icon));
+          engine_desc->name, engine_desc->longname, engine_desc->icon,
+          engine_desc->language));
     }
     g_object_unref(engine_desc);
   }
@@ -89,7 +90,8 @@ void AddXKBLayouts(chromeos::InputLanguageList* out) {
       chromeos::LANGUAGE_CATEGORY_XKB,
       kFallbackXKBId,
       kFallbackXKBDisplayName,
-      "" /* no icon */));  // mock
+      "" /* no icon */,
+      kFallbackXKBLanguageCode));  // mock
 }
 
 // Returns IBusInputContext for |input_context_path|. NULL on errors.
@@ -607,14 +609,16 @@ class LanguageStatusConnection {
       current_language = new InputLanguage(LANGUAGE_CATEGORY_IME,
                                            engine_desc->name,
                                            engine_desc->longname,
-                                           engine_desc->icon);
+                                           engine_desc->icon,
+                                           engine_desc->language);
     } else {
       DLOG(INFO) << "IME is not active";
       // Set XKB layout name on current_languages.
       current_language = new InputLanguage(LANGUAGE_CATEGORY_XKB,
                                            kFallbackXKBId,
                                            kFallbackXKBDisplayName,
-                                           "" /* no icon */);  // mock
+                                           "" /* no icon */,
+                                           kFallbackXKBLanguageCode);  // mock
       // TODO(yusukes): implemente this.
     }
     return current_language;
@@ -774,14 +778,16 @@ class LanguageStatusConnection {
       current_language = InputLanguage(LANGUAGE_CATEGORY_IME,
                                        engine_desc->name,
                                        engine_desc->longname,
-                                       engine_desc->icon);
+                                       engine_desc->icon,
+                                       engine_desc->language);
     } else {
       DLOG(INFO) << "IME is not active";
       // Set XKB layout name on current_languages.
       current_language = InputLanguage(LANGUAGE_CATEGORY_XKB,
                                        kFallbackXKBId,
                                        kFallbackXKBDisplayName,
-                                       "" /* no icon */);  // mock
+                                       "" /* no icon */,
+                                       kFallbackXKBLanguageCode);  // mock
       // TODO(yusukes): implemente this.
     }
     DLOG(INFO) << "Updating the UI. ID:" << current_language.id

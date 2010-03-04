@@ -15,6 +15,7 @@
 static const char kFallbackXKBId[] = "USA";
 static const char kFallbackXKBDisplayName[] = "US";
 static const int kInvalidSelectionItemId = -1;
+static const char kFallbackXKBLanguageCode[] = "en";
 
 namespace chromeos {
 
@@ -28,29 +29,46 @@ struct InputLanguage {
   InputLanguage(LanguageCategory in_category,
                 const std::string& in_id,
                 const std::string& in_display_name,
-                const std::string& in_icon_path)
+                const std::string& in_icon_path,
+                const std::string& in_language_code)
       : category(in_category),
         id(in_id),
         display_name(in_display_name),
-        icon_path(in_icon_path) {
+        icon_path(in_icon_path),
+        language_code(in_language_code) {
   }
 
   InputLanguage() : category(LANGUAGE_CATEGORY_XKB) {
   }
 
-  // Languages are sorted by category, then by display_name, then by id.
+  // Languages are sorted by category, then by language_code,
+  // then by display_name, then by id.
   bool operator<(const InputLanguage& other) const {
-    if (category == other.category) {
-      if (display_name == other.display_name) {
-        return id < other.id;
-      }
+    if (category != other.category) {
+      return category < other.category;
+    }
+    if (language_code != other.language_code) {
+      return language_code < other.language_code;
+    }
+    if (display_name != other.display_name) {
       return display_name < other.display_name;
     }
-    return category < other.category;
+    return id < other.id;
   }
 
   bool operator==(const InputLanguage& other) const {
     return (category == other.category) && (id == other.id);
+  }
+
+  // Debug print function.
+  std::string ToString() const {
+    std::stringstream stream;
+    stream << "category=" << category
+           << ", id=" << id
+           << ", display_name" << display_name
+           << ", icon_path" << icon_path
+           << ", language_code=" << language_code;
+    return stream.str();
   }
 
   LanguageCategory category;
@@ -63,6 +81,9 @@ struct InputLanguage {
   // Path to an icon (e.g., "/usr/share/ibus-chewing/icons/ibus-chewing.png").
   // Empty if it does not exist.
   std::string icon_path;
+  // Language codes like "ko", "ja", "zh_CN", and "t".
+  // "t" is used for languages in the "Others" category.
+  std::string language_code;
 };
 typedef std::vector<InputLanguage> InputLanguageList;
 
@@ -176,7 +197,8 @@ inline InputLanguageList* CreateFallbackInputLanguageList() {
       InputLanguage(LANGUAGE_CATEGORY_XKB,
                     kFallbackXKBId,
                     kFallbackXKBDisplayName,
-                    "" /* no icon */));
+                    "" /* no icon */,
+                    kFallbackXKBLanguageCode));
   return language_list;
 }
 
