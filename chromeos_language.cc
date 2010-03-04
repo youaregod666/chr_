@@ -46,6 +46,10 @@ const char* kImePropertyKeysBlacklist[] = {
   "status",  // used in m17n.
 };
 
+const char* Or(const char* str1, const char* str2) {
+  return str1 ? str1 : str2;
+}
+
 // Returns true if |key| is blacklisted.
 bool PropertyKeyIsBlacklisted(const char* key) {
   for (size_t i = 0; i < arraysize(kImePropertyKeysBlacklist); ++i) {
@@ -77,6 +81,9 @@ void AddIMELanguages(const GList* engines, chromeos::InputLanguageList* out) {
           chromeos::LANGUAGE_CATEGORY_IME,
           engine_desc->name, engine_desc->longname, engine_desc->icon,
           engine_desc->language));
+      LOG(INFO) << engine_desc->name << " (SUPPORTED)";
+    } else {
+      LOG(INFO) << engine_desc->name << " (not supported)";
     }
     g_object_unref(engine_desc);
   }
@@ -154,6 +161,18 @@ bool ConvertProperty(IBusProperty* ibus_prop,
     is_selection_item_checked = (ibus_prop->state == PROP_STATE_CHECKED);
   }
 
+  if (!ibus_prop->key) {
+    LOG(ERROR) << "key is NULL";
+  }
+  if (ibus_prop->tooltip && (!ibus_prop->tooltip->text)) {
+    LOG(ERROR) << "tooltip is NOT NULL, but tooltip->text IS NULL: key="
+               << Or(ibus_prop->key, "");
+  }
+  if (ibus_prop->label && (!ibus_prop->label->text)) {
+    LOG(ERROR) << "label is NOT NULL, but label->text IS NULL: key="
+               << Or(ibus_prop->key, "");
+  }
+
   // TODO(yusukes): Probably it's better to generate our own label from the key?
   std::string label =
       ((ibus_prop->tooltip &&
@@ -166,7 +185,7 @@ bool ConvertProperty(IBusProperty* ibus_prop,
   if (label.empty()) {
     // ibus-pinyin has a property whose label and tooltip are empty. Fall back
     // to the key.
-    label = ibus_prop->key ? ibus_prop->key : "";
+    label = Or(ibus_prop->key, "");
   }
 
   out_prop_list->push_back(chromeos::ImeProperty(ibus_prop->key,
@@ -317,14 +336,16 @@ std::string PrintProp(IBusProperty *prop, int tree_level) {
 
   std::stringstream stream;
   stream << Spacer(tree_level) << "=========================" << std::endl;
-  stream << Spacer(tree_level) << "key: " << (prop->key ? prop->key : "<none>")
+  stream << Spacer(tree_level) << "key: " << Or(prop->key, "<none>")
          << std::endl;
-  stream << Spacer(tree_level) << "icon: "
-         << (prop->icon ? prop->icon : "<none>") << std::endl;
+  stream << Spacer(tree_level) << "icon: " << Or(prop->icon, "<none>")
+         << std::endl;
   stream << Spacer(tree_level) << "label: "
-         << (prop->label ? prop->label->text : "<none>") << std::endl;
+         << ((prop->label && prop->label->text) ? prop->label->text : "<none>")
+         << std::endl;
   stream << Spacer(tree_level) << "tooptip: "
-         << (prop->tooltip ? prop->tooltip->text : "<none>") << std::endl;
+         << ((prop->tooltip && prop->tooltip->text)
+             ? prop->tooltip->text : "<none>") << std::endl;
   stream << Spacer(tree_level) << "sensitive: "
          << (prop->sensitive ? "YES" : "NO") << std::endl;
   stream << Spacer(tree_level) << "visible: " << (prop->visible ? "YES" : "NO")
@@ -467,8 +488,10 @@ class LanguageStatusConnection {
   InputLanguageList* GetLanguages(GetLanguagesMode mode) {
     GList* engines = NULL;
     if (mode == kActiveLanguages) {
+      LOG(INFO) << "GetLanguages (kActiveLanguages)";
       engines = ibus_bus_list_active_engines(ibus_);
     } else if (mode == kSupportedLanguages) {
+      LOG(INFO) << "GetLanguages (kSupportedLanguages)";
       engines = ibus_bus_list_engines(ibus_);
     } else {
       NOTREACHED();
@@ -695,10 +718,13 @@ class LanguageStatusConnection {
   // Handles "FocusIn" signal from the candidate_window process.
   void FocusIn(const char* input_context_path) {
     DCHECK(input_context_path) << "NULL context passed";
+    if (!input_context_path) {
+      LOG(ERROR) << "NULL context passed";
+    }
     DLOG(INFO) << "FocusIn: " << input_context_path;
 
     // Remember the current ic path.
-    input_context_path_ = input_context_path ? input_context_path : "";
+    input_context_path_ = Or(input_context_path, "");
     UpdateUI();  // This is necessary since IME status is held per ic.
   }
 
