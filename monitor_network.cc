@@ -15,13 +15,19 @@
 
 // Dumps the contents of a single service to the logs.
 void DumpService(const chromeos::ServiceInfo& info) {
-  LOG(INFO) << "  " << info.ssid <<
+  LOG(INFO) << "  " << info.name <<
+               ", Type=" << info.type <<
+               ", Mode=" << info.mode <<
+               ", Security=" << info.security <<
                ", State=" << info.state <<
-               ", Type=" <<info.type <<
+               ", Error=" << info.error <<
+               ", PassphraseRequired=" << info.passphrase_required <<
+               ", Passphrase=" << info.passphrase <<
+               ", Strength=" << info.strength <<
+               ", Favorite=" << info.favorite <<
+               ", AutoConnect=" << info.auto_connect <<
                ", Device=" << info.device_path <<
-               ", Encryption=" << info.encryption <<
-               ", Signal=" << info.signal_strength <<
-               ", Password=" << info.needs_passphrase;
+               ", Service=" << info.service_path;
 }
 
 // Dumps the contents of ServiceStatus to the log.
@@ -78,15 +84,15 @@ int main(int argc, const char** argv) {
   if (devices == -1) {
     LOG(INFO) << "  offline mode";
   } else {
-    if (devices & chromeos::TYPE_ETHERNET)
+    if (devices & (1 << chromeos::TYPE_ETHERNET))
       LOG(INFO) << "  ethernet";
-    if (devices & chromeos::TYPE_WIFI)
+    if (devices & (1 << chromeos::TYPE_WIFI))
       LOG(INFO) << "  wifi";
-    if (devices & chromeos::TYPE_WIMAX)
+    if (devices & (1 << chromeos::TYPE_WIMAX))
       LOG(INFO) << "  wimax";
-    if (devices & chromeos::TYPE_BLUETOOTH)
+    if (devices & (1 << chromeos::TYPE_BLUETOOTH))
       LOG(INFO) << "  bluetooth";
-    if (devices & chromeos::TYPE_CELLULAR)
+    if (devices & (1 << chromeos::TYPE_CELLULAR))
       LOG(INFO) << "  cellular";
   }
 

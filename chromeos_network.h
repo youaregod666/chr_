@@ -9,33 +9,47 @@
 
 namespace chromeos { // NOLINT
 
-// connection types (see connman/include/service.h)
+// Connection enums (see flimflam/files/include/service.h)
 enum ConnectionType {
-  TYPE_UNKNOWN    = 0x00000,
-  TYPE_ETHERNET   = 0x00001,
-  TYPE_WIFI       = 0x00010,
-  TYPE_WIMAX      = 0x00100,
-  TYPE_BLUETOOTH  = 0x01000,
-  TYPE_CELLULAR   = 0x10000,
+  TYPE_UNKNOWN   = 0,
+  TYPE_ETHERNET  = 1,
+  TYPE_WIFI      = 2,
+  TYPE_WIMAX     = 3,
+  TYPE_BLUETOOTH = 4,
+  TYPE_CELLULAR  = 5,
 };
 
-// connection states (see connman/include/service.h)
+enum ConnectionMode {
+  MODE_UNKNOWN = 0,
+  MODE_MANAGED = 1,
+  MODE_ADHOC   = 2,
+};
+
+enum ConnectionSecurity {
+  SECURITY_UNKNOWN = 0,
+  SECURITY_NONE    = 1,
+  SECURITY_WEP     = 2,
+  SECURITY_WPA     = 3,
+  SECURITY_RSN     = 4,
+};
+
 enum ConnectionState {
-  STATE_UNKNOWN,
-  STATE_IDLE,
-  STATE_CARRIER,
-  STATE_ASSOCIATION,
-  STATE_CONFIGURATION,
-  STATE_READY,
-  STATE_DISCONNECT,
-  STATE_FAILURE,
+  STATE_UNKNOWN       = 0,
+  STATE_IDLE          = 1,
+  STATE_CARRIER       = 2,
+  STATE_ASSOCIATION   = 3,
+  STATE_CONFIGURATION = 4,
+  STATE_READY         = 5,
+  STATE_DISCONNECT    = 6,
+  STATE_FAILURE       = 7,
 };
 
-enum EncryptionType {
-  NONE,
-  WEP,
-  WPA,
-  RSN
+enum ConnectionError {
+  ERROR_UNKNOWN        = 0,
+  ERROR_OUT_OF_RANGE   = 1,
+  ERROR_PIN_MISSING    = 2,
+  ERROR_DHCP_FAILED    = 3,
+  ERROR_CONNECT_FAILED = 4,
 };
 
 // ipconfig types (see flimflam/files/doc/ipconfig-api.txt
@@ -51,13 +65,19 @@ enum IPConfigType {
 };
 
 struct ServiceInfo {
-  const char* ssid;
-  const char* device_path;
+  const char* service_path;
+  const char* name;
   ConnectionType type;
+  ConnectionMode mode;
+  ConnectionSecurity security;
   ConnectionState state;
-  int64 signal_strength;
-  bool needs_passphrase;
-  EncryptionType encryption;
+  ConnectionError error;
+  bool passphrase_required;
+  const char* passphrase;
+  int64 strength;
+  bool favorite;
+  bool auto_connect;
+  const char* device_path;
 };
 
 struct ServiceStatus {
@@ -83,21 +103,17 @@ struct IPConfigStatus {
   int size;
 };
 
-// Connects to a given ssid.
+// Connects to the network with the |service_path|.
 //
-// Set passphrase to NULL if the network doesn't require authentication.
-//
-// Set encryption to NULL if the network doesn't require authentication
-// otherwise we will use 'rsn' as the default.
+// Set |passphrase| to NULL if the network doesn't require authentication.
 //
 // returns false on failure and true on success.
 //
 // Note, a successful call to this function only indicates that the
 // connection process has started. You will have to query the connection state
 // to determine if the connection was established successfully.
-extern bool (*ConnectToWifiNetwork)(const char* ssid,
-                                    const char* passphrase,
-                                    const char* encryption);
+extern bool (*ConnectToNetwork)(const char* service_path,
+                                const char* passphrase);
 
 // Returns a list of all of the available services that a user can connect to.
 // The ServiceStatus instance that is returned by this function MUST be
@@ -131,7 +147,9 @@ extern NetworkStatusConnection (*MonitorNetworkStatus)(NetworkMonitor, void*);
 // Disconnects a NetworkStatusConnection.
 extern void (*DisconnectNetworkStatus)(NetworkStatusConnection connection);
 
-// Returns the enabled network devices as a bitwise or value of ConnectionTypes.
+// Returns the enabled network devices as a bitwise OR value of ConnectionTypes.
+// Each bit represents whether or not that ConnectionType is enabled.
+// For example, the bit representing TYPE_WIFI is (1 << TYPE_WIFI)
 //
 // Returns 0 if no devices are enabled.
 // Returns -1 if offline mode, by definition, means all devices are disabled.
@@ -152,19 +170,6 @@ extern IPConfigStatus* (*ListIPConfigs)(const char* device_path);
 
 // Add a IPConfig of the given type to the device
 extern bool (*AddIPConfig)(const char* device_path, IPConfigType type);
-
-// Sets a property of the IPConfig
-// Address Mtu PrefixLen Broadcast PeerAddress Gateway DomainName
-extern bool (*SetIPConfigProperty)(IPConfig* config,
-                                   const char* key,
-                                   const char* value);
-
-// Gets a property of this Ip address.  Valid keys are:
-// Address Mtu PrefixLen Broadcast PeerAddress Gateway DomainName
-extern bool (*GetIPConfigProperty)(IPConfig* config,
-                                   const char* key,
-                                   char* val,
-                                   size_t valsz);
 
 // Save the IP config data
 extern bool (*SaveIPConfig)(IPConfig* config);

@@ -54,12 +54,13 @@
 //  6: Deprecated GetIPConfigProperty and SetIPConfigProperty.
 //  7: Added a member to InputLanguageList struct (backward incompatible).
 //  8: Added LanguageStatusConnectionIsAlive API.
+//  9: Added ConnectToNetwork and refactored code (backward incompatible).
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 7,
-  kCrosAPIVersion = 8
+  kCrosAPIMinVersion = 9,
+  kCrosAPIVersion = 9
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

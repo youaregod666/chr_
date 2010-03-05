@@ -14,7 +14,9 @@ bool LoadCrosLibrary(const char** argv) {
   app_path.erase(app_path.begin() + app_path.find_last_of("/"), app_path.end());
   app_path += "/libcros.so";
 
-  bool success = chromeos::LoadCros(app_path.c_str());
-  DCHECK(success) << "LoadCros('" << app_path.c_str() << "') failed.";
+  std::string error_string = std::string();
+  bool success = chromeos::LoadLibcros(app_path.c_str(), error_string);
+  DCHECK(success) << "LoadLibcros('" << app_path.c_str() << "') failed: "
+                  << error_string;
   return true;
 }

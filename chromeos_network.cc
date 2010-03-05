@@ -20,75 +20,201 @@ namespace chromeos {  // NOLINT
 namespace { // NOLINT
 
 // Connman D-Bus service identifiers.
-const char* kConnmanManagerInterface = "org.moblin.connman.Manager";
-const char* kConnmanServiceInterface = "org.moblin.connman.Service";
-const char* kConnmanServiceName = "org.moblin.connman";
-const char* kConnmanIPConfigInterface = "org.moblin.connman.IPConfig";
-const char* kConnmanDeviceInterface = "org.moblin.connman.Device";
+static const char* kConnmanManagerInterface = "org.moblin.connman.Manager";
+static const char* kConnmanServiceInterface = "org.moblin.connman.Service";
+static const char* kConnmanServiceName = "org.moblin.connman";
+static const char* kConnmanIPConfigInterface = "org.moblin.connman.IPConfig";
+static const char* kConnmanDeviceInterface = "org.moblin.connman.Device";
 
 // Connman function names.
-const char* kGetPropertiesFunction = "GetProperties";
-const char* kSetPropertyFunction = "SetProperty";
-const char* kConnectServiceFunction = "ConnectService";
-const char* kEnableTechnologyFunction = "EnableTechnology";
-const char* kDisableTechnologyFunction = "DisableTechnology";
-const char* kAddIPConfigFunction = "AddIPConfig";
-const char* kRemoveConfigFunction = "Remove";
+static const char* kGetPropertiesFunction = "GetProperties";
+static const char* kSetPropertyFunction = "SetProperty";
+static const char* kConnectFunction = "Connect";
+static const char* kEnableTechnologyFunction = "EnableTechnology";
+static const char* kDisableTechnologyFunction = "DisableTechnology";
+static const char* kAddIPConfigFunction = "AddIPConfig";
+static const char* kRemoveConfigFunction = "Remove";
 
 // Connman property names.
-const char* kEncryptionProperty = "Security";
-const char* kPassphraseRequiredProperty = "PassphraseRequired";
-const char* kServicesProperty = "Services";
-const char* kEnabledTechnologiesProperty = "EnabledTechnologies";
-const char* kOfflineModeProperty = "OfflineMode";
-const char* kSignalStrengthProperty = "Strength";
-const char* kSsidProperty = "Name";
-const char* kStateProperty = "State";
-const char* kTypeProperty = "Type";
-const char* kUnknownString = "UNKNOWN";
-const char* kIPConfigsProperty = "IPConfigs";
-const char* kDeviceProperty = "Device";
+static const char* kSecurityProperty = "Security";
+static const char* kPassphraseProperty = "Passphrase";
+static const char* kPassphraseRequiredProperty = "PassphraseRequired";
+static const char* kServicesProperty = "Services";
+static const char* kEnabledTechnologiesProperty = "EnabledTechnologies";
+static const char* kOfflineModeProperty = "OfflineMode";
+static const char* kSignalStrengthProperty = "Strength";
+static const char* kNameProperty = "Name";
+static const char* kStateProperty = "State";
+static const char* kTypeProperty = "Type";
+static const char* kUnknownString = "UNKNOWN";
+static const char* kIPConfigsProperty = "IPConfigs";
+static const char* kDeviceProperty = "Device";
+static const char* kFavoriteProperty = "Favorite";
+static const char* kAutoConnectProperty = "AutoConnect";
+static const char* kModeProperty = "Mode";
+static const char* kErrorProperty = "Error";
 
 // Connman type options.
-const char* kTypeEthernet = "ethernet";
-const char* kTypeWifi = "wifi";
-const char* kTypeWimax = "wimax";
-const char* kTypeBluetooth = "bluetooth";
-const char* kTypeCellular = "cellular";
+static const char* kTypeEthernet = "ethernet";
+static const char* kTypeWifi = "wifi";
+static const char* kTypeWimax = "wimax";
+static const char* kTypeBluetooth = "bluetooth";
+static const char* kTypeCellular = "cellular";
+
+// Connman mode options.
+static const char* kModeManaged = "managed";
+static const char* kModeAdhoc = "adhoc";
+
+// Connman security options.
+static const char* kSecurityWpa = "wpa";
+static const char* kSecurityWep = "wep";
+static const char* kSecurityRsn = "rsn";
+static const char* kSecurityNone = "none";
 
 // Connman state options.
-const char* kStateIdle = "idle";
-const char* kStateCarrier = "carrier";
-const char* kStateAssociation = "association";
-const char* kStateConfiguration = "configuration";
-const char* kStateReady = "ready";
-const char* kStateDisconnect = "disconnect";
-const char* kStateFailure = "failure";
+static const char* kStateIdle = "idle";
+static const char* kStateCarrier = "carrier";
+static const char* kStateAssociation = "association";
+static const char* kStateConfiguration = "configuration";
+static const char* kStateReady = "ready";
+static const char* kStateDisconnect = "disconnect";
+static const char* kStateFailure = "failure";
 
-// Connman encryption options.
-const char* kWpaEnabled = "wpa";
-const char* kWepEnabled = "wep";
-const char* kRsnEnabled = "rsn";
+// Connman error options.
+static const char* kErrorOutOfRange = "out-of-range";
+static const char* kErrorPinMissing = "pin-missing";
+static const char* kErrorDhcpFailed = "dhcp-failed";
+static const char* kErrorConnectFailed = "connect-failed";
 
 // IPConfig property names.
-const char* kMethodProperty = "Method";
-const char* kAddressProperty = "Address";
-const char* kMtuProperty = "Mtu";
-const char* kPrefixlenProperty = "Prefixlen";
-const char* kBroadcastProperty = "Broadcast";
-const char* kPeerAddressProperty = "PeerAddress";
-const char* kGatewayProperty = "Gateway";
-const char* kDomainNameProperty = "DomainName";
-const char* kNameServersProperty = "NameServers";
+static const char* kMethodProperty = "Method";
+static const char* kAddressProperty = "Address";
+static const char* kMtuProperty = "Mtu";
+static const char* kPrefixlenProperty = "Prefixlen";
+static const char* kBroadcastProperty = "Broadcast";
+static const char* kPeerAddressProperty = "PeerAddress";
+static const char* kGatewayProperty = "Gateway";
+static const char* kDomainNameProperty = "DomainName";
+static const char* kNameServersProperty = "NameServers";
 
 // IPConfig type options.
-const char* kTypeIPv4 = "ipv4";
-const char* kTypeIPv6 = "ipv6";
-const char* kTypeDHCP = "dhcp";
-const char* kTypeBOOTP = "bootp";
-const char* kTypeZeroConf = "zeroconf";
-const char* kTypeDHCP6 = "dhcp6";
-const char* kTypePPP = "ppp";
+static const char* kTypeIPv4 = "ipv4";
+static const char* kTypeIPv6 = "ipv6";
+static const char* kTypeDHCP = "dhcp";
+static const char* kTypeBOOTP = "bootp";
+static const char* kTypeZeroConf = "zeroconf";
+static const char* kTypeDHCP6 = "dhcp6";
+static const char* kTypePPP = "ppp";
+
+static ConnectionType ParseType(const std::string& type) {
+  if (type == kTypeEthernet)
+    return TYPE_ETHERNET;
+  if (type == kTypeWifi)
+    return TYPE_WIFI;
+  if (type == kTypeWimax)
+    return TYPE_WIMAX;
+  if (type == kTypeBluetooth)
+    return TYPE_BLUETOOTH;
+  if (type == kTypeCellular)
+    return TYPE_CELLULAR;
+  return TYPE_UNKNOWN;
+}
+
+static const char* TypeToString(ConnectionType type) {
+  switch (type) {
+    case TYPE_UNKNOWN:
+      break;
+    case TYPE_ETHERNET:
+      return kTypeEthernet;
+    case TYPE_WIFI:
+      return kTypeWifi;
+    case TYPE_WIMAX:
+      return kTypeWimax;
+    case TYPE_BLUETOOTH:
+      return kTypeBluetooth;
+    case TYPE_CELLULAR:
+      return kTypeCellular;
+  }
+  return kUnknownString;
+}
+
+static ConnectionMode ParseMode(const std::string& mode) {
+  if (mode == kModeManaged)
+    return MODE_MANAGED;
+  if (mode == kModeAdhoc)
+    return MODE_ADHOC;
+  return MODE_UNKNOWN;
+}
+/*
+static const char* ModeToString(ConnectionMode mode) {
+  switch (mode) {
+    case MODE_UNKNOWN:
+      break;
+    case MODE_MANAGED:
+      return kModeManaged;
+    case MODE_ADHOC:
+      return kModeAdhoc;
+  }
+  return kUnknownString;
+}
+*/
+static ConnectionSecurity ParseSecurity(const std::string& security) {
+  if (security == kSecurityRsn)
+    return SECURITY_RSN;
+  if (security == kSecurityWpa)
+    return SECURITY_WPA;
+  if (security == kSecurityWep)
+    return SECURITY_WEP;
+  if (security == kSecurityNone)
+    return SECURITY_NONE;
+  return SECURITY_UNKNOWN;
+}
+/*
+static const char* SecurityToString(ConnectionSecurity security) {
+  switch (security) {
+    case SECURITY_UNKNOWN:
+      break;
+    case SECURITY_RSN:
+      return kSecurityRsn;
+    case SECURITY_WPA:
+      return kSecurityWpa;
+    case SECURITY_WEP:
+      return kSecurityWep;
+    case SECURITY_NONE:
+      return kSecurityNone;
+  }
+  return kUnknownString;
+}
+*/
+static ConnectionState ParseState(const std::string& state) {
+  if (state == kStateIdle)
+    return STATE_IDLE;
+  if (state == kStateCarrier)
+    return STATE_CARRIER;
+  if (state == kStateAssociation)
+    return STATE_ASSOCIATION;
+  if (state == kStateConfiguration)
+    return STATE_CONFIGURATION;
+  if (state == kStateReady)
+    return STATE_READY;
+  if (state == kStateDisconnect)
+    return STATE_DISCONNECT;
+  if (state == kStateFailure)
+    return STATE_FAILURE;
+  return STATE_UNKNOWN;
+}
+
+static ConnectionError ParseError(const std::string& error) {
+  if (error == kErrorOutOfRange)
+    return ERROR_OUT_OF_RANGE;
+  if (error == kErrorPinMissing)
+    return ERROR_PIN_MISSING;
+  if (error == kErrorDhcpFailed)
+    return ERROR_DHCP_FAILED;
+  if (error == kErrorConnectFailed)
+    return ERROR_CONNECT_FAILED;
+  return ERROR_UNKNOWN;
+}
 
 // Invokes the given method on the proxy and stores the result
 // in the ScopedHashTable. The hash table will map strings to glib values.
@@ -108,83 +234,73 @@ bool GetProperties(const dbus::Proxy& proxy, glib::ScopedHashTable* result) {
   return true;
 }
 
-ConnectionType ParseType(const std::string& type) {
-  if (type == kTypeEthernet)
-    return TYPE_ETHERNET;
-  if (type == kTypeWifi)
-    return TYPE_WIFI;
-  if (type == kTypeWimax)
-    return TYPE_WIMAX;
-  if (type == kTypeBluetooth)
-    return TYPE_BLUETOOTH;
-  if (type == kTypeCellular)
-    return TYPE_CELLULAR;
-  return TYPE_UNKNOWN;
-}
-
-ConnectionState ParseState(const std::string& state) {
-  if (state == kStateIdle)
-    return STATE_IDLE;
-  if (state == kStateCarrier)
-    return STATE_CARRIER;
-  if (state == kStateAssociation)
-    return STATE_ASSOCIATION;
-  if (state == kStateConfiguration)
-    return STATE_CONFIGURATION;
-  if (state == kStateReady)
-    return STATE_READY;
-  if (state == kStateDisconnect)
-    return STATE_DISCONNECT;
-  if (state == kStateFailure)
-    return STATE_FAILURE;
-  return STATE_UNKNOWN;
-}
-
-EncryptionType ParseEncryptionType(const std::string& encryption) {
-  if (encryption == kRsnEnabled)
-    return RSN;
-  if (encryption == kWpaEnabled)
-    return WPA;
-  if (encryption == kWepEnabled)
-    return WEP;
-  return NONE;
-}
-
 // Populates an instance of a ServiceInfo with the properties
 // from a Connman service.
 void ParseServiceProperties(const glib::ScopedHashTable& properties,
                             ServiceInfo* info) {
+  // Name
   const char* default_string = kUnknownString;
+  properties.Retrieve(kNameProperty, &default_string);
+  info->name = NewStringCopy(default_string);
+
+  // Type
+  default_string = kUnknownString;
   properties.Retrieve(kTypeProperty, &default_string);
   info->type = ParseType(default_string);
 
+  // Mode
   default_string = kUnknownString;
-  properties.Retrieve(kSsidProperty, &default_string);
-  info->ssid = NewStringCopy(default_string);
+  properties.Retrieve(kModeProperty, &default_string);
+  info->mode = ParseMode(default_string);
 
+  // Security
+  default_string = kSecurityNone;
+  properties.Retrieve(kSecurityProperty, &default_string);
+  info->security = ParseSecurity(default_string);
+
+  // State
+  default_string = kUnknownString;
+  properties.Retrieve(kStateProperty, &default_string);
+  info->state = ParseState(default_string);
+
+  // Error
+  default_string = kUnknownString;
+  properties.Retrieve(kErrorProperty, &default_string);
+  info->error = ParseError(default_string);
+
+  // PassphraseRequired
+  bool default_bool = false;
+  properties.Retrieve(kPassphraseRequiredProperty, &default_bool);
+  info->passphrase_required = default_bool;
+
+  // Passphrase
+  default_string = "";
+  properties.Retrieve(kPassphraseProperty, &default_string);
+  info->passphrase = NewStringCopy(default_string);
+
+  // Strength
+  uint8 default_uint8 = 0;
+  properties.Retrieve(kSignalStrengthProperty, &default_uint8);
+  info->strength = default_uint8;
+
+  // Favorite
+  default_bool = false;
+  properties.Retrieve(kFavoriteProperty, &default_bool);
+  info->favorite = default_bool;
+
+  // AutoConnect
+  default_bool = false;
+  properties.Retrieve(kAutoConnectProperty, &default_bool);
+  info->auto_connect = default_bool;
+
+  // Device
   glib::Value val;
   if (properties.Retrieve(kDeviceProperty, &val)) {
     const gchar* path = static_cast<const gchar*>(g_value_get_boxed (&val));
     info->device_path = NewStringCopy(path);
   } else {
-    info->device_path = NULL;
+    info->device_path = NewStringCopy(kUnknownString);
   }
-
-  default_string = kUnknownString;
-  properties.Retrieve(kStateProperty, &default_string);
-  info->state = ParseState(default_string);
-
-  default_string = kUnknownString;
-  properties.Retrieve(kEncryptionProperty, &default_string);
-  info->encryption = ParseEncryptionType(default_string);
-
-  bool default_bool = false;
-  properties.Retrieve(kPassphraseRequiredProperty, &default_bool);
-  info->needs_passphrase = default_bool;
-
-  uint8 default_uint8 = 0;
-  properties.Retrieve(kSignalStrengthProperty, &default_uint8);
-  info->signal_strength = default_uint8;
 }
 
 // Returns a ServiceInfo object populated with data from a
@@ -199,6 +315,7 @@ bool ParseServiceInfo(const char* path, ServiceInfo *info) {
   glib::ScopedHashTable service_properties;
   if (!GetProperties(service_proxy, &service_properties))
     return false;
+  info->service_path = NewStringCopy(path);
   ParseServiceProperties(service_properties, info);
   return true;
 }
@@ -219,10 +336,19 @@ ServiceStatus* CopyFromVector(const std::vector<ServiceInfo>& services) {
 
 // Deletes all of the heap allocated members of a given ServiceInfo instance.
 void DeleteServiceInfoProperties(ServiceInfo info) {
-  delete info.ssid;
-  if (info.device_path) {
+  if (info.service_path)
+    delete info.service_path;
+  if (info.name)
+    delete info.name;
+  if (info.passphrase)
+    delete info.passphrase;
+  if (info.device_path)
     delete info.device_path;
-  }
+
+  info.service_path = NULL;
+  info.name = NULL;
+  info.passphrase = NULL;
+  info.device_path = NULL;
 }
 
 ServiceStatus* GetServiceStatus(const GPtrArray* array) {
@@ -499,23 +625,6 @@ bool ChromeOSAddIPConfig(const char* device_path, IPConfigType type) {
   return true;
 }
 
-// DEPRECATED: need to remove.
-extern "C"
-bool ChromeOSSetIPConfigProperty(IPConfig* config,
-                                 const char* key,
-                                 const char* value) {
-  return true;
-}
-
-// DEPRECATED: need to remove.
-extern "C"
-bool ChromeOSGetIPConfigProperty(IPConfig* config,
-                                 const char* key,
-                                 char* val,
-                                 size_t valsz) {
-  return true;
-}
-
 extern "C"
 bool ChromeOSSaveIPConfig(IPConfig* config) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -621,58 +730,40 @@ void ChromeOSDisconnectNetworkStatus(NetworkStatusConnection connection) {
 }
 
 extern "C"
-bool ChromeOSConnectToWifiNetwork(const char* ssid,
-                                  const char* passphrase,
-                                  const char* encryption) {
-  if (ssid == NULL)
-    return false;
-
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy manager_proxy(bus,
+bool ChromeOSConnectToNetwork(const char* service_path,
+                              const char* passphrase) {
+  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
                             kConnmanServiceName,
-                            "/",
-                            kConnmanManagerInterface);
+                            service_path,
+                            kConnmanServiceInterface);
 
-  glib::ScopedHashTable scoped_properties =
-      glib::ScopedHashTable(
-          ::g_hash_table_new_full(::g_str_hash,
-                                  ::g_str_equal,
-                                  ::g_free,
-                                  NULL));
-
-  glib::Value value_mode("managed");
-  glib::Value value_type("wifi");
-  glib::Value value_ssid(ssid);
-  glib::Value value_security(encryption == NULL ? "rsn" : encryption);
-  glib::Value value_passphrase(passphrase == NULL ? "" : passphrase);
-
-  ::GHashTable* properties = scoped_properties.get();
-  ::g_hash_table_insert(properties, ::g_strdup("Mode"), &value_mode);
-  ::g_hash_table_insert(properties, ::g_strdup("Type"), &value_type);
-  ::g_hash_table_insert(properties, ::g_strdup("SSID"), &value_ssid);
-  ::g_hash_table_insert(properties, ::g_strdup("Security"), &value_security);
-
-  // Connman will overwrite any passphrase that it remembers with the value
-  // sent via d-bus. So Passphrase needs to be omitted when reconnecting.
-  if (passphrase != NULL) {
-    ::g_hash_table_insert(properties, ::g_strdup("Passphrase"),
-        &value_passphrase);
+  // Set passphrase if non-null.
+  if (passphrase) {
+    glib::Value value_passphrase(passphrase);
+    glib::ScopedError error;
+    if (!::dbus_g_proxy_call(service_proxy.gproxy(),
+                             kSetPropertyFunction,
+                             &Resetter(&error).lvalue(),
+                             G_TYPE_STRING,
+                             kPassphraseProperty,
+                             G_TYPE_VALUE,
+                             &value_passphrase,
+                             G_TYPE_INVALID,
+                             G_TYPE_INVALID)) {
+      LOG(WARNING) << "ConnectToNetwork failed on set passphrase: "
+          << (error->message ? error->message : "Unknown Error.");
+      return false;
+    }
   }
 
+  // Now try connecting.
   glib::ScopedError error;
-  ::DBusGProxy obj;
-  if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
-                           kConnectServiceFunction,
+  if (!::dbus_g_proxy_call(service_proxy.gproxy(),
+                           kConnectFunction,
                            &Resetter(&error).lvalue(),
-                           ::dbus_g_type_get_map("GHashTable",
-                                                 G_TYPE_STRING,
-                                                 G_TYPE_VALUE),
-                           properties,
                            G_TYPE_INVALID,
-                           DBUS_TYPE_G_PROXY,
-                           &obj,
                            G_TYPE_INVALID)) {
-    LOG(WARNING) << "ConnectService failed: "
+    LOG(WARNING) << "ConnectToNetwork failed: "
         << (error->message ? error->message : "Unknown Error.");
     return false;
   }
@@ -732,7 +823,8 @@ int ChromeOSGetEnabledNetworkDevices() {
   gchar** value =
       static_cast<gchar**>(g_value_get_boxed(static_cast<GValue*>(ptr)));
   while (*value) {
-    devices |= ParseType(*value);
+    // Bitwise OR with a bit left-shifted by the enum ConnectionType value.
+    devices |= 1 << ParseType(*value);
     value++;
   }
   return devices;
@@ -745,31 +837,12 @@ bool ChromeOSEnableNetworkDevice(ConnectionType type, bool enable) {
                             kConnmanServiceName,
                             "/",
                             kConnmanManagerInterface);
-
-  gchar* device;
-  switch (type) {
-    case TYPE_ETHERNET:
-      device = ::g_strdup(kTypeEthernet);
-      break;
-    case TYPE_WIFI:
-      device = ::g_strdup(kTypeWifi);
-      break;
-    case TYPE_WIMAX:
-      device = ::g_strdup(kTypeWimax);
-      break;
-    case TYPE_BLUETOOTH:
-      device = ::g_strdup(kTypeBluetooth);
-      break;
-    case TYPE_CELLULAR:
-      device = ::g_strdup(kTypeCellular);
-      break;
-    case TYPE_UNKNOWN:
-    default:
-      LOG(WARNING) << "EnableNetworkDevice called with an unknown type: "
-          << type;
-      return false;
+  if (type == TYPE_UNKNOWN) {
+    LOG(WARNING) << "EnableNetworkDevice called with an unknown type: " << type;
+    return false;
   }
 
+  gchar* device = ::g_strdup(TypeToString(type));
   glib::ScopedError error;
   if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
                            enable ? kEnableTechnologyFunction :
