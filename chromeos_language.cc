@@ -8,6 +8,7 @@
 #include <dbus/dbus-glib-lowlevel.h>  // for dbus_g_connection_get_connection.
 
 #include <algorithm>  // for std::sort.
+#include <cstring>  // for std::strcmp.
 #include <sstream>
 #include <stack>
 #include <utility>
@@ -71,6 +72,17 @@ bool ImeIdIsWhitelisted(const char* ime_id) {
   return false;
 }
 
+// Frees IME names in |engines| and the list itself. Please make sure that
+// |engines| points the head of the list.
+void FreeIMELanguages(GList* engines) {
+  if (engines) {
+    for (GList* cursor = engines; cursor; cursor = g_list_next(cursor)) {
+      g_object_unref(IBUS_ENGINE_DESC(cursor->data));
+    }
+    g_list_free(engines);
+  }
+}
+
 // Copies IME names in |engines| to |out|.
 void AddIMELanguages(const GList* engines, chromeos::InputLanguageList* out) {
   DCHECK(out);
@@ -85,7 +97,6 @@ void AddIMELanguages(const GList* engines, chromeos::InputLanguageList* out) {
     } else {
       LOG(INFO) << engine_desc->name << " (not supported)";
     }
-    g_object_unref(engine_desc);
   }
 }
 
@@ -391,7 +402,6 @@ class LanguageStatusConnection {
       : monitor_functions_(monitor_functions),
         language_library_(language_library),
         ibus_(NULL),
-        ibus_config_(NULL),
         input_context_path_("") {
     DCHECK(monitor_functions_.current_language);
     DCHECK(monitor_functions_.register_ime_properties);
@@ -400,13 +410,24 @@ class LanguageStatusConnection {
   }
 
   ~LanguageStatusConnection() {
-    // Close IBus and DBus connections.
-    if (ibus_config_) {
-      g_object_unref(ibus_config_);
-    }
+    // Destruct IBus object.
     if (ibus_) {
+      // Since the connection which ibus_ has is a "shared connection". We
+      // should not close the connection. Just call g_object_unref.
       g_object_unref(ibus_);
     }
+
+    // Close |dbus_connection_| since the connection is "private connection" and
+    // we know |this| is the only instance which uses the |dbus_connection_|.
+    // Otherwise, we may see an error message from dbus library like "The last
+    // reference on a connection was dropped without closing the connection."
+    DBusConnection* raw_connection
+          = dbus_g_connection_get_connection(dbus_connection_->g_connection());
+    if (raw_connection) {
+      ::dbus_connection_close(raw_connection);
+    }
+
+    // |dbus_connection_| and |dbus_proxy_| will be destructed by ~scoped_ptr().
   }
 
   // Initializes IBus and DBus connections.
@@ -423,20 +444,6 @@ class LanguageStatusConnection {
     }
     if (!ibus_bus_is_connected(ibus_)) {
       LOG(ERROR) << "ibus_bus_is_connected() failed";
-      return false;
-    }
-
-    // Get the IBus connection, which is owned by ibus_.
-    IBusConnection* ibus_connection = ibus_bus_get_connection(ibus_);
-    if (!ibus_connection) {
-      LOG(ERROR) << "ibus_bus_get_connection() failed";
-      return false;
-    }
-
-    // Create the IBus config.
-    ibus_config_ = ibus_config_new(ibus_connection);
-    if (!ibus_config_) {
-      LOG(ERROR) << "ibus_bus_config_new() failed";
       return false;
     }
 
@@ -468,12 +475,13 @@ class LanguageStatusConnection {
         &LanguageStatusConnection::DispatchSignalFromCandidateWindow,
         this, NULL);
 
-    // TODO(yusukes): Investigate what happens if IBus/DBus connections are
-    // suddenly closed.
     // TODO(yusukes): Investigate what happens if candidate_window process is
     // restarted. I'm not sure but we should use dbus_g_proxy_new_for_name(),
     // not dbus_g_proxy_new_for_name_owner()?
-
+    // TODO(yusukes): Investigate if we can automatically restart ibus-gconf,
+    // candidate_window, (and ibus-x11?) processes when they die. Upstart only
+    // takes care of respawning the ibus-daemon process.
+    
     return true;
   }
 
@@ -505,9 +513,7 @@ class LanguageStatusConnection {
     AddXKBLayouts(language_list);
     std::sort(language_list->begin(), language_list->end());
 
-    if (engines) {
-      g_list_free(engines);
-    }
+    FreeIMELanguages(engines);
     return language_list;
   }
 
@@ -569,7 +575,7 @@ class LanguageStatusConnection {
 
   // Called by cros API ChromeOSActivateLanguage().
   bool UpdateIME(UpdateMode mode, const char* ime_name) {
-    GList* engines = ibus_bus_list_active_engines(ibus_);
+    GList* const engines = ibus_bus_list_active_engines(ibus_);
 
     // Convert |engines| to a GValueArray of names.
     GValueArray* engine_names = g_value_array_new(0);
@@ -577,13 +583,15 @@ class LanguageStatusConnection {
       IBusEngineDesc* engine_desc = IBUS_ENGINE_DESC(cursor->data);
       // Skip the IME if the mode is to deactivate and it matches the given
       // name.
-      if (mode == kDeactivate && strcmp(engine_desc->name, ime_name) == 0) {
+      if (mode == kDeactivate &&
+          std::strcmp(engine_desc->name, ime_name) == 0) {
         continue;
       }
       GValue name_value = { 0 };
       g_value_init(&name_value, G_TYPE_STRING);
       g_value_set_string(&name_value, engine_desc->name);
       g_value_array_append(engine_names, &name_value);
+      g_value_unset(&name_value);
     }
 
     if (mode == kActivate) {
@@ -593,20 +601,20 @@ class LanguageStatusConnection {
       g_value_set_string(&name_value, ime_name);
       // Prepend to add the new IME as the first choice.
       g_value_array_prepend(engine_names, &name_value);
+      g_value_unset(&name_value);
     }
 
     // Make the array into a GValue.
     GValue value = { 0 };
     g_value_init(&value, G_TYPE_VALUE_ARRAY);
     g_value_take_boxed(&value, engine_names);
+    // We don't have to unref |engine_names| any more.
 
     // Set the config value.
     const bool success = SetImeConfig("general", "preload_engines", &value);
     g_value_unset(&value);
-    if (engines) {
-      g_list_free(engines);
-    }
 
+    FreeIMELanguages(engines);
     return success;
   }
 
@@ -657,10 +665,17 @@ class LanguageStatusConnection {
                     GValue* gvalue) {
     DCHECK(section);
     DCHECK(config_name);
-    const gboolean success = ibus_config_get_value(ibus_config_,
+
+    IBusConfig* ibus_config = CreateConfigObject();
+    g_return_val_if_fail(ibus_config, false);
+
+    // TODO(yusukes): make sure the get_value() function does not abort even
+    // when the ibus-gconf process does not exist.
+    const gboolean success = ibus_config_get_value(ibus_config,
                                                    section,
                                                    config_name,
                                                    gvalue);
+    g_object_unref(ibus_config);
     return (success == TRUE);
   }
 
@@ -674,14 +689,52 @@ class LanguageStatusConnection {
                     const GValue* gvalue) {
     DCHECK(section);
     DCHECK(config_name);
-    const gboolean success = ibus_config_set_value(ibus_config_,
+
+    IBusConfig* ibus_config = CreateConfigObject();
+    g_return_val_if_fail(ibus_config, false);
+    const gboolean success = ibus_config_set_value(ibus_config,
                                                    section,
                                                    config_name,
                                                    gvalue);
+    g_object_unref(ibus_config);
     return (success == TRUE);
   }
 
+  // Checks if IBus and X server (XKB) connections are alive.
+  bool ConnectionIsAlive() {
+    // TODO(yusukes): check X server (XKB) connection.
+
+    // Note: Since the IBus connection automatically recovers even if
+    // ibus-daemon reboots, ibus_bus_is_connected() usually returns true.
+    return (ibus_ && (ibus_bus_is_connected(ibus_) == TRUE)) ? true : false;
+  }
+  
  private:
+  // Creates IBusConfig object. Caller have to call g_object_unref() for the
+  // returned object.
+  IBusConfig* CreateConfigObject() {
+    // Get the IBus connection which is owned by ibus_. ibus_bus_get_connection
+    // nor ibus_config_new don't ref() the |ibus_connection| object. This means
+    // that the |ibus_connection| object could be destructed, regardless of
+    // whether an IBusConfig object exists, when ibus-daemon reboots. For this
+    // reason, it seems to be safer to create IBusConfig object every time
+    // using a fresh pointer which is returned from ibus_bus_get_connection(),
+    // rather than holding it as a member varibale of this class.
+    IBusConnection* ibus_connection = ibus_bus_get_connection(ibus_);
+    if (!ibus_connection) {
+      LOG(ERROR) << "ibus_bus_get_connection() failed";
+      return NULL;
+    }
+    
+    IBusConfig* ibus_config = ibus_config_new(ibus_connection);
+    if (!ibus_config) {
+      LOG(ERROR) << "ibus_config_new() failed";
+      return NULL;
+    }
+
+    return ibus_config;
+  }
+
   // Changes the current language to |name|, which is XKB layout.
   void SwitchToXKB(const char* name) {
     // TODO(yusukes): implement XKB switching.
@@ -736,8 +789,6 @@ class LanguageStatusConnection {
 
   // Handles "StateChanged" signal from the candidate_window process.
   void StateChanged() {
-    // TODO(yusukes): Modify common/chromeos/dbus/dbus.h so that we can handle
-    // signals without argument. Then remove the |dummy|.
     DLOG(INFO) << "StateChanged";
     UpdateUI();
   }
@@ -799,6 +850,7 @@ class LanguageStatusConnection {
           = ibus_input_context_get_engine(context);
       DCHECK(engine_desc);
       if (!engine_desc) {
+        g_object_unref(context);
         return;
       }
       current_language = InputLanguage(LANGUAGE_CATEGORY_IME,
@@ -936,7 +988,6 @@ class LanguageStatusConnection {
 
   // Connections to IBus and DBus.
   IBusBus* ibus_;
-  IBusConfig* ibus_config_;
   scoped_ptr<dbus::BusConnection> dbus_connection_;
   scoped_ptr<dbus::Proxy> dbus_proxy_;
 
@@ -973,8 +1024,8 @@ void ChromeOSDisconnectLanguageStatus(LanguageStatusConnection* connection) {
 }
 
 extern "C"
-InputLanguageList* ChromeOSGetActiveLanguages(LanguageStatusConnection*
-                                              connection) {
+InputLanguageList* ChromeOSGetActiveLanguages(
+    LanguageStatusConnection* connection) {
   g_return_val_if_fail(connection, NULL);
   // Pass ownership to a caller. Note: GetLanguages() might return NULL.
   return connection->GetLanguages(
@@ -982,8 +1033,8 @@ InputLanguageList* ChromeOSGetActiveLanguages(LanguageStatusConnection*
 }
 
 extern "C"
-InputLanguageList* ChromeOSGetSupportedLanguages(LanguageStatusConnection*
-                                                 connection) {
+InputLanguageList* ChromeOSGetSupportedLanguages(
+    LanguageStatusConnection* connection) {
   g_return_val_if_fail(connection, NULL);
   // Pass ownership to a caller. Note: GetLanguages() might return NULL.
   return connection->GetLanguages(
@@ -1140,6 +1191,16 @@ bool ChromeOSSetImeConfig(LanguageStatusConnection* connection,
   g_value_unset(&gvalue);
 
   return success;
+}
+
+extern "C"
+bool ChromeOSLanguageStatusConnectionIsAlive(
+    LanguageStatusConnection* connection) {
+  g_return_val_if_fail(connection, false);
+  const bool is_connected = connection->ConnectionIsAlive();
+  DLOG(INFO) << "ChromeOSLanguageStatusConnectionIsAlive: "
+             << (is_connected ? "" : "NOT ") << "alive";
+  return is_connected;
 }
 
 }  // namespace chromeos

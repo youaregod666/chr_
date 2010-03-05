@@ -255,6 +255,21 @@ int main(int argc, char** argv) {
   DCHECK(global_connection) << "MonitorLanguageStatus() failed. "
                             << "candidate_window is not running?";
 
+  // Check the connection status.
+  DCHECK(chromeos::LanguageStatusConnectionIsAlive(global_connection))
+      << "CheckConnection() failed.";
+  LOG(INFO) << "Connection is OK.";
+
+  // Try to disconnect, then reconnect.
+  chromeos::DisconnectLanguageStatus(global_connection);
+  global_connection
+      = chromeos::MonitorLanguageStatus(monitor, &callback);
+  DCHECK(global_connection) << "MonitorLanguageStatus() failed.";
+
+  DCHECK(chromeos::LanguageStatusConnectionIsAlive(global_connection))
+      << "CheckConnection() failed.";
+  LOG(INFO) << "Connection is OK.";
+  
   const scoped_ptr<chromeos::InputLanguageList> languages(
       chromeos::GetActiveLanguages(global_connection));
   DCHECK(languages.get()) << "GetActiveLanguages() failed";
@@ -309,6 +324,11 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   const int result = RUN_ALL_TESTS();
 
+  // TODO(yusukes): Add stress tests for GetImeConfig, GetSupportedLanguages,
+  // ActivateLanguage, and ChangeLanguage. We might have to implement a RSS
+  // size checker. We should be aware of D-Bus memory management internals when
+  // we write the tests: http://code.google.com/p/ibus/issues/detail?id=800
+  
   chromeos::DisconnectLanguageStatus(global_connection);
   ::g_main_loop_unref(loop);
   return result;

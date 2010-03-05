@@ -81,6 +81,7 @@ DECL_FUNC_4(GetImeConfig,
 DECL_FUNC_4(SetImeConfig,
     bool,
     LanguageStatusConnection*, const char*, const char*, const ImeConfigValue&);
+DECL_FUNC_1(LanguageStatusConnectionIsAlive, bool, LanguageStatusConnection*);
 DECL_FUNC_2(MonitorImeStatus,
     ImeStatusConnection*, const ImeStatusMonitorFunctions&, void*);
 DECL_FUNC_1(DisconnectImeStatus, void, ImeStatusConnection*);
@@ -204,6 +205,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(DeactivateImeProperty);
   INIT_FUNC(GetImeConfig);
   INIT_FUNC(SetImeConfig);
+  INIT_FUNC(LanguageStatusConnectionIsAlive);
   INIT_FUNC(MonitorImeStatus);
   INIT_FUNC(DisconnectImeStatus);
   INIT_FUNC(NotifyCandidateClicked);

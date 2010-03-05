@@ -339,6 +339,13 @@ extern bool (*SetImeConfig)(LanguageStatusConnection* connection,
                             const char* config_name,
                             const ImeConfigValue& value);
 
+// Returns true if IBus and XKB sessions are still alive.
+// If this function returns false, you might have to discard the current
+// |connection| by calling DisconnectLanguageStatus() API above, and create
+// a new connection by calling MonitorLanguageStatus() API.
+extern bool (*LanguageStatusConnectionIsAlive)(
+    LanguageStatusConnection* connection);
+
 }  // namespace chromeos
 
 #endif  // CHROMEOS_POWER_H_
