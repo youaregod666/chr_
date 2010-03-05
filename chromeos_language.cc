@@ -412,19 +412,22 @@ class LanguageStatusConnection {
   ~LanguageStatusConnection() {
     // Destruct IBus object.
     if (ibus_) {
+      if (ibus_bus_is_connected(ibus_)) {
+        // Close |dbus_connection_| since the connection is "private connection"
+        // and we know |this| is the only instance which uses the
+        // |dbus_connection_|. Otherwise, we may see an error message from dbus
+        // library like "The last reference on a connection was dropped without
+        // closing the connection."
+        DBusConnection* raw_connection = dbus_g_connection_get_connection(
+            dbus_connection_->g_connection());
+        if (raw_connection) {
+          ::dbus_connection_close(raw_connection);
+        }
+      }
+
       // Since the connection which ibus_ has is a "shared connection". We
       // should not close the connection. Just call g_object_unref.
       g_object_unref(ibus_);
-    }
-
-    // Close |dbus_connection_| since the connection is "private connection" and
-    // we know |this| is the only instance which uses the |dbus_connection_|.
-    // Otherwise, we may see an error message from dbus library like "The last
-    // reference on a connection was dropped without closing the connection."
-    DBusConnection* raw_connection
-          = dbus_g_connection_get_connection(dbus_connection_->g_connection());
-    if (raw_connection) {
-      ::dbus_connection_close(raw_connection);
     }
 
     // |dbus_connection_| and |dbus_proxy_| will be destructed by ~scoped_ptr().
