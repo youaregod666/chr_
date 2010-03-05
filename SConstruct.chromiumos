@@ -37,29 +37,39 @@ for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
 # glib, dbus, and ibus environment
 env.ParseConfig('pkg-config --cflags --libs dbus-1 glib-2.0 gudev-1.0 dbus-glib-1 ibus-1.0 libpcrecpp')
 
-env.SharedLibrary('cros', SOURCES)
+Default(env.SharedLibrary('cros', SOURCES))
 
-# so test
-env_so = Environment (
+env_test = Environment (
     CPPPATH=[ '.', '..'],
     CCFLAGS=['-g'],
-    LIBS = ['base', 'dl', 'rt', 'gtest'],
+    LIBS = ['base', 'dl', 'rt'],
 )
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
   value = os.environ.get(key)
   if value != None:
-    env_so[key] = Split(value)
-env_so['CCFLAGS'] += ['-fPIC', '-fno-exceptions', '-Wall', '-Werror']
+    env_test[key] = Split(value)
+env_test['CCFLAGS'] += ['-fPIC', '-fno-exceptions', '-Wall', '-Werror']
 
 # Fix issue with scons not passing some vars through the environment.
 for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
   if os.environ.has_key(key):
-    env_so['ENV'][key] = os.environ[key]
+    env_test['ENV'][key] = os.environ[key]
 
-env_so.ParseConfig('pkg-config --cflags --libs gobject-2.0 dbus-1')
-env_so.Program('monitor_power', ['monitor_power.cc', 'load.cc'])
-env_so.Program('monitor_language', ['monitor_language.cc', 'load.cc'])
-env_so.Program('monitor_network', ['monitor_network.cc', 'load.cc'])
-env_so.Program('monitor_mount', ['monitor_mount.cc', 'load.cc'])
-env_so.Program('monitor_ime', ['monitor_ime.cc', 'load.cc'])
-env_so.Program('login_driver', ['drive_login.cc', 'load.cc'])
+env_test.ParseConfig('pkg-config --cflags --libs gobject-2.0 dbus-1')
+
+env_gtest = env_test.Clone()
+env_gtest.Append(LIBS=['gtest'])
+
+Load = env_test.Object('load.cc')
+
+tests = [
+  env_test.Program('monitor_power', ['monitor_power.cc', Load]),
+  env_gtest.Program('monitor_language', ['monitor_language.cc', Load]),
+  env_test.Program('monitor_network', ['monitor_network.cc', Load]),
+  env_test.Program('monitor_mount', ['monitor_mount.cc', Load]),
+  env_test.Program('monitor_ime', ['monitor_ime.cc', Load]),
+  env_test.Program('login_drive', ['drive_login.cc', Load])
+]
+test_alias = Alias('test', tests)
+AlwaysBuild(test_alias)
+
