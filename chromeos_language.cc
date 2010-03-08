@@ -34,8 +34,8 @@ const char* kImeIdsWhitelist[] = {
   "cangjie3",  // ibus-table-cangjie
   "cangjie5",  // ibus-table-cangjie
   // TODO(yusukes): Add additional ibus-table modules here once they're ready.
-  "t:latn-pre",  // ibus-m17n (for debugging)
-  "t:latn-post",  // ibus-m17n (for debugging)
+  "m17n:t:latn-pre",  // ibus-m17n (for debugging)
+  "m17n:t:latn-post",  // ibus-m17n (for debugging)
   // TODO(yusukes): Add IMEs in ibus-m17n that are necessary to support the 40+
   //                languages.
 };
