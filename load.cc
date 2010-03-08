@@ -118,6 +118,12 @@ DECL_FUNC_0(EmitLoginPromptReady, bool);
 DECL_FUNC_2(StartSession, bool, const char*, const char*);
 DECL_FUNC_1(StopSession, bool, const char*);
 
+// Cryptohome
+DECL_FUNC_2(CryptohomeCheckKey, bool, const char*, const char*);
+DECL_FUNC_0(CryptohomeIsMounted, bool);
+DECL_FUNC_2(CryptohomeMount, bool, const char*, const char*);
+DECL_FUNC_0(CryptohomeUnmount, bool);
+
 // Update library
 DECL_FUNC_1(Update, bool, UpdateInformation*);
 DECL_FUNC_1(CheckForUpdate, bool, UpdateInformation*);
@@ -239,6 +245,12 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(EmitLoginPromptReady);
   INIT_FUNC(StartSession);
   INIT_FUNC(StopSession);
+
+  // Cryptohome
+  INIT_FUNC(CryptohomeCheckKey);
+  INIT_FUNC(CryptohomeIsMounted);
+  INIT_FUNC(CryptohomeMount);
+  INIT_FUNC(CryptohomeUnmount);
 
   // Update
   INIT_FUNC(Update);

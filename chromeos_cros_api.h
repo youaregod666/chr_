@@ -44,23 +44,24 @@
 // remove the old method as described above.
 
 // Current version numbers:
-//  0: Version number prior to the version scheme.
-//  1: Added CrosVersionCheck API.
-//     Changed load to take file path instead of so handle.
-//  2: Changed the interface for network monitoring callbacks.
-//  3: Added support disconnecting the network monitor.
-//  4: Added Update API
-//  5: Added IPConfig code
-//  6: Deprecated GetIPConfigProperty and SetIPConfigProperty.
-//  7: Added a member to InputLanguageList struct (backward incompatible).
-//  8: Added LanguageStatusConnectionIsAlive API.
-//  9: Added ConnectToNetwork and refactored code (backward incompatible).
+//  0:  Version number prior to the version scheme.
+//  1:  Added CrosVersionCheck API.
+//      Changed load to take file path instead of so handle.
+//  2:  Changed the interface for network monitoring callbacks.
+//  3:  Added support disconnecting the network monitor.
+//  4:  Added Update API
+//  5:  Added IPConfig code
+//  6:  Deprecated GetIPConfigProperty and SetIPConfigProperty.
+//  7:  Added a member to InputLanguageList struct (backward incompatible).
+//  8:  Added LanguageStatusConnectionIsAlive API.
+//  9:  Added ConnectToNetwork and refactored code (backward incompatible).
+//  10: Added support for mounting/unmounting cryptohomes.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 9,
-  kCrosAPIVersion = 9
+  kCrosAPIVersion = 10
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

@@ -5,7 +5,8 @@
 import os
 import sys
 
-SOURCES=['chromeos_ime.cc',
+SOURCES=['chromeos_cryptohome.cc',
+         'chromeos_ime.cc',
          'chromeos_language.cc',
          'chromeos_login.cc',
          'chromeos_mount.cc',
@@ -30,12 +31,12 @@ for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
 env['CCFLAGS'] += ['-fPIC', '-fno-exceptions', '-Wall', '-Werror']
 
 # Fix issue with scons not passing some vars through the environment.
-for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
+for key in Split('PKG_CONFIG PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
   if os.environ.has_key(key):
     env['ENV'][key] = os.environ[key]
 
 # glib, dbus, and ibus environment
-env.ParseConfig('pkg-config --cflags --libs dbus-1 glib-2.0 gudev-1.0 dbus-glib-1 ibus-1.0 libpcrecpp')
+env.ParseConfig('%s --cflags --libs dbus-1 glib-2.0 gudev-1.0 dbus-glib-1 ibus-1.0 libpcrecpp' % env['ENV']['PKG_CONFIG'])
 
 Default(env.SharedLibrary('cros', SOURCES))
 
@@ -51,11 +52,11 @@ for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
 env_test['CCFLAGS'] += ['-fPIC', '-fno-exceptions', '-Wall', '-Werror']
 
 # Fix issue with scons not passing some vars through the environment.
-for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
+for key in Split('PKG_CONFIG PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
   if os.environ.has_key(key):
     env_test['ENV'][key] = os.environ[key]
 
-env_test.ParseConfig('pkg-config --cflags --libs gobject-2.0 dbus-1')
+env_test.ParseConfig('%s --cflags --libs gobject-2.0 dbus-1' % env_test['ENV']['PKG_CONFIG'])
 
 env_gtest = env_test.Clone()
 env_gtest.Append(LIBS=['gtest'])
@@ -68,8 +69,10 @@ tests = [
   env_test.Program('monitor_network', ['monitor_network.cc', Load]),
   env_test.Program('monitor_mount', ['monitor_mount.cc', Load]),
   env_test.Program('monitor_ime', ['monitor_ime.cc', Load]),
-  env_test.Program('login_drive', ['drive_login.cc', Load])
+  env_test.Program('login_drive', ['drive_login.cc', Load]),
+  env_test.Program('cryptohome_drive', ['drive_cryptohome.cc', Load])
 ]
 test_alias = Alias('test', tests)
 AlwaysBuild(test_alias)
+
 
