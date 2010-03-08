@@ -65,8 +65,8 @@ struct InputLanguage {
     std::stringstream stream;
     stream << "category=" << category
            << ", id=" << id
-           << ", display_name" << display_name
-           << ", icon_path" << icon_path
+           << ", display_name=" << display_name
+           << ", icon_path=" << icon_path
            << ", language_code=" << language_code;
     return stream.str();
   }
@@ -91,8 +91,6 @@ typedef std::vector<InputLanguage> InputLanguageList;
 // please check a comment for the LanguageRegisterImePropertiesFunction typedef
 // below.
 struct ImeProperty {
-  // TODO(yusukes): it might be better to use protocol buffers rather than the
-  //                plain C++ struct.
   ImeProperty(const std::string& in_key,
               const std::string& in_icon_path,
               const std::string& in_label,
