@@ -1,0 +1,22 @@
+# Copyright (c) 2006-2010 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Watchlist Rules
+# Refer: http://dev.chromium.org/developers/contributing-code/watchlists
+
+
+{
+  'WATCHLIST_DEFINITIONS' : {
+    'this_file': {
+      'filepath': '^WATCHLISTS$',
+    },
+    'api': {
+      'filepath': 'chromeos_cros_api.h',
+    },
+  },
+  'WATCHLISTS' : {
+    'api': ['davemoore@chromium.org'],
+    'this_file': ['davemoore@chromium.org'],
+  },
+}
