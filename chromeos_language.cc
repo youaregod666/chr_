@@ -27,7 +27,9 @@ const char kCandidateWindowInterface[] = "org.freedesktop.IBus.Panel";
 // "ja:anthy", "zh:cangjie", and "zh:pinyin" engines in ibus-m17n since we
 // (will) have better equivalents outside of ibus-m17n.
 const char* kImeIdsWhitelist[] = {
-  "chewing",  // ibus-chewing
+  // TODO(yusukes): re-enable chewing once we resolve issue 1253.
+  // "chewing",  // ibus-chewing
+
   "pinyin",  // ibus-pinyin
   "anthy",  // ibus-anthy
   "hangul",  // ibus-hangul
