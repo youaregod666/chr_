@@ -56,12 +56,13 @@
 //  8:  Added LanguageStatusConnectionIsAlive API.
 //  9:  Added ConnectToNetwork and refactored code (backward incompatible).
 //  10: Added support for mounting/unmounting cryptohomes.
+//  11: Added GetWifiService and FreeServiceInfo
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 9,
-  kCrosAPIVersion = 10
+  kCrosAPIVersion = 11
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

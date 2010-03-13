@@ -103,6 +103,16 @@ struct IPConfigStatus {
   int size;
 };
 
+// Gets a ServiceInfo for a wifi service with |ssid| and |security|.
+// If an open network is not found, then it will create a hidden network and
+// return the ServiceInfo for that.
+// The ServiceInfo instance that is returned by this function MUST be
+// deleted with by calling FreeServiceInfo.
+//
+// Returns NULL on error.
+extern ServiceInfo* (*GetWifiService)(const char* ssid,
+                                      ConnectionSecurity security);
+
 // Connects to the network with the |service_path|.
 //
 // Set |passphrase| to NULL if the network doesn't require authentication.
@@ -126,6 +136,11 @@ extern ServiceStatus* (*GetAvailableNetworks)();
 // to do this to safely pass data over the dll boundary between our .so and
 // Chrome.
 extern void (*FreeServiceStatus)(ServiceStatus* status);
+
+// Deletes a ServiceInfo type that was allocated in the ChromeOS dll. We need
+// to do this to safely pass data over the dll boundary between our .so and
+// Chrome.
+extern void (*FreeServiceInfo)(ServiceInfo* info);
 
 // An internal listener to a d-bus signal. When notifications are received
 // they are rebroadcasted in non-glib form.

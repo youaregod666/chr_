@@ -30,6 +30,7 @@ static const char* kConnmanDeviceInterface = "org.moblin.connman.Device";
 static const char* kGetPropertiesFunction = "GetProperties";
 static const char* kSetPropertyFunction = "SetProperty";
 static const char* kConnectFunction = "Connect";
+static const char* kGetWifiServiceFunction = "GetWifiService";
 static const char* kEnableTechnologyFunction = "EnableTechnology";
 static const char* kDisableTechnologyFunction = "DisableTechnology";
 static const char* kAddIPConfigFunction = "AddIPConfig";
@@ -169,7 +170,7 @@ static ConnectionSecurity ParseSecurity(const std::string& security) {
     return SECURITY_NONE;
   return SECURITY_UNKNOWN;
 }
-/*
+
 static const char* SecurityToString(ConnectionSecurity security) {
   switch (security) {
     case SECURITY_UNKNOWN:
@@ -185,7 +186,7 @@ static const char* SecurityToString(ConnectionSecurity security) {
   }
   return kUnknownString;
 }
-*/
+
 static ConnectionState ParseState(const std::string& state) {
   if (state == kStateIdle)
     return STATE_IDLE;
@@ -378,6 +379,13 @@ void ChromeOSFreeServiceStatus(ServiceStatus* status) {
                 &DeleteServiceInfoProperties);
   delete [] status->services;
   delete status;
+}
+
+extern "C"
+void ChromeOSFreeServiceInfo(ServiceInfo* info) {
+  if (info == NULL)
+    return;
+  DeleteServiceInfoProperties(*info);
 }
 
 class OpaqueNetworkStatusConnection {
@@ -727,6 +735,65 @@ extern "C"
 void ChromeOSDisconnectNetworkStatus(NetworkStatusConnection connection) {
   dbus::Disconnect(connection->connection());
   delete connection;
+}
+
+extern "C"
+ServiceInfo* ChromeOSGetWifiService(const char* ssid,
+                                    ConnectionSecurity security) {
+  dbus::Proxy manager_proxy(dbus::GetSystemBusConnection(),
+                            kConnmanServiceName,
+                            "/",
+                            kConnmanManagerInterface);
+
+  glib::ScopedHashTable scoped_properties =
+      glib::ScopedHashTable(
+          ::g_hash_table_new_full(::g_str_hash,
+                                  ::g_str_equal,
+                                  ::g_free,
+                                  NULL));
+
+  glib::Value value_mode("managed");
+  glib::Value value_type("wifi");
+  glib::Value value_ssid(ssid);
+  if (security == SECURITY_UNKNOWN)
+    security = SECURITY_RSN;
+  glib::Value value_security(SecurityToString(security));
+  glib::Value value_passphrase("");
+
+  ::GHashTable* properties = scoped_properties.get();
+  ::g_hash_table_insert(properties, ::g_strdup("Mode"), &value_mode);
+  ::g_hash_table_insert(properties, ::g_strdup("Type"), &value_type);
+  ::g_hash_table_insert(properties, ::g_strdup("SSID"), &value_ssid);
+  ::g_hash_table_insert(properties, ::g_strdup("Security"), &value_security);
+  ::g_hash_table_insert(properties, ::g_strdup("Passphrase"),
+                        &value_passphrase);
+
+  glib::ScopedError error;
+  char* path;
+  if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
+                           kGetWifiServiceFunction,
+                           &Resetter(&error).lvalue(),
+                           ::dbus_g_type_get_map("GHashTable",
+                                                 G_TYPE_STRING,
+                                                 G_TYPE_VALUE),
+                           properties,
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_OBJECT_PATH,
+                           &path,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "ChromeOSGetWifiService failed: "
+        << (error->message ? error->message : "Unknown Error.");
+    return NULL;
+  }
+
+  ServiceInfo* info = new ServiceInfo();
+  if (!ParseServiceInfo(path, info)) {
+    LOG(WARNING) << "ChromeOSGetWifiService failed to parse ServiceInfo.";
+    ::g_free(path);
+    return NULL;
+  }
+  ::g_free(path);
+  return info;
 }
 
 extern "C"
