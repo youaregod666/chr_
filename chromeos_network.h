@@ -103,6 +103,10 @@ struct IPConfigStatus {
   int size;
 };
 
+// Requests a scan of services of |type|.
+// If |type| is TYPE_UNKNOWN (0), it will scan for all types.
+extern void (*RequestScan)(ConnectionType type);
+
 // Gets a ServiceInfo for a wifi service with |ssid| and |security|.
 // If an open network is not found, then it will create a hidden network and
 // return the ServiceInfo for that.

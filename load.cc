@@ -94,6 +94,7 @@ DECL_FUNC_0(RetrieveMountInformation, MountStatus*);
 DECL_FUNC_1(FreeMountStatus, void, MountStatus*);
 
 // Networking
+DECL_FUNC_1(RequestScan, void, ConnectionType);
 DECL_FUNC_2(GetWifiService, ServiceInfo*, const char*, ConnectionSecurity);
 DECL_FUNC_2(ConnectToNetwork, bool, const char*, const char*);
 DECL_FUNC_0(GetAvailableNetworks, ServiceStatus*);
@@ -225,6 +226,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(FreeMountStatus);
 
   // Networking
+  INIT_FUNC(RequestScan);
   INIT_FUNC(GetWifiService);
   INIT_FUNC(ConnectToNetwork);
   INIT_FUNC(GetAvailableNetworks);

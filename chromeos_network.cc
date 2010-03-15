@@ -30,6 +30,7 @@ static const char* kConnmanDeviceInterface = "org.moblin.connman.Device";
 static const char* kGetPropertiesFunction = "GetProperties";
 static const char* kSetPropertyFunction = "SetProperty";
 static const char* kConnectFunction = "Connect";
+static const char* kRequestScanFunction = "RequestScan";
 static const char* kGetWifiServiceFunction = "GetWifiService";
 static const char* kEnableTechnologyFunction = "EnableTechnology";
 static const char* kDisableTechnologyFunction = "DisableTechnology";
@@ -61,6 +62,7 @@ static const char* kTypeWifi = "wifi";
 static const char* kTypeWimax = "wimax";
 static const char* kTypeBluetooth = "bluetooth";
 static const char* kTypeCellular = "cellular";
+static const char* kTypeUnknown = "";
 
 // Connman mode options.
 static const char* kModeManaged = "managed";
@@ -136,7 +138,7 @@ static const char* TypeToString(ConnectionType type) {
     case TYPE_CELLULAR:
       return kTypeCellular;
   }
-  return kUnknownString;
+  return kTypeUnknown;
 }
 
 static ConnectionMode ParseMode(const std::string& mode) {
@@ -738,6 +740,26 @@ void ChromeOSDisconnectNetworkStatus(NetworkStatusConnection connection) {
 }
 
 extern "C"
+void ChromeOSRequestScan(ConnectionType type) {
+  dbus::Proxy manager_proxy(dbus::GetSystemBusConnection(),
+                            kConnmanServiceName,
+                            "/",
+                            kConnmanManagerInterface);
+  gchar* device = ::g_strdup(TypeToString(type));
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
+                           kRequestScanFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           device,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "ChromeOSRequestScan failed: "
+        << (error->message ? error->message : "Unknown Error.");
+  }
+}
+
+extern "C"
 ServiceInfo* ChromeOSGetWifiService(const char* ssid,
                                     ConnectionSecurity security) {
   dbus::Proxy manager_proxy(dbus::GetSystemBusConnection(),
@@ -855,7 +877,6 @@ ServiceStatus* ChromeOSGetAvailableNetworks() {
   if (ptr == NULL)
     return NULL;
 
-  std::vector<ServiceInfo> buffer;
   // TODO(seanparent): See if there is a cleaner way to implement this.
   GPtrArray* service_value =
       static_cast<GPtrArray*>(g_value_get_boxed(static_cast<GValue*>(ptr)));
