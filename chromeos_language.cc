@@ -29,17 +29,25 @@ const char kCandidateWindowInterface[] = "org.freedesktop.IBus.Panel";
 const char* kImeIdsWhitelist[] = {
   // TODO(yusukes): re-enable chewing once we resolve issue 1253.
   // "chewing",  // ibus-chewing
-
   "pinyin",  // ibus-pinyin
-  "anthy",  // ibus-anthy
+  "anthy",  // ibus-anthy (for libcros debugging on Ubuntu 9.10)
   "hangul",  // ibus-hangul
+
+  // ibus-table IMEs.
   "cangjie3",  // ibus-table-cangjie
   "cangjie5",  // ibus-table-cangjie
   // TODO(yusukes): Add additional ibus-table modules here once they're ready.
-  "m17n:t:latn-pre",  // ibus-m17n (for debugging)
-  "m17n:t:latn-post",  // ibus-m17n (for debugging)
-  // TODO(yusukes): Add IMEs in ibus-m17n that are necessary to support the 40+
-  //                languages.
+
+  // ibus-m17n IMEs.
+  "m17n:t:latn-pre",
+  "t:latn-pre",  // Older version of m17n-db which is used in Ubuntu 9.10
+                 // doesn't add the "m17n:" prefix. We support both.
+  "m17n:t:latn-post",
+  "t:latn-post", 
+  "m17n:th:pattachote",  // Thai
+  "th:pattachote",
+  // TODO(yusukes): Add more IMEs in ibus-m17n that are necessary to support
+  // the 40+ languages.
 };
 
 // The list of IME property keys that we don't handle.
@@ -186,7 +194,8 @@ bool ConvertProperty(IBusProperty* ibus_prop,
                << Or(ibus_prop->key, "");
   }
 
-  // TODO(yusukes): Probably it's better to generate our own label from the key?
+  // This label will be localized on Chrome side.
+  // See src/chrome/browser/chromeos/status/language_menu_l10n_util.h.
   std::string label =
       ((ibus_prop->tooltip &&
         ibus_prop->tooltip->text) ? ibus_prop->tooltip->text : "");
