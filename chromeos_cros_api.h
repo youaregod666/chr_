@@ -58,12 +58,16 @@
 //  10: Added support for mounting/unmounting cryptohomes.
 //  11: Added GetWifiService and FreeServiceInfo
 //  12: Added RequestScan
+//  13: Added SystemInfo replacing ServiceStatus. Reworked network monitoring.
+//      Removed loading of deprecated methods: GetAvailableNetworks,
+//      FreeServiceStatus, MonitorNetworkStatus, DisconnectNetworkStatus,
+//      GetEnabledTechnologies
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 9,
-  kCrosAPIVersion = 12
+  kCrosAPIVersion = 13
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

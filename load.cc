@@ -94,16 +94,15 @@ DECL_FUNC_0(RetrieveMountInformation, MountStatus*);
 DECL_FUNC_1(FreeMountStatus, void, MountStatus*);
 
 // Networking
+DECL_FUNC_0(GetSystemInfo, SystemInfo*);
 DECL_FUNC_1(RequestScan, void, ConnectionType);
 DECL_FUNC_2(GetWifiService, ServiceInfo*, const char*, ConnectionSecurity);
 DECL_FUNC_2(ConnectToNetwork, bool, const char*, const char*);
-DECL_FUNC_0(GetAvailableNetworks, ServiceStatus*);
-DECL_FUNC_1(FreeServiceStatus, void, ServiceStatus*);
+DECL_FUNC_1(FreeSystemInfo, void, SystemInfo*);
 DECL_FUNC_1(FreeServiceInfo, void, ServiceInfo*);
-DECL_FUNC_2(MonitorNetworkStatus,
-    NetworkStatusConnection, NetworkMonitor, void*);
-DECL_FUNC_1(DisconnectNetworkStatus, void, NetworkStatusConnection);
-DECL_FUNC_0(GetEnabledNetworkDevices, int);
+DECL_FUNC_2(MonitorNetwork,
+    MonitorNetworkConnection, MonitorNetworkCallback, void*);
+DECL_FUNC_1(DisconnectMonitorNetwork, void, MonitorNetworkConnection);
 DECL_FUNC_2(EnableNetworkDevice, bool, ConnectionType, bool);
 DECL_FUNC_1(SetOfflineMode, bool, bool);
 DECL_FUNC_1(ListIPConfigs, IPConfigStatus*, const char*);
@@ -226,15 +225,14 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(FreeMountStatus);
 
   // Networking
+  INIT_FUNC(GetSystemInfo);
   INIT_FUNC(RequestScan);
   INIT_FUNC(GetWifiService);
   INIT_FUNC(ConnectToNetwork);
-  INIT_FUNC(GetAvailableNetworks);
-  INIT_FUNC(FreeServiceStatus);
+  INIT_FUNC(FreeSystemInfo);
   INIT_FUNC(FreeServiceInfo);
-  INIT_FUNC(MonitorNetworkStatus);
-  INIT_FUNC(DisconnectNetworkStatus);
-  INIT_FUNC(GetEnabledNetworkDevices);
+  INIT_FUNC(MonitorNetwork);
+  INIT_FUNC(DisconnectMonitorNetwork);
   INIT_FUNC(EnableNetworkDevice);
   INIT_FUNC(SetOfflineMode);
   INIT_FUNC(ListIPConfigs);

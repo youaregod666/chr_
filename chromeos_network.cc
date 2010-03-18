@@ -42,7 +42,10 @@ static const char* kSecurityProperty = "Security";
 static const char* kPassphraseProperty = "Passphrase";
 static const char* kPassphraseRequiredProperty = "PassphraseRequired";
 static const char* kServicesProperty = "Services";
+static const char* kAvailableTechnologiesProperty = "AvailableTechnologies";
 static const char* kEnabledTechnologiesProperty = "EnabledTechnologies";
+static const char* kConnectedTechnologiesProperty = "ConnectedTechnologies";
+static const char* kDefaultTechnologyProperty = "DefaultTechnology";
 static const char* kOfflineModeProperty = "OfflineMode";
 static const char* kSignalStrengthProperty = "Strength";
 static const char* kNameProperty = "Name";
@@ -55,6 +58,9 @@ static const char* kFavoriteProperty = "Favorite";
 static const char* kAutoConnectProperty = "AutoConnect";
 static const char* kModeProperty = "Mode";
 static const char* kErrorProperty = "Error";
+
+// Connman network state
+static const char* kOnline = "online";
 
 // Connman type options.
 static const char* kTypeEthernet = "ethernet";
@@ -372,6 +378,7 @@ ServiceStatus* GetServiceStatus(const GPtrArray* array) {
 
 }  // namespace
 
+// DEPRECATED
 extern "C"
 void ChromeOSFreeServiceStatus(ServiceStatus* status) {
   if (status == NULL)
@@ -384,12 +391,54 @@ void ChromeOSFreeServiceStatus(ServiceStatus* status) {
 }
 
 extern "C"
+void ChromeOSFreeSystemInfo(SystemInfo* system) {
+  if (system == NULL)
+    return;
+  std::for_each(system->services,
+                system->services + system->service_size,
+                &DeleteServiceInfoProperties);
+  delete [] system->services;
+  delete system;
+}
+
+extern "C"
 void ChromeOSFreeServiceInfo(ServiceInfo* info) {
   if (info == NULL)
     return;
   DeleteServiceInfoProperties(*info);
 }
 
+class ManagerPropertyChangedHandler {
+ public:
+  typedef dbus::MonitorConnection<void(const char*, const glib::Value*)>*
+      MonitorConnection;
+
+  ManagerPropertyChangedHandler(const MonitorNetworkCallback& callback,
+                                void* object)
+     : callback_(callback),
+       object_(object),
+       connection_(NULL) {
+  }
+
+  static void Run(void* object,
+                  const char* property,
+                  const glib::Value* value) {
+    ManagerPropertyChangedHandler* self =
+        static_cast<ManagerPropertyChangedHandler*>(object);
+    self->callback_(self->object_);
+  }
+
+  MonitorConnection& connection() {
+    return connection_;
+  }
+
+ private:
+  MonitorNetworkCallback callback_;
+  void* object_;
+  MonitorConnection connection_;
+};
+
+// DEPRECATED
 class OpaqueNetworkStatusConnection {
  public:
   typedef dbus::MonitorConnection<void(const char*, const glib::Value*)>*
@@ -715,6 +764,34 @@ void ChromeOSFreeIPConfigStatus(IPConfigStatus* status) {
 }
 
 extern "C"
+MonitorNetworkConnection ChromeOSMonitorNetwork(MonitorNetworkCallback callback,
+                                                void* object) {
+  // TODO(rtc): Figure out where the best place to init the marshaler is, also
+  // it may need to be freed.
+  dbus_g_object_register_marshaller(marshal_VOID__STRING_BOXED,
+                                    G_TYPE_NONE,
+                                    G_TYPE_STRING,
+                                    G_TYPE_VALUE,
+                                    G_TYPE_INVALID);
+  dbus::Proxy proxy(dbus::GetSystemBusConnection(),
+                    kConnmanServiceName,
+                    "/",
+                    kConnmanManagerInterface);
+  MonitorNetworkConnection result =
+      new ManagerPropertyChangedHandler(callback, object);
+  result->connection() = dbus::Monitor(
+      proxy, "PropertyChanged", &ManagerPropertyChangedHandler::Run, result);
+  return result;
+}
+
+extern "C"
+void ChromeOSDisconnectMonitorNetwork(MonitorNetworkConnection connection) {
+  dbus::Disconnect(connection->connection());
+  delete connection;
+}
+
+// DEPRECATED
+extern "C"
 NetworkStatusConnection ChromeOSMonitorNetworkStatus(NetworkMonitor monitor,
                                                      void* object) {
   // TODO(rtc): Figure out where the best place to init the marshaler is, also
@@ -733,6 +810,7 @@ NetworkStatusConnection ChromeOSMonitorNetworkStatus(NetworkMonitor monitor,
   return result;
 }
 
+// DEPRECATED
 extern "C"
 void ChromeOSDisconnectNetworkStatus(NetworkStatusConnection connection) {
   dbus::Disconnect(connection->connection());
@@ -860,6 +938,94 @@ bool ChromeOSConnectToNetwork(const char* service_path,
 }
 
 extern "C"
+SystemInfo* ChromeOSGetSystemInfo() {
+  // TODO(chocobo): need to revisit the overhead of fetching the SystemInfo
+  // object as one indivisible unit of data
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy manager_proxy(bus,
+                            kConnmanServiceName,
+                            "/",
+                            kConnmanManagerInterface);
+
+  glib::ScopedHashTable properties;
+  if (!GetProperties(manager_proxy, &properties)) {
+    return NULL;
+  }
+
+  SystemInfo* system = new SystemInfo();
+
+  // Online (State == "online")
+  const char* state = kUnknownString;
+  properties.Retrieve(kStateProperty, &state);
+  system->online = strcmp(kOnline, state) == 0;
+
+  // AvailableTechnologies
+  system->available_technologies = 0;
+  glib::Value available_val;
+  properties.Retrieve(kAvailableTechnologiesProperty, &available_val);
+  gchar** available = static_cast<gchar**>(g_value_get_boxed(&available_val));
+  while (*available) {
+    system->available_technologies |= 1 << ParseType(*available);
+    available++;
+  }
+
+  // EnabledTechnologies
+  system->enabled_technologies = 0;
+  glib::Value enabled_val;
+  properties.Retrieve(kEnabledTechnologiesProperty, &enabled_val);
+  gchar** enabled = static_cast<gchar**>(g_value_get_boxed(&enabled_val));
+  while (*enabled) {
+    system->enabled_technologies |= 1 << ParseType(*enabled);
+    enabled++;
+  }
+
+  // ConnectedTechnologies
+  system->connected_technologies = 0;
+  glib::Value connected_val;
+  properties.Retrieve(kConnectedTechnologiesProperty, &connected_val);
+  gchar** connected = static_cast<gchar**>(g_value_get_boxed(&connected_val));
+  while (*connected) {
+    system->connected_technologies |= 1 << ParseType(*connected);
+    connected++;
+  }
+
+  // DefaultTechnology
+  const char* default_technology = kTypeUnknown;
+  properties.Retrieve(kDefaultTechnologyProperty, &default_technology);
+  system->default_technology = ParseType(default_technology);
+
+  // OfflineMode
+  bool offline_mode = false;
+  properties.Retrieve(kOfflineModeProperty, &offline_mode);
+  system->offline_mode = offline_mode;
+
+  // Services
+  glib::Value services_val;
+  properties.Retrieve(kServicesProperty, &services_val);
+  GPtrArray* services =
+      static_cast<GPtrArray*>(g_value_get_boxed(&services_val));
+  std::vector<ServiceInfo> buffer;
+  const char* path = NULL;
+  for (size_t i = 0; i < services->len; i++) {
+    path = static_cast<const char*>(g_ptr_array_index(services, i));
+    ServiceInfo info = {};
+    if (!ParseServiceInfo(path, &info))
+      continue;
+    buffer.push_back(info);
+  }
+  system->service_size = buffer.size();
+  if (system->service_size == 0) {
+    system->services = NULL;
+  } else {
+    system->services = new ServiceInfo[system->service_size];
+  }
+  std::copy(buffer.begin(), buffer.end(), system->services);
+
+  return system;
+}
+
+// DEPRECATED
+extern "C"
 ServiceStatus* ChromeOSGetAvailableNetworks() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy manager_proxy(bus,
@@ -883,6 +1049,7 @@ ServiceStatus* ChromeOSGetAvailableNetworks() {
   return GetServiceStatus(service_value);
 }
 
+// DEPRECATED
 extern "C"
 int ChromeOSGetEnabledNetworkDevices() {
   int devices = 0;
@@ -918,6 +1085,7 @@ int ChromeOSGetEnabledNetworkDevices() {
   return devices;
 }
 
+// DEPRECATED
 extern "C"
 bool ChromeOSEnableNetworkDevice(ConnectionType type, bool enable) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();

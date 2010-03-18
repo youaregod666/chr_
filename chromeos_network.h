@@ -80,6 +80,18 @@ struct ServiceInfo {
   const char* device_path;
 };
 
+struct SystemInfo {
+  bool online; // if Manager.State == "online"
+  int available_technologies; // bitwise OR of bit shifted by ConnectionType
+  int enabled_technologies; // bitwise OR of bit shifted by ConnectionType
+  int connected_technologies; // bitwise OR of bit shifted by ConnectionType
+  ConnectionType default_technology;
+  bool offline_mode;
+  int service_size;
+  ServiceInfo *services;
+};
+
+// DEPRECATED
 struct ServiceStatus {
   ServiceInfo *services;
   int size;
@@ -102,6 +114,14 @@ struct IPConfigStatus {
   IPConfig* ips;
   int size;
 };
+
+// Returns the system info, which includes the state of the system and a list of
+// all of the available services that a user can connect to.
+// The SystemInfo instance that is returned by this function MUST be
+// deleted by calling FreeSystemInfo.
+//
+// Returns NULL on error.
+extern SystemInfo* (*GetSystemInfo)();
 
 // Requests a scan of services of |type|.
 // If |type| is TYPE_UNKNOWN (0), it will scan for all types.
@@ -134,12 +154,19 @@ extern bool (*ConnectToNetwork)(const char* service_path,
 // deleted with by calling FreeServiceStatus.
 //
 // Returns NULL on error.
+// DEPRECATED
 extern ServiceStatus* (*GetAvailableNetworks)();
 
 // Deletes a ServiceStatus type that was allocated in the ChromeOS dll. We need
 // to do this to safely pass data over the dll boundary between our .so and
 // Chrome.
+// DEPRECATED
 extern void (*FreeServiceStatus)(ServiceStatus* status);
+
+// Deletes a SystemInfo type that was allocated in the ChromeOS dll. We need
+// to do this to safely pass data over the dll boundary between our .so and
+// Chrome.
+extern void (*FreeSystemInfo)(SystemInfo* system);
 
 // Deletes a ServiceInfo type that was allocated in the ChromeOS dll. We need
 // to do this to safely pass data over the dll boundary between our .so and
@@ -148,6 +175,26 @@ extern void (*FreeServiceInfo)(ServiceInfo* info);
 
 // An internal listener to a d-bus signal. When notifications are received
 // they are rebroadcasted in non-glib form.
+class ManagerPropertyChangedHandler;
+typedef ManagerPropertyChangedHandler* MonitorNetworkConnection;
+
+// The expected callback signature that will be provided by the client who
+// calls MonitorNetworkStatus. Callbacks are only called with |object| being
+// the caller. The recipient of the callback should call GetSystemInfo to
+// retrieve the current state of things.
+typedef void(*MonitorNetworkCallback)(void* object);
+
+// Sets up monitoring of the PropertyChanged signal on the Connman manager.
+// The provided MonitorNetworkCallback will be called whenever that happens.
+extern MonitorNetworkConnection (*MonitorNetwork)(MonitorNetworkCallback,
+                                                  void*);
+
+// Disconnects a MonitorNetworkConnection.
+extern void (*DisconnectMonitorNetwork)(MonitorNetworkConnection connection);
+
+// An internal listener to a d-bus signal. When notifications are received
+// they are rebroadcasted in non-glib form.
+// DEPRECATED
 class OpaqueNetworkStatusConnection;
 typedef OpaqueNetworkStatusConnection* NetworkStatusConnection;
 
@@ -156,14 +203,17 @@ typedef OpaqueNetworkStatusConnection* NetworkStatusConnection;
 //
 // The expected callback signature that will be provided by the client who
 // calls MonitorNetworkStatus.
+// DEPRECATED
 typedef void(*NetworkMonitor)(void* object, const ServiceStatus& status);
 
 // Processes a callback from a d-bus signal by finding the path of the
 // Connman service that changed and sending the details along to the next
 // handler in the chain as an instance of ServiceInfo.
+// DEPRECATED
 extern NetworkStatusConnection (*MonitorNetworkStatus)(NetworkMonitor, void*);
 
 // Disconnects a NetworkStatusConnection.
+// DEPRECATED
 extern void (*DisconnectNetworkStatus)(NetworkStatusConnection connection);
 
 // Returns the enabled network devices as a bitwise OR value of ConnectionTypes.
@@ -172,6 +222,7 @@ extern void (*DisconnectNetworkStatus)(NetworkStatusConnection connection);
 //
 // Returns 0 if no devices are enabled.
 // Returns -1 if offline mode, by definition, means all devices are disabled.
+// DEPRECATED
 extern int (*GetEnabledNetworkDevices)();
 
 // Enable or disable the specific network device for connection.
