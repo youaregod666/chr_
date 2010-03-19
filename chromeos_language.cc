@@ -34,27 +34,37 @@ const char kCandidateWindowInterface[] = "org.freedesktop.IBus.Panel";
 // "ja:anthy", "zh:cangjie", and "zh:pinyin" engines in ibus-m17n since we
 // (will) have better equivalents outside of ibus-m17n.
 const char* kImeIdsWhitelist[] = {
-  // TODO(yusukes): re-enable chewing once we resolve issue 1253.
-  // "chewing",  // ibus-chewing
-  "pinyin",  // ibus-pinyin
   "anthy",  // ibus-anthy (for libcros debugging on Ubuntu 9.10)
+  // "chewing",  // ibus-chewing
   "hangul",  // ibus-hangul
+  "pinyin",  // ibus-pinyin
+  // TODO(yusukes): re-enable chewing once we resolve issue 1253.
 
   // ibus-table IMEs.
   "cangjie3",  // ibus-table-cangjie
   "cangjie5",  // ibus-table-cangjie
   // TODO(yusukes): Add additional ibus-table modules here once they're ready.
 
-  // ibus-m17n IMEs.
+  // ibus-m17n IMEs (language neutral ones).
   "m17n:t:latn-pre",
-  "t:latn-pre",  // Older version of m17n-db which is used in Ubuntu 9.10
-                 // doesn't add the "m17n:" prefix. We support both.
   "m17n:t:latn-post",
-  "t:latn-post", 
+
+  // ibus-m17n IMEs.
+  "m17n:ar:kbd",  // Arabic
+  "m17n:hr:kbd",  // Croatian
+  "m17n:da:post",  // Danish
+  "m17n:el:kbd",  // Modern Greek
+  "m17n:he:kbd",  // Hebrew
+  "m17n:hi:itrans",  // Hindi
+  // Note: the m17n-contrib package has some more Hindi definitions.
+  "m17n:fa:isiri",  // Persian
+  "m17n:sr:kbd",  // Serbian
+  "m17n:sk:kbd",  // Slovak
+  // TODO(yusukes): Check if we should use the ibus-m17n IME for Swedish.
   "m17n:th:pattachote",  // Thai
-  "th:pattachote",
-  // TODO(yusukes): Add more IMEs in ibus-m17n that are necessary to support
-  // the 40+ languages.
+  // TODO(yusukes): Add tis820 and kesmanee for Thai if needed.
+  // TODO(yusukes): Update m17n-db package to the latest so we can use
+  // Vietnamese IME which does not require the "get surrounding text" feature.
 };
 
 // The list of IME property keys that we don't handle.
@@ -81,8 +91,11 @@ bool PropertyKeyIsBlacklisted(const char* key) {
 // Returns true if |ime_id| is whitelisted.
 bool ImeIdIsWhitelisted(const char* ime_id) {
   // TODO(yusukes): Use hash_set if necessary.
+  const std::string id = ime_id;
   for (size_t i = 0; i < arraysize(kImeIdsWhitelist); ++i) {
-    if (!std::strcmp(ime_id, kImeIdsWhitelist[i])) {
+    // Older version of m17n-db which is used in Ubuntu 9.10
+    // doesn't add the "m17n:" prefix. We support both.
+    if ((id == kImeIdsWhitelist[i]) || ("m17n:" + id == kImeIdsWhitelist[i])) {
       return true;
     }
   }
