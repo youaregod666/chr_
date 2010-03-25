@@ -140,13 +140,6 @@ char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
     error_string += "Couldn't load: "#name","; \
   }
 
-// TODO(davemoore) remove this after Chrome has changed to call the new
-// function.
-bool LoadCros(const char* path_to_libcros) {
-  std::string error_string = std::string();
-  return LoadLibcros(path_to_libcros, error_string);
-}
-
 bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   error_string = std::string();
 

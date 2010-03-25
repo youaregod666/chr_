@@ -91,12 +91,6 @@ struct SystemInfo {
   ServiceInfo *services;
 };
 
-// DEPRECATED
-struct ServiceStatus {
-  ServiceInfo *services;
-  int size;
-};
-
 struct IPConfig {
   const char* path;
   IPConfigType type;
@@ -149,20 +143,6 @@ extern ServiceInfo* (*GetWifiService)(const char* ssid,
 extern bool (*ConnectToNetwork)(const char* service_path,
                                 const char* passphrase);
 
-// Returns a list of all of the available services that a user can connect to.
-// The ServiceStatus instance that is returned by this function MUST be
-// deleted with by calling FreeServiceStatus.
-//
-// Returns NULL on error.
-// DEPRECATED
-extern ServiceStatus* (*GetAvailableNetworks)();
-
-// Deletes a ServiceStatus type that was allocated in the ChromeOS dll. We need
-// to do this to safely pass data over the dll boundary between our .so and
-// Chrome.
-// DEPRECATED
-extern void (*FreeServiceStatus)(ServiceStatus* status);
-
 // Deletes a SystemInfo type that was allocated in the ChromeOS dll. We need
 // to do this to safely pass data over the dll boundary between our .so and
 // Chrome.
@@ -191,39 +171,6 @@ extern MonitorNetworkConnection (*MonitorNetwork)(MonitorNetworkCallback,
 
 // Disconnects a MonitorNetworkConnection.
 extern void (*DisconnectMonitorNetwork)(MonitorNetworkConnection connection);
-
-// An internal listener to a d-bus signal. When notifications are received
-// they are rebroadcasted in non-glib form.
-// DEPRECATED
-class OpaqueNetworkStatusConnection;
-typedef OpaqueNetworkStatusConnection* NetworkStatusConnection;
-
-// NOTE: The instance of ServiceStatus that is received by the caller will be
-// freed once your function returns. Copy this object if you intend to cache it.
-//
-// The expected callback signature that will be provided by the client who
-// calls MonitorNetworkStatus.
-// DEPRECATED
-typedef void(*NetworkMonitor)(void* object, const ServiceStatus& status);
-
-// Processes a callback from a d-bus signal by finding the path of the
-// Connman service that changed and sending the details along to the next
-// handler in the chain as an instance of ServiceInfo.
-// DEPRECATED
-extern NetworkStatusConnection (*MonitorNetworkStatus)(NetworkMonitor, void*);
-
-// Disconnects a NetworkStatusConnection.
-// DEPRECATED
-extern void (*DisconnectNetworkStatus)(NetworkStatusConnection connection);
-
-// Returns the enabled network devices as a bitwise OR value of ConnectionTypes.
-// Each bit represents whether or not that ConnectionType is enabled.
-// For example, the bit representing TYPE_WIFI is (1 << TYPE_WIFI)
-//
-// Returns 0 if no devices are enabled.
-// Returns -1 if offline mode, by definition, means all devices are disabled.
-// DEPRECATED
-extern int (*GetEnabledNetworkDevices)();
 
 // Enable or disable the specific network device for connection.
 //

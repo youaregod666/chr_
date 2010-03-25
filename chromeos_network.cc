@@ -329,20 +329,6 @@ bool ParseServiceInfo(const char* path, ServiceInfo *info) {
   return true;
 }
 
-// Creates a new ServiceStatus instance populated with the contents from
-// a vector of ServiceInfo.
-ServiceStatus* CopyFromVector(const std::vector<ServiceInfo>& services) {
-  ServiceStatus* result = new ServiceStatus();
-  if (services.size() == 0) {
-    result->services = NULL;
-  } else {
-    result->services = new ServiceInfo[services.size()];
-  }
-  result->size = services.size();
-  std::copy(services.begin(), services.end(), result->services);
-  return result;
-}
-
 // Deletes all of the heap allocated members of a given ServiceInfo instance.
 void DeleteServiceInfoProperties(ServiceInfo info) {
   if (info.service_path)
@@ -360,35 +346,7 @@ void DeleteServiceInfoProperties(ServiceInfo info) {
   info.device_path = NULL;
 }
 
-ServiceStatus* GetServiceStatus(const GPtrArray* array) {
-  std::vector<ServiceInfo> buffer;
-  // TODO(rtc/seanparent): Think about using std::transform instead of this
-  // loop. For now I think the loop will be generally more readable than
-  // std::transform().
-  const char* path = NULL;
-  for (size_t i = 0; i < array->len; i++) {
-    path = static_cast<const char*>(g_ptr_array_index(array, i));
-    ServiceInfo info = {};
-    if (!ParseServiceInfo(path, &info))
-      continue;
-    buffer.push_back(info);
-  }
-  return CopyFromVector(buffer);
-}
-
 }  // namespace
-
-// DEPRECATED
-extern "C"
-void ChromeOSFreeServiceStatus(ServiceStatus* status) {
-  if (status == NULL)
-    return;
-  std::for_each(status->services,
-                status->services + status->size,
-                &DeleteServiceInfoProperties);
-  delete [] status->services;
-  delete status;
-}
 
 extern "C"
 void ChromeOSFreeSystemInfo(SystemInfo* system) {
@@ -436,52 +394,6 @@ class ManagerPropertyChangedHandler {
   MonitorNetworkCallback callback_;
   void* object_;
   MonitorConnection connection_;
-};
-
-// DEPRECATED
-class OpaqueNetworkStatusConnection {
- public:
-  typedef dbus::MonitorConnection<void(const char*, const glib::Value*)>*
-      ConnectionType;
-
-  OpaqueNetworkStatusConnection(const dbus::Proxy& proxy,
-                                const NetworkMonitor& monitor,
-                                void* object)
-     : proxy_(proxy),
-       monitor_(monitor),
-       object_(object),
-       connection_(NULL) {
-  }
-
-  static void Run(void* object,
-                  const char* property,
-                  const glib::Value* value) {
-    OpaqueNetworkStatusConnection* self =
-        static_cast<OpaqueNetworkStatusConnection*>(object);
-    if (strcmp("Services", property) != 0) {
-      return;
-    }
-
-    ::GPtrArray *services =
-        static_cast< ::GPtrArray *>(::g_value_get_boxed(value));
-    if (services->len == 0) {
-      LOG(INFO) << "Signal sent without path.";
-      return;
-    }
-    ServiceStatus* status = GetServiceStatus(services);
-    self->monitor_(self->object_, *status);
-    ChromeOSFreeServiceStatus(status);
-  }
-
-  ConnectionType& connection() {
-    return connection_;
-  }
-
- private:
-  dbus::Proxy proxy_;
-  NetworkMonitor monitor_;
-  void* object_;
-  ConnectionType connection_;
 };
 
 IPConfigType ParseIPConfigType(const std::string& type) {
@@ -790,33 +702,6 @@ void ChromeOSDisconnectMonitorNetwork(MonitorNetworkConnection connection) {
   delete connection;
 }
 
-// DEPRECATED
-extern "C"
-NetworkStatusConnection ChromeOSMonitorNetworkStatus(NetworkMonitor monitor,
-                                                     void* object) {
-  // TODO(rtc): Figure out where the best place to init the marshaler is, also
-  // it may need to be freed.
-  dbus_g_object_register_marshaller(marshal_VOID__STRING_BOXED,
-                                    G_TYPE_NONE,
-                                    G_TYPE_STRING,
-                                    G_TYPE_VALUE,
-                                    G_TYPE_INVALID);
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus, kConnmanServiceName, "/", kConnmanManagerInterface);
-  NetworkStatusConnection result =
-      new OpaqueNetworkStatusConnection(proxy, monitor, object);
-  result->connection() = dbus::Monitor(
-      proxy, "PropertyChanged", &OpaqueNetworkStatusConnection::Run, result);
-  return result;
-}
-
-// DEPRECATED
-extern "C"
-void ChromeOSDisconnectNetworkStatus(NetworkStatusConnection connection) {
-  dbus::Disconnect(connection->connection());
-  delete connection;
-}
-
 extern "C"
 void ChromeOSRequestScan(ConnectionType type) {
   dbus::Proxy manager_proxy(dbus::GetSystemBusConnection(),
@@ -1024,68 +909,6 @@ SystemInfo* ChromeOSGetSystemInfo() {
   return system;
 }
 
-// DEPRECATED
-extern "C"
-ServiceStatus* ChromeOSGetAvailableNetworks() {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy manager_proxy(bus,
-                            kConnmanServiceName,
-                            "/",
-                            kConnmanManagerInterface);
-
-  glib::ScopedHashTable properties;
-  if (!GetProperties(manager_proxy, &properties)) {
-    return NULL;
-  }
-
-  GHashTable* table = properties.get();
-  gpointer ptr = g_hash_table_lookup(table, kServicesProperty);
-  if (ptr == NULL)
-    return NULL;
-
-  // TODO(seanparent): See if there is a cleaner way to implement this.
-  GPtrArray* service_value =
-      static_cast<GPtrArray*>(g_value_get_boxed(static_cast<GValue*>(ptr)));
-  return GetServiceStatus(service_value);
-}
-
-// DEPRECATED
-extern "C"
-int ChromeOSGetEnabledNetworkDevices() {
-  int devices = 0;
-
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy manager_proxy(bus,
-                            kConnmanServiceName,
-                            "/",
-                            kConnmanManagerInterface);
-
-  glib::ScopedHashTable properties;
-  if (!GetProperties(manager_proxy, &properties)) {
-    return devices;
-  }
-
-  bool offline_mode = false;
-  properties.Retrieve(kOfflineModeProperty, &offline_mode);
-  if (offline_mode)
-    return -1;
-
-  GHashTable* table = properties.get();
-  gpointer ptr = g_hash_table_lookup(table, kEnabledTechnologiesProperty);
-  if (ptr == NULL)
-    return devices;
-
-  gchar** value =
-      static_cast<gchar**>(g_value_get_boxed(static_cast<GValue*>(ptr)));
-  while (*value) {
-    // Bitwise OR with a bit left-shifted by the enum ConnectionType value.
-    devices |= 1 << ParseType(*value);
-    value++;
-  }
-  return devices;
-}
-
-// DEPRECATED
 extern "C"
 bool ChromeOSEnableNetworkDevice(ConnectionType type, bool enable) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();

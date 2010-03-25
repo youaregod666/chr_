@@ -62,19 +62,17 @@
 //      Removed loading of deprecated methods: GetAvailableNetworks,
 //      FreeServiceStatus, MonitorNetworkStatus, DisconnectNetworkStatus,
 //      GetEnabledTechnologies
+//  14: Removed deprecated method
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 9,
-  kCrosAPIVersion = 13
+  kCrosAPIMinVersion = 13,
+  kCrosAPIVersion = 14
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
 extern char const * const kCrosDefaultPath;
-
-// TODO(davemoore) Vestigial API. Remove when Chrome is calling the new API.
-bool LoadCros(const char* path_to_libcros);
 
 // |path_to_libcros| is the path to the libcros.so file.
 // Returns true to indicate success.
