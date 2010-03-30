@@ -46,9 +46,8 @@ const char* kImeIdsWhitelist[] = {
   // TODO(yusukes): Add additional ibus-table modules here once they're ready.
 
   // ibus-m17n IMEs (language neutral ones).
-  // "m17n:t:latn-pre",
+  "m17n:t:latn-pre",
   "m17n:t:latn-post",
-  // TODO(yusukes): re-enable latn-pre once we resolve issue 2001.
 
   // ibus-m17n IMEs.
   "m17n:ar:kbd",  // Arabic
