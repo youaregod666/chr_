@@ -291,22 +291,41 @@ extern InputLanguageList* (*GetSupportedLanguages)(LanguageStatusConnection*
 extern void (*ChangeLanguage)(LanguageStatusConnection* connection,
                               LanguageCategory category, const char* name);
 
+// Sets whether the language specified by |category| and |id| is
+// activated. If |activated| is true, activates the language. If
+// |activated| is false, deactivates the language. Returns true on success.
+extern bool (*SetLanguageActivated)(LanguageStatusConnection* connection,
+                                    LanguageCategory category,
+                                    const char* name,
+                                    bool activated);
+
+// Sets whether the IME property specified by |key| is activated. If
+// |activated| is true, activates the property. If |activated| is false,
+// deactivates the property.
+extern void (*SetImePropertyActivated)(LanguageStatusConnection* connection,
+                                       const char* key,
+                                       bool activated);
+
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
 // Activates the language specified by |category| and |name|. Returns true on
 // success.
 extern bool (*ActivateLanguage)(LanguageStatusConnection* connection,
                                 LanguageCategory category, const char* name);
 
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
 // Deactivates the language specified by |category| and |name|. Returns true
 // on success.
 extern bool (*DeactivateLanguage)(LanguageStatusConnection* connection,
                                   LanguageCategory category, const char* name);
 
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
 // Activates an IME property identified by |key|. Examples of keys are:
 // "InputMode.Katakana", "InputMode.HalfWidthKatakana", "TypingMode.Romaji",
 // "TypingMode.Kana."
 extern void (*ActivateImeProperty)(LanguageStatusConnection* connection,
                                    const char* key);
 
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
 // Deactivates an IME property identified by |key|.
 extern void (*DeactivateImeProperty)(LanguageStatusConnection* connection,
                                      const char* key);

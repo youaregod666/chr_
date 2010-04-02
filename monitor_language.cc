@@ -300,9 +300,10 @@ int main(int argc, char** argv) {
 
   // Deactivate the last language for testing.
   const chromeos::InputLanguage& language = languages->back();
-  DCHECK(chromeos::DeactivateLanguage(global_connection,
-                                      language.category,
-                                      language.id.c_str()));
+  DCHECK(chromeos::SetLanguageActivated(global_connection,
+                                        language.category,
+                                        language.id.c_str(),
+                                        false));
   // This is not reliable, but wait for a moment so the config change
   // takes effect in IBus.
   sleep(1);
@@ -310,9 +311,10 @@ int main(int argc, char** argv) {
   ShowActiveLanguages();
 
   // Reactivate the language.
-  DCHECK(chromeos::ActivateLanguage(global_connection,
-                                    language.category,
-                                    language.id.c_str()));
+  DCHECK(chromeos::SetLanguageActivated(global_connection,
+                                        language.category,
+                                        language.id.c_str(),
+                                        true));
   sleep(1);
   LOG(INFO) << "Reactivated: " << language.display_name;
   ShowActiveLanguages();
@@ -325,10 +327,10 @@ int main(int argc, char** argv) {
   const int result = RUN_ALL_TESTS();
 
   // TODO(yusukes): Add stress tests for GetImeConfig, GetSupportedLanguages,
-  // ActivateLanguage, and ChangeLanguage. We might have to implement a RSS
+  // SetLanguageActivated, and ChangeLanguage. We might have to implement a RSS
   // size checker. We should be aware of D-Bus memory management internals when
   // we write the tests: http://code.google.com/p/ibus/issues/detail?id=800
-  
+
   chromeos::DisconnectLanguageStatus(global_connection);
   ::g_main_loop_unref(loop);
   return result;

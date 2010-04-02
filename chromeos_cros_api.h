@@ -63,12 +63,13 @@
 //      FreeServiceStatus, MonitorNetworkStatus, DisconnectNetworkStatus,
 //      GetEnabledTechnologies
 //  14: Removed deprecated method
+//  15: Added SetLanguageActivated and SetImePropertyActivated
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 13,
-  kCrosAPIVersion = 14
+  kCrosAPIVersion = 15
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

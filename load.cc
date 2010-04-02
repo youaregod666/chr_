@@ -65,11 +65,19 @@ DECL_FUNC_1(GetSupportedLanguages,
 DECL_FUNC_1(GetActiveLanguages, InputLanguageList*, LanguageStatusConnection*);
 DECL_FUNC_3(ChangeLanguage,
     void, LanguageStatusConnection*, LanguageCategory, const char*);
+DECL_FUNC_4(SetLanguageActivated,
+    bool, LanguageStatusConnection*, LanguageCategory, const char*, bool);
+DECL_FUNC_3(SetImePropertyActivated,
+    void, LanguageStatusConnection*, const char*, bool);
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
 DECL_FUNC_3(ActivateLanguage,
     bool, LanguageStatusConnection*, LanguageCategory, const char*);
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
 DECL_FUNC_3(DeactivateLanguage,
     bool, LanguageStatusConnection*, LanguageCategory, const char*);
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
 DECL_FUNC_2(ActivateImeProperty, void, LanguageStatusConnection*, const char*);
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
 DECL_FUNC_2(DeactivateImeProperty,
     void, LanguageStatusConnection*, const char*);
 DECL_FUNC_4(GetImeConfig,
@@ -200,6 +208,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(GetSupportedLanguages);
   INIT_FUNC(GetActiveLanguages);
   INIT_FUNC(ChangeLanguage);
+  INIT_FUNC(SetLanguageActivated);
+  INIT_FUNC(SetImePropertyActivated);
   INIT_FUNC(ActivateLanguage);
   INIT_FUNC(DeactivateLanguage);
   INIT_FUNC(ActivateImeProperty);

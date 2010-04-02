@@ -576,7 +576,7 @@ class LanguageStatusConnection {
   }
 
   // Called by cros API ChromeOS(Activate|Deactive)ImeProperty().
-  void ActivateOrDeactiveImeProperty(const char* key, bool active) {
+  void SetImePropertyActivated(const char* key, bool activated) {
     if (input_context_path_.empty()) {
       LOG(ERROR) << "Input context is unknown";
       return;
@@ -587,7 +587,7 @@ class LanguageStatusConnection {
       return;
     }
     ibus_input_context_property_activate(
-        context, key, (active ? PROP_STATE_CHECKED : PROP_STATE_UNCHECKED));
+        context, key, (activated ? PROP_STATE_CHECKED : PROP_STATE_UNCHECKED));
     g_object_unref(context);
 
     UpdateUI();
@@ -617,22 +617,14 @@ class LanguageStatusConnection {
     }
   }
 
-  // UpdateMode is used for specifying whether we are activating or
-  // deactivating an input language. We use this mode to consolidate logic
-  // for activation and deactivation.
-  enum UpdateMode {
-    kActivate,  // Activate an input language.
-    kDeactivate,  // Deactivate an input language.
-  };
-
-  // Called by cros API ChromeOSActivateLanguage().
-  bool UpdateXKB(UpdateMode mode, const char* xkb_name) {
+  // Called by cros API ChromeOSSetLanguageActivated().
+  bool SetXkbActivated(const char* xkb_name, bool activated) {
     // TODO(yusukes,satorux): implement this.
     return false;
   }
 
-  // Called by cros API ChromeOSActivateLanguage().
-  bool UpdateIME(UpdateMode mode, const char* ime_name) {
+  // Called by cros API ChromeOSSetLanguageActivated().
+  bool SetImeActivated(const char* ime_name, bool activated) {
     GList* const engines = ibus_bus_list_active_engines(ibus_);
 
     // Convert |engines| to a GValueArray of names.
@@ -641,8 +633,7 @@ class LanguageStatusConnection {
       IBusEngineDesc* engine_desc = IBUS_ENGINE_DESC(cursor->data);
       // Skip the IME if the mode is to deactivate and it matches the given
       // name.
-      if (mode == kDeactivate &&
-          std::strcmp(engine_desc->name, ime_name) == 0) {
+      if (!activated && std::strcmp(engine_desc->name, ime_name) == 0) {
         continue;
       }
       GValue name_value = { 0 };
@@ -652,7 +643,7 @@ class LanguageStatusConnection {
       g_value_unset(&name_value);
     }
 
-    if (mode == kActivate) {
+    if (activated) {
       // Add a new IME here.
       GValue name_value = { 0 };
       g_value_init(&name_value, G_TYPE_STRING);
@@ -1067,21 +1058,26 @@ InputLanguageList* ChromeOSGetSupportedLanguages(
 }
 
 extern "C"
-void ChromeOSActivateImeProperty(
-    LanguageStatusConnection* connection, const char* key) {
-  DLOG(INFO) << "ActivateImeProperty";
+void ChromeOSSetImePropertyActivated(
+    LanguageStatusConnection* connection, const char* key, bool activated) {
+  DLOG(INFO) << "SetImePropertyeActivated: " << key << ": " << activated;
   DCHECK(key);
   g_return_if_fail(connection);
-  connection->ActivateOrDeactiveImeProperty(key, true);
+  connection->SetImePropertyActivated(key, activated);
 }
 
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
+extern "C"
+void ChromeOSActivateImeProperty(
+    LanguageStatusConnection* connection, const char* key) {
+  ChromeOSSetImePropertyActivated(connection, key, true);
+}
+
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
 extern "C"
 void ChromeOSDeactivateImeProperty(
     LanguageStatusConnection* connection, const char* key) {
-  DLOG(INFO) << "DeactivateImeProperty";
-  DCHECK(key);
-  g_return_if_fail(connection);
-  connection->ActivateOrDeactiveImeProperty(key, false);
+  ChromeOSSetImePropertyActivated(connection, key, false);
 }
 
 extern "C"
@@ -1095,45 +1091,39 @@ void ChromeOSChangeLanguage(LanguageStatusConnection* connection,
   // TODO(yusukes): The return type of this function should be bool.
 }
 
-// Helper function for ChromeOSActivateLanguage() and
-// ChromeOSDeactivateLanguage().
-static bool ActivateOrDeactivateLanguage(
-    LanguageStatusConnection::UpdateMode mode,
-    LanguageStatusConnection* connection,
-    LanguageCategory category,
-    const char* name) {
+extern "C"
+bool ChromeOSSetLanguageActivated(LanguageStatusConnection* connection,
+                                  LanguageCategory category,
+                                  const char* name,
+                                  bool activated) {
+  DLOG(INFO) << "SetLanguageActivated: " << name << " [category "
+             << category << "]" << ": " << activated;
+
   DCHECK(name);
   g_return_val_if_fail(connection, FALSE);
   bool success = false;
-  switch (category) {
-    case LANGUAGE_CATEGORY_XKB:
-      success = connection->UpdateXKB(mode, name);
-      break;
-    case LANGUAGE_CATEGORY_IME:
-      success = connection->UpdateIME(mode, name);
-      break;
+  if (category == LANGUAGE_CATEGORY_XKB) {
+    success = connection->SetXkbActivated(name, activated);
+  } else if (category == LANGUAGE_CATEGORY_IME) {
+    success = connection->SetImeActivated(name, activated);
   }
   return success;
 }
 
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
 extern "C"
 bool ChromeOSActivateLanguage(LanguageStatusConnection* connection,
                               LanguageCategory category,
                               const char* name) {
-  DLOG(INFO) << "ActivateLanguage: " << name << " [category "
-             << category << "]";
-  return ActivateOrDeactivateLanguage(
-      LanguageStatusConnection::kActivate, connection, category, name);
+  return ChromeOSSetLanguageActivated(connection, category, name, true);
 }
 
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
 extern "C"
 bool ChromeOSDeactivateLanguage(LanguageStatusConnection* connection,
                                 LanguageCategory category,
                                 const char* name) {
-  DLOG(INFO) << "DeactivateLanguage: " << name << " [category "
-             << category << "]";
-  return ActivateOrDeactivateLanguage(
-      LanguageStatusConnection::kDeactivate, connection, category, name);
+  return ChromeOSSetLanguageActivated(connection, category, name, false);
 }
 
 extern "C"
