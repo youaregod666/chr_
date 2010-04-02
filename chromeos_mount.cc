@@ -46,6 +46,21 @@ MountStatus* CopyFromVector(const std::vector<DiskStatus>& services) {
   return result;
 }
 
+bool DeviceIsParentRemoveable(const dbus::BusConnection& bus,
+                              dbus::Proxy& proxy) {
+  bool removeable = false;
+  if (!dbus::RetrieveProperty(proxy,
+                              kDeviceKitDeviceInterface,
+                              "device-is-removable",
+                              &removeable)) {
+    // Since we should always be able to get this property, if we can't,
+    // there is some problem, so we should return null.
+    DLOG(WARNING) << "unable to determine if device is removeable";
+    return false;
+  }
+  return removeable;
+}
+
 bool DeviceIsRemoveable(const dbus::BusConnection& bus, dbus::Proxy& proxy) {
   bool ispartition = false;
   if (!dbus::RetrieveProperty(proxy,
@@ -69,17 +84,7 @@ bool DeviceIsRemoveable(const dbus::BusConnection& bus, dbus::Proxy& proxy) {
                             kDeviceKitDisksInterface,
                             parent,
                             kDeviceKitPropertiesInterface);
-    bool removeable = false;
-    if (!dbus::RetrieveProperty(parentproxy,
-                                kDeviceKitDeviceInterface,
-                                "device-is-removable",
-                                &removeable)) {
-      // Since we should always be able to get this property, if we can't,
-      // there is some problem, so we should return null.
-      DLOG(WARNING) << "unable to determine if device is removeable";
-      return NULL;
-    }
-    return removeable;
+    return DeviceIsParentRemoveable(bus, parentproxy);
   }
   return false;
 }
@@ -175,7 +180,22 @@ class OpaqueMountStatusConnection {
   void FireEvent(MountEventType evt, const char* path) {
     MountStatus* info;
     if ((info = ChromeOSRetrieveMountInformation()) != NULL) {
-      monitor_(object_, *info, evt, path);
+      if (evt == DEVICE_REMOVED ||
+          evt == DEVICE_ADDED ||
+          evt == DEVICE_SCANNED ||
+          evt == DISK_REMOVED) {
+        monitor_(object_, *info, evt, path);
+      } else {
+        for (int x = 0; x < info->size; x++) {
+          // This ensures we only event on disk adds/changes
+          // for things which are in the disk array
+          if (strcmp(path, info->disks[x].path) == 0) {
+            monitor_(object_, *info, evt, path);
+            break;
+          }
+        }
+
+      }
       ChromeOSFreeMountStatus(info);
     }
   }
@@ -323,6 +343,12 @@ MountStatusConnection ChromeOSMonitorMountStatus(MountMonitor monitor,
 }
 
 extern "C"
+bool ChromeOSMountDevicePath(const char* device_path) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  return MountRemoveableDevice(bus, device_path);
+}
+
+extern "C"
 void ChromeOSDisconnectMountStatus(MountStatusConnection connection) {
   dbus::Disconnect(connection->addedconnection());
   dbus::Disconnect(connection->removedconnection());
@@ -354,18 +380,24 @@ MountStatus* ChromeOSRetrieveMountInformation() {
                       kDeviceKitDisksInterface,
                       *currentpath,
                       kDeviceKitPropertiesInterface);
-    if (DeviceIsRemoveable(bus, proxy)) {
+    bool removeable = DeviceIsRemoveable(bus, proxy);
+    bool parent = DeviceIsParentRemoveable(bus, proxy);
+    if (removeable || parent) {
       DiskStatus info = {};
       bool ismounted = false;
       std::string path;
+      info.isparent = parent;
       info.path = NewStringCopy(*currentpath);
       if (DeviceIsMounted(bus, proxy, path, &ismounted)) {
         if (ismounted) {
           info.mountpath = NewStringCopy(path.c_str());
-        } else {
-          MountRemoveableDevice(bus, *currentpath);
         }
       }
+      info.hasmedia = false;
+      dbus::RetrieveProperty(proxy,
+                             kDeviceKitDeviceInterface,
+                             "device-is-media-available",
+                             &info.hasmedia);
       if (dbus::RetrieveProperty(proxy,
                                  kDeviceKitDeviceInterface,
                                  "native-path",

@@ -13,6 +13,8 @@ struct DiskStatus {
   const char* path;
   const char* mountpath;
   const char* systempath;
+  bool isparent;
+  bool hasmedia;
 };
 
 struct MountStatus {
@@ -51,6 +53,10 @@ extern MountStatusConnection (*MonitorMountStatus)(MountMonitor monitor, void*);
 
 // Disconnects a listener from the mounting events.
 extern void (*DisconnectMountStatus)(MountStatusConnection connection);
+
+// Mounts a given device path. If successfull, a DISK_CHANGED event will fire
+// after the call. Returns false on failure.
+extern bool (*MountDevicePath)(const char* device_path);
 
 // Returns a list of all the available removeable devices that are found on
 // the device.  If the device not mounted, it will be mounted, and an event

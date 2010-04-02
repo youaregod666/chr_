@@ -64,12 +64,13 @@
 //      GetEnabledTechnologies
 //  14: Removed deprecated method
 //  15: Added SetLanguageActivated and SetImePropertyActivated
+//  16: Added MountDevicePath function, removed automatic mounting
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 13,
-  kCrosAPIVersion = 15
+  kCrosAPIVersion = 16
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
@@ -84,4 +85,3 @@ bool LoadLibcros(const char* path_to_libcros, std::string& load_error);
 }  // namespace chromeos
 
 #endif /* CHROMEOS_CROS_API_VERSION_H_ */
-
