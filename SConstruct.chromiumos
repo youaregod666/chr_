@@ -7,6 +7,7 @@ import sys
 
 SOURCES=['chromeos_cryptohome.cc',
          'chromeos_ime.cc',
+         'chromeos_keyboard.cc',
          'chromeos_language.cc',
          'chromeos_login.cc',
          'chromeos_mount.cc',
@@ -66,6 +67,7 @@ Load = env_test.Object('load.cc')
 tests = [
   env_test.Program('monitor_power', ['monitor_power.cc', Load]),
   env_gtest.Program('monitor_language', ['monitor_language.cc', Load]),
+  env_gtest.Program('monitor_keyboard', ['monitor_keyboard.cc', Load]),
   env_test.Program('monitor_network', ['monitor_network.cc', Load]),
   env_test.Program('monitor_mount', ['monitor_mount.cc', Load]),
   env_test.Program('monitor_ime', ['monitor_ime.cc', Load]),

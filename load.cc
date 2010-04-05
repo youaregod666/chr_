@@ -8,6 +8,7 @@
 
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_ime.h"  // NOLINT
+#include "chromeos_keyboard.h"  // NOLINT
 #include "chromeos_language.h"  // NOLINT
 #include "chromeos_login.h"  // NOLINT
 #include "chromeos_mount.h"  // NOLINT
@@ -94,6 +95,10 @@ DECL_FUNC_2(MonitorImeStatus,
     ImeStatusConnection*, const ImeStatusMonitorFunctions&, void*);
 DECL_FUNC_1(DisconnectImeStatus, void, ImeStatusConnection*);
 DECL_FUNC_4(NotifyCandidateClicked, void, ImeStatusConnection*, int, int, int);
+DECL_FUNC_0(GetCurrentKeyboardLayoutName, std::string);
+DECL_FUNC_1(SetCurrentKeyboardLayoutByName, bool, const std::string&);
+DECL_FUNC_1(GetKeyboardLayoutPerWindow, bool, bool*);
+DECL_FUNC_1(SetKeyboardLayoutPerWindow, bool, bool);
 
 // Mount
 DECL_FUNC_2(MonitorMountStatus, MountStatusConnection, MountMonitor, void*);
@@ -221,6 +226,10 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MonitorImeStatus);
   INIT_FUNC(DisconnectImeStatus);
   INIT_FUNC(NotifyCandidateClicked);
+  INIT_FUNC(GetCurrentKeyboardLayoutName);
+  INIT_FUNC(SetCurrentKeyboardLayoutByName);
+  INIT_FUNC(GetKeyboardLayoutPerWindow);
+  INIT_FUNC(SetKeyboardLayoutPerWindow);
 
   // Mount
   INIT_FUNC(MonitorMountStatus);

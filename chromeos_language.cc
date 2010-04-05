@@ -7,7 +7,6 @@
 #include <X11/Xlib.h>
 #include <dbus/dbus-glib-lowlevel.h>  // for dbus_g_connection_get_connection.
 #include <ibus.h>
-#include <libxklavier/xklavier.h>
 
 #include <algorithm>  // for std::sort.
 #include <cstring>  // for std::strcmp.
@@ -433,8 +432,6 @@ class LanguageStatusConnection {
       : monitor_functions_(monitor_functions),
         language_library_(language_library),
         ibus_(NULL),
-        display_(NULL),
-        xkl_engine_(NULL),
         input_context_path_("") {
     DCHECK(monitor_functions_.current_language);
     DCHECK(monitor_functions_.register_ime_properties);
@@ -443,12 +440,6 @@ class LanguageStatusConnection {
   }
 
   ~LanguageStatusConnection() {
-    // Destruct X server objects.
-    if (display_) {
-      XCloseDisplay(display_);
-      // We don't have to destruct xkl_engine_.
-    }
-
     // Destruct IBus object.
     if (ibus_) {
       if (ibus_bus_is_connected(ibus_)) {
@@ -523,22 +514,6 @@ class LanguageStatusConnection {
     // TODO(yusukes): Investigate if we can automatically restart ibus-gconf,
     // candidate_window, (and ibus-x11?) processes when they die. Upstart only
     // takes care of respawning the ibus-daemon process.
-
-    // Open an X server connection.
-    display_ = XOpenDisplay(NULL);
-    if (!display_) {
-      return false;
-    }
-    xkl_engine_ = xkl_engine_get_instance(display_);
-    if (!xkl_engine_) {
-      return false;
-    }
-
-    // Set the "current group" (current keyboard layout) to be shared globally,
-    // rather than per-window, so we use the same keyboard layout in all
-    // processes.
-    xkl_engine_set_group_per_toplevel_window(xkl_engine_, FALSE);
-    LOG(INFO) << "XKB group setting is now global, not per-window.";
 
     return true;
   }
@@ -1003,10 +978,6 @@ class LanguageStatusConnection {
   scoped_ptr<dbus::BusConnection> dbus_connection_;
   scoped_ptr<dbus::Proxy> dbus_proxy_;
 
-  // Connection to the X server.
-  Display* display_;
-  XklEngine* xkl_engine_;
-  
   // Current input context path.
   std::string input_context_path_;
 };
