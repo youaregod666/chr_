@@ -105,8 +105,12 @@ const std::string ChromeOSGetCurrentKeyboardLayoutName() {
     return "";
   }
   char buf[1024];  // Big enough for setxkbmap output.
-  fread(buf, 1, sizeof(buf), input);
+  const size_t num_bytes = fread(buf, 1, sizeof(buf), input);
   pclose(input);
+  if (num_bytes == 0) {
+    LOG(ERROR) << "fread() failed (nothings is read)";
+    return "";
+  }
 
   // Prase a line like:
   // xkb_symbols   { include "pc+us+inet(evdev)"};
