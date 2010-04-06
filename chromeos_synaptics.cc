@@ -9,10 +9,6 @@
 #include "base/logging.h"
 #include "base/string_util.h"
 
-extern "C" {
-#include "synclient.h"
-}
-
 namespace chromeos {  // NOLINT
 
 namespace { // NOLINT
@@ -47,7 +43,7 @@ double ConvertRange(double low, double high, int rangevalue) {
 
 extern "C"
 void ChromeOSSetSynapticsParameter(SynapticsParameter param, int value) {
-  std::string command;
+  std::string command("synclient ");
   switch (param) {
     case PARAM_BOOL_TAP_TO_CLICK:
       // To enable/disable tap-to-click (i.e. a tap on the touchpad is
@@ -55,7 +51,7 @@ void ChromeOSSetSynapticsParameter(SynapticsParameter param, int value) {
       // MaxTapTime is the maximum time (in milliseconds) for detecting a tap.
       // To specify on, we set MaxTapTime to kMaxTapTimeMax.
       // To specify off, we set MaxTapTime to kMaxTapTimeMin.
-      command = StringPrintf("MaxTapTime=%f", (value == 0) ? kMaxTapTimeMin :
+      command += StringPrintf("MaxTapTime=%f", (value == 0) ? kMaxTapTimeMin :
                                                              kMaxTapTimeMax);
       break;
     case PARAM_BOOL_VERTICAL_EDGE_SCROLLING:
@@ -64,7 +60,7 @@ void ChromeOSSetSynapticsParameter(SynapticsParameter param, int value) {
       // control the movement of the vertical scroll bar.
       // To specify on, we set VertEdgeScroll to kVertEdgeScrollMax.
       // To specify off, we set VertEdgeScroll to kVertEdgeScrollMin.
-      command = StringPrintf("VertEdgeScroll=%f", (value == 0) ?
+      command += StringPrintf("VertEdgeScroll=%f", (value == 0) ?
                                                   kVertEdgeScrollMin :
                                                   kVertEdgeScrollMax);
       break;
@@ -75,7 +71,7 @@ void ChromeOSSetSynapticsParameter(SynapticsParameter param, int value) {
       // preference as an int from 1 to 10.
       // A range value of 1 represent a FingerHigh value of kFingerHighMax.
       // A range value of 10 represent a FingerHigh value of kFingerHighMin.
-      command = StringPrintf("FingerHigh=%f", ConvertRange(kFingerHighMax,
+      command += StringPrintf("FingerHigh=%f", ConvertRange(kFingerHighMax,
                                                            kFingerHighMin,
                                                            value));
       break;
@@ -85,16 +81,18 @@ void ChromeOSSetSynapticsParameter(SynapticsParameter param, int value) {
       // an integer between 1 and 10.
       // A range value of 1 represent a MaxSpeed value of kMaxSpeedMin.
       // A range value of 10 represent a MaxSpeed value of kMaxSpeedMax.
-      command = StringPrintf("MaxSpeed=%f", ConvertRange(kMaxSpeedMin,
+      command += StringPrintf("MaxSpeed=%f", ConvertRange(kMaxSpeedMin,
                                                          kMaxSpeedMax,
                                                          value));
       break;
+    default:
+      LOG(WARNING) << "SetSynapticsParameter got unknown param: " << param;
+      return;
   }
 
-  if (!command.empty()) {
-    LOG(INFO) << "Setting synaptics parameter " << command.c_str();
-    SynclientSetParameter(command.c_str());
-  }
+  LOG(INFO) << "Setting synaptics parameter " << command.c_str();
+  if (system(command.c_str()) < 0)
+    LOG(WARNING) << "Got error while running \"" << command << "\"";
 }
 
 }  // namespace chromeos

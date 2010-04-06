@@ -23,7 +23,7 @@ env = Environment(
     CPPPATH=['.', '..'],
     CCFLAGS=['-g'],
     LINKFLAGS=['-fPIC'],
-    LIBS = ['base', 'chromeos', 'rt', 'synaptics'],
+    LIBS = ['base', 'chromeos', 'rt'],
 )
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
   value = os.environ.get(key)
