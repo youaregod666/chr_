@@ -64,6 +64,14 @@ const char* kImeIdsWhitelist[] = {
   // TODO(yusukes): Add tis820 and kesmanee for Thai if needed.
   // TODO(yusukes): Update m17n-db package to the latest so we can use
   // Vietnamese IME which does not require the "get surrounding text" feature.
+
+  // ibux-xkb-layouts IMEs (keyboard layouts).
+  "xkb:fi::fin",
+  "xkb:fr::fra",
+  "xkb:jp::jpn",
+  "xkb:us::eng",
+  "xkb:us:dvorak:eng",
+  // TODO(satorux): Add more keyboard layouts.
 };
 
 // The list of IME property keys that we don't handle.
