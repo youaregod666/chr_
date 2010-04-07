@@ -28,27 +28,27 @@ const char kCandidateWindowService[] = "org.freedesktop.IBus.Panel";
 const char kCandidateWindowObjectPath[] = "/org/chromium/Chrome/LanguageBar";
 const char kCandidateWindowInterface[] = "org.freedesktop.IBus.Panel";
 
-// The list of IME IDs that we handle. This filtering is necessary since some
-// IMEs are definitely unnecessary for us. For example, we should disable
-// "ja:anthy", "zh:cangjie", and "zh:pinyin" engines in ibus-m17n since we
-// (will) have better equivalents outside of ibus-m17n.
-const char* kImeIdsWhitelist[] = {
+// The list of input method IDs that we handle. This filtering is necessary
+// since some input methods are definitely unnecessary for us. For example, we
+// should disable "ja:anthy", "zh:cangjie", and "zh:pinyin" engines in
+// ibus-m17n since we (will) have better equivalents outside of ibus-m17n.
+const char* kInputMethodIdsWhitelist[] = {
   "anthy",  // ibus-anthy (for libcros debugging on Ubuntu 9.10)
   // "chewing",  // ibus-chewing
   "hangul",  // ibus-hangul
   "pinyin",  // ibus-pinyin
   // TODO(yusukes): re-enable chewing once we resolve issue 1253.
 
-  // ibus-table IMEs.
+  // ibus-table input methods.
   "cangjie3",  // ibus-table-cangjie
   "cangjie5",  // ibus-table-cangjie
   // TODO(yusukes): Add additional ibus-table modules here once they're ready.
 
-  // ibus-m17n IMEs (language neutral ones).
+  // ibus-m17n input methods (language neutral ones).
   "m17n:t:latn-pre",
   "m17n:t:latn-post",
 
-  // ibus-m17n IMEs.
+  // ibus-m17n input methods.
   "m17n:ar:kbd",  // Arabic
   "m17n:hr:kbd",  // Croatian
   "m17n:da:post",  // Danish
@@ -59,13 +59,15 @@ const char* kImeIdsWhitelist[] = {
   "m17n:fa:isiri",  // Persian
   "m17n:sr:kbd",  // Serbian
   "m17n:sk:kbd",  // Slovak
-  // TODO(yusukes): Check if we should use the ibus-m17n IME for Swedish.
+  // TODO(yusukes): Check if we should use the ibus-m17n input method for
+  // Swedish.
   "m17n:th:pattachote",  // Thai
   // TODO(yusukes): Add tis820 and kesmanee for Thai if needed.
   // TODO(yusukes): Update m17n-db package to the latest so we can use
-  // Vietnamese IME which does not require the "get surrounding text" feature.
+  // Vietnamese input methods which does not require the "get surrounding text"
+  // feature.
 
-  // ibux-xkb-layouts IMEs (keyboard layouts).
+  // ibux-xkb-layouts input methods (keyboard layouts).
   "xkb:fi::fin",
   "xkb:fr::fra",
   "xkb:jp::jpn",
@@ -74,8 +76,8 @@ const char* kImeIdsWhitelist[] = {
   // TODO(satorux): Add more keyboard layouts.
 };
 
-// The list of IME property keys that we don't handle.
-const char* kImePropertyKeysBlacklist[] = {
+// The list of input method property keys that we don't handle.
+const char* kInputMethodPropertyKeysBlacklist[] = {
   "setup",  // menu for showing setup dialog used in anthy and hangul.
   "chewing_settings_prop",  // menu for showing setup dialog used in chewing.
   "status",  // used in m17n.
@@ -87,31 +89,32 @@ const char* Or(const char* str1, const char* str2) {
 
 // Returns true if |key| is blacklisted.
 bool PropertyKeyIsBlacklisted(const char* key) {
-  for (size_t i = 0; i < arraysize(kImePropertyKeysBlacklist); ++i) {
-    if (!std::strcmp(key, kImePropertyKeysBlacklist[i])) {
+  for (size_t i = 0; i < arraysize(kInputMethodPropertyKeysBlacklist); ++i) {
+    if (!std::strcmp(key, kInputMethodPropertyKeysBlacklist[i])) {
       return true;
     }
   }
   return false;
 }
 
-// Returns true if |ime_id| is whitelisted.
-bool ImeIdIsWhitelisted(const char* ime_id) {
+// Returns true if |input_method_id| is whitelisted.
+bool InputMethodIdIsWhitelisted(const char* input_method_id) {
   // TODO(yusukes): Use hash_set if necessary.
-  const std::string id = ime_id;
-  for (size_t i = 0; i < arraysize(kImeIdsWhitelist); ++i) {
+  const std::string id = input_method_id;
+  for (size_t i = 0; i < arraysize(kInputMethodIdsWhitelist); ++i) {
     // Older version of m17n-db which is used in Ubuntu 9.10
     // doesn't add the "m17n:" prefix. We support both.
-    if ((id == kImeIdsWhitelist[i]) || ("m17n:" + id == kImeIdsWhitelist[i])) {
+    if ((id == kInputMethodIdsWhitelist[i]) ||
+        ("m17n:" + id == kInputMethodIdsWhitelist[i])) {
       return true;
     }
   }
   return false;
 }
 
-// Frees IME names in |engines| and the list itself. Please make sure that
-// |engines| points the head of the list.
-void FreeIMELanguages(GList* engines) {
+// Frees input method names in |engines| and the list itself. Please make sure
+// that |engines| points the head of the list.
+void FreeInputMethodNames(GList* engines) {
   if (engines) {
     for (GList* cursor = engines; cursor; cursor = g_list_next(cursor)) {
       g_object_unref(IBUS_ENGINE_DESC(cursor->data));
@@ -120,16 +123,16 @@ void FreeIMELanguages(GList* engines) {
   }
 }
 
-// Copies IME names in |engines| to |out|.
-void AddIMELanguages(const GList* engines, chromeos::InputLanguageList* out) {
+// Copies input method names in |engines| to |out|.
+void AddInputMethodNames(
+    const GList* engines, chromeos::InputMethodDescriptors* out) {
   DCHECK(out);
   for (; engines; engines = g_list_next(engines)) {
     IBusEngineDesc* engine_desc = IBUS_ENGINE_DESC(engines->data);
-    if (ImeIdIsWhitelisted(engine_desc->name)) {
-      out->push_back(chromeos::InputLanguage(
-          chromeos::LANGUAGE_CATEGORY_IME,
-          engine_desc->name, engine_desc->longname, engine_desc->icon,
-          engine_desc->language));
+    if (InputMethodIdIsWhitelisted(engine_desc->name)) {
+      out->push_back(chromeos::InputMethodDescriptor(engine_desc->name,
+                                                     engine_desc->longname,
+                                                     engine_desc->language));
       LOG(INFO) << engine_desc->name << " (SUPPORTED)";
     } else {
       LOG(INFO) << engine_desc->name << " (not supported)";
@@ -137,11 +140,11 @@ void AddIMELanguages(const GList* engines, chromeos::InputLanguageList* out) {
   }
 }
 
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 // Copies XKB layout names in (TBD) to |out|.
-void AddXKBLayouts(chromeos::InputLanguageList* out) {
+void AddXKBLayouts(chromeos::InputMethodDescriptors* out) {
   DCHECK(out);
-  // TODO(yusukes): implement this.
-  out->push_back(chromeos::InputLanguage(
+  out->push_back(chromeos::InputMethodDescriptor(
       chromeos::LANGUAGE_CATEGORY_XKB,
       kFallbackXKBId,
       kFallbackXKBDisplayName,
@@ -238,7 +241,6 @@ bool ConvertProperty(IBusProperty* ibus_prop,
   }
 
   out_prop_list->push_back(chromeos::ImeProperty(ibus_prop->key,
-                                                 ibus_prop->icon,
                                                  label,
                                                  is_selection_item,
                                                  is_selection_item_checked,
@@ -474,7 +476,8 @@ class LanguageStatusConnection {
   // Initializes IBus and DBus connections.
   bool Init() {
     // Establish IBus connection between ibus-daemon to retrieve the list of
-    // available IME engines, change the current IME engine, and so on.
+    // available input method engines, change the current input method engine,
+    // and so on.
     ibus_init();
     ibus_ = ibus_bus_new();
 
@@ -519,28 +522,28 @@ class LanguageStatusConnection {
     // TODO(yusukes): Investigate what happens if candidate_window process is
     // restarted. I'm not sure but we should use dbus_g_proxy_new_for_name(),
     // not dbus_g_proxy_new_for_name_owner()?
-    // TODO(yusukes): Investigate if we can automatically restart ibus-gconf,
+    // TODO(yusukes): Investigate if we can automatically restart ibus-memconf,
     // candidate_window, (and ibus-x11?) processes when they die. Upstart only
     // takes care of respawning the ibus-daemon process.
 
     return true;
   }
 
-  // GetLanguagesMode is used for GetLanguages().
-  enum GetLanguagesMode {
-    kActiveLanguages,  // Get active languages.
-    kSupportedLanguages,  // Get supported languages.
+  // GetInputMethodMode is used for GetInputMethods().
+  enum GetInputMethodMode {
+    kActiveInputMethods,  // Get active input methods.
+    kSupportedInputMethods,  // Get supported input methods.
   };
 
-  // Returns a list of IMEs and XKB layouts that are currently active or
-  // supported depending on |mode|. Returns NULL on error.
-  InputLanguageList* GetLanguages(GetLanguagesMode mode) {
+  // Returns a list of input methods that are currently active or supported
+  // depending on |mode|. Returns NULL on error.
+  InputMethodDescriptors* GetInputMethods(GetInputMethodMode mode) {
     GList* engines = NULL;
-    if (mode == kActiveLanguages) {
-      LOG(INFO) << "GetLanguages (kActiveLanguages)";
+    if (mode == kActiveInputMethods) {
+      LOG(INFO) << "GetInputMethods (kActiveInputMethods)";
       engines = ibus_bus_list_active_engines(ibus_);
-    } else if (mode == kSupportedLanguages) {
-      LOG(INFO) << "GetLanguages (kSupportedLanguages)";
+    } else if (mode == kSupportedInputMethods) {
+      LOG(INFO) << "GetInputMethods (kSupportedInputMethods)";
       engines = ibus_bus_list_engines(ibus_);
     } else {
       NOTREACHED();
@@ -549,13 +552,15 @@ class LanguageStatusConnection {
     // Note that it's not an error for |engines| to be NULL.
     // NULL simply means an empty GList.
 
-    InputLanguageList* language_list = new InputLanguageList;
-    AddIMELanguages(engines, language_list);
-    AddXKBLayouts(language_list);
-    std::sort(language_list->begin(), language_list->end());
+    InputMethodDescriptors* input_methods = new InputMethodDescriptors;
+    AddInputMethodNames(engines, input_methods);
+    AddXKBLayouts(input_methods);
 
-    FreeIMELanguages(engines);
-    return language_list;
+    // TODO(yusukes): We can remove sort() now?
+    std::sort(input_methods->begin(), input_methods->end());
+
+    FreeInputMethodNames(engines);
+    return input_methods;
   }
 
   // Called by cros API ChromeOS(Activate|Deactive)ImeProperty().
@@ -576,6 +581,7 @@ class LanguageStatusConnection {
     UpdateUI();
   }
 
+  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
   // Called by cros API ChromeOSChangeLanguage().
   void ChangeLanguage(LanguageCategory category, const char* name) {
     // Clear all IME properties unconditionally.
@@ -600,23 +606,45 @@ class LanguageStatusConnection {
     }
   }
 
-  // Called by cros API ChromeOSSetLanguageActivated().
-  bool SetXkbActivated(const char* xkb_name, bool activated) {
-    // TODO(yusukes,satorux): implement this.
-    return false;
+  // Called by cros API ChromeOSChangeInputMethod().
+  bool ChangeInputMethod(const char* name) {
+    if (input_context_path_.empty()) {
+      LOG(ERROR) << "Input context is unknown";
+      return false;
+    }
+
+    IBusInputContext* context = GetInputContext(input_context_path_, ibus_);
+    if (!context) {
+      LOG(ERROR) << "Input context is unknown";
+      return false;
+    }
+
+    // Clear all input method properties unconditionally.
+    //
+    // When switching to another input method and no text area is focused,
+    // RegisterProperties signal for the new input method will NOT be sent
+    // until a text area is focused. Therefore, we have to clear the old input
+    // method properties here to keep the input method switcher status
+    // consistent.
+    RegisterProperties(NULL);
+
+    ibus_input_context_set_engine(context, name);
+    g_object_unref(context);
+    UpdateUI();
+    return true;
   }
 
   // Called by cros API ChromeOSSetLanguageActivated().
-  bool SetImeActivated(const char* ime_name, bool activated) {
+  bool SetInputMethodActivated(const char* input_method_id, bool activated) {
     GList* const engines = ibus_bus_list_active_engines(ibus_);
 
     // Convert |engines| to a GValueArray of names.
     GValueArray* engine_names = g_value_array_new(0);
     for (GList* cursor = engines; cursor; cursor = g_list_next(cursor)) {
       IBusEngineDesc* engine_desc = IBUS_ENGINE_DESC(cursor->data);
-      // Skip the IME if the mode is to deactivate and it matches the given
-      // name.
-      if (!activated && std::strcmp(engine_desc->name, ime_name) == 0) {
+      // Skip the input method if the mode is to deactivate and it matches the
+      // given name.
+      if (!activated && std::strcmp(engine_desc->name, input_method_id) == 0) {
         continue;
       }
       GValue name_value = { 0 };
@@ -627,11 +655,11 @@ class LanguageStatusConnection {
     }
 
     if (activated) {
-      // Add a new IME here.
+      // Add a new input method here.
       GValue name_value = { 0 };
       g_value_init(&name_value, G_TYPE_STRING);
-      g_value_set_string(&name_value, ime_name);
-      // Prepend to add the new IME as the first choice.
+      g_value_set_string(&name_value, input_method_id);
+      // Prepend to add the new input method as the first choice.
       g_value_array_prepend(engine_names, &name_value);
       g_value_unset(&name_value);
     }
@@ -646,7 +674,7 @@ class LanguageStatusConnection {
     const bool success = SetImeConfig("general", "preload_engines", &value);
     g_value_unset(&value);
 
-    FreeIMELanguages(engines);
+    FreeInputMethodNames(engines);
     return success;
   }
 
@@ -665,7 +693,7 @@ class LanguageStatusConnection {
     g_return_val_if_fail(ibus_config, false);
 
     // TODO(yusukes): make sure the get_value() function does not abort even
-    // when the ibus-gconf process does not exist.
+    // when the ibus-memconf process does not exist.
     const gboolean success = ibus_config_get_value(ibus_config,
                                                    section,
                                                    config_name,
@@ -695,10 +723,8 @@ class LanguageStatusConnection {
     return (success == TRUE);
   }
 
-  // Checks if IBus and X server (XKB) connections are alive.
+  // Checks if IBus connection is alive.
   bool ConnectionIsAlive() {
-    // TODO(yusukes): check X server (XKB) connection.
-
     // Note: Since the IBus connection automatically recovers even if
     // ibus-daemon reboots, ibus_bus_is_connected() usually returns true.
     return (ibus_ && (ibus_bus_is_connected(ibus_) == TRUE)) ? true : false;
@@ -730,9 +756,9 @@ class LanguageStatusConnection {
     return ibus_config;
   }
 
+  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
   // Changes the current language to |name|, which is XKB layout.
   void SwitchToXKB(const char* name) {
-    // TODO(yusukes): implement XKB switching.
     if (input_context_path_.empty()) {
       LOG(ERROR) << "Input context is unknown";
       return;
@@ -747,6 +773,7 @@ class LanguageStatusConnection {
     UpdateUI();
   }
 
+  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
   // Changes the current language to |name|, which is IME.
   void SwitchToIME(const char* name) {
     if (input_context_path_.empty()) {
@@ -773,7 +800,7 @@ class LanguageStatusConnection {
 
     // Remember the current ic path.
     input_context_path_ = Or(input_context_path, "");
-    UpdateUI();  // This is necessary since IME status is held per ic.
+    UpdateUI();  // This is necessary since input method status is held per ic.
   }
 
   // Handles "FocusOut" signal from the candidate_window process.
@@ -824,7 +851,7 @@ class LanguageStatusConnection {
     }
   }
 
-  // Retrieve IME/XKB status and notify them to the UI.
+  // Retrieve input method status and notify them to the UI.
   void UpdateUI() {
     if (input_context_path_.empty()) {
       LOG(ERROR) << "Input context is unknown";
@@ -836,11 +863,15 @@ class LanguageStatusConnection {
       return;
     }
 
-    InputLanguage current_language;
-    const bool ime_is_enabled = ibus_input_context_is_enabled(context);
-    if (ime_is_enabled) {
-      DLOG(INFO) << "IME is active";
-      // Set IME name on current_language.
+    InputMethodDescriptor current_input_method;
+    const bool input_method_is_enabled = ibus_input_context_is_enabled(context);
+    // TODO(yusukes): We're planning to remove all ibus_input_context_disable()
+    // calls and to remove IBus's enable/disable hot keys. When we get these
+    // thing done, |input_method_is_enabled| would be always true.
+
+    if (input_method_is_enabled) {
+      DLOG(INFO) << "input method is active";
+      // Set input method name on current_input_method.
       const IBusEngineDesc* engine_desc
           = ibus_input_context_get_engine(context);
       DCHECK(engine_desc);
@@ -848,26 +879,25 @@ class LanguageStatusConnection {
         g_object_unref(context);
         return;
       }
-      current_language = InputLanguage(LANGUAGE_CATEGORY_IME,
-                                       engine_desc->name,
-                                       engine_desc->longname,
-                                       engine_desc->icon,
-                                       engine_desc->language);
+      current_input_method = InputMethodDescriptor(engine_desc->name,
+                                                   engine_desc->longname,
+                                                   engine_desc->language);
     } else {
-      DLOG(INFO) << "IME is not active";
-      // Set XKB layout name on current_languages.
-      current_language = InputLanguage(LANGUAGE_CATEGORY_XKB,
-                                       kFallbackXKBId,
-                                       kFallbackXKBDisplayName,
-                                       "" /* no icon */,
-                                       kFallbackXKBLanguageCode);  // mock
-      // TODO(yusukes): implemente this.
+      // DEPRECATED: TODO(yusukes): Remove this part when it's ready.
+      DLOG(INFO) << "input method is not active";
+      // Set XKB layout name on current_input_methods.
+      current_input_method = InputMethodDescriptor(LANGUAGE_CATEGORY_XKB,
+                                                   kFallbackXKBId,
+                                                   kFallbackXKBDisplayName,
+                                                   "" /* no icon */,
+                                                   kFallbackXKBLanguageCode);
     }
-    DLOG(INFO) << "Updating the UI. ID:" << current_language.id
-               << ", display_name:" << current_language.display_name;
+    DLOG(INFO) << "Updating the UI. ID:" << current_input_method.id
+               << ", display_name:" << current_input_method.display_name;
 
     // Notify the change to update UI.
-    monitor_functions_.current_language(language_library_, current_language);
+    monitor_functions_.current_language(
+        language_library_, current_input_method);
     g_object_unref(context);
   }
 
@@ -1019,21 +1049,35 @@ void ChromeOSDisconnectLanguageStatus(LanguageStatusConnection* connection) {
 }
 
 extern "C"
-InputLanguageList* ChromeOSGetActiveLanguages(
+InputMethodDescriptors* ChromeOSGetActiveInputMethods(
     LanguageStatusConnection* connection) {
   g_return_val_if_fail(connection, NULL);
-  // Pass ownership to a caller. Note: GetLanguages() might return NULL.
-  return connection->GetLanguages(
-      LanguageStatusConnection::kActiveLanguages);
+  // Pass ownership to a caller. Note: GetInputMethods() might return NULL.
+  return connection->GetInputMethods(
+      LanguageStatusConnection::kActiveInputMethods);
 }
 
 extern "C"
-InputLanguageList* ChromeOSGetSupportedLanguages(
+InputMethodDescriptors* ChromeOSGetSupportedInputMethods(
     LanguageStatusConnection* connection) {
   g_return_val_if_fail(connection, NULL);
-  // Pass ownership to a caller. Note: GetLanguages() might return NULL.
-  return connection->GetLanguages(
-      LanguageStatusConnection::kSupportedLanguages);
+  // Pass ownership to a caller. Note: GetInputMethods() might return NULL.
+  return connection->GetInputMethods(
+      LanguageStatusConnection::kSupportedInputMethods);
+}
+
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
+extern "C"
+InputLanguageList* ChromeOSGetActiveLanguages(
+    LanguageStatusConnection* connection) {
+  return ChromeOSGetActiveInputMethods(connection);
+}
+
+// DEPRECATED: TODO(satorux): Remove this when it's ready.
+extern "C"
+InputLanguageList* ChromeOSGetSupportedLanguages(
+    LanguageStatusConnection* connection) {
+  return ChromeOSGetSupportedInputMethods(connection);
 }
 
 extern "C"
@@ -1059,6 +1103,7 @@ void ChromeOSDeactivateImeProperty(
   ChromeOSSetImePropertyActivated(connection, key, false);
 }
 
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 extern "C"
 void ChromeOSChangeLanguage(LanguageStatusConnection* connection,
                             LanguageCategory category,
@@ -1071,6 +1116,16 @@ void ChromeOSChangeLanguage(LanguageStatusConnection* connection,
 }
 
 extern "C"
+bool ChromeOSChangeInputMethod(
+    LanguageStatusConnection* connection, const char* name) {
+  DCHECK(name);
+  DLOG(INFO) << "ChangeInputMethod: " << name;
+  g_return_val_if_fail(connection, false);
+  return connection->ChangeInputMethod(name);
+}
+
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
+extern "C"
 bool ChromeOSSetLanguageActivated(LanguageStatusConnection* connection,
                                   LanguageCategory category,
                                   const char* name,
@@ -1080,13 +1135,20 @@ bool ChromeOSSetLanguageActivated(LanguageStatusConnection* connection,
 
   DCHECK(name);
   g_return_val_if_fail(connection, FALSE);
-  bool success = false;
-  if (category == LANGUAGE_CATEGORY_XKB) {
-    success = connection->SetXkbActivated(name, activated);
-  } else if (category == LANGUAGE_CATEGORY_IME) {
-    success = connection->SetImeActivated(name, activated);
+  if (category == LANGUAGE_CATEGORY_IME) {
+    return connection->SetInputMethodActivated(name, activated);
   }
-  return success;
+  return false;
+}
+
+extern "C"
+bool ChromeOSSetInputMethodActivated(LanguageStatusConnection* connection,
+                                     const char* name,
+                                     bool activated) {
+  DCHECK(name);
+  DLOG(INFO) << "SetInputMethodActivated: " << name << ": " << activated;
+  g_return_val_if_fail(connection, FALSE);
+  return connection->SetInputMethodActivated(name, activated);
 }
 
 // DEPRECATED: TODO(satorux): Remove this when it's ready.

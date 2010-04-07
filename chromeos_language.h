@@ -12,21 +12,37 @@
 #include <base/basictypes.h>
 #include <base/logging.h>  // DCHECK
 
+static const char kFallbackInputMethodId[] = "xkb:us::eng";
+static const char kFallbackInputMethodDisplayName[] = "English";
+static const char kFallbackInputMethodLanguageCode[] = "eng";
+static const int kInvalidSelectionItemId = -1;
+
+// DEPRECATED: TODO(yusukes): Remove or modify this when it's ready.
 static const char kFallbackXKBId[] = "USA";
 static const char kFallbackXKBDisplayName[] = "US";
-static const int kInvalidSelectionItemId = -1;
 static const char kFallbackXKBLanguageCode[] = "en";
 
 namespace chromeos {
 
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 enum LanguageCategory {
   LANGUAGE_CATEGORY_XKB,
   LANGUAGE_CATEGORY_IME,
 };
 
-// A structure which represents an IME language or a XKB layout.
-struct InputLanguage {
-  InputLanguage(LanguageCategory in_category,
+// A structure which represents an input method.
+struct InputMethodDescriptor {
+  InputMethodDescriptor(const std::string& in_id,
+                        const std::string& in_display_name,
+                        const std::string& in_language_code)
+      : category(LANGUAGE_CATEGORY_IME),
+        id(in_id),
+        display_name(in_display_name),
+        language_code(in_language_code) {
+  }
+
+  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
+  InputMethodDescriptor(LanguageCategory in_category,
                 const std::string& in_id,
                 const std::string& in_display_name,
                 const std::string& in_icon_path,
@@ -34,19 +50,15 @@ struct InputLanguage {
       : category(in_category),
         id(in_id),
         display_name(in_display_name),
-        icon_path(in_icon_path),
         language_code(in_language_code) {
   }
 
-  InputLanguage() : category(LANGUAGE_CATEGORY_XKB) {
+  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
+  InputMethodDescriptor() : category(LANGUAGE_CATEGORY_XKB) {
   }
 
-  // Languages are sorted by category, then by language_code,
-  // then by display_name, then by id.
-  bool operator<(const InputLanguage& other) const {
-    if (category != other.category) {
-      return category < other.category;
-    }
+  // Languages are sorted by language_code, then by display_name, then by id.
+  bool operator<(const InputMethodDescriptor& other) const {
     if (language_code != other.language_code) {
       return language_code < other.language_code;
     }
@@ -56,49 +68,50 @@ struct InputLanguage {
     return id < other.id;
   }
 
-  bool operator==(const InputLanguage& other) const {
-    return (category == other.category) && (id == other.id);
+  bool operator==(const InputMethodDescriptor& other) const {
+    return (id == other.id);
   }
 
   // Debug print function.
   std::string ToString() const {
     std::stringstream stream;
-    stream << "category=" << category
-           << ", id=" << id
+    stream << "id=" << id
            << ", display_name=" << display_name
-           << ", icon_path=" << icon_path
            << ", language_code=" << language_code;
     return stream.str();
   }
 
+  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
   LanguageCategory category;
 
-  // An ID that identifies an IME engine or a XKB layout (e.g., "anthy",
-  // "t:latn-post", "chewing").
+  // An ID that identifies an input method engine (e.g., "t:latn-post",
+  // "pinyin", "hangul").
   std::string id;
-  // An IME or layout name which is used in the UI (e.g., "Anthy").
+  // An input method name which can be used in the UI (e.g., "Pinyin").
   std::string display_name;
-  // Path to an icon (e.g., "/usr/share/ibus-chewing/icons/ibus-chewing.png").
-  // Empty if it does not exist.
+  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
   std::string icon_path;
   // Language codes like "ko", "ja", "zh_CN", and "t".
   // "t" is used for languages in the "Others" category.
   std::string language_code;
 };
-typedef std::vector<InputLanguage> InputLanguageList;
+typedef std::vector<InputMethodDescriptor> InputMethodDescriptors;
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
+typedef InputMethodDescriptor InputLanguage;
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
+typedef InputMethodDescriptors InputLanguageList;
 
-// A structure which represents a property for an IME engine. For details,
-// please check a comment for the LanguageRegisterImePropertiesFunction typedef
-// below.
+// A structure which represents a property for an input method engine. For
+// details, please check a comment for the LanguageRegisterImePropertiesFunction
+// typedef below.
+// TODO(yusukes): Rename this struct. "InputMethodProperty" might be better?
 struct ImeProperty {
   ImeProperty(const std::string& in_key,
-              const std::string& in_icon_path,
               const std::string& in_label,
               bool in_is_selection_item,
               bool in_is_selection_item_checked,
               int in_selection_item_id)
       : key(in_key),
-        icon_path(in_icon_path),
         label(in_label),
         is_selection_item(in_is_selection_item),
         is_selection_item_checked(in_is_selection_item_checked),
@@ -116,7 +129,6 @@ struct ImeProperty {
   std::string ToString() const {
     std::stringstream stream;
     stream << "key=" << key
-           << ", icon_path=" << icon_path
            << ", label=" << label
            << ", is_selection_item=" << is_selection_item
            << ", is_selection_item_checked=" << is_selection_item_checked
@@ -126,6 +138,7 @@ struct ImeProperty {
 
   std::string key;  // A key which identifies the property. Non-empty string.
                     // (e.g. "InputMode.HalfWidthKatakana")
+  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
   std::string icon_path;  // Path to an icon. Can be empty.
   std::string label;  // A description of the property. Non-empty string.
                       // (e.g. "Switch to full punctuation mode", "Hiragana")
@@ -138,8 +151,9 @@ struct ImeProperty {
 };
 typedef std::vector<ImeProperty> ImePropertyList;
 
-// A structure which represents a value of an IME configuration item.
+// A structure which represents a value of an input method configuration item.
 // This struct is used by GetImeConfig() and SetImeConfig() cros APIs.
+// TODO(yusukes): Rename this struct. "InputMethodConfigValue" might be better?
 struct ImeConfigValue {
   ImeConfigValue()
       : type(kValueTypeString),
@@ -185,6 +199,7 @@ struct ImeConfigValue {
   std::vector<std::string> string_list_value;
 };
 
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 // Creates dummy InputLanguageList object. Usually, this function is called only
 // on development enviromnent where libcros.so does not exist. So, obviously
 // you can not move this function to libcros.so. This function is called by
@@ -200,15 +215,33 @@ inline InputLanguageList* CreateFallbackInputLanguageList() {
   return language_list;
 }
 
-// A monitor function which is called when current IME language or XKB layout
-// is changed by user.
+// Creates dummy InputMethodDescriptors object. Usually, this function is
+// called only on development enviromnent where libcros.so does not exist.
+// So, obviously you can not move this function to libcros.so.
+// This function is called by src/chrome/browser/chromeos/language_library.cc
+// when EnsureLoaded() fails.
+inline InputMethodDescriptors* CreateFallbackInputMethodDescriptors() {
+  InputMethodDescriptors* descriptions = new InputMethodDescriptors;
+  descriptions->push_back(
+      InputMethodDescriptor(kFallbackInputMethodId,
+                            kFallbackInputMethodDisplayName,
+                            kFallbackInputMethodLanguageCode));
+  return descriptions;
+}
+
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 typedef void(*LanguageCurrentLanguageMonitorFunction)(
-    void* language_library, const InputLanguage& current_language);
+    void* language_library, const InputMethodDescriptor& current_engine);
+
+// A monitor function which is called when current input method engine is
+// changed by user.
+typedef LanguageCurrentLanguageMonitorFunction
+    LanguageCurrentInputMethodMonitorFunction;
 
 // A monitor function which is called when "RegisterProperties" signal is sent
 // from the candidate_window process. The signal contains a list of properties
-// for a specific IME engine. For example, Japanese IME (ibus-anthy) might have
-// the following properties:
+// for a specific input method engine. For example, Japanese input method
+// (ibus-anthy) might have the following properties:
 //
 // ----------------------------------
 //   key: InputMode.Hiragana
@@ -232,7 +265,7 @@ typedef void(*LanguageRegisterImePropertiesFunction)(
 // from the candidate_window process. The signal contains one or more
 // properties which is updated recently. Keys the signal contains are a subset
 // of keys registered by the "RegisterProperties" signal above. For example,
-// Japanese IME (ibus-anthy) might send the following properties:
+// Japanese input method (ibus-anthy) might send the following properties:
 //
 // ----------------------------------
 //   key: InputMode.Hiragana
@@ -259,14 +292,15 @@ struct LanguageStatusMonitorFunctions {
         register_ime_properties(NULL),
         update_ime_property(NULL) {
   }
-  LanguageCurrentLanguageMonitorFunction current_language;
+  // TODO(yusukes): Rename |current_language|. |current_input_method| is better?
+  LanguageCurrentInputMethodMonitorFunction current_language;
   LanguageRegisterImePropertiesFunction register_ime_properties;
   LanguageUpdateImePropertyFunction update_ime_property;
 };
 
 // Establishes IBus connection to the ibus-daemon and DBus connection to
-// the candidate window process. |monitor_function| will be called when IME
-// language or XKB layout is changed.
+// the candidate window process. |monitor_function| will be called when an
+// input method engine is changed.
 class LanguageStatusConnection;
 extern LanguageStatusConnection* (*MonitorLanguageStatus)(
     LanguageStatusMonitorFunctions monitor_funcions, void* language_library);
@@ -274,23 +308,38 @@ extern LanguageStatusConnection* (*MonitorLanguageStatus)(
 // Terminates IBus and DBus connections.
 extern void (*DisconnectLanguageStatus)(LanguageStatusConnection* connection);
 
-// Gets all IME languages and XKB layouts that are currently active. Caller
-// has to delete the returned list. This function might return NULL on error.
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 extern InputLanguageList* (*GetActiveLanguages)(LanguageStatusConnection*
                                                 connection);
 
-// Gets all IME languages and XKB layouts that are supported, including ones
-// not active. Caller has to delete the returned list. This function might
-// return NULL on error.
+// Gets all input method engines that are currently active. Caller has to
+// delete the returned list. This function might return NULL on error.
+extern InputMethodDescriptors* (*GetActiveInputMethods)(
+    LanguageStatusConnection* connection);
+
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 extern InputLanguageList* (*GetSupportedLanguages)(LanguageStatusConnection*
                                                    connection);
 
+// Gets all input method engines that are supported, including ones not active.
+// Caller has to delete the returned list. This function might return NULL on
+// error.
+extern InputMethodDescriptors* (*GetSupportedInputMethods)(
+    LanguageStatusConnection* connection);
+
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 // Changes the current IME engine to |name| and enable IME (when |category| is
 // LANGUAGE_CATEGORY_IME). Changes the current XKB layout to |name| and disable
 // IME (when |category| is LANGUAGE_CATEGORY_XKB).
 extern void (*ChangeLanguage)(LanguageStatusConnection* connection,
                               LanguageCategory category, const char* name);
 
+// Changes the current input method engine to |name|. Returns true on success.
+// Examples of names: "pinyin", "m17n:ar:kbd", "xkb:us:dvorak:eng".
+extern bool (*ChangeInputMethod)(
+    LanguageStatusConnection* connection, const char* name);
+
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 // Sets whether the language specified by |category| and |id| is
 // activated. If |activated| is true, activates the language. If
 // |activated| is false, deactivates the language. Returns true on success.
@@ -299,9 +348,16 @@ extern bool (*SetLanguageActivated)(LanguageStatusConnection* connection,
                                     const char* name,
                                     bool activated);
 
-// Sets whether the IME property specified by |key| is activated. If
-// |activated| is true, activates the property. If |activated| is false,
+// Sets whether the input method specified by |name| is activated.
+// If |activated| is true activates the input method. If |activated| is false,
+// deactivates the input method. Returns true on success.
+extern bool (*SetInputMethodActivated)(
+    LanguageStatusConnection* connection, const char* name, bool activated);
+
+// Sets whether the input method property specified by |key| is activated.
+// If |activated| is true, activates the property. If |activated| is false,
 // deactivates the property.
+// TODO(yusukes): "SetInputMethodPropertyActivated" might be better?
 extern void (*SetImePropertyActivated)(LanguageStatusConnection* connection,
                                        const char* key,
                                        bool activated);
@@ -333,15 +389,9 @@ extern void (*DeactivateImeProperty)(LanguageStatusConnection* connection,
 // Get a configuration of ibus-daemon or IBus engines and stores it on
 // |out_value|. Returns true if |out_value| is successfully updated.
 //
-// To retrieve 'panel/custom_font' (see below), |section| should be "panel",
-// and |config_name| should be "custom_font".
-//
-// % gconftool-2 --dump /desktop/ibus | grep -A 3 -B 1 '<key>panel/custom_font'
-//     <entry>
-//       <key>panel/custom_font</key>
-//       <value>
-//         <string>Sans 10</string>
-//       </value>
+// To retrieve 'panel/custom_font', |section| should be "panel", and
+// |config_name| should be "custom_font".
+// TODO(yusukes): "GetInputMethodConfig" might be better?
 extern bool (*GetImeConfig)(LanguageStatusConnection* connection,
                             const char* section,
                             const char* config_name,
@@ -351,12 +401,13 @@ extern bool (*GetImeConfig)(LanguageStatusConnection* connection,
 // Returns true if the configuration is successfully updated.
 // You can specify |section| and |config_name| arguments in the same way
 // as GetImeConfig() above.
+// TODO(yusukes): "SetInputMethodConfig" might be better?
 extern bool (*SetImeConfig)(LanguageStatusConnection* connection,
                             const char* section,
                             const char* config_name,
                             const ImeConfigValue& value);
 
-// Returns true if IBus and XKB sessions are still alive.
+// Returns true if IBus connection is still alive.
 // If this function returns false, you might have to discard the current
 // |connection| by calling DisconnectLanguageStatus() API above, and create
 // a new connection by calling MonitorLanguageStatus() API.

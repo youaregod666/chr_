@@ -61,13 +61,25 @@ DECL_FUNC_1(RetrievePowerInformation, bool, PowerInformation*);
 DECL_FUNC_2(MonitorLanguageStatus,
     LanguageStatusConnection*, LanguageStatusMonitorFunctions, void*);
 DECL_FUNC_1(DisconnectLanguageStatus, void, LanguageStatusConnection*);
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 DECL_FUNC_1(GetSupportedLanguages,
     InputLanguageList*, LanguageStatusConnection*);
+DECL_FUNC_1(GetSupportedInputMethods,
+    InputLanguageList*, LanguageStatusConnection*);
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 DECL_FUNC_1(GetActiveLanguages, InputLanguageList*, LanguageStatusConnection*);
+DECL_FUNC_1(GetActiveInputMethods,
+    InputLanguageList*, LanguageStatusConnection*);
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 DECL_FUNC_3(ChangeLanguage,
     void, LanguageStatusConnection*, LanguageCategory, const char*);
+DECL_FUNC_2(ChangeInputMethod,
+    bool, LanguageStatusConnection*, const char*);
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 DECL_FUNC_4(SetLanguageActivated,
     bool, LanguageStatusConnection*, LanguageCategory, const char*, bool);
+DECL_FUNC_3(SetInputMethodActivated,
+    bool, LanguageStatusConnection*, const char*, bool);
 DECL_FUNC_3(SetImePropertyActivated,
     void, LanguageStatusConnection*, const char*, bool);
 // DEPRECATED: TODO(satorux): Remove this when it's ready.
@@ -213,8 +225,12 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(DisconnectLanguageStatus);
   INIT_FUNC(GetSupportedLanguages);
   INIT_FUNC(GetActiveLanguages);
+  INIT_FUNC(GetSupportedInputMethods);
+  INIT_FUNC(GetActiveInputMethods);
   INIT_FUNC(ChangeLanguage);
+  INIT_FUNC(ChangeInputMethod);
   INIT_FUNC(SetLanguageActivated);
+  INIT_FUNC(SetInputMethodActivated);
   INIT_FUNC(SetImePropertyActivated);
   INIT_FUNC(ActivateLanguage);
   INIT_FUNC(DeactivateLanguage);

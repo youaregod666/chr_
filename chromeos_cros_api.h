@@ -67,12 +67,14 @@
 //  16: Added MountDevicePath function, removed automatic mounting
 //  17: Added GetCurrentKeyboardLayoutName, SetCurrentKeyboardLayoutByName,
 //      GetKeyboardLayoutPerWindow, SetKeyboardLayoutPerWindow
+//  18: Added GetActiveInputMethods, GetSupportedInputMethods,
+//      ChangeInputMethod, SetInputMethodActivated
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 13,
-  kCrosAPIVersion = 17
+  kCrosAPIVersion = 18
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
