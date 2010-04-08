@@ -4,7 +4,6 @@
 
 #include "chromeos_language.h"
 
-#include <X11/Xlib.h>
 #include <dbus/dbus-glib-lowlevel.h>  // for dbus_g_connection_get_connection.
 #include <ibus.h>
 
@@ -16,11 +15,6 @@
 
 #include "chromeos/dbus/dbus.h"
 #include "chromeos/glib/object.h"
-
-// Note: X11/Xlib.h defines macros like FocusIn and FocusOut. Since we're using
-// them as function names in this file, undef them here.
-#undef FocusIn
-#undef FocusOut
 
 namespace {
 
