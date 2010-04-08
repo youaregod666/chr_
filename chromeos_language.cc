@@ -825,7 +825,12 @@ class LanguageStatusConnection {
       //   LOG(INFO) << "\n" << PrintPropList(ibus_prop_list, 0);
       // here to dump |ibus_prop_list|.
       if (!FlattenPropertyList(ibus_prop_list, &prop_list)) {
-        LOG(WARNING) << "Malformed properties are detected";
+        LOG(ERROR) << "Malformed properties are detected";
+        // Clear properties on errors.
+        // TODO(yusukes): ibus-xkb-layouts seems to send an unexpected prop list
+        // to us. Will investigate this.
+        RegisterProperties(NULL);
+        return;
       }
     }
     // Notify the change.
@@ -843,7 +848,9 @@ class LanguageStatusConnection {
 
     ImePropertyList prop_list;  // our representation.
     if (!FlattenProperty(ibus_prop, &prop_list)) {
-      LOG(WARNING) << "Malformed properties are detected";
+      // Don't update the UI on errors.
+      LOG(ERROR) << "Malformed properties are detected";
+      return;
     }
     // Notify the change.
     if (!prop_list.empty()) {
