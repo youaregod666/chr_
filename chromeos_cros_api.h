@@ -69,12 +69,16 @@
 //      GetKeyboardLayoutPerWindow, SetKeyboardLayoutPerWindow
 //  18: Added GetActiveInputMethods, GetSupportedInputMethods,
 //      ChangeInputMethod, SetInputMethodActivated
+//  19: Removed loading of deprecated methods: GetSupportedLanguages,
+//      GetActiveLanguages, ChangeLanguage, SetLanguageActivated,
+//      ActivateLanguage, DeactivateLanguage, ActivateImeProperty,
+//      DeactivateImeProperty
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 13,
-  kCrosAPIVersion = 18
+  kCrosAPIVersion = 19
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
