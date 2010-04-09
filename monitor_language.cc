@@ -132,6 +132,60 @@ TEST(GetSetImeConfigTest, Bool) {
   EXPECT_EQ(updated_config.bool_value, dummy_value);
 }
 
+TEST(GetSetImeConfigTest, StringList) {
+  // Write a dummy value to "/desktop/ibus/dummy/dummy_string" in gconf.
+  static const char kSection[] = "dummy";
+  static const char kConfigName[] = "dummy_string_list";
+  chromeos::ImeConfigValue config;
+  chromeos::ImeConfigValue updated_config;
+
+  // Set a dummy list.
+  config.type = chromeos::ImeConfigValue::kValueTypeStringList;
+  config.string_list_value.push_back("1");
+  EXPECT_TRUE(chromeos::SetImeConfig(
+      global_connection, kSection, kConfigName, config));
+
+  // Get and compare.
+  EXPECT_TRUE(chromeos::GetImeConfig(
+      global_connection, kSection, kConfigName, &updated_config));
+  EXPECT_EQ(
+      updated_config.type, chromeos::ImeConfigValue::kValueTypeStringList);
+  ASSERT_EQ(updated_config.string_list_value.size(), 1);
+  EXPECT_EQ(updated_config.string_list_value.at(0), "1");
+  
+  // Set a longer dummy list.
+  config.type = chromeos::ImeConfigValue::kValueTypeStringList;
+  config.string_list_value.clear();
+  config.string_list_value.push_back("A");
+  config.string_list_value.push_back("B");
+  config.string_list_value.push_back("C");
+  EXPECT_TRUE(chromeos::SetImeConfig(
+      global_connection, kSection, kConfigName, config));
+
+  // Get and compare.
+  EXPECT_TRUE(chromeos::GetImeConfig(
+      global_connection, kSection, kConfigName, &updated_config));
+  EXPECT_EQ(
+      updated_config.type, chromeos::ImeConfigValue::kValueTypeStringList);
+  ASSERT_EQ(updated_config.string_list_value.size(), 3);
+  EXPECT_EQ(updated_config.string_list_value.at(0), "A");
+  EXPECT_EQ(updated_config.string_list_value.at(1), "B");
+  EXPECT_EQ(updated_config.string_list_value.at(2), "C");
+  
+  // Set an empty list.
+  config.type = chromeos::ImeConfigValue::kValueTypeStringList;
+  config.string_list_value.clear();
+  EXPECT_TRUE(chromeos::SetImeConfig(
+      global_connection, kSection, kConfigName, config));
+
+  // Get and compare.
+  EXPECT_TRUE(chromeos::GetImeConfig(
+      global_connection, kSection, kConfigName, &updated_config));
+  EXPECT_EQ(
+      updated_config.type, chromeos::ImeConfigValue::kValueTypeStringList);
+  EXPECT_TRUE(updated_config.string_list_value.empty());
+}
+
 void DumpProperties(const chromeos::ImePropertyList& prop_list) {
   for (size_t i = 0; i < prop_list.size(); ++i) {
     DLOG(INFO) << "Property #" << i << ": " << prop_list[i].ToString();

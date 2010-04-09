@@ -631,6 +631,8 @@ class LanguageStatusConnection {
   // Called by cros API ChromeOSSetLanguageActivated().
   bool SetInputMethodActivated(const char* input_method_id, bool activated) {
     GList* const engines = ibus_bus_list_active_engines(ibus_);
+    // TODO(yusukes): remove all g_value calls and use ChromeOSSetImeConfig()
+    // instead?
 
     // Convert |engines| to a GValueArray of names.
     GValueArray* engine_names = g_value_array_new(0);
@@ -1187,29 +1189,37 @@ bool ChromeOSGetImeConfig(LanguageStatusConnection* connection,
   // Convert the type of the result from GValue to our structure.
   // TODO(yusukes): Support string list.
   bool success = true;
-  switch (G_VALUE_TYPE(&gvalue)) {
-    case G_TYPE_STRING: {
-      const char* value = g_value_get_string(&gvalue);
+  GType type = G_VALUE_TYPE(&gvalue);
+  if (type == G_TYPE_STRING) {
+    const char* value = g_value_get_string(&gvalue);
+    DCHECK(value);
+    out_value->type = ImeConfigValue::kValueTypeString;
+    out_value->string_value = value;
+  } else if (type == G_TYPE_INT) {
+    out_value->type = ImeConfigValue::kValueTypeInt;
+    out_value->int_value = g_value_get_int(&gvalue);
+  } else if (type == G_TYPE_BOOLEAN) {
+    out_value->type = ImeConfigValue::kValueTypeBool;
+    out_value->bool_value = g_value_get_boolean(&gvalue);
+  } else if (type == G_TYPE_VALUE_ARRAY) {
+    out_value->type = ImeConfigValue::kValueTypeStringList;
+    out_value->string_list_value.clear();
+    GValueArray* array
+        = reinterpret_cast<GValueArray*>(g_value_get_boxed(&gvalue));
+    for (guint i = 0; array && (i < array->n_values); ++i) {
+      const GType element_type = G_VALUE_TYPE(&(array->values[i]));
+      if (element_type != G_TYPE_STRING) {
+        LOG(ERROR) << "Array element type is not STRING: " << element_type;
+        g_value_unset(&gvalue);
+        return false;
+      }
+      const char* value = g_value_get_string(&(array->values[i]));
       DCHECK(value);
-      out_value->type = ImeConfigValue::kValueTypeString;
-      out_value->string_value = value;
-      break;
+      out_value->string_list_value.push_back(value);
     }
-    case G_TYPE_INT: {
-      out_value->type = ImeConfigValue::kValueTypeInt;
-      out_value->int_value = g_value_get_int(&gvalue);
-      break;
-    }
-    case G_TYPE_BOOLEAN: {
-      out_value->type = ImeConfigValue::kValueTypeBool;
-      out_value->bool_value = g_value_get_boolean(&gvalue);
-      break;
-    }
-    default: {
-      LOG(ERROR) << "Unsupported config type: " << G_VALUE_TYPE(&gvalue);
-      success = false;
-      break;
-    }      
+  } else {
+    LOG(ERROR) << "Unsupported config type: " << G_VALUE_TYPE(&gvalue);
+    success = false;
   }
 
   g_value_unset(&gvalue);
@@ -1224,7 +1234,6 @@ bool ChromeOSSetImeConfig(LanguageStatusConnection* connection,
   g_return_val_if_fail(connection, FALSE);
 
   // Convert the type of |value| from our structure to GValue.
-  // TODO(yusukes): Support ImeConfigValue::kValueTypeStringList.
   GValue gvalue = { 0 };
   switch (value.type) {
     case ImeConfigValue::kValueTypeString:
@@ -1239,9 +1248,18 @@ bool ChromeOSSetImeConfig(LanguageStatusConnection* connection,
       g_value_init(&gvalue, G_TYPE_BOOLEAN);
       g_value_set_boolean(&gvalue, value.bool_value);
       break;
-    default:
-      LOG(ERROR) << "Unsupported config type: " << value.type;
-      return false;
+    case ImeConfigValue::kValueTypeStringList:
+      g_value_init(&gvalue, G_TYPE_VALUE_ARRAY);
+      const size_t size = value.string_list_value.size();
+      GValueArray* array = g_value_array_new(size);
+      for (size_t i = 0; i < size; ++i) {
+        GValue array_element = {0};
+        g_value_init(&array_element, G_TYPE_STRING);
+        g_value_set_string(&array_element, value.string_list_value[i].c_str());
+        g_value_array_append(array, &array_element);
+      }
+      g_value_take_boxed(&gvalue, array);
+      break;
   }
 
   const bool success = connection->SetImeConfig(section, config_name, &gvalue);
