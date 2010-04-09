@@ -128,8 +128,6 @@ void AddInputMethodNames(
                                                      engine_desc->longname,
                                                      engine_desc->language));
       LOG(INFO) << engine_desc->name << " (SUPPORTED)";
-    } else {
-      LOG(INFO) << engine_desc->name << " (not supported)";
     }
   }
 }
