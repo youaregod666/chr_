@@ -796,6 +796,22 @@ class LanguageStatusConnection {
 
     // Remember the current ic path.
     input_context_path_ = Or(input_context_path, "");
+
+    // Force to enable IBus. IBus should always be enabled since "current input
+    // method is xkb:us::eng (for example) and it is enabled" and "current one
+    // is xkb:us::eng but it's disabled" are almost indistinguishable for users.
+    // Plus, if IBus is disabled, the "Next Engine" hot-key, which could be used
+    // to switch e.g. English (xkb:us::eng) <-> Chinese (pinyin), does not work.
+    // Note: When we click a password field in a web page, the FocusIn signal
+    // is not sent. So we can type passwords without using IBus.
+    // TODO(yusukes): This is kind of a hack and should be removed in the near
+    // future. Ask suzhe if we can move this kind of feature to ibus-daemon.
+    if (!input_context_path_.empty()) {
+      IBusInputContext* context = GetInputContext(input_context_path_, ibus_);
+      ibus_input_context_enable(context);
+      g_object_unref(context);
+    }
+
     UpdateUI();  // This is necessary since input method status is held per ic.
   }
 
