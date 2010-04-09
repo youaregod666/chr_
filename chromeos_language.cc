@@ -44,17 +44,10 @@ const char* kInputMethodIdsWhitelist[] = {
 
   // ibus-m17n input methods.
   "m17n:ar:kbd",  // Arabic
-  "m17n:hr:kbd",  // Croatian
-  "m17n:da:post",  // Danish
-  "m17n:el:kbd",  // Modern Greek
   "m17n:he:kbd",  // Hebrew
   "m17n:hi:itrans",  // Hindi
   // Note: the m17n-contrib package has some more Hindi definitions.
   "m17n:fa:isiri",  // Persian
-  "m17n:sr:kbd",  // Serbian
-  "m17n:sk:kbd",  // Slovak
-  // TODO(yusukes): Check if we should use the ibus-m17n input method for
-  // Swedish.
   "m17n:th:pattachote",  // Thai
   // TODO(yusukes): Add tis820 and kesmanee for Thai if needed.
   // TODO(yusukes): Update m17n-db package to the latest so we can use
@@ -62,11 +55,38 @@ const char* kInputMethodIdsWhitelist[] = {
   // feature.
 
   // ibux-xkb-layouts input methods (keyboard layouts).
-  "xkb:fi::fin",
-  "xkb:fr::fra",
-  "xkb:jp::jpn",
-  "xkb:us::eng",
-  "xkb:us:dvorak:eng",
+  "xkb:be::fra",        // Belgium - French
+  "xkb:br::por",        // Brazil - Portuguese
+  "xkb:bg::bul",        // Bulgaria - Bulgarian
+  "xkb:cz::cze",        // Czech Republic - Czech
+  "xkb:de::ger",        // Germany - German
+  "xkb:es::spa",        // Spain - Spanish
+  "xkb:dk::dan",        // Denmark - Danish
+  "xkb:gr::gre",        // Greece - Greek
+  "xkb:lt::lit",        // Lithuania - Lithuanian
+  "xkb:lv::lav",        // Latvia - Latvian
+  "xkb:hr::scr",        // Croatia - Croatian
+  "xkb:nl::nld",        // Netherlands - Dutch
+  "xkb:gb::eng",        // United Kingdom - English
+  "xkb:fi::fin",        // Finland - Finnish
+  "xkb:fr::fra",        // France - French
+  "xkb:hu::hun",        // Hungary - Hungarian
+  "xkb:it::ita",        // Italy - Italian
+  "xkb:jp::jpn",        // Japan - Japanese
+  "xkb:no::nor",        // Norway - Norwegian
+  "xkb:pl::pol",        // Poland - Polish
+  "xkb:pt::por",        // Portugal - Portuguese
+  "xkb:ro::rum",        // Romania - Romanian
+  "xkb:se::swe",        // Sweden - Swedish
+  "xkb:sk::slo",        // Slovakia - Slovak
+  "xkb:si::slv",        // Slovenia - Slovene (Slovenian)
+  "xkb:rs::srp",        // Serbia - Serbian
+  "xkb:ch::ger",        // Switzerland - German
+  "xkb:ru::rus",        // Russia - Russian
+  "xkb:tr::tur",        // Turkey - Turkish
+  "xkb:ua::ukr",        // Ukraine - Ukrainian
+  "xkb:us::eng",        // US - English
+  "xkb:us:dvorak:eng",  // US - Dvorak - English
   // TODO(satorux): Add more keyboard layouts.
 };
 
