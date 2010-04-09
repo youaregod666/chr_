@@ -152,18 +152,6 @@ void AddInputMethodNames(
   }
 }
 
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-// Copies XKB layout names in (TBD) to |out|.
-void AddXKBLayouts(chromeos::InputMethodDescriptors* out) {
-  DCHECK(out);
-  out->push_back(chromeos::InputMethodDescriptor(
-      chromeos::LANGUAGE_CATEGORY_XKB,
-      kFallbackXKBId,
-      kFallbackXKBDisplayName,
-      "" /* no icon */,
-      kFallbackXKBLanguageCode));  // mock
-}
-
 // Returns IBusInputContext for |input_context_path|. NULL on errors.
 IBusInputContext* GetInputContext(
     const std::string& input_context_path, IBusBus* ibus) {
@@ -566,7 +554,6 @@ class LanguageStatusConnection {
 
     InputMethodDescriptors* input_methods = new InputMethodDescriptors;
     AddInputMethodNames(engines, input_methods);
-    AddXKBLayouts(input_methods);
 
     // TODO(yusukes): We can remove sort() now?
     std::sort(input_methods->begin(), input_methods->end());
@@ -591,31 +578,6 @@ class LanguageStatusConnection {
     g_object_unref(context);
 
     UpdateUI();
-  }
-
-  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
-  // Called by cros API ChromeOSChangeLanguage().
-  void ChangeLanguage(LanguageCategory category, const char* name) {
-    // Clear all IME properties unconditionally.
-    //  - When switching to XKB, it's necessary since XKB layout does not have
-    //    IME properties.
-    //  - When switching to IME and a text area is focused, it's okay to clear
-    //    IME properties here since RegisterProperties signal for the new IME
-    //    will be sent anyway.
-    //  - When switching to IME and no text area is focused, RegisterProperties
-    //    signal for the new IME will NOT be sent until a text area is focused.
-    //    Therefore, we have to clear the old IME properties here to keep the
-    //    IME switcher status consistent.
-    RegisterProperties(NULL);
-
-    switch (category) {
-      case LANGUAGE_CATEGORY_XKB:
-        SwitchToXKB(name);
-        break;
-      case LANGUAGE_CATEGORY_IME:
-        SwitchToIME(name);
-        break;
-    }
   }
 
   // Called by cros API ChromeOSChangeInputMethod().
@@ -770,40 +732,6 @@ class LanguageStatusConnection {
     return ibus_config;
   }
 
-  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
-  // Changes the current language to |name|, which is XKB layout.
-  void SwitchToXKB(const char* name) {
-    if (input_context_path_.empty()) {
-      LOG(ERROR) << "Input context is unknown";
-      return;
-    }
-
-    IBusInputContext* context = GetInputContext(input_context_path_, ibus_);
-    if (!context) {
-      return;
-    }
-    ibus_input_context_disable(context);
-    g_object_unref(context);
-    UpdateUI();
-  }
-
-  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
-  // Changes the current language to |name|, which is IME.
-  void SwitchToIME(const char* name) {
-    if (input_context_path_.empty()) {
-      LOG(ERROR) << "Input context is unknown";
-      return;
-    }
-
-    IBusInputContext* context = GetInputContext(input_context_path_, ibus_);
-    if (!context) {
-      return;
-    }
-    ibus_input_context_set_engine(context, name);
-    g_object_unref(context);
-    UpdateUI();
-  }
-
   // Handles "FocusIn" signal from the candidate_window process.
   void FocusIn(const char* input_context_path) {
     DCHECK(input_context_path) << "NULL context passed";
@@ -837,6 +765,9 @@ class LanguageStatusConnection {
   void FocusOut(const char* input_context_path) {
     DCHECK(input_context_path) << "NULL context passed";
     DLOG(INFO) << "FocusOut: " << input_context_path;
+    // TODO(yusukes): We should inactivate the language menu button here. IBus
+    // does not allow to change active IME nor IME properties when no text
+    // field is focused.
   }
 
   // Handles "StateChanged" signal from the candidate_window process.
@@ -899,36 +830,22 @@ class LanguageStatusConnection {
     if (!context) {
       return;
     }
-
-    InputMethodDescriptor current_input_method;
-    const bool input_method_is_enabled = ibus_input_context_is_enabled(context);
-    // TODO(yusukes): We're planning to remove all ibus_input_context_disable()
-    // calls and to remove IBus's enable/disable hot keys. When we get these
-    // thing done, |input_method_is_enabled| would be always true.
-
-    if (input_method_is_enabled) {
-      DLOG(INFO) << "input method is active";
-      // Set input method name on current_input_method.
-      const IBusEngineDesc* engine_desc
-          = ibus_input_context_get_engine(context);
-      DCHECK(engine_desc);
-      if (!engine_desc) {
-        g_object_unref(context);
-        return;
-      }
-      current_input_method = InputMethodDescriptor(engine_desc->name,
-                                                   engine_desc->longname,
-                                                   engine_desc->language);
-    } else {
-      // DEPRECATED: TODO(yusukes): Remove this part when it's ready.
-      DLOG(INFO) << "input method is not active";
-      // Set XKB layout name on current_input_methods.
-      current_input_method = InputMethodDescriptor(LANGUAGE_CATEGORY_XKB,
-                                                   kFallbackXKBId,
-                                                   kFallbackXKBDisplayName,
-                                                   "" /* no icon */,
-                                                   kFallbackXKBLanguageCode);
+    if (!ibus_input_context_is_enabled(context)) {
+      DLOG(INFO)
+          << "input method is not active or text area does not have focus.";
+      return;
     }
+
+    const IBusEngineDesc* engine_desc = ibus_input_context_get_engine(context);
+    DCHECK(engine_desc);
+    if (!engine_desc) {
+      g_object_unref(context);
+      return;
+    }
+
+    InputMethodDescriptor current_input_method(engine_desc->name,
+                                               engine_desc->longname,
+                                               engine_desc->language);
     DLOG(INFO) << "Updating the UI. ID:" << current_input_method.id
                << ", display_name:" << current_input_method.display_name;
 
@@ -1103,20 +1020,6 @@ InputMethodDescriptors* ChromeOSGetSupportedInputMethods(
       LanguageStatusConnection::kSupportedInputMethods);
 }
 
-// DEPRECATED: TODO(satorux): Remove this when it's ready.
-extern "C"
-InputLanguageList* ChromeOSGetActiveLanguages(
-    LanguageStatusConnection* connection) {
-  return ChromeOSGetActiveInputMethods(connection);
-}
-
-// DEPRECATED: TODO(satorux): Remove this when it's ready.
-extern "C"
-InputLanguageList* ChromeOSGetSupportedLanguages(
-    LanguageStatusConnection* connection) {
-  return ChromeOSGetSupportedInputMethods(connection);
-}
-
 extern "C"
 void ChromeOSSetImePropertyActivated(
     LanguageStatusConnection* connection, const char* key, bool activated) {
@@ -1124,32 +1027,6 @@ void ChromeOSSetImePropertyActivated(
   DCHECK(key);
   g_return_if_fail(connection);
   connection->SetImePropertyActivated(key, activated);
-}
-
-// DEPRECATED: TODO(satorux): Remove this when it's ready.
-extern "C"
-void ChromeOSActivateImeProperty(
-    LanguageStatusConnection* connection, const char* key) {
-  ChromeOSSetImePropertyActivated(connection, key, true);
-}
-
-// DEPRECATED: TODO(satorux): Remove this when it's ready.
-extern "C"
-void ChromeOSDeactivateImeProperty(
-    LanguageStatusConnection* connection, const char* key) {
-  ChromeOSSetImePropertyActivated(connection, key, false);
-}
-
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-extern "C"
-void ChromeOSChangeLanguage(LanguageStatusConnection* connection,
-                            LanguageCategory category,
-                            const char* name) {
-  DCHECK(name);
-  DLOG(INFO) << "ChangeLanguage: " << name;
-  g_return_if_fail(connection);
-  connection->ChangeLanguage(category, name);
-  // TODO(yusukes): The return type of this function should be bool.
 }
 
 extern "C"
@@ -1161,23 +1038,6 @@ bool ChromeOSChangeInputMethod(
   return connection->ChangeInputMethod(name);
 }
 
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-extern "C"
-bool ChromeOSSetLanguageActivated(LanguageStatusConnection* connection,
-                                  LanguageCategory category,
-                                  const char* name,
-                                  bool activated) {
-  DLOG(INFO) << "SetLanguageActivated: " << name << " [category "
-             << category << "]" << ": " << activated;
-
-  DCHECK(name);
-  g_return_val_if_fail(connection, FALSE);
-  if (category == LANGUAGE_CATEGORY_IME) {
-    return connection->SetInputMethodActivated(name, activated);
-  }
-  return false;
-}
-
 extern "C"
 bool ChromeOSSetInputMethodActivated(LanguageStatusConnection* connection,
                                      const char* name,
@@ -1186,22 +1046,6 @@ bool ChromeOSSetInputMethodActivated(LanguageStatusConnection* connection,
   DLOG(INFO) << "SetInputMethodActivated: " << name << ": " << activated;
   g_return_val_if_fail(connection, FALSE);
   return connection->SetInputMethodActivated(name, activated);
-}
-
-// DEPRECATED: TODO(satorux): Remove this when it's ready.
-extern "C"
-bool ChromeOSActivateLanguage(LanguageStatusConnection* connection,
-                              LanguageCategory category,
-                              const char* name) {
-  return ChromeOSSetLanguageActivated(connection, category, name, true);
-}
-
-// DEPRECATED: TODO(satorux): Remove this when it's ready.
-extern "C"
-bool ChromeOSDeactivateLanguage(LanguageStatusConnection* connection,
-                                LanguageCategory category,
-                                const char* name) {
-  return ChromeOSSetLanguageActivated(connection, category, name, false);
 }
 
 extern "C"

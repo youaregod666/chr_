@@ -17,17 +17,11 @@ static const char kFallbackInputMethodDisplayName[] = "English";
 static const char kFallbackInputMethodLanguageCode[] = "eng";
 static const int kInvalidSelectionItemId = -1;
 
-// DEPRECATED: TODO(yusukes): Remove or modify this when it's ready.
-static const char kFallbackXKBId[] = "USA";
-static const char kFallbackXKBDisplayName[] = "US";
-static const char kFallbackXKBLanguageCode[] = "en";
-
 namespace chromeos {
 
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-enum LanguageCategory {
-  LANGUAGE_CATEGORY_XKB,
-  LANGUAGE_CATEGORY_IME,
+// DEPRECATED: TODO(yusukes): Remove this enum when it's ready.
+enum DeprecatedLanguageCategory {
+  DEPRECATED_LANGUAGE_CATEGORY
 };
 
 // A structure which represents an input method.
@@ -35,26 +29,10 @@ struct InputMethodDescriptor {
   InputMethodDescriptor(const std::string& in_id,
                         const std::string& in_display_name,
                         const std::string& in_language_code)
-      : category(LANGUAGE_CATEGORY_IME),
+      : deprecated_category(DEPRECATED_LANGUAGE_CATEGORY),
         id(in_id),
         display_name(in_display_name),
         language_code(in_language_code) {
-  }
-
-  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
-  InputMethodDescriptor(LanguageCategory in_category,
-                const std::string& in_id,
-                const std::string& in_display_name,
-                const std::string& in_icon_path,
-                const std::string& in_language_code)
-      : category(in_category),
-        id(in_id),
-        display_name(in_display_name),
-        language_code(in_language_code) {
-  }
-
-  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
-  InputMethodDescriptor() : category(LANGUAGE_CATEGORY_XKB) {
   }
 
   // Languages are sorted by language_code, then by display_name, then by id.
@@ -82,7 +60,7 @@ struct InputMethodDescriptor {
   }
 
   // DEPRECATED: TODO(yusukes): Remove this when it's ready.
-  LanguageCategory category;
+  DeprecatedLanguageCategory deprecated_category;
 
   // An ID that identifies an input method engine (e.g., "t:latn-post",
   // "pinyin", "hangul").
@@ -90,16 +68,12 @@ struct InputMethodDescriptor {
   // An input method name which can be used in the UI (e.g., "Pinyin").
   std::string display_name;
   // DEPRECATED: TODO(yusukes): Remove this when it's ready.
-  std::string icon_path;
+  std::string deprecated_icon_path;
   // Language codes like "ko", "ja", "zh_CN", and "t".
   // "t" is used for languages in the "Others" category.
   std::string language_code;
 };
 typedef std::vector<InputMethodDescriptor> InputMethodDescriptors;
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-typedef InputMethodDescriptor InputLanguage;
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-typedef InputMethodDescriptors InputLanguageList;
 
 // A structure which represents a property for an input method engine. For
 // details, please check a comment for the LanguageRegisterImePropertiesFunction
@@ -139,7 +113,7 @@ struct ImeProperty {
   std::string key;  // A key which identifies the property. Non-empty string.
                     // (e.g. "InputMode.HalfWidthKatakana")
   // DEPRECATED: TODO(yusukes): Remove this when it's ready.
-  std::string icon_path;  // Path to an icon. Can be empty.
+  std::string deprecated_icon_path;
   std::string label;  // A description of the property. Non-empty string.
                       // (e.g. "Switch to full punctuation mode", "Hiragana")
   bool is_selection_item;  // true if the property is a selection item.
@@ -199,22 +173,6 @@ struct ImeConfigValue {
   std::vector<std::string> string_list_value;
 };
 
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-// Creates dummy InputLanguageList object. Usually, this function is called only
-// on development enviromnent where libcros.so does not exist. So, obviously
-// you can not move this function to libcros.so. This function is called by
-// src/chrome/browser/chromeos/language_library.cc when EnsureLoaded() fails.
-inline InputLanguageList* CreateFallbackInputLanguageList() {
-  InputLanguageList* language_list = new InputLanguageList;
-  language_list->push_back(
-      InputLanguage(LANGUAGE_CATEGORY_XKB,
-                    kFallbackXKBId,
-                    kFallbackXKBDisplayName,
-                    "" /* no icon */,
-                    kFallbackXKBLanguageCode));
-  return language_list;
-}
-
 // Creates dummy InputMethodDescriptors object. Usually, this function is
 // called only on development enviromnent where libcros.so does not exist.
 // So, obviously you can not move this function to libcros.so.
@@ -229,14 +187,10 @@ inline InputMethodDescriptors* CreateFallbackInputMethodDescriptors() {
   return descriptions;
 }
 
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-typedef void(*LanguageCurrentLanguageMonitorFunction)(
-    void* language_library, const InputMethodDescriptor& current_engine);
-
-// A monitor function which is called when current input method engine is
-// changed by user.
-typedef LanguageCurrentLanguageMonitorFunction
-    LanguageCurrentInputMethodMonitorFunction;
+// A monitor function which is called when current input method is changed by a
+// user.
+typedef void(*LanguageCurrentInputMethodMonitorFunction)(
+    void* language_library, const InputMethodDescriptor& current_input_method);
 
 // A monitor function which is called when "RegisterProperties" signal is sent
 // from the candidate_window process. The signal contains a list of properties
@@ -308,18 +262,10 @@ extern LanguageStatusConnection* (*MonitorLanguageStatus)(
 // Terminates IBus and DBus connections.
 extern void (*DisconnectLanguageStatus)(LanguageStatusConnection* connection);
 
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-extern InputLanguageList* (*GetActiveLanguages)(LanguageStatusConnection*
-                                                connection);
-
 // Gets all input method engines that are currently active. Caller has to
 // delete the returned list. This function might return NULL on error.
 extern InputMethodDescriptors* (*GetActiveInputMethods)(
     LanguageStatusConnection* connection);
-
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-extern InputLanguageList* (*GetSupportedLanguages)(LanguageStatusConnection*
-                                                   connection);
 
 // Gets all input method engines that are supported, including ones not active.
 // Caller has to delete the returned list. This function might return NULL on
@@ -327,26 +273,10 @@ extern InputLanguageList* (*GetSupportedLanguages)(LanguageStatusConnection*
 extern InputMethodDescriptors* (*GetSupportedInputMethods)(
     LanguageStatusConnection* connection);
 
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-// Changes the current IME engine to |name| and enable IME (when |category| is
-// LANGUAGE_CATEGORY_IME). Changes the current XKB layout to |name| and disable
-// IME (when |category| is LANGUAGE_CATEGORY_XKB).
-extern void (*ChangeLanguage)(LanguageStatusConnection* connection,
-                              LanguageCategory category, const char* name);
-
 // Changes the current input method engine to |name|. Returns true on success.
 // Examples of names: "pinyin", "m17n:ar:kbd", "xkb:us:dvorak:eng".
 extern bool (*ChangeInputMethod)(
     LanguageStatusConnection* connection, const char* name);
-
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-// Sets whether the language specified by |category| and |id| is
-// activated. If |activated| is true, activates the language. If
-// |activated| is false, deactivates the language. Returns true on success.
-extern bool (*SetLanguageActivated)(LanguageStatusConnection* connection,
-                                    LanguageCategory category,
-                                    const char* name,
-                                    bool activated);
 
 // Sets whether the input method specified by |name| is activated.
 // If |activated| is true activates the input method. If |activated| is false,
@@ -361,30 +291,6 @@ extern bool (*SetInputMethodActivated)(
 extern void (*SetImePropertyActivated)(LanguageStatusConnection* connection,
                                        const char* key,
                                        bool activated);
-
-// DEPRECATED: TODO(satorux): Remove this when it's ready.
-// Activates the language specified by |category| and |name|. Returns true on
-// success.
-extern bool (*ActivateLanguage)(LanguageStatusConnection* connection,
-                                LanguageCategory category, const char* name);
-
-// DEPRECATED: TODO(satorux): Remove this when it's ready.
-// Deactivates the language specified by |category| and |name|. Returns true
-// on success.
-extern bool (*DeactivateLanguage)(LanguageStatusConnection* connection,
-                                  LanguageCategory category, const char* name);
-
-// DEPRECATED: TODO(satorux): Remove this when it's ready.
-// Activates an IME property identified by |key|. Examples of keys are:
-// "InputMode.Katakana", "InputMode.HalfWidthKatakana", "TypingMode.Romaji",
-// "TypingMode.Kana."
-extern void (*ActivateImeProperty)(LanguageStatusConnection* connection,
-                                   const char* key);
-
-// DEPRECATED: TODO(satorux): Remove this when it's ready.
-// Deactivates an IME property identified by |key|.
-extern void (*DeactivateImeProperty)(LanguageStatusConnection* connection,
-                                     const char* key);
 
 // Get a configuration of ibus-daemon or IBus engines and stores it on
 // |out_value|. Returns true if |out_value| is successfully updated.

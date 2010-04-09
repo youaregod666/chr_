@@ -73,12 +73,13 @@
 //      GetActiveLanguages, ChangeLanguage, SetLanguageActivated,
 //      ActivateLanguage, DeactivateLanguage, ActivateImeProperty,
 //      DeactivateImeProperty
+//  20: Removed depreceted methods above.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 13,
-  kCrosAPIVersion = 19
+  kCrosAPIMinVersion = 19,
+  kCrosAPIVersion = 20
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
