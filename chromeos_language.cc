@@ -1151,8 +1151,9 @@ bool ChromeOSLanguageStatusConnectionIsAlive(
     LanguageStatusConnection* connection) {
   g_return_val_if_fail(connection, false);
   const bool is_connected = connection->ConnectionIsAlive();
-  DLOG(INFO) << "ChromeOSLanguageStatusConnectionIsAlive: "
-             << (is_connected ? "" : "NOT ") << "alive";
+  if (!is_connected) {
+    LOG(WARNING) << "ChromeOSLanguageStatusConnectionIsAlive: NOT alive";
+  }
   return is_connected;
 }
 
