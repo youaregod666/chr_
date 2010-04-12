@@ -696,6 +696,9 @@ class LanguageStatusConnection {
                                                    config_name,
                                                    gvalue);
     g_object_unref(ibus_config);
+
+    DLOG(INFO) << "SetImeConfig: " << section << "/" << config_name
+               << ": result=" << success;
     return (success == TRUE);
   }
 
