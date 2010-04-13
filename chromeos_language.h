@@ -281,6 +281,7 @@ extern bool (*ChangeInputMethod)(
 // Sets whether the input method specified by |name| is activated.
 // If |activated| is true activates the input method. If |activated| is false,
 // deactivates the input method. Returns true on success.
+// TODO(yusukes): Probably we can remove this function.
 extern bool (*SetInputMethodActivated)(
     LanguageStatusConnection* connection, const char* name, bool activated);
 
