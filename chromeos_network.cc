@@ -236,7 +236,7 @@ bool GetProperties(const dbus::Proxy& proxy, glib::ScopedHashTable* result) {
                            ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING,
                                                  G_TYPE_VALUE),
                            &Resetter(result).lvalue(), G_TYPE_INVALID)) {
-    LOG(WARNING) << "GetProperties failed: "
+    LOG(WARNING) << "GetProperties on path '" << proxy.path() << "' failed: "
                  << (error->message ? error->message : "Unknown Error.");
     return false;
   }
@@ -508,12 +508,14 @@ bool ParseIPConfig(const char* path, IPConfig *ipconfig) {
 
 extern "C"
 IPConfigStatus* ChromeOSListIPConfigs(const char* device_path) {
+  if (!device_path)
+    return NULL;
 
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy device_proxy(bus,
-                            kConnmanServiceName,
-                            device_path,
-                            kConnmanDeviceInterface);
+                           kConnmanServiceName,
+                           device_path,
+                           kConnmanDeviceInterface);
 
   glib::ScopedHashTable properties;
   if (!GetProperties(device_proxy, &properties)) {
@@ -529,17 +531,26 @@ IPConfigStatus* ChromeOSListIPConfigs(const char* device_path) {
       static_cast<GPtrArray*>(g_value_get_boxed(static_cast<GValue*>(ptr)));
 
   IPConfigStatus* result = new IPConfigStatus();
-  result->size = ips_value->len;
+  std::vector<IPConfig> buffer;
+  const char* path = NULL;
+  for (size_t i = 0; i < ips_value->len; i++) {
+    path = static_cast<const char*>(g_ptr_array_index(ips_value, i));
+    if (!path) {
+      LOG(WARNING) << "Found NULL ip for device " << device_path;
+      continue;
+    }
+    IPConfig ipconfig = {};
+    if (!ParseIPConfig(path, &ipconfig))
+      continue;
+    buffer.push_back(ipconfig);
+  }
+  result->size = buffer.size();
   if (result->size == 0) {
     result->ips = NULL;
   } else {
     result->ips = new IPConfig[result->size];
-    for (size_t i = 0; i < ips_value->len; i++) {
-      const char* path =
-          static_cast<const char*>(g_ptr_array_index(ips_value, i));
-      ParseIPConfig(path, &result->ips[i]);
-    }
   }
+  std::copy(buffer.begin(), buffer.end(), result->ips);
   return result;
 }
 
@@ -650,13 +661,20 @@ bool ChromeOSRemoveIPConfig(IPConfig* config) {
 }
 
 void DeleteIPConfigProperties(IPConfig config) {
-  delete config.path;
-  delete config.address;
-  delete config.broadcast;
-  delete config.netmask;
-  delete config.gateway;
-  delete config.domainname;
-  delete config.name_servers;
+  if (config.path)
+    delete config.path;
+  if (config.address)
+    delete config.address;
+  if (config.broadcast)
+    delete config.broadcast;
+  if (config.netmask)
+    delete config.netmask;
+  if (config.gateway)
+    delete config.gateway;
+  if (config.domainname)
+    delete config.domainname;
+  if (config.name_servers)
+    delete config.name_servers;
 }
 
 extern "C"
