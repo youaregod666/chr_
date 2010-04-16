@@ -74,12 +74,13 @@
 //      ActivateLanguage, DeactivateLanguage, ActivateImeProperty,
 //      DeactivateImeProperty
 //  20: Removed depreceted methods above.
+//  21: Removed loading of a deprecated method: SetInputMethodActivated
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 19,
-  kCrosAPIVersion = 20
+  kCrosAPIVersion = 21
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
