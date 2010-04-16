@@ -27,15 +27,15 @@ const char kCandidateWindowInterface[] = "org.freedesktop.IBus.Panel";
 // should disable "ja:anthy", "zh:cangjie", and "zh:pinyin" engines in
 // ibus-m17n since we (will) have better equivalents outside of ibus-m17n.
 const char* kInputMethodIdsWhitelist[] = {
-  "anthy",  // ibus-anthy (for libcros debugging on Ubuntu 9.10)
-  // "chewing",  // ibus-chewing
-  "hangul",  // ibus-hangul
-  "pinyin",  // ibus-pinyin
+  "anthy",  // ibus-anthy (for libcros debugging on Ubuntu 9.10) - Japanese
+  // "chewing",  // ibus-chewing - Traditional Chinese
+  "hangul",  // ibus-hangul - Korean
+  "pinyin",  // ibus-pinyin - Simplified Chinese
   // TODO(yusukes): re-enable chewing once we resolve issue 1253.
 
   // ibus-table input methods.
-  "cangjie3",  // ibus-table-cangjie
-  "cangjie5",  // ibus-table-cangjie
+  "cangjie3",  // ibus-table-cangjie - Traditional Chinese
+  "cangjie5",  // ibus-table-cangjie - Traditional Chinese
   // TODO(yusukes): Add additional ibus-table modules here once they're ready.
 
   // ibus-m17n input methods (language neutral ones).
