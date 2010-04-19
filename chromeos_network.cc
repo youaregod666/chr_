@@ -40,6 +40,8 @@ static const char* kRemoveConfigFunction = "Remove";
 // Connman property names.
 static const char* kSecurityProperty = "Security";
 static const char* kPassphraseProperty = "Passphrase";
+static const char* kIdentityProperty = "Identity";
+static const char* kCertPathProperty = "CertPath";
 static const char* kPassphraseRequiredProperty = "PassphraseRequired";
 static const char* kServicesProperty = "Services";
 static const char* kAvailableTechnologiesProperty = "AvailableTechnologies";
@@ -78,6 +80,7 @@ static const char* kModeAdhoc = "adhoc";
 static const char* kSecurityWpa = "wpa";
 static const char* kSecurityWep = "wep";
 static const char* kSecurityRsn = "rsn";
+static const char* kSecurity8021x = "802_1x";
 static const char* kSecurityNone = "none";
 
 // Connman state options.
@@ -168,6 +171,8 @@ static const char* ModeToString(ConnectionMode mode) {
 }
 */
 static ConnectionSecurity ParseSecurity(const std::string& security) {
+  if (security == kSecurity8021x)
+    return SECURITY_8021X;
   if (security == kSecurityRsn)
     return SECURITY_RSN;
   if (security == kSecurityWpa)
@@ -183,6 +188,8 @@ static const char* SecurityToString(ConnectionSecurity security) {
   switch (security) {
     case SECURITY_UNKNOWN:
       break;
+    case SECURITY_8021X:
+      return kSecurity8021x;
     case SECURITY_RSN:
       return kSecurityRsn;
     case SECURITY_WPA:
@@ -800,8 +807,10 @@ ServiceInfo* ChromeOSGetWifiService(const char* ssid,
 }
 
 extern "C"
-bool ChromeOSConnectToNetwork(const char* service_path,
-                              const char* passphrase) {
+bool ChromeOSConnectToNetworkWithCertInfo(const char* service_path,
+                                          const char* passphrase,
+                                          const char* identity,
+                                          const char* certpath) {
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
                             kConnmanServiceName,
                             service_path,
@@ -826,6 +835,44 @@ bool ChromeOSConnectToNetwork(const char* service_path,
     }
   }
 
+  // Set identity if non-null.
+  if (identity) {
+    glib::Value value_identity(identity);
+    glib::ScopedError error;
+    if (!::dbus_g_proxy_call(service_proxy.gproxy(),
+                             kSetPropertyFunction,
+                             &Resetter(&error).lvalue(),
+                             G_TYPE_STRING,
+                             kIdentityProperty,
+                             G_TYPE_VALUE,
+                             &value_identity,
+                             G_TYPE_INVALID,
+                             G_TYPE_INVALID)) {
+      LOG(WARNING) << "ConnectToNetwork failed on set identity: "
+          << (error->message ? error->message : "Unknown Error.");
+      return false;
+    }
+  }
+
+  // Set certificate path if non-null.
+  if (certpath) {
+    glib::Value value_certpath(certpath);
+    glib::ScopedError error;
+    if (!::dbus_g_proxy_call(service_proxy.gproxy(),
+                             kSetPropertyFunction,
+                             &Resetter(&error).lvalue(),
+                             G_TYPE_STRING,
+                             kCertPathProperty,
+                             G_TYPE_VALUE,
+                             &value_certpath,
+                             G_TYPE_INVALID,
+                             G_TYPE_INVALID)) {
+      LOG(WARNING) << "ConnectToNetwork failed on set certpath: "
+          << (error->message ? error->message : "Unknown Error.");
+      return false;
+    }
+  }
+
   // Now try connecting.
   glib::ScopedError error;
   if (!::dbus_g_proxy_call(service_proxy.gproxy(),
@@ -838,6 +885,15 @@ bool ChromeOSConnectToNetwork(const char* service_path,
     return false;
   }
   return true;
+}
+
+
+extern "C"
+bool ChromeOSConnectToNetwork(const char* service_path,
+                              const char* passphrase) {
+
+  return ChromeOSConnectToNetworkWithCertInfo(service_path, passphrase,
+                                              NULL, NULL);
 }
 
 extern "C"

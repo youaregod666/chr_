@@ -75,12 +75,13 @@
 //      DeactivateImeProperty
 //  20: Removed depreceted methods above.
 //  21: Removed loading of a deprecated method: SetInputMethodActivated
+//  22: Added ChromeOSConnectToNetworkWithCertInfo.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 19,
-  kCrosAPIVersion = 21
+  kCrosAPIVersion = 22
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

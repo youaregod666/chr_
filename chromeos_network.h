@@ -31,6 +31,7 @@ enum ConnectionSecurity {
   SECURITY_WEP     = 2,
   SECURITY_WPA     = 3,
   SECURITY_RSN     = 4,
+  SECURITY_8021X   = 5,
 };
 
 enum ConnectionState {
@@ -134,7 +135,21 @@ extern ServiceInfo* (*GetWifiService)(const char* ssid,
 // Connects to the network with the |service_path|.
 //
 // Set |passphrase| to NULL if the network doesn't require authentication.
+// Set |identity| and |certpath| to NULL if the network doesn't require
+// certificate-based authentication.
 //
+// returns false on failure and true on success.
+//
+// Note, a successful call to this function only indicates that the
+// connection process has started. You will have to query the connection state
+// to determine if the connection was established successfully.
+extern bool (*ConnectToNetworkWithCertInfo)(const char* service_path,
+                                            const char* passphrase,
+                                            const char* identity,
+                                            const char* certpath);
+// Connects to the network with the |service_path|.
+//
+// Set |passphrase| to NULL if the network doesn't require authentication.
 // returns false on failure and true on success.
 //
 // Note, a successful call to this function only indicates that the
