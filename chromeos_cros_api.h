@@ -76,12 +76,13 @@
 //  20: Removed depreceted methods above.
 //  21: Removed loading of a deprecated method: SetInputMethodActivated
 //  22: Added ChromeOSConnectToNetworkWithCertInfo.
+//  23: Added profile entries and SetAutoConnect and DeleteRememberedService.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 19,
-  kCrosAPIVersion = 22
+  kCrosAPIVersion = 23
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

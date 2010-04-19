@@ -25,6 +25,7 @@ static const char* kConnmanServiceInterface = "org.moblin.connman.Service";
 static const char* kConnmanServiceName = "org.moblin.connman";
 static const char* kConnmanIPConfigInterface = "org.moblin.connman.IPConfig";
 static const char* kConnmanDeviceInterface = "org.moblin.connman.Device";
+static const char* kConnmanProfileInterface = "org.moblin.connman.Profile";
 
 // Connman function names.
 static const char* kGetPropertiesFunction = "GetProperties";
@@ -36,6 +37,8 @@ static const char* kEnableTechnologyFunction = "EnableTechnology";
 static const char* kDisableTechnologyFunction = "DisableTechnology";
 static const char* kAddIPConfigFunction = "AddIPConfig";
 static const char* kRemoveConfigFunction = "Remove";
+static const char* kGetEntryFunction = "GetEntry";
+static const char* kDeleteEntryFunction = "DeleteEntry";
 
 // Connman property names.
 static const char* kSecurityProperty = "Security";
@@ -60,6 +63,8 @@ static const char* kFavoriteProperty = "Favorite";
 static const char* kAutoConnectProperty = "AutoConnect";
 static const char* kModeProperty = "Mode";
 static const char* kErrorProperty = "Error";
+static const char* kActiveProfileProperty = "ActiveProfile";
+static const char* kEntriesProperty = "Entries";
 
 // Connman network state
 static const char* kOnline = "online";
@@ -250,6 +255,27 @@ bool GetProperties(const dbus::Proxy& proxy, glib::ScopedHashTable* result) {
   return true;
 }
 
+// Invokes the given method on the proxy and stores the result
+// in the ScopedHashTable. The hash table will map strings to glib values.
+bool GetEntry(const dbus::Proxy& proxy, gchar* entry,
+              glib::ScopedHashTable* result) {
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           kGetEntryFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           entry,
+                           G_TYPE_INVALID,
+                           ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING,
+                                                 G_TYPE_VALUE),
+                           &Resetter(result).lvalue(), G_TYPE_INVALID)) {
+    LOG(WARNING) << "GetEntry failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+  return true;
+}
+
 // Populates an instance of a ServiceInfo with the properties
 // from a Connman service.
 void ParseServiceProperties(const glib::ScopedHashTable& properties,
@@ -359,10 +385,18 @@ extern "C"
 void ChromeOSFreeSystemInfo(SystemInfo* system) {
   if (system == NULL)
     return;
-  std::for_each(system->services,
-                system->services + system->service_size,
-                &DeleteServiceInfoProperties);
-  delete [] system->services;
+  if (system->service_size > 0) {
+    std::for_each(system->services,
+                  system->services + system->service_size,
+                  &DeleteServiceInfoProperties);
+    delete [] system->services;
+  }
+  if (system->remembered_service_size > 0) {
+    std::for_each(system->remembered_services,
+                  system->remembered_services + system->remembered_service_size,
+                  &DeleteServiceInfoProperties);
+    delete [] system->remembered_services;
+  }
   delete system;
 }
 
@@ -897,6 +931,44 @@ bool ChromeOSConnectToNetwork(const char* service_path,
 }
 
 extern "C"
+bool ChromeOSDeleteRememberedService(const char* service_path) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy manager_proxy(bus,
+                            kConnmanServiceName,
+                            "/",
+                            kConnmanManagerInterface);
+
+  glib::ScopedHashTable properties;
+  if (!GetProperties(manager_proxy, &properties)) {
+    return false;
+  }
+
+  glib::Value profile_val;
+  properties.Retrieve(kActiveProfileProperty, &profile_val);
+  const gchar* profile_path =
+      static_cast<const gchar*>(g_value_get_boxed(&profile_val));
+
+  dbus::Proxy profile_proxy(bus,
+                            kConnmanServiceName,
+                            profile_path,
+                            kConnmanProfileInterface);
+
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_call(profile_proxy.gproxy(),
+                           kDeleteEntryFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           service_path,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "DeleteEntry failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+  return true;
+}
+
+extern "C"
 SystemInfo* ChromeOSGetSystemInfo() {
   // TODO(chocobo): need to revisit the overhead of fetching the SystemInfo
   // object as one indivisible unit of data
@@ -980,6 +1052,45 @@ SystemInfo* ChromeOSGetSystemInfo() {
   }
   std::copy(buffer.begin(), buffer.end(), system->services);
 
+  // Profile
+  glib::Value profile_val;
+  properties.Retrieve(kActiveProfileProperty, &profile_val);
+  const gchar* profile_path =
+      static_cast<const gchar*>(g_value_get_boxed(&profile_val));
+
+  dbus::Proxy profile_proxy(bus,
+                            kConnmanServiceName,
+                            profile_path,
+                            kConnmanProfileInterface);
+
+  glib::ScopedHashTable profile_properties;
+  std::vector<ServiceInfo> remembered_buffer;
+  if (GetProperties(profile_proxy, &profile_properties)) {
+    glib::Value entries_val;
+    if (profile_properties.Retrieve(kEntriesProperty, &entries_val)) {
+      gchar** entries = static_cast<gchar**>(g_value_get_boxed(&entries_val));
+      while (*entries) {
+        glib::ScopedHashTable entry_properties;
+        if (GetEntry(profile_proxy, *entries, &entry_properties)) {
+          ServiceInfo info = {};
+          info.service_path = NewStringCopy(*entries);
+          ParseServiceProperties(entry_properties, &info);
+          remembered_buffer.push_back(info);
+        }
+        entries++;
+      }
+    }
+  }
+  system->remembered_service_size = remembered_buffer.size();
+  if (system->remembered_service_size == 0) {
+    system->remembered_services = NULL;
+  } else {
+    system->remembered_services =
+        new ServiceInfo[system->remembered_service_size];
+  }
+  std::copy(remembered_buffer.begin(), remembered_buffer.end(),
+            system->remembered_services);
+
   return system;
 }
 
@@ -1036,6 +1147,33 @@ bool ChromeOSSetOfflineMode(bool offline) {
                            G_TYPE_INVALID,
                            G_TYPE_INVALID)) {
     LOG(WARNING) << "SetOfflineMode failed: "
+        << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+
+  return true;
+}
+
+extern "C"
+bool ChromeOSSetAutoConnect(const char* service_path, bool auto_connect) {
+  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
+                            kConnmanServiceName,
+                            service_path,
+                            kConnmanServiceInterface);
+
+  glib::Value value_auto_connect(auto_connect);
+
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_call(service_proxy.gproxy(),
+                           kSetPropertyFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           kAutoConnectProperty,
+                           G_TYPE_VALUE,
+                           &value_auto_connect,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "SetAutoConnect failed: "
         << (error->message ? error->message : "Unknown Error.");
     return false;
   }

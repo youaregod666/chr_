@@ -90,6 +90,8 @@ struct SystemInfo {
   bool offline_mode;
   int service_size;
   ServiceInfo *services;
+  int remembered_service_size;
+  ServiceInfo *remembered_services;
 };
 
 struct IPConfig {
@@ -158,6 +160,11 @@ extern bool (*ConnectToNetworkWithCertInfo)(const char* service_path,
 extern bool (*ConnectToNetwork)(const char* service_path,
                                 const char* passphrase);
 
+// This will delete this service from the list of remembered service.
+//
+// Returns false on failure and true on success.
+extern bool (*DeleteRememberedService)(const char* service_path);
+
 // Deletes a SystemInfo type that was allocated in the ChromeOS dll. We need
 // to do this to safely pass data over the dll boundary between our .so and
 // Chrome.
@@ -196,6 +203,11 @@ extern bool (*EnableNetworkDevice)(ConnectionType type, bool enable);
 //
 // Returns false on failure and true on success.
 extern bool (*SetOfflineMode)(bool offline);
+
+// Set auto_connect for service.
+//
+// Returns true on success.
+extern bool (*SetAutoConnect)(const char* service_path, bool auto_connect);
 
 // Gets a list of all the IPConfigs using a given device path
 extern IPConfigStatus* (*ListIPConfigs)(const char* device_path);
