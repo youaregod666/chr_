@@ -335,23 +335,6 @@ int main(int argc, char** argv) {
   callback.set_first_ime_id(descriptors->at(1).id);
   callback.set_second_ime_id(descriptors->at(2).id);
 
-  // Deactivate the last input method for testing.
-  const chromeos::InputMethodDescriptor& descriptor = descriptors->back();
-  DCHECK(chromeos::SetInputMethodActivated(
-      global_connection, descriptor.id.c_str(), false));
-  // This is not reliable, but wait for a moment so the config change
-  // takes effect in IBus.
-  sleep(1);
-  LOG(INFO) << "Deactivated: " << descriptor.display_name;
-  ShowActiveInputMethods();
-
-  // Reactivate the input method.
-  DCHECK(chromeos::SetInputMethodActivated(
-      global_connection, descriptor.id.c_str(), true));
-  sleep(1);
-  LOG(INFO) << "Reactivated: " << descriptor.display_name;
-  ShowActiveInputMethods();
-
   ::g_main_loop_run(loop);
 
   // Test if we can read/write input method configurations. This should be done
