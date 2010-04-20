@@ -154,7 +154,7 @@ typedef InputMethodUpdateLookupTableMonitorFunction
         ImeLookupTableMonitorFunction;
 typedef InputMethodUiStatusMonitorFunctions
         ImeStatusMonitorFunctions;
-class ImeStatusConnection;
+typedef InputMethodUiStatusConnection ImeStatusConnection;
 extern ImeStatusConnection* (*MonitorImeStatus)(
     const ImeStatusMonitorFunctions& monitor_functions,
     void* input_method_library);
