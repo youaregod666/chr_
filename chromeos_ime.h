@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 //
-// The header files provides APIs for monitoring and controlling IME
-// status. The APIs encapsulate the APIs of IBus, the underlying IME
-// framework.
+// The header files provides APIs for monitoring and controlling input
+// method UI status. The APIs encapsulate the APIs of IBus, the underlying
+// input method framework.
 
 #ifndef CHROMEOS_IME_H_
 #define CHROMEOS_IME_H_
@@ -17,10 +17,10 @@
 
 namespace chromeos {
 
-// The struct represents the IME lookup table (list of candidates).
-// Used for ImeUpdateLookupTableMonitorFunction.
-struct ImeLookupTable {
-  ImeLookupTable()
+// The struct represents the input method lookup table (list of candidates).
+// Used for InputMethodUpdateLookupTableMonitorFunction.
+struct InputMethodLookupTable {
+  InputMethodLookupTable()
       : visible(false),
         cursor_absolute_index(0),
         page_size(0) {
@@ -62,29 +62,32 @@ struct ImeLookupTable {
 };
 
 // Callback function type for handling IBus's |HideAuxiliaryText| signal.
-typedef void (*ImeHideAuxiliaryTextMonitorFunction)(void* ime_library);
+typedef void (*InputMethodHideAuxiliaryTextMonitorFunction)(
+    void* input_method_library);
 
 // Callback function type for handling IBus's |HideLookupTable| signal.
-typedef void (*ImeHideLookupTableMonitorFunction)(void* ime_library);
+typedef void (*InputMethodHideLookupTableMonitorFunction)(
+    void* input_method_library);
 
 // Callback function type for handling IBus's |SetCandidateText| signal.
-typedef void (*ImeSetCursorLocationMonitorFunction)(
-    void* ime_library,
+typedef void (*InputMethodSetCursorLocationMonitorFunction)(
+    void* input_method_library,
     int x, int y, int width, int height);
 
 // Callback function type for handling IBus's |UpdateAuxiliaryText| signal.
-typedef void (*ImeUpdateAuxiliaryTextMonitorFunction)(void* ime_library,
-                                                      const std::string& text,
-                                                      bool visible);
+typedef void (*InputMethodUpdateAuxiliaryTextMonitorFunction)(
+    void* input_method_library,
+    const std::string& text,
+    bool visible);
 
 // Callback function type for handling IBus's |UpdateLookupTable| signal.
-typedef void (*ImeUpdateLookupTableMonitorFunction)(
-    void* ime_library,
-    const ImeLookupTable& table);
+typedef void (*InputMethodUpdateLookupTableMonitorFunction)(
+    void* input_method_library,
+    const InputMethodLookupTable& table);
 
-// A set of function pointers used for monitoring the IME status.
-struct ImeStatusMonitorFunctions {
-  ImeStatusMonitorFunctions()
+// A set of function pointers used for monitoring the input method UI status.
+struct InputMethodUiStatusMonitorFunctions {
+  InputMethodUiStatusMonitorFunctions()
       : hide_auxiliary_text(NULL),
         hide_lookup_table(NULL),
         set_cursor_location(NULL),
@@ -92,35 +95,37 @@ struct ImeStatusMonitorFunctions {
         update_lookup_table(NULL) {
   }
 
-  ImeHideAuxiliaryTextMonitorFunction hide_auxiliary_text;
-  ImeHideLookupTableMonitorFunction hide_lookup_table;
-  ImeSetCursorLocationMonitorFunction set_cursor_location;
-  ImeUpdateAuxiliaryTextMonitorFunction update_auxiliary_text;
-  ImeUpdateLookupTableMonitorFunction update_lookup_table;
+  InputMethodHideAuxiliaryTextMonitorFunction hide_auxiliary_text;
+  InputMethodHideLookupTableMonitorFunction hide_lookup_table;
+  InputMethodSetCursorLocationMonitorFunction set_cursor_location;
+  InputMethodUpdateAuxiliaryTextMonitorFunction update_auxiliary_text;
+  InputMethodUpdateLookupTableMonitorFunction update_lookup_table;
 };
 
 // Establishes IBus connection to the ibus-daemon.
 //
-// Returns an ImeStatusConnection object that is used for maintaining and
-// monitoring an IBus connection. The implementation details of
-// ImeStatusConnection is not exposed.
+// Returns an InputMethodUiStatusConnection object that is used for
+// maintaining and monitoring an IBus connection. The implementation
+// details of InputMethodUiStatusConnection is not exposed.
 //
 // Function pointers in |monitor_functions| are registered in the returned
-// ImeStatusConnection object. These functions will be called, unless the
-// pointers are NULL, when certain signals are received from
+// InputMethodUiStatusConnection object. These functions will be called,
+// unless the pointers are NULL, when certain signals are received from
 // ibus-daemon.
 //
 // The client can pass a pointer to an abitrary object as
-// |ime_library|. The pointer passed as |ime_library| will be passed to
-// the registered callback functions as the first parameter.
-class ImeStatusConnection;
-extern ImeStatusConnection* (*MonitorImeStatus)(
-    const ImeStatusMonitorFunctions& monitor_functions,
-    void* ime_library);
+// |input_method_library|. The pointer passed as |input_method_library|
+// will be passed to the registered callback functions as the first
+// parameter.
+class InputMethodUiStatusConnection;
+extern InputMethodUiStatusConnection* (*MonitorInputMethodUiStatus)(
+    const InputMethodUiStatusMonitorFunctions& monitor_functions,
+    void* input_method_library);
 
-// Disconnects the IME status connection, as well as the underlying IBus
-// connection.
-extern void (*DisconnectImeStatus)(ImeStatusConnection* connection);
+// Disconnects the input method UI status connection, as well as the
+// underlying IBus connection.
+extern void (*DisconnectInputMethodUiStatus)(
+    InputMethodUiStatusConnection* connection);
 
 // Notifies that a candidate is clicked. |CandidateClicked| signal will be
 // sent to the ibus-daemon.
@@ -129,8 +134,33 @@ extern void (*DisconnectImeStatus)(ImeStatusConnection* connection);
 //   |cursor_absolute_index|.
 // - |button| GdkEventButton::button (1: left button, etc.)
 // - |state|  GdkEventButton::state (key modifier flags)
-extern void (*NotifyCandidateClicked)(ImeStatusConnection* connection,
-                                      int index, int button, int flags);
+extern void (*NotifyCandidateClicked)(
+    InputMethodUiStatusConnection* connection,
+    int index, int button, int flags);
+
+// DEPRECATED. TODO(satorux): Remove the followings once it's ready.
+typedef InputMethodLookupTable ImeLookupTable;
+typedef InputMethodHideAuxiliaryTextMonitorFunction
+        ImeHideAuxiliaryTextMonitorFunction;
+typedef InputMethodHideLookupTableMonitorFunction
+        ImeHideLookupTableMonitorFunction;
+typedef InputMethodSetCursorLocationMonitorFunction
+        ImeSetCursorLocationMonitorFunction;
+typedef InputMethodUpdateAuxiliaryTextMonitorFunction
+        ImeUpdateAuxiliaryTextMonitorFunction;
+typedef InputMethodUpdateLookupTableMonitorFunction
+        ImeUpdateLookupTableMonitorFunction;
+typedef InputMethodUpdateLookupTableMonitorFunction
+        ImeLookupTableMonitorFunction;
+typedef InputMethodUiStatusMonitorFunctions
+        ImeStatusMonitorFunctions;
+class ImeStatusConnection;
+extern ImeStatusConnection* (*MonitorImeStatus)(
+    const ImeStatusMonitorFunctions& monitor_functions,
+    void* input_method_library);
+extern void (*DisconnectImeStatus)(
+    ImeStatusConnection* connection);
+
 
 }  // namespace chromeos
 

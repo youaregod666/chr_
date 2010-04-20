@@ -27,9 +27,10 @@
 
 namespace {
 
-chromeos::ImeStatusConnection* global_connection = NULL;
+chromeos::InputMethodUiStatusConnection* global_connection = NULL;
 
-// Callback is an example object which can be passed to MonitorImeStatus.
+// Callback is an example object which can be passed to
+// MonitorInputMethodUiStatus.
 class Callback {
  public:
   explicit Callback(GMainLoop* loop)
@@ -85,7 +86,7 @@ int main(int argc, const char** argv) {
   GMainLoop* loop = ::g_main_loop_new(NULL, false);
   DCHECK(LoadCrosLibrary(argv)) << "Failed to load cros.so";
 
-  chromeos::ImeStatusMonitorFunctions monitor_functions;
+  chromeos::InputMethodUiStatusMonitorFunctions monitor_functions;
   monitor_functions.hide_auxiliary_text = Callback::HideAuxiliaryText;
   monitor_functions.hide_lookup_table = Callback::HideLookupTable;
   monitor_functions.set_cursor_location = Callback::SetCursorLocation;
@@ -94,11 +95,11 @@ int main(int argc, const char** argv) {
 
   Callback callback(loop);
   global_connection
-      = chromeos::MonitorImeStatus(monitor_functions, &callback);
+      = chromeos::MonitorInputMethodUiStatus(monitor_functions, &callback);
   DCHECK(global_connection) << "MonitorLanguageStatus() failed. ";
 
   ::g_main_loop_run(loop);
-  chromeos::DisconnectImeStatus(global_connection);
+  chromeos::DisconnectInputMethodUiStatus(global_connection);
   ::g_main_loop_unref(loop);
 
   return 0;

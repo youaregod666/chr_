@@ -12,7 +12,7 @@
 namespace chromeos {
 
 // IBusChromeOSPanelService is a subclass of IBusPanelService, that is
-// used for implementing IME UI for Chrome OS.
+// used for implementing input method UI for Chrome OS.
 //
 // The anonymous namespace contains boilerplate code for creating a sub
 // class with GObject, as well as member functions.
@@ -46,12 +46,12 @@ struct IBusChromeOSPanelService {
   // The ownership is not transferred.
   IBusConnection* ibus_connection;
 
-  // The object of the client IME library. This will be used as the first
-  // argument of monitor functions.
-  void* ime_library;
+  // The object of the client input method library. This will be used as
+  // the first argument of monitor functions.
+  void* input_method_library;
 
   // The monitor functions are called upon certain events.
-  chromeos::ImeStatusMonitorFunctions monitor_functions;
+  chromeos::InputMethodUiStatusMonitorFunctions monitor_functions;
 };
 
 struct IBusChromeOSPanelServiceClass {
@@ -110,13 +110,13 @@ gboolean ibus_chromeos_panel_service_hide_auxiliary_text(
     IBusError **error) {
   g_return_val_if_fail(panel, FALSE);
 
-  const ImeStatusMonitorFunctions& monitor_functions =
+  const InputMethodUiStatusMonitorFunctions& monitor_functions =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
-  void* ime_library =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ime_library;
+  void* input_method_library =
+      IBUS_CHROMEOS_PANEL_SERVICE(panel)->input_method_library;
   g_return_val_if_fail(monitor_functions.hide_auxiliary_text, FALSE);
 
-  monitor_functions.hide_auxiliary_text(ime_library);
+  monitor_functions.hide_auxiliary_text(input_method_library);
   return TRUE;
 }
 
@@ -126,13 +126,13 @@ gboolean ibus_chromeos_panel_service_hide_lookup_table(IBusPanelService *panel,
                                                        IBusError **error) {
   g_return_val_if_fail(panel, FALSE);
 
-  const ImeStatusMonitorFunctions& monitor_functions =
+  const InputMethodUiStatusMonitorFunctions& monitor_functions =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
-  void* ime_library =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ime_library;
+  void* input_method_library =
+      IBUS_CHROMEOS_PANEL_SERVICE(panel)->input_method_library;
   g_return_val_if_fail(monitor_functions.hide_lookup_table, FALSE);
 
-  monitor_functions.hide_lookup_table(ime_library);
+  monitor_functions.hide_lookup_table(input_method_library);
   return TRUE;
 }
 
@@ -166,15 +166,15 @@ gboolean ibus_chromeos_panel_service_update_auxiliary_text(
   g_return_val_if_fail(text, FALSE);
   g_return_val_if_fail(text->text, FALSE);
 
-  const ImeStatusMonitorFunctions& monitor_functions =
+  const InputMethodUiStatusMonitorFunctions& monitor_functions =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
-  void* ime_library =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ime_library;
+  void* input_method_library =
+      IBUS_CHROMEOS_PANEL_SERVICE(panel)->input_method_library;
   g_return_val_if_fail(monitor_functions.update_auxiliary_text, FALSE);
 
   // Convert IBusText to a std::string. IBusText is an attributed text,
   const std::string simple_text = text->text;
-  monitor_functions.update_auxiliary_text(ime_library,
+  monitor_functions.update_auxiliary_text(input_method_library,
                                           simple_text,
                                           visible == TRUE);
   return TRUE;
@@ -200,7 +200,7 @@ std::string IBusLookupTableToString(IBusLookupTable* table) {
 }
 
 // Handles IBus's |UpdateLookupTable| method call.
-// Creates a ImeLookupTable object and calls |update_lookup_table| in
+// Creates an InputMethodLookupTable object and calls |update_lookup_table| in
 // |monitor_functions|
 gboolean ibus_chromeos_panel_service_update_lookup_table(
     IBusPanelService *panel,
@@ -210,13 +210,13 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
   g_return_val_if_fail(panel, FALSE);
   g_return_val_if_fail(table, FALSE);
 
-  const ImeStatusMonitorFunctions& monitor_functions =
+  const InputMethodUiStatusMonitorFunctions& monitor_functions =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
-  void* ime_library =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ime_library;
+  void* input_method_library =
+      IBUS_CHROMEOS_PANEL_SERVICE(panel)->input_method_library;
   g_return_val_if_fail(monitor_functions.update_lookup_table, FALSE);
 
-  ImeLookupTable lookup_table;
+  InputMethodLookupTable lookup_table;
   lookup_table.visible = (visible == TRUE);
 
   // Copy candidates to |lookup_table|.
@@ -237,7 +237,7 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
     lookup_table.page_size = 1;
   }
 
-  monitor_functions.update_lookup_table(ime_library, lookup_table);
+  monitor_functions.update_lookup_table(input_method_library, lookup_table);
   return TRUE;
 }
 
@@ -292,13 +292,14 @@ gboolean ibus_chromeos_panel_service_set_cursor_location(
     IBusError **error) {
   g_return_val_if_fail(panel, FALSE);
 
-  const ImeStatusMonitorFunctions& monitor_functions =
+  const InputMethodUiStatusMonitorFunctions& monitor_functions =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
-  void* ime_library =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ime_library;
+  void* input_method_library =
+      IBUS_CHROMEOS_PANEL_SERVICE(panel)->input_method_library;
   g_return_val_if_fail(monitor_functions.set_cursor_location, FALSE);
 
-  monitor_functions.set_cursor_location(ime_library, x, y, width, height);
+  monitor_functions.set_cursor_location(input_method_library,
+                                        x, y, width, height);
   return TRUE;
 }
 
@@ -307,8 +308,8 @@ gboolean ibus_chromeos_panel_service_set_cursor_location(
 // without cast).
 IBusPanelService* ibus_chromeos_panel_service_new(
     IBusConnection *ibus_connection,
-    void* ime_library,
-    const ImeStatusMonitorFunctions& monitor_functions) {
+    void* input_method_library,
+    const InputMethodUiStatusMonitorFunctions& monitor_functions) {
   IBusPanelService* service = IBUS_PANEL_SERVICE(
       g_object_new(IBUS_TYPE_CHROMEOS_PANEL_SERVICE,
                    "path", IBUS_PATH_PANEL,
@@ -318,8 +319,8 @@ IBusPanelService* ibus_chromeos_panel_service_new(
   // Set members specific to IBusChromeOSPanelService.
   IBUS_CHROMEOS_PANEL_SERVICE(service)->ibus_connection =
       ibus_connection;
-  IBUS_CHROMEOS_PANEL_SERVICE(service)->ime_library =
-      ime_library;
+  IBUS_CHROMEOS_PANEL_SERVICE(service)->input_method_library =
+      input_method_library;
   IBUS_CHROMEOS_PANEL_SERVICE(service)->monitor_functions =
       monitor_functions;
 
@@ -365,24 +366,25 @@ void ibus_chromeos_panel_service_class_init(
 
 // Initializes the given IBusChromeOSPanelService object.
 void ibus_chromeos_panel_service_init(IBusChromeOSPanelService* service) {
-  service->ime_library = NULL;
+  service->input_method_library = NULL;
   service->ibus_connection = NULL;
 }
 
 }  // namespace
 
 // A thin wrapper for IBusPanelService.
-class ImeStatusConnection {
+class InputMethodUiStatusConnection {
  public:
-  ImeStatusConnection(const ImeStatusMonitorFunctions& monitor_functions,
-                      void* ime_library)
+  InputMethodUiStatusConnection(
+      const InputMethodUiStatusMonitorFunctions& monitor_functions,
+      void* input_method_library)
       : monitor_functions_(monitor_functions),
-        ime_library_(ime_library),
+        input_method_library_(input_method_library),
         ibus_(NULL),
         ibus_panel_service_(NULL) {
   }
 
-  ~ImeStatusConnection() {
+  ~InputMethodUiStatusConnection() {
     // ibus_panel_service_ depends on ibus_, thus unref it first.
     if (ibus_panel_service_) {
       g_object_unref(ibus_panel_service_);
@@ -425,7 +427,7 @@ class ImeStatusConnection {
 
     // Create a ChromeOS's version of IBusPanelService.
     ibus_panel_service_ = ibus_chromeos_panel_service_new(ibus_connection,
-                                                          ime_library_,
+                                                          input_method_library_,
                                                           monitor_functions_);
     if (!ibus_panel_service_) {
       LOG(ERROR) << "ibus_chromeos_panel_service_new() failed";
@@ -440,8 +442,8 @@ class ImeStatusConnection {
   }
 
  private:
-  ImeStatusMonitorFunctions monitor_functions_;
-  void* ime_library_;
+  InputMethodUiStatusMonitorFunctions monitor_functions_;
+  void* input_method_library_;
   IBusBus* ibus_;
   IBusPanelService* ibus_panel_service_;
 };
@@ -450,19 +452,20 @@ class ImeStatusConnection {
 // cros APIs
 //
 
-// The function will be bound to chromeos::MonitorImeStatus with dlsym()
-// in load.cc so it needs to be in the C linkage, so the symbol name does not
-// get mangled.
+// The function will be bound to chromeos::MonitorInputMethodUiStatus with
+// dlsym() in load.cc so it needs to be in the C linkage, so the symbol
+// name does not get mangled.
 extern "C"
-ImeStatusConnection* ChromeOSMonitorImeStatus(
-    const ImeStatusMonitorFunctions& monitor_functions,
-    void* ime_library) {
-  DLOG(INFO) << "MonitorImeStatus";
+InputMethodUiStatusConnection* ChromeOSMonitorInputMethodUiStatus(
+    const InputMethodUiStatusMonitorFunctions& monitor_functions,
+    void* input_method_library) {
+  DLOG(INFO) << "MonitorInputMethodUiStatus";
 
-  ImeStatusConnection* connection =
-      new ImeStatusConnection(monitor_functions, ime_library);
+  InputMethodUiStatusConnection* connection =
+      new InputMethodUiStatusConnection(monitor_functions,
+                                        input_method_library);
   if (!connection->Init()) {
-    LOG(WARNING) << "Failed to Init() ImeStatusConnection. "
+    LOG(WARNING) << "Failed to Init() InputMethodUiStatusConnection. "
                  << "Returning NULL";
     delete connection;
     connection = NULL;
@@ -471,13 +474,29 @@ ImeStatusConnection* ChromeOSMonitorImeStatus(
 }
 
 extern "C"
-void ChromeOSDisconnectImeStatus(ImeStatusConnection* connection) {
-  DLOG(INFO) << "DisconnectLanguageStatus";
+void ChromeOSDisconnectInputMethodUiStatus(
+    InputMethodUiStatusConnection* connection) {
+  DLOG(INFO) << "DisconnectInputMethodUiStatus";
   delete connection;
 }
 
+// DEPRECATED: TODO(satorux): Remove this once it's ready.
 extern "C"
-void ChromeOSNotifyCandidateClicked(ImeStatusConnection* connection,
+InputMethodUiStatusConnection* ChromeOSMonitorImeStatus(
+    const InputMethodUiStatusMonitorFunctions& monitor_functions,
+    void* input_method_library) {
+  return ChromeOSMonitorInputMethodUiStatus(monitor_functions,
+                                            input_method_library);
+}
+
+// DEPRECATED: TODO(satorux): Remove this once it's ready.
+extern "C"
+void ChromeOSDisconnectImeStatus(InputMethodUiStatusConnection* connection) {
+  ChromeOSDisconnectInputMethodUiStatus(connection);
+}
+
+extern "C"
+void ChromeOSNotifyCandidateClicked(InputMethodUiStatusConnection* connection,
                                     int index, int button, int flags) {
   DLOG(INFO) << "NotifyCandidateClicked";
   DCHECK(connection);
