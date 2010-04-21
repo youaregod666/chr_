@@ -14,6 +14,7 @@
 #include "chromeos_mount.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
 #include "chromeos_power.h"  // NOLINT
+#include "chromeos_speech_synthesis.h"  // NOLINT
 #include "chromeos_synaptics.h"  // NOLINT
 #include "chromeos_update.h"  // NOLINT
 
@@ -167,6 +168,11 @@ DECL_FUNC_0(CryptohomeUnmount, bool);
 DECL_FUNC_1(Update, bool, UpdateInformation*);
 DECL_FUNC_1(CheckForUpdate, bool, UpdateInformation*);
 
+DECL_FUNC_1(Speak, bool, const char*);
+DECL_FUNC_1(SetSpeakProperties, bool, const char*);
+DECL_FUNC_0(StopSpeaking, bool);
+DECL_FUNC_0(IsSpeaking, bool);
+
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
 // Initializes the variable by looking up the function by |name|.
@@ -304,6 +310,11 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   // Update
   INIT_FUNC(Update);
   INIT_FUNC(CheckForUpdate);
+
+  INIT_FUNC(Speak);
+  INIT_FUNC(SetSpeakProperties);
+  INIT_FUNC(StopSpeaking);
+  INIT_FUNC(IsSpeaking);
 
   return error_string.empty();
 }

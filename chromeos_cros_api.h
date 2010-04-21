@@ -81,12 +81,13 @@
 //  25: Removed the depreceted method above.
 //      Added MonitorInputMethodStatus, DisconnectInputMethodStatusConnection,
 //      InputMethodStatusConnectionIsAlive.
+//  26: Added speech synthesis library functions.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 21,
-  kCrosAPIVersion = 25
+  kCrosAPIVersion = 26
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
