@@ -9,8 +9,10 @@
       'sources': [
         'chromeos_power.h',
         'chromeos_network.h',
-        'chromeos_ime.h',
-        'chromeos_language.h',
+        'chromeos_input_method.h',
+        'chromeos_input_method_ui.h',
+        'chromeos_ime.h',  # TODO(satorux): Remove this once it's ready.
+        'chromeos_language.h',  # TODO(satorux): Remove this once it's ready.
         'load.cc',
       ],
       'include_dirs': [

@@ -1,8 +1,8 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "chromeos_language.h"
+#include "chromeos_input_method.h"
 
 #include <dbus/dbus-glib-lowlevel.h>  // for dbus_g_connection_get_connection.
 #include <ibus.h>

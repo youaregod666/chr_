@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,9 +7,9 @@
 #include <string.h>
 
 #include "chromeos_cros_api.h" // NOLINT
-#include "chromeos_ime.h"  // NOLINT
+#include "chromeos_input_method.h"  // NOLINT
+#include "chromeos_input_method_ui.h"  // NOLINT
 #include "chromeos_keyboard.h"  // NOLINT
-#include "chromeos_language.h"  // NOLINT
 #include "chromeos_login.h"  // NOLINT
 #include "chromeos_mount.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT

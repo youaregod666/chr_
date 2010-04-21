@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,12 +12,12 @@
 #include <iostream>  // NOLINT
 
 #include "chromeos_cros_api.h"  // NOLINT
-#include "chromeos_language.h"
+#include "chromeos_input_method.h"
 #include "monitor_utils.h" //NOLINT
 
 // \file This is a simple console application which checks whether the cros
-// library (chromeos_language.cc) can monitor input method status changes or
-// not.
+// library (chromeos_input_method.cc) can monitor input method status changes
+// or not.
 
 // How to use this tool:
 // 1. Set up your IBus daemon using ibus-setup command. Add at least two input

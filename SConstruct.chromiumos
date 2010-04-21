@@ -1,4 +1,4 @@
-# Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,9 +6,9 @@ import os
 import sys
 
 SOURCES=['chromeos_cryptohome.cc',
-         'chromeos_ime.cc',
+         'chromeos_input_method.cc',
+         'chromeos_input_method_ui.cc',
          'chromeos_keyboard.cc',
-         'chromeos_language.cc',
          'chromeos_login.cc',
          'chromeos_mount.cc',
          'chromeos_network.cc',
@@ -66,12 +66,13 @@ Load = env_test.Object('load.cc')
 
 tests = [
   env_test.Program('monitor_power', ['monitor_power.cc', Load]),
-  env_gtest.Program('monitor_language', ['monitor_language.cc', Load]),
+  env_gtest.Program('monitor_input_method', ['monitor_input_method.cc', Load]),
   env_gtest.Program('monitor_keyboard', ['monitor_keyboard.cc', Load]),
   # This is broken now.
   # env_test.Program('monitor_network', ['monitor_network.cc', Load]),
   env_test.Program('monitor_mount', ['monitor_mount.cc', Load]),
-  env_test.Program('monitor_ime', ['monitor_ime.cc', Load]),
+  env_test.Program('monitor_input_method_ui',
+                   ['monitor_input_method_ui.cc', Load]),
   env_test.Program('login_drive', ['drive_login.cc', Load]),
   env_test.Program('cryptohome_drive', ['drive_cryptohome.cc', Load])
 ]

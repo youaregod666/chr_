@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,18 +10,20 @@
 #include <iostream>  // NOLINT
 
 #include "chromeos_cros_api.h"  // NOLINT
-#include "chromeos_ime.h"
+#include "chromeos_input_method_ui.h"
 #include "monitor_utils.h" //NOLINT
 
 // \file This is a simple console application which checks whether the cros
-// library (chromeos_ime.cc) can monitor IME status changes or not.
+// library (chromeos_input_method_ui.cc) can monitor input method UI status
+// changes or not.
 
 // How to use this tool:
-// 1. Set up your IBus daemon using ibus-setup command. Add at least one IME.
+// 1. Set up your IBus daemon using ibus-setup command.
+//    Add at least one input method.
 // 2. Kill the IBus UI application (/usr/share/ibus/ui/gtk/main.py)
 // 3. Start this tool ***in your gnome-terminal***. You need to have X desktop.
 // 4. Verify that status messages are printed as you make actions like
-//    clicking on other windows, and turning on/off the IME.
+//    clicking on other windows, and turning on/off the input method.
 // 5. Verify that this tool exits after UpdateLookupTable() is called five
 //    times.
 
@@ -61,8 +63,9 @@ class Callback {
               << text << "]: " << visible;
   }
 
-  static void UpdateLookupTable(void* object,
-                                const chromeos::ImeLookupTable& table) {
+  static void UpdateLookupTable(
+      void* object,
+      const chromeos::InputMethodLookupTable& table) {
     LOG(INFO) << "UpdateLookupTable: " << table.ToString();
 
     Callback* self = static_cast<Callback*>(object);
