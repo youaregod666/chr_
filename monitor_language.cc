@@ -212,7 +212,8 @@ void ShowSupportedInputMethods() {
   }
 }
 
-// Callback is an example object which can be passed to MonitorLanguageStatus.
+// Callback is an example object which can be passed to
+// MonitorInputMethodStatus.
 class Callback {
  public:
   // You can store whatever state is needed in the function object.
@@ -264,6 +265,11 @@ class Callback {
     DumpProperties(prop_list);
   }
 
+  static void FocusChanged(void* object, bool focus_in) {
+    DLOG(INFO) << "In callback function for the FocusChanged: "
+               << (focus_in ? "focus in" : "focus out");
+  }
+
   void set_first_ime_id(const std::string& id) {
     first_ime_id_ = id;
   }
@@ -288,29 +294,32 @@ int main(int argc, char** argv) {
   DCHECK(LoadCrosLibrary(const_cast<const char**>(argv)))
       << "Failed to load cros.so";
 
-  chromeos::LanguageStatusMonitorFunctions monitor;
-  monitor.current_language = &Callback::UpdateCurrentInputMethod;
-  monitor.register_ime_properties = &Callback::RegisterProperties;
-  monitor.update_ime_property = &Callback::UpdateProperty;
-
   Callback callback(loop);
   global_connection
-      = chromeos::MonitorLanguageStatus(monitor, &callback);
-  DCHECK(global_connection) << "MonitorLanguageStatus() failed. "
+      = chromeos::MonitorInputMethodStatus(&callback,
+                                           &Callback::UpdateCurrentInputMethod,
+                                           &Callback::RegisterProperties,
+                                           &Callback::UpdateProperty,
+                                           &Callback::FocusChanged);
+  DCHECK(global_connection) << "MonitorInputMethodStatus() failed. "
                             << "candidate_window is not running?";
 
   // Check the connection status.
-  DCHECK(chromeos::LanguageStatusConnectionIsAlive(global_connection))
+  DCHECK(chromeos::InputMethodStatusConnectionIsAlive(global_connection))
       << "CheckConnection() failed.";
   LOG(INFO) << "Connection is OK.";
 
   // Try to disconnect, then reconnect.
-  chromeos::DisconnectLanguageStatus(global_connection);
+  chromeos::DisconnectInputMethodStatus(global_connection);
   global_connection
-      = chromeos::MonitorLanguageStatus(monitor, &callback);
-  DCHECK(global_connection) << "MonitorLanguageStatus() failed.";
+      = chromeos::MonitorInputMethodStatus(&callback,
+                                           &Callback::UpdateCurrentInputMethod,
+                                           &Callback::RegisterProperties,
+                                           &Callback::UpdateProperty,
+                                           &Callback::FocusChanged);
+  DCHECK(global_connection) << "MonitorInputMethodStatus() failed.";
 
-  DCHECK(chromeos::LanguageStatusConnectionIsAlive(global_connection))
+  DCHECK(chromeos::InputMethodStatusConnectionIsAlive(global_connection))
       << "CheckConnection() failed.";
   LOG(INFO) << "Connection is OK.";
   
@@ -335,6 +344,32 @@ int main(int argc, char** argv) {
   callback.set_first_ime_id(descriptors->at(1).id);
   callback.set_second_ime_id(descriptors->at(2).id);
 
+  // Deactivate the last input method for testing.
+  chromeos::ImeConfigValue input_methods;
+  input_methods.type = chromeos::ImeConfigValue::kValueTypeStringList;
+  for (size_t i = 0; i < descriptors->size() - 1; ++i) {
+    input_methods.string_list_value.push_back(descriptors->at(i).id);
+  }
+  DCHECK(chromeos::SetImeConfig(
+      global_connection, "general", "preload_engines", input_methods));
+  // This is not reliable, but wait for a moment so the config change
+  // takes effect in IBus.
+  sleep(1);
+  LOG(INFO) << "Deactivated: " << descriptors->back().display_name;
+  ShowActiveInputMethods();
+
+  // Reactivate the input method.
+  input_methods.type = chromeos::ImeConfigValue::kValueTypeStringList;
+  input_methods.string_list_value.clear();
+  for (size_t i = 0; i < descriptors->size(); ++i) {
+    input_methods.string_list_value.push_back(descriptors->at(i).id);
+  }
+  DCHECK(chromeos::SetImeConfig(
+      global_connection, "general", "preload_engines", input_methods));
+  sleep(1);
+  LOG(INFO) << "Reactivated: " << descriptors->back().display_name;
+  ShowActiveInputMethods();
+
   ::g_main_loop_run(loop);
 
   // Test if we can read/write input method configurations. This should be done
@@ -348,7 +383,7 @@ int main(int argc, char** argv) {
   // We should be aware of D-Bus memory management internals when we write the
   // tests: http://code.google.com/p/ibus/issues/detail?id=800
 
-  chromeos::DisconnectLanguageStatus(global_connection);
+  chromeos::DisconnectInputMethodStatus(global_connection);
   ::g_main_loop_unref(loop);
   return result;
 }

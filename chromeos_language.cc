@@ -435,21 +435,30 @@ std::string PrintPropList(IBusPropList *prop_list, int tree_level) {
 namespace chromeos {
 
 // A class that holds IBus and DBus connections.
-class LanguageStatusConnection {
+class InputMethodStatusConnection {
  public:
-  LanguageStatusConnection(LanguageStatusMonitorFunctions monitor_functions,
-                           void* language_library)
-      : monitor_functions_(monitor_functions),
+  InputMethodStatusConnection(
+      void* language_library,
+      LanguageCurrentInputMethodMonitorFunction current_input_method_changed,
+      LanguageRegisterImePropertiesFunction register_ime_properties,
+      LanguageUpdateImePropertyFunction update_ime_property,
+      LanguageFocusChangeMonitorFunction focus_changed)
+      : current_input_method_changed_(current_input_method_changed),
+        register_ime_properties_(register_ime_properties),
+        update_ime_property_(update_ime_property),
+        focus_changed_(focus_changed),
         language_library_(language_library),
         ibus_(NULL),
         input_context_path_("") {
-    DCHECK(monitor_functions_.current_language);
-    DCHECK(monitor_functions_.register_ime_properties);
-    DCHECK(monitor_functions_.update_ime_property);
+    DCHECK(current_input_method_changed),
+    DCHECK(register_ime_properties_);
+    DCHECK(update_ime_property_);
+    // TODO(yusukes): enable the DCHECK later (on cros API v23).
+    // DCHECK(focus_changed_);
     DCHECK(language_library_);
   }
 
-  ~LanguageStatusConnection() {
+  ~InputMethodStatusConnection() {
     // Destruct IBus object.
     if (ibus_) {
       if (ibus_bus_is_connected(ibus_)) {
@@ -516,16 +525,12 @@ class LanguageStatusConnection {
     // Register DBus signal handler.
     dbus_connection_add_filter(
         dbus_g_connection_get_connection(dbus_connection_->g_connection()),
-        &LanguageStatusConnection::DispatchSignalFromCandidateWindow,
+        &InputMethodStatusConnection::DispatchSignalFromCandidateWindow,
         this, NULL);
 
     // TODO(yusukes): Investigate what happens if candidate_window process is
     // restarted. I'm not sure but we should use dbus_g_proxy_new_for_name(),
     // not dbus_g_proxy_new_for_name_owner()?
-    // TODO(yusukes): Investigate if we can automatically restart ibus-memconf,
-    // candidate_window, (and ibus-x11?) processes when they die. Upstart only
-    // takes care of respawning the ibus-daemon process.
-
     return true;
   }
 
@@ -606,52 +611,6 @@ class LanguageStatusConnection {
     g_object_unref(context);
     UpdateUI();
     return true;
-  }
-
-  // Called by cros API ChromeOSSetLanguageActivated().
-  bool SetInputMethodActivated(const char* input_method_id, bool activated) {
-    GList* const engines = ibus_bus_list_active_engines(ibus_);
-    // TODO(yusukes): remove all g_value calls and use ChromeOSSetImeConfig()
-    // instead?
-
-    // Convert |engines| to a GValueArray of names.
-    GValueArray* engine_names = g_value_array_new(0);
-    for (GList* cursor = engines; cursor; cursor = g_list_next(cursor)) {
-      IBusEngineDesc* engine_desc = IBUS_ENGINE_DESC(cursor->data);
-      // Skip the input method if the mode is to deactivate and it matches the
-      // given name.
-      if (!activated && std::strcmp(engine_desc->name, input_method_id) == 0) {
-        continue;
-      }
-      GValue name_value = { 0 };
-      g_value_init(&name_value, G_TYPE_STRING);
-      g_value_set_string(&name_value, engine_desc->name);
-      g_value_array_append(engine_names, &name_value);
-      g_value_unset(&name_value);
-    }
-
-    if (activated) {
-      // Add a new input method here.
-      GValue name_value = { 0 };
-      g_value_init(&name_value, G_TYPE_STRING);
-      g_value_set_string(&name_value, input_method_id);
-      // Prepend to add the new input method as the first choice.
-      g_value_array_prepend(engine_names, &name_value);
-      g_value_unset(&name_value);
-    }
-
-    // Make the array into a GValue.
-    GValue value = { 0 };
-    g_value_init(&value, G_TYPE_VALUE_ARRAY);
-    g_value_take_boxed(&value, engine_names);
-    // We don't have to unref |engine_names| any more.
-
-    // Set the config value.
-    const bool success = SetImeConfig("general", "preload_engines", &value);
-    g_value_unset(&value);
-
-    FreeInputMethodNames(engines);
-    return success;
   }
 
   // Get a configuration of ibus-daemon or IBus engines and stores it on
@@ -760,7 +719,9 @@ class LanguageStatusConnection {
       ibus_input_context_enable(context);
       g_object_unref(context);
     }
-
+    if (focus_changed_) {
+      focus_changed_(language_library_, true);
+    }
     UpdateUI();  // This is necessary since input method status is held per ic.
   }
 
@@ -768,9 +729,9 @@ class LanguageStatusConnection {
   void FocusOut(const char* input_context_path) {
     DCHECK(input_context_path) << "NULL context passed";
     DLOG(INFO) << "FocusOut: " << input_context_path;
-    // TODO(yusukes): We should inactivate the language menu button here. IBus
-    // does not allow to change active IME nor IME properties when no text
-    // field is focused.
+    if (focus_changed_) {
+      focus_changed_(language_library_, false);
+    }
   }
 
   // Handles "StateChanged" signal from the candidate_window process.
@@ -791,14 +752,12 @@ class LanguageStatusConnection {
       if (!FlattenPropertyList(ibus_prop_list, &prop_list)) {
         LOG(ERROR) << "Malformed properties are detected";
         // Clear properties on errors.
-        // TODO(yusukes): ibus-xkb-layouts seems to send an unexpected prop list
-        // to us. Will investigate this.
         RegisterProperties(NULL);
         return;
       }
     }
     // Notify the change.
-    monitor_functions_.register_ime_properties(language_library_, prop_list);
+    register_ime_properties_(language_library_, prop_list);
   }
 
   // Handles "UpdateProperty" signal from the candidate_window process.
@@ -818,7 +777,7 @@ class LanguageStatusConnection {
     }
     // Notify the change.
     if (!prop_list.empty()) {
-      monitor_functions_.update_ime_property(language_library_, prop_list);
+      update_ime_property_(language_library_, prop_list);
     }
   }
 
@@ -853,7 +812,7 @@ class LanguageStatusConnection {
                << ", display_name:" << current_input_method.display_name;
 
     // Notify the change to update UI.
-    monitor_functions_.current_language(
+    current_input_method_changed_(
         language_library_, current_input_method);
     g_object_unref(context);
   }
@@ -868,8 +827,8 @@ class LanguageStatusConnection {
     DCHECK(message);
     DCHECK(object);
 
-    LanguageStatusConnection* self
-        = static_cast<LanguageStatusConnection*>(object);
+    InputMethodStatusConnection* self
+        = static_cast<InputMethodStatusConnection*>(object);
     IBusError* error = NULL;
 
     if (ibus_message_is_signal(message,
@@ -960,12 +919,15 @@ class LanguageStatusConnection {
   }
 
   // A function pointers which point LanguageLibrary::XXXHandler functions.
-  // |monitor_funcions_| is used when libcros receives signals from the
+  // The functions are used when libcros receives signals from the
   // candidate_window.
-  LanguageStatusMonitorFunctions monitor_functions_;
+  LanguageCurrentInputMethodMonitorFunction current_input_method_changed_;
+  LanguageRegisterImePropertiesFunction register_ime_properties_;
+  LanguageUpdateImePropertyFunction update_ime_property_;
+  LanguageFocusChangeMonitorFunction focus_changed_;
 
   // Points to a chromeos::LanguageLibrary object. |language_library_| is used
-  // as the first argument of the |monitor_functions_| functions.
+  // as the first argument of the monitor functions above.
   void* language_library_;
 
   // Connections to IBus and DBus.
@@ -981,17 +943,25 @@ class LanguageStatusConnection {
 // cros APIs
 //
 
-// The function will be bound to chromeos::MonitorLanguageStatus with dlsym()
+// The function will be bound to chromeos::MonitorInputMethodStatus with dlsym()
 // in load.cc so it needs to be in the C linkage, so the symbol name does not
 // get mangled.
 extern "C"
-LanguageStatusConnection* ChromeOSMonitorLanguageStatus(
-    LanguageStatusMonitorFunctions monitor_functions, void* language_library) {
-  LOG(INFO) << "MonitorLanguageStatus";
-  LanguageStatusConnection* connection
-      = new LanguageStatusConnection(monitor_functions, language_library);
+InputMethodStatusConnection* ChromeOSMonitorInputMethodStatus(
+    void* language_library,
+    LanguageCurrentInputMethodMonitorFunction current_input_method_changed,
+    LanguageRegisterImePropertiesFunction register_ime_properties,
+    LanguageUpdateImePropertyFunction update_ime_property,
+    LanguageFocusChangeMonitorFunction focus_changed) {
+  LOG(INFO) << "MonitorInputMethodStatus";
+  InputMethodStatusConnection* connection = new InputMethodStatusConnection(
+      language_library,
+      current_input_method_changed,
+      register_ime_properties,
+      update_ime_property,
+      focus_changed);
   if (!connection->Init()) {
-    LOG(WARNING) << "Failed to Init() LanguageStatusConnection. "
+    LOG(WARNING) << "Failed to Init() InputMethodStatusConnection. "
                  << "Returning NULL";
     delete connection;
     connection = NULL;
@@ -999,33 +969,53 @@ LanguageStatusConnection* ChromeOSMonitorLanguageStatus(
   return connection;
 }
 
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 extern "C"
-void ChromeOSDisconnectLanguageStatus(LanguageStatusConnection* connection) {
-  LOG(INFO) << "DisconnectLanguageStatus";
+InputMethodStatusConnection* ChromeOSMonitorLanguageStatus(
+    LanguageStatusMonitorFunctions monitor_functions, void* language_library) {
+  LOG(INFO) << "MonitorLanguageStatus";
+  return ChromeOSMonitorInputMethodStatus(
+      language_library,
+      monitor_functions.current_language,
+      monitor_functions.register_ime_properties,
+      monitor_functions.update_ime_property,
+      NULL);
+}
+
+extern "C"
+void ChromeOSDisconnectInputMethodStatus(
+    InputMethodStatusConnection* connection) {
+  LOG(INFO) << "DisconnectInputMethodStatus";
   delete connection;
+}
+
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
+extern "C"
+void ChromeOSDisconnectLanguageStatus(InputMethodStatusConnection* connection) {
+  ChromeOSDisconnectInputMethodStatus(connection);
 }
 
 extern "C"
 InputMethodDescriptors* ChromeOSGetActiveInputMethods(
-    LanguageStatusConnection* connection) {
+    InputMethodStatusConnection* connection) {
   g_return_val_if_fail(connection, NULL);
   // Pass ownership to a caller. Note: GetInputMethods() might return NULL.
   return connection->GetInputMethods(
-      LanguageStatusConnection::kActiveInputMethods);
+      InputMethodStatusConnection::kActiveInputMethods);
 }
 
 extern "C"
 InputMethodDescriptors* ChromeOSGetSupportedInputMethods(
-    LanguageStatusConnection* connection) {
+    InputMethodStatusConnection* connection) {
   g_return_val_if_fail(connection, NULL);
   // Pass ownership to a caller. Note: GetInputMethods() might return NULL.
   return connection->GetInputMethods(
-      LanguageStatusConnection::kSupportedInputMethods);
+      InputMethodStatusConnection::kSupportedInputMethods);
 }
 
 extern "C"
 void ChromeOSSetImePropertyActivated(
-    LanguageStatusConnection* connection, const char* key, bool activated) {
+    InputMethodStatusConnection* connection, const char* key, bool activated) {
   DLOG(INFO) << "SetImePropertyeActivated: " << key << ": " << activated;
   DCHECK(key);
   g_return_if_fail(connection);
@@ -1034,7 +1024,7 @@ void ChromeOSSetImePropertyActivated(
 
 extern "C"
 bool ChromeOSChangeInputMethod(
-    LanguageStatusConnection* connection, const char* name) {
+    InputMethodStatusConnection* connection, const char* name) {
   DCHECK(name);
   DLOG(INFO) << "ChangeInputMethod: " << name;
   g_return_val_if_fail(connection, false);
@@ -1042,17 +1032,7 @@ bool ChromeOSChangeInputMethod(
 }
 
 extern "C"
-bool ChromeOSSetInputMethodActivated(LanguageStatusConnection* connection,
-                                     const char* name,
-                                     bool activated) {
-  DCHECK(name);
-  DLOG(INFO) << "SetInputMethodActivated: " << name << ": " << activated;
-  g_return_val_if_fail(connection, FALSE);
-  return connection->SetInputMethodActivated(name, activated);
-}
-
-extern "C"
-bool ChromeOSGetImeConfig(LanguageStatusConnection* connection,
+bool ChromeOSGetImeConfig(InputMethodStatusConnection* connection,
                           const char* section,
                           const char* config_name,
                           ImeConfigValue* out_value) {
@@ -1068,7 +1048,6 @@ bool ChromeOSGetImeConfig(LanguageStatusConnection* connection,
   }
 
   // Convert the type of the result from GValue to our structure.
-  // TODO(yusukes): Support string list.
   bool success = true;
   GType type = G_VALUE_TYPE(&gvalue);
   if (type == G_TYPE_STRING) {
@@ -1108,7 +1087,7 @@ bool ChromeOSGetImeConfig(LanguageStatusConnection* connection,
 }
 
 extern "C"
-bool ChromeOSSetImeConfig(LanguageStatusConnection* connection,
+bool ChromeOSSetImeConfig(InputMethodStatusConnection* connection,
                           const char* section,
                           const char* config_name,
                           const ImeConfigValue& value) {
@@ -1150,14 +1129,21 @@ bool ChromeOSSetImeConfig(LanguageStatusConnection* connection,
 }
 
 extern "C"
-bool ChromeOSLanguageStatusConnectionIsAlive(
-    LanguageStatusConnection* connection) {
+bool ChromeOSInputMethodStatusConnectionIsAlive(
+    InputMethodStatusConnection* connection) {
   g_return_val_if_fail(connection, false);
   const bool is_connected = connection->ConnectionIsAlive();
   if (!is_connected) {
-    LOG(WARNING) << "ChromeOSLanguageStatusConnectionIsAlive: NOT alive";
+    LOG(WARNING) << "ChromeOSInputMethodStatusConnectionIsAlive: NOT alive";
   }
   return is_connected;
 }
 
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
+extern "C"
+bool ChromeOSLanguageStatusConnectionIsAlive(
+    InputMethodStatusConnection* connection) {
+  return ChromeOSInputMethodStatusConnectionIsAlive(connection);
+}
+    
 }  // namespace chromeos

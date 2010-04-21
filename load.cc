@@ -26,7 +26,7 @@ static std::string error_string;
 // variable to be used to call the function.
 // |name| is the name of the function.
 // |ret| is the return type.
-// |arg[1-4]| are the types are the arguments.
+// |arg[1-5]| are the types are the arguments.
 // These are compile time declarations only.
 // INIT_FUNC(name) needs to be called at runtime.
 #define DECL_FUNC_0(name, ret) \
@@ -49,6 +49,10 @@ static std::string error_string;
   typedef ret (*name##Type)(arg1, arg2, arg3, arg4); \
   name##Type name = 0;
 
+#define DECL_FUNC_5(name, ret, arg1, arg2, arg3, arg4, arg5) \
+  typedef ret (*name##Type)(arg1, arg2, arg3, arg4, arg5); \
+  name##Type name = 0;
+
 // Version
 DECL_FUNC_1(CrosVersionCheck, bool, chromeos::CrosAPIVersion);
 
@@ -58,27 +62,44 @@ DECL_FUNC_1(DisconnectPowerStatus, void, PowerStatusConnection);
 DECL_FUNC_1(RetrievePowerInformation, bool, PowerInformation*);
 
 // Input methods
+DECL_FUNC_5(MonitorInputMethodStatus,
+    InputMethodStatusConnection*,
+    void*,
+    chromeos::LanguageCurrentInputMethodMonitorFunction,
+    chromeos::LanguageRegisterImePropertiesFunction,
+    chromeos::LanguageUpdateImePropertyFunction,
+    chromeos::LanguageFocusChangeMonitorFunction);
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 DECL_FUNC_2(MonitorLanguageStatus,
-    LanguageStatusConnection*, LanguageStatusMonitorFunctions, void*);
-DECL_FUNC_1(DisconnectLanguageStatus, void, LanguageStatusConnection*);
+    InputMethodStatusConnection*, LanguageStatusMonitorFunctions, void*);
+DECL_FUNC_1(DisconnectInputMethodStatus, void, InputMethodStatusConnection*);
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
+DECL_FUNC_1(DisconnectLanguageStatus, void, InputMethodStatusConnection*);
 DECL_FUNC_1(GetSupportedInputMethods,
-    InputMethodDescriptors*, LanguageStatusConnection*);
+    InputMethodDescriptors*, InputMethodStatusConnection*);
 DECL_FUNC_1(GetActiveInputMethods,
-    InputMethodDescriptors*, LanguageStatusConnection*);
+    InputMethodDescriptors*, InputMethodStatusConnection*);
 DECL_FUNC_2(ChangeInputMethod,
-    bool, LanguageStatusConnection*, const char*);
+    bool, InputMethodStatusConnection*, const char*);
 DECL_FUNC_3(SetImePropertyActivated,
-    void, LanguageStatusConnection*, const char*, bool);
+    void, InputMethodStatusConnection*, const char*, bool);
 DECL_FUNC_4(GetImeConfig,
     bool,
-    LanguageStatusConnection*,
+    InputMethodStatusConnection*,
     const char*,
     const char*,
     chromeos::ImeConfigValue*);
 DECL_FUNC_4(SetImeConfig,
     bool,
-    LanguageStatusConnection*, const char*, const char*, const ImeConfigValue&);
-DECL_FUNC_1(LanguageStatusConnectionIsAlive, bool, LanguageStatusConnection*);
+    InputMethodStatusConnection*,
+    const char*,
+    const char*,
+    const ImeConfigValue&);
+DECL_FUNC_1(
+    InputMethodStatusConnectionIsAlive, bool, InputMethodStatusConnection*);
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
+DECL_FUNC_1(
+    LanguageStatusConnectionIsAlive, bool, InputMethodStatusConnection*);
 DECL_FUNC_2(MonitorInputMethodUiStatus,
             InputMethodUiStatusConnection*,
             const InputMethodUiStatusMonitorFunctions&,
@@ -211,7 +232,11 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RetrievePowerInformation);
 
   // IME
+  INIT_FUNC(MonitorInputMethodStatus);
+  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
   INIT_FUNC(MonitorLanguageStatus);
+  INIT_FUNC(DisconnectInputMethodStatus);
+  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
   INIT_FUNC(DisconnectLanguageStatus);
   INIT_FUNC(GetSupportedInputMethods);
   INIT_FUNC(GetActiveInputMethods);
@@ -219,6 +244,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(SetImePropertyActivated);
   INIT_FUNC(GetImeConfig);
   INIT_FUNC(SetImeConfig);
+  INIT_FUNC(InputMethodStatusConnectionIsAlive);
+  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
   INIT_FUNC(LanguageStatusConnectionIsAlive);
   INIT_FUNC(MonitorInputMethodUiStatus);
   INIT_FUNC(DisconnectInputMethodUiStatus);

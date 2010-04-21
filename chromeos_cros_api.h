@@ -78,12 +78,15 @@
 //  22: Added ChromeOSConnectToNetworkWithCertInfo.
 //  23: Added profile entries and SetAutoConnect and DeleteRememberedService.
 //  24: Added MonitorInputMethodUiStatus and DisconnectInputMethodUiStatus.
+//  25: Removed the depreceted method above.
+//      Added MonitorInputMethodStatus, DisconnectInputMethodStatusConnection,
+//      InputMethodStatusConnectionIsAlive.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 19,
-  kCrosAPIVersion = 24
+  kCrosAPIMinVersion = 21,
+  kCrosAPIVersion = 25
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

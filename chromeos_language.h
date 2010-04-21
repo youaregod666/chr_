@@ -240,6 +240,12 @@ typedef void(*LanguageRegisterImePropertiesFunction)(
 typedef void(*LanguageUpdateImePropertyFunction)(
     void* language_library, const ImePropertyList& prop_list);
 
+// A monitor function which is called when "FocusIn" or "FocusOut" signals are
+// sent from the candidate_window process.
+typedef void(*LanguageFocusChangeMonitorFunction)(
+    void* language_library, bool focus_in);
+
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 struct LanguageStatusMonitorFunctions {
   LanguageStatusMonitorFunctions()
       : current_language(NULL),
@@ -252,44 +258,57 @@ struct LanguageStatusMonitorFunctions {
   LanguageUpdateImePropertyFunction update_ime_property;
 };
 
-// Establishes IBus connection to the ibus-daemon and DBus connection to
-// the candidate window process. |monitor_function| will be called when an
-// input method engine is changed.
-class LanguageStatusConnection;
-extern LanguageStatusConnection* (*MonitorLanguageStatus)(
+// Establishes IBus connection to the ibus-daemon and DBus connection to the
+// candidate window process. LanguageXXXFunction functions will be called when
+// status of input method engines is changed.
+class InputMethodStatusConnection;
+extern InputMethodStatusConnection* (*MonitorInputMethodStatus)(
+    void* language_library,
+    LanguageCurrentInputMethodMonitorFunction current_input_method,
+    LanguageRegisterImePropertiesFunction register_ime_properties,
+    LanguageUpdateImePropertyFunction update_ime_property,
+    LanguageFocusChangeMonitorFunction focus_changed);
+
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
+extern InputMethodStatusConnection* (*MonitorLanguageStatus)(
     LanguageStatusMonitorFunctions monitor_funcions, void* language_library);
 
 // Terminates IBus and DBus connections.
-extern void (*DisconnectLanguageStatus)(LanguageStatusConnection* connection);
+extern void (*DisconnectInputMethodStatus)(
+    InputMethodStatusConnection* connection);
+
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
+extern void (*DisconnectLanguageStatus)(
+    InputMethodStatusConnection* connection);
 
 // Gets all input method engines that are currently active. Caller has to
 // delete the returned list. This function might return NULL on error.
 extern InputMethodDescriptors* (*GetActiveInputMethods)(
-    LanguageStatusConnection* connection);
+    InputMethodStatusConnection* connection);
 
 // Gets all input method engines that are supported, including ones not active.
 // Caller has to delete the returned list. This function might return NULL on
 // error.
 extern InputMethodDescriptors* (*GetSupportedInputMethods)(
-    LanguageStatusConnection* connection);
+    InputMethodStatusConnection* connection);
 
 // Changes the current input method engine to |name|. Returns true on success.
 // Examples of names: "pinyin", "m17n:ar:kbd", "xkb:us:dvorak:eng".
 extern bool (*ChangeInputMethod)(
-    LanguageStatusConnection* connection, const char* name);
+    InputMethodStatusConnection* connection, const char* name);
 
 // Sets whether the input method specified by |name| is activated.
 // If |activated| is true activates the input method. If |activated| is false,
 // deactivates the input method. Returns true on success.
 // TODO(yusukes): Probably we can remove this function.
 extern bool (*SetInputMethodActivated)(
-    LanguageStatusConnection* connection, const char* name, bool activated);
+    InputMethodStatusConnection* connection, const char* name, bool activated);
 
 // Sets whether the input method property specified by |key| is activated.
 // If |activated| is true, activates the property. If |activated| is false,
 // deactivates the property.
 // TODO(yusukes): "SetInputMethodPropertyActivated" might be better?
-extern void (*SetImePropertyActivated)(LanguageStatusConnection* connection,
+extern void (*SetImePropertyActivated)(InputMethodStatusConnection* connection,
                                        const char* key,
                                        bool activated);
 
@@ -299,7 +318,7 @@ extern void (*SetImePropertyActivated)(LanguageStatusConnection* connection,
 // To retrieve 'panel/custom_font', |section| should be "panel", and
 // |config_name| should be "custom_font".
 // TODO(yusukes): "GetInputMethodConfig" might be better?
-extern bool (*GetImeConfig)(LanguageStatusConnection* connection,
+extern bool (*GetImeConfig)(InputMethodStatusConnection* connection,
                             const char* section,
                             const char* config_name,
                             ImeConfigValue* out_value);
@@ -309,17 +328,24 @@ extern bool (*GetImeConfig)(LanguageStatusConnection* connection,
 // You can specify |section| and |config_name| arguments in the same way
 // as GetImeConfig() above.
 // TODO(yusukes): "SetInputMethodConfig" might be better?
-extern bool (*SetImeConfig)(LanguageStatusConnection* connection,
+extern bool (*SetImeConfig)(InputMethodStatusConnection* connection,
                             const char* section,
                             const char* config_name,
                             const ImeConfigValue& value);
 
 // Returns true if IBus connection is still alive.
 // If this function returns false, you might have to discard the current
-// |connection| by calling DisconnectLanguageStatus() API above, and create
-// a new connection by calling MonitorLanguageStatus() API.
+// |connection| by calling DisconnectInputMethodStatus() API above, and create
+// a new connection by calling MonitorInputMethodStatus() API.
+extern bool (*InputMethodStatusConnectionIsAlive)(
+    InputMethodStatusConnection* connection);
+
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
 extern bool (*LanguageStatusConnectionIsAlive)(
-    LanguageStatusConnection* connection);
+    InputMethodStatusConnection* connection);
+
+// DEPRECATED: TODO(yusukes): Remove this when it's ready.
+typedef InputMethodStatusConnection LanguageStatusConnection;
 
 }  // namespace chromeos
 
