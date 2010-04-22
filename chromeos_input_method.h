@@ -35,17 +35,6 @@ struct InputMethodDescriptor {
         language_code(in_language_code) {
   }
 
-  // Languages are sorted by language_code, then by display_name, then by id.
-  bool operator<(const InputMethodDescriptor& other) const {
-    if (language_code != other.language_code) {
-      return language_code < other.language_code;
-    }
-    if (display_name != other.display_name) {
-      return display_name < other.display_name;
-    }
-    return id < other.id;
-  }
-
   bool operator==(const InputMethodDescriptor& other) const {
     return (id == other.id);
   }

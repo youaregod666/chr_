@@ -7,7 +7,7 @@
 #include <dbus/dbus-glib-lowlevel.h>  // for dbus_g_connection_get_connection.
 #include <ibus.h>
 
-#include <algorithm>  // for std::sort.
+#include <algorithm>  // for std::reverse.
 #include <cstring>  // for std::strcmp.
 #include <sstream>
 #include <stack>
@@ -560,9 +560,6 @@ class InputMethodStatusConnection {
 
     InputMethodDescriptors* input_methods = new InputMethodDescriptors;
     AddInputMethodNames(engines, input_methods);
-
-    // TODO(yusukes): We can remove sort() now?
-    std::sort(input_methods->begin(), input_methods->end());
 
     FreeInputMethodNames(engines);
     return input_methods;
