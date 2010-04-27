@@ -85,13 +85,17 @@ extern "C"
 bool ChromeOSSetCurrentKeyboardLayoutByName(const std::string& layout_name) {
   // TODO(satorux): Rewrite this function with xklavier.
   // The implementation is more like a prototype. Will rework later.
+  std::string layouts_to_set = layout_name;
+  if ((layouts_to_set != "us") && (layouts_to_set.substr(0, 3) != "us(")) {
+    layouts_to_set += ",us";
+  }
   std::string command = StringPrintf("setxkbmap -layout '%s'",
-                                     layout_name.c_str());
+                                     layouts_to_set.c_str());
   const int status_code = system(command.c_str());
   if (status_code == 0) {
     return true;
   }
-  LOG(INFO) << "Failed to change XKB layout to: " << layout_name;
+  LOG(INFO) << "Failed to change XKB layout to: " << layouts_to_set;
   return false;
 }
 
