@@ -24,24 +24,25 @@ enum WmIpcWindowType {
   WM_IPC_WINDOW_UNKNOWN = 0,
 
   // A top-level Chrome window.
+  //   param[0]: The number of tabs currently in this Chrome window.
+  //   param[1]: The index of the currently selected tab in this
+  //             Chrome window.
   WM_IPC_WINDOW_CHROME_TOPLEVEL = 1,
 
-  // Vestiges of the old windows-across-the-bottom overview mode.
   // TODO: Delete these.
   DEPRECATED_WM_IPC_WINDOW_CHROME_TAB_SUMMARY = 2,
   DEPRECATED_WM_IPC_WINDOW_CHROME_FLOATING_TAB = 3,
 
   // The contents of a popup window.
   //   param[0]: X ID of associated titlebar, which must be mapped before
-  //             its content
-  //   param[1]: Initial state for panel (0 is collapsed, 1 is expanded)
+  //             its content.
+  //   param[1]: Initial state for panel (0 is collapsed, 1 is expanded).
   WM_IPC_WINDOW_CHROME_PANEL_CONTENT = 4,
 
   // A small window placed above the panel's contents containing its title
   // and a close button.
   WM_IPC_WINDOW_CHROME_PANEL_TITLEBAR = 5,
 
-  // A small window that when clicked creates a new browser window.
   // TODO: Delete this.
   DEPRECATED_WM_IPC_WINDOW_CREATE_BROWSER_WINDOW = 6,
 
@@ -52,8 +53,7 @@ enum WmIpcWindowType {
 
   // A window showing a view of a tab within a Chrome window.
   //   param[0]: X ID of toplevel window that owns it.
-  //   param[1]: index of this tab in the tab order (range is 0 to
-  //             sum of all tabs in all browsers).
+  //   param[1]: Index of this tab in the toplevel window that owns it.
   WM_IPC_WINDOW_CHROME_TAB_SNAPSHOT = 8,
 
   // The following types are used for the windows that represent a user that
@@ -67,15 +67,15 @@ enum WmIpcWindowType {
   //
   // The following parameters are set for these windows (except GUEST and
   // BACKGROUND):
-  //   param[0]: the visual index of the user the window corresponds to.
+  //   param[0]: Visual index of the user the window corresponds to.
   //             For example, all windows with an index of 0 occur first,
   //             followed by windows with an index of 1...
   //
   // The following additional params are set on the first BORDER window
   // (BORDER window whose param[0] == 0).
-  //   param[1]: the total number of users.
-  //   param[2]: size of the unselected image.
-  //   param[3]: gap between image and controls.
+  //   param[1]: Total number of users.
+  //   param[2]: Size of the unselected image.
+  //   param[3]: Gap between image and controls.
   WM_IPC_WINDOW_LOGIN_BORDER = 9,
   WM_IPC_WINDOW_LOGIN_IMAGE = 10,
   WM_IPC_WINDOW_LOGIN_CONTROLS = 11,
@@ -100,34 +100,32 @@ enum WmIpcWindowType {
 enum WmIpcMessageType {
   WM_IPC_MESSAGE_UNKNOWN = 0,
 
-  // Vestiges of the old windows-across-the-bottom overview mode.
   // TODO: Delete these.
   DEPRECATED_WM_IPC_MESSAGE_CHROME_NOTIFY_FLOATING_TAB_OVER_TAB_SUMMARY = 1,
   DEPRECATED_WM_IPC_MESSAGE_CHROME_NOTIFY_FLOATING_TAB_OVER_TOPLEVEL = 2,
   DEPRECATED_WM_IPC_MESSAGE_CHROME_SET_TAB_SUMMARY_VISIBILITY = 3,
 
   // Tell the WM to collapse or expand a panel.
-  //   param[0]: X ID of the panel window
-  //   param[1]: desired state (0 means collapsed, 1 means expanded)
+  //   param[0]: X ID of the panel window.
+  //   param[1]: Desired state (0 means collapsed, 1 means expanded).
   WM_IPC_MESSAGE_WM_SET_PANEL_STATE = 4,
 
   // Notify Chrome that the panel state has changed.  Sent to the panel
   // window.
-  //   param[0]: new state (0 means collapsed, 1 means expanded)
+  //   param[0]: new state (0 means collapsed, 1 means expanded).
   // TODO: Deprecate this; Chrome can just watch for changes to the
   // _CHROME_STATE property to get the same information.
   WM_IPC_MESSAGE_CHROME_NOTIFY_PANEL_STATE = 5,
 
-  // From the old windows-across-the-bottom overview mode.
   // TODO: Delete this.
   DEPRECATED_WM_IPC_MESSAGE_WM_MOVE_FLOATING_TAB = 6,
 
   // Notify the WM that a panel has been dragged.
-  //   param[0]: X ID of the panel's content window
+  //   param[0]: X ID of the panel's content window.
   //   param[1]: X coordinate to which the upper-right corner of the
-  //             panel's titlebar window was dragged
+  //             panel's titlebar window was dragged.
   //   param[2]: Y coordinate to which the upper-right corner of the
-  //             panel's titlebar window was dragged
+  //             panel's titlebar window was dragged.
   // Note: The point given is actually that of one pixel to the right
   // of the upper-right corner of the titlebar window.  For example, a
   // no-op move message for a 10-pixel wide titlebar whose upper-left
@@ -140,21 +138,20 @@ enum WmIpcMessageType {
 
   // Notify the WM that the panel drag is complete (that is, the mouse
   // button has been released).
-  //   param[0]: X ID of the panel's content window
+  //   param[0]: X ID of the panel's content window.
   WM_IPC_MESSAGE_WM_NOTIFY_PANEL_DRAG_COMPLETE = 8,
 
-  // Deprecated.  Send a _NET_ACTIVE_WINDOW client message to focus a
-  // window instead (e.g. using gtk_window_present()).
+  // TODO: Delete this.
   WM_IPC_MESSAGE_DEPRECATED_WM_FOCUS_WINDOW = 9,
 
   // Notify Chrome that the layout mode (for example, overview or
   // active) has changed.
-  //   param[0]: new mode (0 means active, 1 means overview)
+  //   param[0]: New mode (0 means active, 1 means overview).
+  //   param[1]: Was the mode cancelled? (0 means no, 1 means yes).
   WM_IPC_MESSAGE_CHROME_NOTIFY_LAYOUT_MODE = 10,
 
-  // Instruct the WM to enter overview mode.
-  //   param[0]: X ID of the window to show the tab overview for.
-  WM_IPC_MESSAGE_WM_SWITCH_TO_OVERVIEW_MODE = 11,
+  // TODO: Delete this.
+  DEPRECATED_WM_IPC_MESSAGE_WM_SWITCH_TO_OVERVIEW_MODE = 11,
 
   // Let the WM know which version of this file Chrome is using.  It's
   // difficult to make changes synchronously to Chrome and the WM (our
@@ -173,23 +170,22 @@ enum WmIpcMessageType {
   //    upper-right, rather than upper-left, corner of of the titlebar
   //    window
   //
-  //   param[0]: version of this protocol currently supported by Chrome
+  //   param[0]: Version of this protocol currently supported by Chrome.
   WM_IPC_MESSAGE_WM_NOTIFY_IPC_VERSION = 12,
 
-  // Notify Chrome when a tab snapshot has been 'magnified' in the
-  // overview.  Sent to the top level window.
-  //   param[0]: X ID of the tab snapshot window
-  //   param[1]: state (0 means end magnify, 1 means begin magnify)
-  WM_IPC_MESSAGE_CHROME_NOTIFY_TAB_SNAPSHOT_MAGNIFY = 13,
+  // Notify Chrome when a tab has been selected in the overview.  Sent to the
+  // toplevel window associated with the magnified tab.
+  //   param[0]: Tab index of the newly-selected tab.
+  WM_IPC_MESSAGE_CHROME_NOTIFY_TAB_SELECT = 13,
 
-  // Forces the window manager to hide the login windows.
+  // Tell the window manager to hide the login windows.
   WM_IPC_MESSAGE_WM_HIDE_LOGIN = 14,
 
-  // Sets whether login is enabled. If true the user can click on any of the
+  // Set whether login is enabled.  If true, the user can click on any of the
   // login windows to select one, if false clicks on unselected windows are
-  // ignored. This is used when the user attempts a login to make sure the
+  // ignored.  This is used when the user attempts a login to make sure the
   // user doesn't select another user.
-  //   param[0]: true to enable, false to disable.
+  //   param[0]: True to enable, false to disable.
   WM_IPC_MESSAGE_WM_SET_LOGIN_STATE = 15,
 
   // Notify chrome when the guest entry is selected and the guest window
