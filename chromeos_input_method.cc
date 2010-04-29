@@ -511,17 +511,17 @@ class InputMethodStatusConnection {
     // Connect to the candidate_window. Note that dbus_connection_add_filter()
     // does not work without calling dbus::Proxy().
     // TODO(yusukes): Investigate how we can eliminate the call.
-
     const bool kConnectToNameOwner = true;
-    // TODO(yusukes): dbus::Proxy instantiation might fail (and abort due to
-    // DCHECK failure) when candidate_window process does not exist yet.
-    // Would be better to add "bool dbus::Proxy::Init()" or something like that
-    // to handle such case?
     dbus_proxy_.reset(new dbus::Proxy(*dbus_connection_,
                                       kCandidateWindowService,
                                       kCandidateWindowObjectPath,
                                       kCandidateWindowInterface,
                                       kConnectToNameOwner));
+    // The operator bool checks if a D-Bus connection is established or not..
+    if (!(dbus_proxy_->operator bool())) {
+      LOG(ERROR) << "Failed to connect to the candidate_window.";
+      return false;
+    }
 
     // Register DBus signal handler.
     dbus_connection_add_filter(
