@@ -134,6 +134,7 @@ DECL_FUNC_2(GetWifiService, ServiceInfo*, const char*, ConnectionSecurity);
 DECL_FUNC_2(ConnectToNetwork, bool, const char*, const char*);
 DECL_FUNC_4(ConnectToNetworkWithCertInfo, bool, const char*, const char*,
             const char*, const char*);
+DECL_FUNC_1(DisconnectFromNetwork, bool, const char*);
 DECL_FUNC_1(DeleteRememberedService, bool, const char*);
 DECL_FUNC_1(FreeSystemInfo, void, SystemInfo*);
 DECL_FUNC_1(FreeServiceInfo, void, ServiceInfo*);
@@ -143,6 +144,7 @@ DECL_FUNC_1(DisconnectMonitorNetwork, void, MonitorNetworkConnection);
 DECL_FUNC_2(EnableNetworkDevice, bool, ConnectionType, bool);
 DECL_FUNC_1(SetOfflineMode, bool, bool);
 DECL_FUNC_2(SetAutoConnect, bool, const char*, bool);
+DECL_FUNC_2(SetPassphrase, bool, const char*, const char*);
 DECL_FUNC_1(ListIPConfigs, IPConfigStatus*, const char*);
 DECL_FUNC_2(AddIPConfig, bool, const char*, IPConfigType);
 DECL_FUNC_1(SaveIPConfig, bool, IPConfig*);
@@ -278,6 +280,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(GetWifiService);
   INIT_FUNC(ConnectToNetwork);
   INIT_FUNC(ConnectToNetworkWithCertInfo);
+  INIT_FUNC(DisconnectFromNetwork);
   INIT_FUNC(DeleteRememberedService);
   INIT_FUNC(FreeSystemInfo);
   INIT_FUNC(FreeServiceInfo);
@@ -286,6 +289,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(EnableNetworkDevice);
   INIT_FUNC(SetOfflineMode);
   INIT_FUNC(SetAutoConnect);
+  INIT_FUNC(SetPassphrase);
   INIT_FUNC(ListIPConfigs);
   INIT_FUNC(AddIPConfig);
   INIT_FUNC(SaveIPConfig);

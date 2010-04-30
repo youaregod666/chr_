@@ -31,6 +31,7 @@ static const char* kConnmanProfileInterface = "org.moblin.connman.Profile";
 static const char* kGetPropertiesFunction = "GetProperties";
 static const char* kSetPropertyFunction = "SetProperty";
 static const char* kConnectFunction = "Connect";
+static const char* kDisconnectFunction = "Disconnect";
 static const char* kRequestScanFunction = "RequestScan";
 static const char* kGetWifiServiceFunction = "GetWifiService";
 static const char* kEnableTechnologyFunction = "EnableTechnology";
@@ -931,6 +932,27 @@ bool ChromeOSConnectToNetwork(const char* service_path,
 }
 
 extern "C"
+bool ChromeOSDisconnectFromNetwork(const char* service_path) {
+  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
+                            kConnmanServiceName,
+                            service_path,
+                            kConnmanServiceInterface);
+
+  // Now try disconnecting.
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_call(service_proxy.gproxy(),
+                           kDisconnectFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "DisconnectFromNetwork failed: "
+        << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+  return true;
+}
+
+extern "C"
 bool ChromeOSDeleteRememberedService(const char* service_path) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy manager_proxy(bus,
@@ -1174,6 +1196,32 @@ bool ChromeOSSetAutoConnect(const char* service_path, bool auto_connect) {
                            G_TYPE_INVALID,
                            G_TYPE_INVALID)) {
     LOG(WARNING) << "SetAutoConnect failed: "
+        << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+
+  return true;
+}
+
+extern "C"
+bool ChromeOSSetPassphrase(const char* service_path, const char* passphrase) {
+  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
+                            kConnmanServiceName,
+                            service_path,
+                            kConnmanServiceInterface);
+
+  glib::Value value_passphrase(passphrase);
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_call(service_proxy.gproxy(),
+                           kSetPropertyFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           kPassphraseProperty,
+                           G_TYPE_VALUE,
+                           &value_passphrase,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "SetPassphrase failed: "
         << (error->message ? error->message : "Unknown Error.");
     return false;
   }

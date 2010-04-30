@@ -149,6 +149,7 @@ extern bool (*ConnectToNetworkWithCertInfo)(const char* service_path,
                                             const char* passphrase,
                                             const char* identity,
                                             const char* certpath);
+
 // Connects to the network with the |service_path|.
 //
 // Set |passphrase| to NULL if the network doesn't require authentication.
@@ -159,6 +160,9 @@ extern bool (*ConnectToNetworkWithCertInfo)(const char* service_path,
 // to determine if the connection was established successfully.
 extern bool (*ConnectToNetwork)(const char* service_path,
                                 const char* passphrase);
+
+// Disconnects from the network with the |service_path|.
+extern bool (*DisconnectFromNetwork)(const char* service_path);
 
 // This will delete this service from the list of remembered service.
 //
@@ -208,6 +212,11 @@ extern bool (*SetOfflineMode)(bool offline);
 //
 // Returns true on success.
 extern bool (*SetAutoConnect)(const char* service_path, bool auto_connect);
+
+// Set passphrase for service.
+//
+// Returns true on success.
+extern bool (*SetPassphrase)(const char* service_path, const char* passphrase);
 
 // Gets a list of all the IPConfigs using a given device path
 extern IPConfigStatus* (*ListIPConfigs)(const char* device_path);
