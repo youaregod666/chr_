@@ -148,7 +148,7 @@ void AddInputMethodNames(
       out->push_back(chromeos::InputMethodDescriptor(engine_desc->name,
                                                      engine_desc->longname,
                                                      engine_desc->language));
-      LOG(INFO) << engine_desc->name << " (SUPPORTED)";
+      DLOG(INFO) << engine_desc->name << " (SUPPORTED)";
     }
   }
 }
@@ -188,8 +188,8 @@ bool ConvertProperty(IBusProperty* ibus_prop,
     return false;
   }
   if ((!has_sub_props) && (ibus_prop->type == PROP_TYPE_MENU)) {
-    LOG(ERROR) << "The property does not have sub properties, "
-               << "but the type of the property is PROP_TYPE_MENU";
+    // This is usually not an error. ibus-daemon sometimes sends empty props.
+    DLOG(INFO) << "Property list is empty";
     return false;
   }
   if (ibus_prop->type == PROP_TYPE_SEPARATOR ||
@@ -497,7 +497,7 @@ class InputMethodStatusConnection {
       return false;
     }
     if (!ibus_bus_is_connected(ibus_)) {
-      LOG(ERROR) << "ibus_bus_is_connected() failed";
+      DLOG(INFO) << "ibus_bus_is_connected() failed";
       return false;
     }
 
@@ -546,10 +546,10 @@ class InputMethodStatusConnection {
   InputMethodDescriptors* GetInputMethods(GetInputMethodMode mode) {
     GList* engines = NULL;
     if (mode == kActiveInputMethods) {
-      LOG(INFO) << "GetInputMethods (kActiveInputMethods)";
+      DLOG(INFO) << "GetInputMethods (kActiveInputMethods)";
       engines = ibus_bus_list_active_engines(ibus_);
     } else if (mode == kSupportedInputMethods) {
-      LOG(INFO) << "GetInputMethods (kSupportedInputMethods)";
+      DLOG(INFO) << "GetInputMethods (kSupportedInputMethods)";
       engines = ibus_bus_list_engines(ibus_);
     } else {
       NOTREACHED();
@@ -748,7 +748,6 @@ class InputMethodStatusConnection {
       //   LOG(INFO) << "\n" << PrintPropList(ibus_prop_list, 0);
       // here to dump |ibus_prop_list|.
       if (!FlattenPropertyList(ibus_prop_list, &prop_list)) {
-        LOG(ERROR) << "Malformed properties are detected";
         // Clear properties on errors.
         RegisterProperties(NULL);
         return;
@@ -952,7 +951,7 @@ InputMethodStatusConnection* ChromeOSMonitorInputMethodStatus(
     LanguageRegisterImePropertiesFunction register_ime_properties,
     LanguageUpdateImePropertyFunction update_ime_property,
     LanguageFocusChangeMonitorFunction focus_changed) {
-  LOG(INFO) << "MonitorInputMethodStatus";
+  DLOG(INFO) << "MonitorInputMethodStatus";
   InputMethodStatusConnection* connection = new InputMethodStatusConnection(
       language_library,
       current_input_method_changed,
@@ -960,8 +959,8 @@ InputMethodStatusConnection* ChromeOSMonitorInputMethodStatus(
       update_ime_property,
       focus_changed);
   if (!connection->Init()) {
-    LOG(WARNING) << "Failed to Init() InputMethodStatusConnection. "
-                 << "Returning NULL";
+    DLOG(INFO) << "Failed to Init() InputMethodStatusConnection. "
+               << "Returning NULL";
     delete connection;
     connection = NULL;
   }
