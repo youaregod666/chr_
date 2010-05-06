@@ -793,12 +793,13 @@ class InputMethodStatusConnection {
     if (!ibus_input_context_is_enabled(context)) {
       DLOG(INFO)
           << "input method is not active or text area does not have focus.";
+      g_object_unref(context);
       return;
     }
 
     const IBusEngineDesc* engine_desc = ibus_input_context_get_engine(context);
-    DCHECK(engine_desc);
     if (!engine_desc) {
+      DLOG(INFO) << "ibus_input_context_get_engine() returned NULL";
       g_object_unref(context);
       return;
     }
