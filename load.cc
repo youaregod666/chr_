@@ -70,12 +70,7 @@ DECL_FUNC_5(MonitorInputMethodStatus,
     chromeos::LanguageRegisterImePropertiesFunction,
     chromeos::LanguageUpdateImePropertyFunction,
     chromeos::LanguageFocusChangeMonitorFunction);
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-DECL_FUNC_2(MonitorLanguageStatus,
-    InputMethodStatusConnection*, LanguageStatusMonitorFunctions, void*);
 DECL_FUNC_1(DisconnectInputMethodStatus, void, InputMethodStatusConnection*);
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-DECL_FUNC_1(DisconnectLanguageStatus, void, InputMethodStatusConnection*);
 DECL_FUNC_1(GetSupportedInputMethods,
     InputMethodDescriptors*, InputMethodStatusConnection*);
 DECL_FUNC_1(GetActiveInputMethods,
@@ -98,9 +93,6 @@ DECL_FUNC_4(SetImeConfig,
     const ImeConfigValue&);
 DECL_FUNC_1(
     InputMethodStatusConnectionIsAlive, bool, InputMethodStatusConnection*);
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-DECL_FUNC_1(
-    LanguageStatusConnectionIsAlive, bool, InputMethodStatusConnection*);
 DECL_FUNC_2(MonitorInputMethodUiStatus,
             InputMethodUiStatusConnection*,
             const InputMethodUiStatusMonitorFunctions&,
@@ -108,11 +100,6 @@ DECL_FUNC_2(MonitorInputMethodUiStatus,
 DECL_FUNC_1(DisconnectInputMethodUiStatus,
             void,
             InputMethodUiStatusConnection*);
-// DEPRECATED: TODO(satorux): Remove this once it's ready.
-DECL_FUNC_2(MonitorImeStatus,
-    ImeStatusConnection*, const ImeStatusMonitorFunctions&, void*);
-// DEPRECATED: TODO(satorux): Remove this once it's ready.
-DECL_FUNC_1(DisconnectImeStatus, void, ImeStatusConnection*);
 DECL_FUNC_4(NotifyCandidateClicked, void,
             InputMethodUiStatusConnection*, int, int, int);
 DECL_FUNC_0(GetCurrentKeyboardLayoutName, std::string);
@@ -239,13 +226,9 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(DisconnectPowerStatus);
   INIT_FUNC(RetrievePowerInformation);
 
-  // IME
+  // Input methods
   INIT_FUNC(MonitorInputMethodStatus);
-  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
-  INIT_FUNC(MonitorLanguageStatus);
   INIT_FUNC(DisconnectInputMethodStatus);
-  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
-  INIT_FUNC(DisconnectLanguageStatus);
   INIT_FUNC(GetSupportedInputMethods);
   INIT_FUNC(GetActiveInputMethods);
   INIT_FUNC(ChangeInputMethod);
@@ -253,14 +236,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(GetImeConfig);
   INIT_FUNC(SetImeConfig);
   INIT_FUNC(InputMethodStatusConnectionIsAlive);
-  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
-  INIT_FUNC(LanguageStatusConnectionIsAlive);
   INIT_FUNC(MonitorInputMethodUiStatus);
   INIT_FUNC(DisconnectInputMethodUiStatus);
-  // DEPRECATED: TODO(satorux): Remove this once it's ready.
-  INIT_FUNC(MonitorImeStatus);
-  // DEPRECATED: TODO(satorux): Remove this once it's ready.
-  INIT_FUNC(DisconnectImeStatus);
   INIT_FUNC(NotifyCandidateClicked);
   INIT_FUNC(GetCurrentKeyboardLayoutName);
   INIT_FUNC(SetCurrentKeyboardLayoutByName);

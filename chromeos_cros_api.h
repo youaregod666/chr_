@@ -83,12 +83,15 @@
 //      InputMethodStatusConnectionIsAlive.
 //  26: Added speech synthesis library functions.
 //  27: Added DisconnectFromNetwork and SetPassphrase
+//  28: Removed loading of deprecated methods: MonitorLanguageStatus,
+//      DisconnectLanguageStatus, LanguageStatusConnectionIsAlive,
+//      MonitorImeStatus, DisconnectImeStatus.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 21,
-  kCrosAPIVersion = 27
+  kCrosAPIVersion = 28
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
