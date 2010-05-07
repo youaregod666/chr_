@@ -80,4 +80,20 @@ tests = [
 test_alias = Alias('test', tests)
 AlwaysBuild(test_alias)
 
+api_env = Environment(
+    CPPPATH=['.', '..'],
+    CCFLAGS=['-g'],
+    LINKFLAGS=['-fPIC'],
+)
+for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
+  value = os.environ.get(key)
+  if value != None:
+    api_env[key] = Split(value)
+api_env['CCFLAGS'] += ['-fPIC', '-fno-exceptions', '-Wall', '-Werror']
 
+# Fix issue with scons not passing some vars through the environment.
+for key in Split('PKG_CONFIG PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
+  if os.environ.has_key(key):
+    api_env['ENV'][key] = os.environ[key]
+
+Alias('crosapi', api_env.StaticLibrary('crosapi', ['load.cc']))
