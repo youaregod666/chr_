@@ -192,7 +192,17 @@ enum WmIpcMessageType {
   // hasn't been created yet.
   WM_IPC_MESSAGE_CHROME_CREATE_GUEST_WINDOW = 16,
 
-  // NEXT VALUE TO USE: 17
+  // Notify Chrome when a system key of interest is clicked, so volume up/down
+  // and mute can be handled (chrome can add visual feedback).  This message
+  // could be extended for other special purpose keys (maybe multimedia keys
+  // like play/pause/ff/rr).
+  //   param[0]: Key identifier (0=mute, 1=vol down, 2=vol up)
+  //
+  // TODO(davej): Eventually this message should be deprecated in favor of
+  // Chrome handling these sorts of keypresses internally.
+  WM_IPC_MESSAGE_CHROME_NOTIFY_SYSKEY_PRESSED = 17,
+
+  // NEXT VALUE TO USE: 18
 };
 
 }  // namespace chromeos
