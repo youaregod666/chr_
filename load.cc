@@ -133,6 +133,8 @@ DECL_FUNC_2(EnableNetworkDevice, bool, ConnectionType, bool);
 DECL_FUNC_1(SetOfflineMode, bool, bool);
 DECL_FUNC_2(SetAutoConnect, bool, const char*, bool);
 DECL_FUNC_2(SetPassphrase, bool, const char*, const char*);
+DECL_FUNC_2(SetIdentity, bool, const char*, const char*);
+DECL_FUNC_2(SetCertPath, bool, const char*, const char*);
 DECL_FUNC_1(ListIPConfigs, IPConfigStatus*, const char*);
 DECL_FUNC_2(AddIPConfig, bool, const char*, IPConfigType);
 DECL_FUNC_1(SaveIPConfig, bool, IPConfig*);
@@ -148,7 +150,7 @@ DECL_FUNC_0(EmitLoginPromptReady, bool);
 DECL_FUNC_2(StartSession, bool, const char*, const char*);
 DECL_FUNC_1(StopSession, bool, const char*);
 
-// ScbreenLock
+// Screen Lock
 DECL_FUNC_2(MonitorScreenLock,
             ScreenLockConnection, ScreenLockMonitor, void*);
 DECL_FUNC_1(DisconnectScreenLock, void, ScreenLockConnection);
@@ -276,6 +278,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(SetOfflineMode);
   INIT_FUNC(SetAutoConnect);
   INIT_FUNC(SetPassphrase);
+  INIT_FUNC(SetIdentity);
+  INIT_FUNC(SetCertPath);
   INIT_FUNC(ListIPConfigs);
   INIT_FUNC(AddIPConfig);
   INIT_FUNC(SaveIPConfig);

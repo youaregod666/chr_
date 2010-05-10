@@ -86,12 +86,14 @@
 //  28: Removed loading of deprecated methods: MonitorLanguageStatus,
 //      DisconnectLanguageStatus, LanguageStatusConnectionIsAlive,
 //      MonitorImeStatus, DisconnectImeStatus.
+//  29: Added SetIdentity and SetCertPath. Added identity and cert_path
+//      fields to ServiceInfo. Not backwards-compatible.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 21,
-  kCrosAPIVersion = 28
+  kCrosAPIMinVersion = 29,
+  kCrosAPIVersion = 29
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

@@ -66,6 +66,7 @@ static const char* kModeProperty = "Mode";
 static const char* kErrorProperty = "Error";
 static const char* kActiveProfileProperty = "ActiveProfile";
 static const char* kEntriesProperty = "Entries";
+static const char* kSSIDProperty = "SSID";
 
 // Connman network state
 static const char* kOnline = "online";
@@ -321,6 +322,16 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   properties.Retrieve(kPassphraseProperty, &default_string);
   info->passphrase = NewStringCopy(default_string);
 
+  // Identity
+  default_string = "";
+  properties.Retrieve(kIdentityProperty, &default_string);
+  info->identity = NewStringCopy(default_string);
+
+  // Certificate path
+  default_string = "";
+  properties.Retrieve(kCertPathProperty, &default_string);
+  info->cert_path = NewStringCopy(default_string);
+
   // Strength
   uint8 default_uint8 = 0;
   properties.Retrieve(kSignalStrengthProperty, &default_uint8);
@@ -373,11 +384,17 @@ void DeleteServiceInfoProperties(ServiceInfo info) {
     delete info.passphrase;
   if (info.device_path)
     delete info.device_path;
+  if (info.identity)
+    delete info.identity;
+  if (info.cert_path)
+    delete info.cert_path;
 
   info.service_path = NULL;
   info.name = NULL;
   info.passphrase = NULL;
   info.device_path = NULL;
+  info.identity = NULL;
+  info.cert_path = NULL;
 }
 
 }  // namespace
@@ -797,21 +814,29 @@ ServiceInfo* ChromeOSGetWifiService(const char* ssid,
                                   ::g_free,
                                   NULL));
 
-  glib::Value value_mode("managed");
-  glib::Value value_type("wifi");
+  glib::Value value_mode(kModeManaged);
+  glib::Value value_type(kTypeWifi);
   glib::Value value_ssid(ssid);
   if (security == SECURITY_UNKNOWN)
     security = SECURITY_RSN;
   glib::Value value_security(SecurityToString(security));
   glib::Value value_passphrase("");
+  glib::Value value_identity("");
+  glib::Value value_cert_path("");
 
   ::GHashTable* properties = scoped_properties.get();
-  ::g_hash_table_insert(properties, ::g_strdup("Mode"), &value_mode);
-  ::g_hash_table_insert(properties, ::g_strdup("Type"), &value_type);
-  ::g_hash_table_insert(properties, ::g_strdup("SSID"), &value_ssid);
-  ::g_hash_table_insert(properties, ::g_strdup("Security"), &value_security);
-  ::g_hash_table_insert(properties, ::g_strdup("Passphrase"),
+  ::g_hash_table_insert(properties, ::g_strdup(kModeProperty), &value_mode);
+  ::g_hash_table_insert(properties, ::g_strdup(kTypeProperty), &value_type);
+  ::g_hash_table_insert(properties, ::g_strdup(kSSIDProperty), &value_ssid);
+  ::g_hash_table_insert(properties, ::g_strdup(kSecurityProperty),
+                        &value_security);
+  ::g_hash_table_insert(properties, ::g_strdup(kPassphraseProperty),
                         &value_passphrase);
+  ::g_hash_table_insert(properties, ::g_strdup(kIdentityProperty),
+                        &value_identity);
+  ::g_hash_table_insert(properties, ::g_strdup(kCertPathProperty),
+                        &value_cert_path);
+
 
   glib::ScopedError error;
   char* path;
@@ -1203,30 +1228,50 @@ bool ChromeOSSetAutoConnect(const char* service_path, bool auto_connect) {
   return true;
 }
 
-extern "C"
-bool ChromeOSSetPassphrase(const char* service_path, const char* passphrase) {
+static bool SetServiceStringProperty(const char* service_path,
+                                     const char* property, const char* value) {
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
                             kConnmanServiceName,
                             service_path,
                             kConnmanServiceInterface);
 
-  glib::Value value_passphrase(passphrase);
+  glib::Value value_string(value);
   glib::ScopedError error;
   if (!::dbus_g_proxy_call(service_proxy.gproxy(),
                            kSetPropertyFunction,
                            &Resetter(&error).lvalue(),
                            G_TYPE_STRING,
-                           kPassphraseProperty,
+                           property,
                            G_TYPE_VALUE,
-                           &value_passphrase,
+                           &value_string,
                            G_TYPE_INVALID,
                            G_TYPE_INVALID)) {
-    LOG(WARNING) << "SetPassphrase failed: "
+    LOG(WARNING) << "Setting property " << property << " failed: "
         << (error->message ? error->message : "Unknown Error.");
     return false;
   }
 
   return true;
+
 }
+
+
+extern "C"
+bool ChromeOSSetPassphrase(const char* service_path, const char* passphrase) {
+  return SetServiceStringProperty(service_path, kPassphraseProperty,
+                                  passphrase);
+}
+
+extern "C"
+bool ChromeOSSetIdentity(const char* service_path, const char* identity) {
+  return SetServiceStringProperty(service_path, kIdentityProperty, identity);
+}
+
+extern "C"
+bool ChromeOSSetCertPath(const char* service_path, const char* cert_path) {
+  return SetServiceStringProperty(service_path, kCertPathProperty, cert_path);
+}
+
+
 
 }  // namespace chromeos

@@ -75,6 +75,8 @@ struct ServiceInfo {
   ConnectionError error;
   bool passphrase_required;
   const char* passphrase;
+  const char* identity;
+  const char* cert_path;
   int64 strength;
   bool favorite;
   bool auto_connect;
@@ -217,6 +219,16 @@ extern bool (*SetAutoConnect)(const char* service_path, bool auto_connect);
 //
 // Returns true on success.
 extern bool (*SetPassphrase)(const char* service_path, const char* passphrase);
+
+// Set security identity for service.
+//
+// Returns true on success.
+extern bool (*SetIdentity)(const char* service_path, const char* identity);
+
+// Set certificate id/path for service.
+//
+// Returns true on success.
+extern bool (*SetCertPath)(const char* service_path, const char* cert_path);
 
 // Gets a list of all the IPConfigs using a given device path
 extern IPConfigStatus* (*ListIPConfigs)(const char* device_path);
