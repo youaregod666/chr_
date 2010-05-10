@@ -14,6 +14,7 @@
 #include "chromeos_mount.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
 #include "chromeos_power.h"  // NOLINT
+#include "chromeos_screen_lock.h"  // NOLINT
 #include "chromeos_speech_synthesis.h"  // NOLINT
 #include "chromeos_synaptics.h"  // NOLINT
 #include "chromeos_update.h"  // NOLINT
@@ -146,6 +147,14 @@ DECL_FUNC_2(SetSynapticsParameter, void, SynapticsParameter, int);
 DECL_FUNC_0(EmitLoginPromptReady, bool);
 DECL_FUNC_2(StartSession, bool, const char*, const char*);
 DECL_FUNC_1(StopSession, bool, const char*);
+
+// ScbreenLock
+DECL_FUNC_2(MonitorScreenLock,
+            ScreenLockConnection, ScreenLockMonitor, void*);
+DECL_FUNC_1(DisconnectScreenLock, void, ScreenLockConnection);
+DECL_FUNC_0(NotifyScreenLockCompleted, void);
+DECL_FUNC_0(NotifyScreenLockRequested, void);
+DECL_FUNC_0(NotifyScreenUnlocked, void);
 
 // Cryptohome
 DECL_FUNC_2(CryptohomeCheckKey, bool, const char*, const char*);
@@ -281,6 +290,13 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(EmitLoginPromptReady);
   INIT_FUNC(StartSession);
   INIT_FUNC(StopSession);
+
+  // Screen Lock
+  INIT_FUNC(MonitorScreenLock);
+  INIT_FUNC(DisconnectScreenLock);
+  INIT_FUNC(NotifyScreenLockCompleted);
+  INIT_FUNC(NotifyScreenLockRequested);
+  INIT_FUNC(NotifyScreenUnlocked);
 
   // Cryptohome
   INIT_FUNC(CryptohomeCheckKey);
