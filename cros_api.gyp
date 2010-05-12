@@ -13,6 +13,7 @@
         'chromeos_input_method_ui.h',
         'chromeos_ime.h',  # TODO(satorux): Remove this once it's ready.
         'chromeos_language.h',  # TODO(satorux): Remove this once it's ready.
+        'chromeos_syslogs.h',
         'load.cc',
       ],
       'include_dirs': [
