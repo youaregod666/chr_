@@ -76,6 +76,10 @@ enum WmIpcWindowType {
   //   param[1]: Total number of users.
   //   param[2]: Size of the unselected image.
   //   param[3]: Gap between image and controls.
+  //
+  // The following param is set on the BACKGROUND window:
+  //   param[0]: Whether Chrome has finished painting the background
+  //             (1 means "yes").
   WM_IPC_WINDOW_LOGIN_BORDER = 9,
   WM_IPC_WINDOW_LOGIN_IMAGE = 10,
   WM_IPC_WINDOW_LOGIN_CONTROLS = 11,
