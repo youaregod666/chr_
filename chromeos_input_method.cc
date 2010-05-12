@@ -30,7 +30,8 @@ const char* kInputMethodIdsWhitelist[] = {
   "anthy",    // ibus-anthy (for libcros debugging on Ubuntu 9.10) - Japanese
   // "chewing",  // ibus-chewing - Traditional Chinese
   "hangul",   // ibus-hangul - Korean
-  "mozc",     // ibus-mozc - Japanese
+  "mozc",     // ibus-mozc - Japanese (with English keyboard)
+  "mozc-jp",  // ibus-mozc - Japanese (with Japanese keyboard)
   "pinyin",   // ibus-pinyin - Simplified Chinese
   // TODO(yusukes): re-enable chewing once we resolve issue 1253.
 
@@ -148,6 +149,7 @@ void AddInputMethodNames(
     if (InputMethodIdIsWhitelisted(engine_desc->name)) {
       out->push_back(chromeos::InputMethodDescriptor(engine_desc->name,
                                                      engine_desc->longname,
+                                                     engine_desc->layout,
                                                      engine_desc->language));
       DLOG(INFO) << engine_desc->name << " (SUPPORTED)";
     }
@@ -806,13 +808,14 @@ class InputMethodStatusConnection {
 
     InputMethodDescriptor current_input_method(engine_desc->name,
                                                engine_desc->longname,
+                                               engine_desc->layout,
                                                engine_desc->language);
     DLOG(INFO) << "Updating the UI. ID:" << current_input_method.id
-               << ", display_name:" << current_input_method.display_name;
+               << ", display_name:" << current_input_method.display_name
+               << ", keyboard_layout:" << current_input_method.keyboard_layout;
 
     // Notify the change to update UI.
-    current_input_method_changed_(
-        language_library_, current_input_method);
+    current_input_method_changed_(language_library_, current_input_method);
     g_object_unref(context);
   }
 

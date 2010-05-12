@@ -88,12 +88,16 @@
 //      MonitorImeStatus, DisconnectImeStatus.
 //  29: Added SetIdentity and SetCertPath. Added identity and cert_path
 //      fields to ServiceInfo. Not backwards-compatible.
+//  30: Reused an obsoleted member variable |icon_path| in InputMethodDescriptor
+//      class by renaming it to |keyboard_layout|. This change should be
+//      backwards-compatible since the type of the variable is not changed and
+//      the obsoleted variable hasn't been used for over a month.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 29
+  kCrosAPIVersion = 30
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

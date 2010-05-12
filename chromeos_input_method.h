@@ -14,6 +14,7 @@
 
 static const char kFallbackInputMethodId[] = "xkb:us::eng";
 static const char kFallbackInputMethodDisplayName[] = "English";
+static const char kFallbackKeyboardLayoutName[] = "us";
 static const char kFallbackInputMethodLanguageCode[] = "eng";
 static const int kInvalidSelectionItemId = -1;
 
@@ -28,10 +29,12 @@ enum DeprecatedLanguageCategory {
 struct InputMethodDescriptor {
   InputMethodDescriptor(const std::string& in_id,
                         const std::string& in_display_name,
+                        const std::string& in_keyboard_layout,
                         const std::string& in_language_code)
       : deprecated_category(DEPRECATED_LANGUAGE_CATEGORY),
         id(in_id),
         display_name(in_display_name),
+        keyboard_layout(in_keyboard_layout),
         language_code(in_language_code) {
   }
 
@@ -44,6 +47,7 @@ struct InputMethodDescriptor {
     std::stringstream stream;
     stream << "id=" << id
            << ", display_name=" << display_name
+           << ", keyboard_layout=" << keyboard_layout
            << ", language_code=" << language_code;
     return stream.str();
   }
@@ -56,8 +60,9 @@ struct InputMethodDescriptor {
   std::string id;
   // An input method name which can be used in the UI (e.g., "Pinyin").
   std::string display_name;
-  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
-  std::string deprecated_icon_path;
+  // A preferred keyboard layout for the input method (e.g., "us", "us(dvorak)",
+  // "jp").
+  std::string keyboard_layout;
   // Language codes like "ko", "ja", "zh_CN", and "t".
   // "t" is used for languages in the "Others" category.
   std::string language_code;
@@ -172,6 +177,7 @@ inline InputMethodDescriptors* CreateFallbackInputMethodDescriptors() {
   descriptions->push_back(
       InputMethodDescriptor(kFallbackInputMethodId,
                             kFallbackInputMethodDisplayName,
+                            kFallbackKeyboardLayoutName,
                             kFallbackInputMethodLanguageCode));
   return descriptions;
 }
