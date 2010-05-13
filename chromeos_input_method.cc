@@ -52,8 +52,13 @@ const char* kInputMethodIdsWhitelist[] = {
   "m17n:fa:isiri",       // Persian
   "m17n:th:pattachote",  // Thai
   // TODO(yusukes): Add tis820 and kesmanee for Thai if needed.
-  // TODO(yusukes): Update m17n-db package to the latest so we can use
-  // Vietnamese input methods which does not require the "get surrounding text"
+  "m17n:vi:tcvn",        // Vietnames (TCVN6064 sequence)
+  "m17n:vi:telex",       // Vietnames (TELEX key sequence)
+  "m17n:vi:viqr",        // Vietnames (VIQR key sequence)
+  "m17n:vi:vni",         // Vietnames (VNI key sequence)
+  // Note: Since ibus-m17n does not support "get-surrounding-text" feature yet,
+  // Vietnames input methods, except 4 input methods above, in m17n-db should
+  // not work fine. The 4 input methods in m17n-db (>= 1.6.0) don't require the
   // feature.
 
   // ibux-xkb-layouts input methods (keyboard layouts).
