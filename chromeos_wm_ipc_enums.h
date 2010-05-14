@@ -91,6 +91,10 @@ enum WmIpcWindowType {
   // NEXT VALUE TO USE: 16
 };
 
+inline bool WmIpcWindowTypeIsChrome(WmIpcWindowType type) {
+  return type != WM_IPC_WINDOW_UNKNOWN;
+}
+
 // Messages are sent via ClientMessage events that have 'message_type' set
 // to _CHROME_WM_MESSAGE, 'format' set to 32 (that is, 32-bit values), and
 // l[0] set to a value from the WmIpcMessageType enum.  The remaining four
