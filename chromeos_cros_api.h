@@ -92,12 +92,15 @@
 //      class by renaming it to |keyboard_layout|. This change should be
 //      backwards-compatible since the type of the variable is not changed and
 //      the obsoleted variable hasn't been used for over a month.
+//      ScreenLock API is also added in this version.
+//  31: Added NotifyScreenUnlockRequested, and obsoleted NotifyScreenUnlocked.
+//      Added new ScreenLockState argument to ScreenLockMonitor callback.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 30
+  kCrosAPIVersion = 31
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

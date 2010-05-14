@@ -25,8 +25,8 @@ class OpaqueScreenLockConnection {
     return connection_;
   }
 
-  void Notify() {
-    monitor_(object_);
+  void Notify(ScreenLockState state) {
+    monitor_(object_, state);
   }
 
  private:
@@ -41,6 +41,7 @@ namespace {
 
 #define SCREEN_LOCK_INTERFACE "org.chromium.ScreenLock"
 const char* kScreenLockedSignal = "ScreenLocked";
+const char* kScreenUnlockedSignal = "ScreenUnlocked";
 
 //  static
 DBusHandlerResult Filter(DBusConnection* connection,
@@ -51,8 +52,11 @@ DBusHandlerResult Filter(DBusConnection* connection,
   if (dbus_message_is_signal(message, SCREEN_LOCK_INTERFACE,
                              kScreenLockedSignal)) {
     DLOG(INFO) << "Filter:: ScreenLocked event";
-    self->Notify();
+    self->Notify(Locked);
     return DBUS_HANDLER_RESULT_HANDLED;
+  } else if (dbus_message_is_signal(message, SCREEN_LOCK_INTERFACE,
+                                    kScreenUnlockedSignal)) {
+    self->Notify(Unlocked);
   } else {
     DLOG(INFO) << "Filter:: not ScreenLocked event:";
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
@@ -68,6 +72,11 @@ void ChromeOSNotifyScreenLockCompleted() {
 
 extern "C"
 void ChromeOSNotifyScreenLockRequested() {
+  NOTREACHED();
+}
+
+extern "C"
+void ChromeOSNotifyScreenUnlockRequested() {
   NOTREACHED();
 }
 
