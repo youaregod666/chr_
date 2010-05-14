@@ -8,6 +8,8 @@
 #include <string>
 #include <map>
 
+#include <base/file_path.h>
+
 namespace chromeos { //NOLINT
 
 typedef std::map<std::string, std::string> LogDictionaryType;
@@ -21,7 +23,7 @@ typedef std::map<std::string, std::string> LogDictionaryType;
 //
 //       Additionally, the log file created needs to be cleaned up
 //       by the caller
-extern LogDictionaryType* (*GetSystemLogs)(char** const tmpfilename);
+extern LogDictionaryType* (*GetSystemLogs)(FilePath* tmpfilename);
 
 }  // namespace chromeos
 

@@ -8,27 +8,24 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <base/string_util.h>
+#include <base/file_path.h>
+#include <base/file_util.h>
+#include <base/logging.h>
+
+
 #include "chromeos_syslogs.h" // NOLINT
 
 namespace chromeos { // NOLINT
 
 namespace {
-const char* kSysLogsDir = "/usr/bin/syslogs/scripts/";
-const char* kTempFileTemplate = "/tmp/SYS_LOGS_XXXXXX";
+const char* kSysLogsDir = "/usr/share/userfeedback/scripts/";
 const char* kAppendRedirector = " >> ";
-const char* kWhiteSpace = " \t\n\r";
 const char* kMultilineQuote = "\"\"\"";
 const char* kNewLineChars = "\r\n";
 
-std::string Trim(const std::string& s) {
-  size_t first_non_ws = s.find_first_not_of(kWhiteSpace);
-  size_t last_non_ws = s.find_last_not_of(kWhiteSpace);
-
-  if (last_non_ws <= first_non_ws)
-    return std::string("");
-  return s.substr(first_non_ws, (last_non_ws - first_non_ws));
-}
-
+// reads a key from the input string; erasing the read values + delimiters read
+// from the initial string 
 std::string ReadKey(std::string *data) {
   size_t equal_sign = data->find("=");
   if (equal_sign == std::string::npos)
@@ -43,12 +40,16 @@ std::string ReadKey(std::string *data) {
   return std::string("");
 }
 
+// reads a value from the input string; erasing the read values from
+// the initial string; detects if the value is multiline and reads
+// accordingly
 std::string ReadValue(std::string *data) {
-  size_t first_multi = data->find(kMultilineQuote);
+  // fast forward past leading whitespaces
+  TrimWhitespaceASCII(*data, TRIM_LEADING, data);
 
   // if multiline value
-  if (first_multi != std::string::npos) {
-    data->erase(first_multi, 3);
+  if (StartsWithASCII(*data, std::string(kMultilineQuote), false)) {
+    data->erase(0, strlen(kMultilineQuote));
     size_t next_multi = data->find(kMultilineQuote);
     if (next_multi == std::string::npos) {
       // error condition, clear data to stop further processing
@@ -73,74 +74,52 @@ std::string ReadValue(std::string *data) {
 } // namespace
 
 extern "C"
-LogDictionaryType* ChromeOSGetSystemLogs(char** const tmpfilename) {
+LogDictionaryType* ChromeOSGetSystemLogs(FilePath* tmpfilename) {
   LogDictionaryType* logs = new LogDictionaryType();
 
- // get list of scripts in the scripts dir
-  DIR* scripts_dir = opendir(kSysLogsDir);
-  if (!scripts_dir) return NULL;
+  // Open scripts directory for listing
+  FilePath scripts_dir;
+  file_util::FileEnumerator scripts_dir_list(FilePath(kSysLogsDir), false,
+                                  file_util::FileEnumerator::FILES);
 
   // save current dir then switch to the logs dir
-  char* current_dir = get_current_dir_name();
-  if (!current_dir) return NULL;
-
-  if (!*tmpfilename) {
-    // TODO(rkc): Change this to use mkstemp
-    *tmpfilename = new char[strlen(kTempFileTemplate) + 1];
-    strcpy(*tmpfilename, kTempFileTemplate);
-    mktemp(*tmpfilename);
-    if (!*tmpfilename) {
-      closedir(scripts_dir);
-      delete current_dir;
-      return NULL;
-    }
-  }
-
-  // delete the file if it exists
-  remove(*tmpfilename);
-
-  dirent* dir_entry = NULL;
-  while (dir_entry = readdir(scripts_dir)) {
-    if (dir_entry->d_type == DT_REG) {
-      // create the fill command
-      char* cmd = new char[strlen(kSysLogsDir) + strlen(dir_entry->d_name) +
-                           strlen(kAppendRedirector) +
-                           strlen(*tmpfilename) + 1];
-      strcpy(cmd, kSysLogsDir); strcat(cmd, dir_entry->d_name);
-      strcat(cmd, kAppendRedirector); strcat(cmd, *tmpfilename);
-
-      chdir(kSysLogsDir);
-      int ret = system(cmd);
-      if (!ret) {
-      	closedir(scripts_dir);
-	delete current_dir;
-	delete cmd;
-	return NULL;
-      }
-      delete cmd;
-    }
-  }
-
-  // Read in the tmp file
-  FILE* tmp = fopen(*tmpfilename, "rt");
-  if (!tmp) {
-    closedir(scripts_dir);
-    delete current_dir;
+  FilePath old_dir;
+  if (!file_util::GetCurrentDirectory(&old_dir)) {
     return NULL;
   }
 
-  // TODO(rkc): make this faster
-  int c = 0;
-  std::string data;
-  while ((c = fgetc(tmp)) != EOF) {
-    data.append(1, (char)c);
+  if (!file_util::CreateTemporaryFile(tmpfilename)) {
+    return NULL;
   }
 
-  // Then parse the return data into a dictionary
+  FilePath next_script = scripts_dir_list.Next();
+  while (!next_script.empty()) {
+    // create the script execution command line
+    std::string cmd = next_script.value() + std::string(kAppendRedirector) + tmpfilename->value();
+    if (!file_util::SetCurrentDirectory(scripts_dir)) {
+      return NULL;
+    }
+
+    // Ignore the return value - if the script execution didn't work
+    // sterr won't go into the output file anyway
+    system(cmd.c_str());
+
+    // get the next script
+    next_script = scripts_dir_list.Next();
+  }
+
+  std::string data;
+  if (!file_util::ReadFileToString(FilePath(*tmpfilename), &data)) {
+    return NULL;
+  }
+
+  // Parse the return data into a dictionary
   while (data.length() > 0) {
-    std::string key = Trim(ReadKey(&data));
+    std::string key = ReadKey(&data);
+    TrimWhitespaceASCII(key, TRIM_ALL, &key);
     if (key != "") {
-      std::string value = Trim(ReadValue(&data));
+      std::string value = ReadValue(&data);
+      TrimWhitespaceASCII(value, TRIM_ALL, &value);
       (*logs)[key] = value;
     }
     else {
@@ -149,11 +128,10 @@ LogDictionaryType* ChromeOSGetSystemLogs(char** const tmpfilename) {
     }
   }
 
-
   // Cleanup:
-  chdir(current_dir);
-  delete current_dir;
-  closedir(scripts_dir);
+  if (!file_util::SetCurrentDirectory(scripts_dir)) {
+    return NULL;
+  }
 
   return logs;
 }

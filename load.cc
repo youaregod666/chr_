@@ -176,7 +176,7 @@ DECL_FUNC_0(StopSpeaking, bool);
 DECL_FUNC_0(IsSpeaking, bool);
 
 // Syslogs
-DECL_FUNC_1(GetSystemLogs, LogDictionaryType*, char** const);
+DECL_FUNC_1(GetSystemLogs, LogDictionaryType*, FilePath*);
 
 
 
