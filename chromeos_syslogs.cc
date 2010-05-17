@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <iostream>
+
 #include <base/string_util.h>
 #include <base/file_path.h>
 #include <base/file_util.h>
@@ -77,41 +79,61 @@ extern "C"
 LogDictionaryType* ChromeOSGetSystemLogs(FilePath* tmpfilename) {
   LogDictionaryType* logs = new LogDictionaryType();
 
+  std::cerr << "1" << std::endl;
   // Open scripts directory for listing
-  FilePath scripts_dir;
-  file_util::FileEnumerator scripts_dir_list(FilePath(kSysLogsDir), false,
+  FilePath scripts_dir(kSysLogsDir);
+  file_util::FileEnumerator scripts_dir_list(scripts_dir, false,
                                   file_util::FileEnumerator::FILES);
+  std::cerr << "1.2" << std::endl;
 
   // save current dir then switch to the logs dir
   FilePath old_dir;
   if (!file_util::GetCurrentDirectory(&old_dir)) {
     return NULL;
   }
+  std::cerr << "1.3" << std::endl;
+  std::cerr << old_dir.value() << std::endl;
+  std::cerr << "1.5" << std::endl;
+  std::cerr << scripts_dir.value() << std::endl;
+  if (!file_util::SetCurrentDirectory(scripts_dir)) {
+    return NULL;
+  }
+  std::cerr << "1.6" << std::endl;
 
   if (!file_util::CreateTemporaryFile(tmpfilename)) {
     return NULL;
   }
+  std::cerr << "2" << std::endl;
+  std::cerr << scripts_dir.value() << std::endl;
+  std::cerr << "2.1" << std::endl;
 
-  FilePath next_script = scripts_dir_list.Next();
-  while (!next_script.empty()) {
-    // create the script execution command line
-    std::string cmd = next_script.value() + std::string(kAppendRedirector) + tmpfilename->value();
-    if (!file_util::SetCurrentDirectory(scripts_dir)) {
-      return NULL;
+  dirent* dir_entry = NULL; 
+  DIR* dir = opendir(scripts_dir.value().c_str());
+  while (dir_entry = readdir(dir)) {
+    std::cerr << "2.5" << std::endl;
+    if (dir_entry->d_type == DT_REG) {
+      std::string cmd = scripts_dir.Append(std::string(dir_entry->d_name)).value() +
+                        std::string(kAppendRedirector) +
+                        tmpfilename->value();
+      std::cerr << "2.6" << std::endl;
+      std::cerr << cmd << std::endl;
+      std::cerr << "3" << std::endl;
+      // Ignore the return value - if the script execution didn't work
+      // sterr won't go into the output file anyway
+      system(cmd.c_str());
+      std::cerr << "4" << std::endl;
     }
-
-    // Ignore the return value - if the script execution didn't work
-    // sterr won't go into the output file anyway
-    system(cmd.c_str());
-
-    // get the next script
-    next_script = scripts_dir_list.Next();
   }
 
+  closedir(dir);
+  std::cerr << "5" << std::endl;
   std::string data;
   if (!file_util::ReadFileToString(FilePath(*tmpfilename), &data)) {
     return NULL;
   }
+  std::cerr << "6" << std::endl;
+  std::cerr << data << std::endl;
+  std::cerr << "7" << std::endl;
 
   // Parse the return data into a dictionary
   while (data.length() > 0) {
@@ -127,12 +149,17 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* tmpfilename) {
       break;
     }
   }
+  std::cerr << "8" << std::endl;
 
   // Cleanup:
   if (!file_util::SetCurrentDirectory(scripts_dir)) {
     return NULL;
   }
-
+  std::cerr << "9" << std::endl;
+  for (chromeos::LogDictionaryType::const_iterator i = logs->begin();
+              i != logs->end(); i++)
+    std::cerr << "Key: " << i->first << " and value: " << i->second << std::endl;
+  std::cerr << "0" << std::endl;
   return logs;
 }
 

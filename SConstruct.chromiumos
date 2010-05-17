@@ -7,7 +7,7 @@ import sys
 
 base_env = Environment(
     CPPPATH=['.', '..'],
-    CCFLAGS=['-g', '-fPIC', '-fno-exceptions', '-Wall', '-Werror'],
+    CCFLAGS=['-ggdb', '-fPIC', '-fno-exceptions', '-Wall', '-Werror'],
     LINKFLAGS=['-fPIC'],
 )
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
@@ -70,4 +70,4 @@ tests = [
 test_alias = Alias('test', tests)
 AlwaysBuild(test_alias)
 
-Alias('crosapi', base_env.StaticLibrary('crosapi', Load))
+Alias('crosapi', base_env.StaticLibrary('crosapi', Load), CCFLAGS='-ggdb')
