@@ -219,6 +219,14 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
   InputMethodLookupTable lookup_table;
   lookup_table.visible = (visible == TRUE);
 
+  // Copy the orientation information.
+  const gint orientation = ibus_lookup_table_get_orientation(table);
+  if (orientation == IBUS_ORIENTATION_VERTICAL) {
+    lookup_table.orientation = InputMethodLookupTable::kVertical;
+  } else if (orientation == IBUS_ORIENTATION_HORIZONTAL) {
+    lookup_table.orientation = InputMethodLookupTable::kHorizontal;
+  }
+
   // Copy candidates to |lookup_table|.
   for (int i = 0; ; i++) {
     IBusText *text = ibus_lookup_table_get_candidate(table, i);
