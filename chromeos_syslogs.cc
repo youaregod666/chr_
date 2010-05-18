@@ -4,11 +4,9 @@
 
 
 #include <dirent.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-
-#include <iostream>
 
 #include <base/string_util.h>
 #include <base/file_path.h>
@@ -27,7 +25,7 @@ const char* kMultilineQuote = "\"\"\"";
 const char* kNewLineChars = "\r\n";
 
 // reads a key from the input string; erasing the read values + delimiters read
-// from the initial string 
+// from the initial string
 std::string ReadKey(std::string *data) {
   size_t equal_sign = data->find("=");
   if (equal_sign == std::string::npos)
@@ -69,73 +67,51 @@ std::string ReadValue(std::string *data) {
     return value;
   }
 }
-
-
-
-
 } // namespace
+
 
 extern "C"
 LogDictionaryType* ChromeOSGetSystemLogs(FilePath* tmpfilename) {
-  LogDictionaryType* logs = new LogDictionaryType();
-
-  std::cerr << "1" << std::endl;
-  // Open scripts directory for listing
-  FilePath scripts_dir(kSysLogsDir);
-  file_util::FileEnumerator scripts_dir_list(scripts_dir, false,
-                                  file_util::FileEnumerator::FILES);
-  std::cerr << "1.2" << std::endl;
-
   // save current dir then switch to the logs dir
   FilePath old_dir;
-  if (!file_util::GetCurrentDirectory(&old_dir)) {
-    return NULL;
-  }
-  std::cerr << "1.3" << std::endl;
-  std::cerr << old_dir.value() << std::endl;
-  std::cerr << "1.5" << std::endl;
-  std::cerr << scripts_dir.value() << std::endl;
-  if (!file_util::SetCurrentDirectory(scripts_dir)) {
-    return NULL;
-  }
-  std::cerr << "1.6" << std::endl;
+  FilePath scripts_dir(kSysLogsDir);
 
-  if (!file_util::CreateTemporaryFile(tmpfilename)) {
+  if (!file_util::GetCurrentDirectory(&old_dir))
     return NULL;
-  }
-  std::cerr << "2" << std::endl;
-  std::cerr << scripts_dir.value() << std::endl;
-  std::cerr << "2.1" << std::endl;
+  if (!file_util::SetCurrentDirectory(scripts_dir))
+    return NULL;
 
-  dirent* dir_entry = NULL; 
+  // Create the temp file, logs will go here
+  if (!file_util::CreateTemporaryFile(tmpfilename))
+    return NULL;
+
+  // Open scripts directory for listing
+  dirent* dir_entry = NULL;
   DIR* dir = opendir(scripts_dir.value().c_str());
+  if (!dir) {
+    return NULL;
+  }
   while (dir_entry = readdir(dir)) {
-    std::cerr << "2.5" << std::endl;
     if (dir_entry->d_type == DT_REG) {
       std::string cmd = scripts_dir.Append(std::string(dir_entry->d_name)).value() +
                         std::string(kAppendRedirector) +
                         tmpfilename->value();
-      std::cerr << "2.6" << std::endl;
-      std::cerr << cmd << std::endl;
-      std::cerr << "3" << std::endl;
       // Ignore the return value - if the script execution didn't work
       // sterr won't go into the output file anyway
       system(cmd.c_str());
-      std::cerr << "4" << std::endl;
     }
   }
-
   closedir(dir);
-  std::cerr << "5" << std::endl;
+
+  // read logs from the temp file
   std::string data;
   if (!file_util::ReadFileToString(FilePath(*tmpfilename), &data)) {
+    file_util::SetCurrentDirectory(old_dir);
     return NULL;
   }
-  std::cerr << "6" << std::endl;
-  std::cerr << data << std::endl;
-  std::cerr << "7" << std::endl;
 
   // Parse the return data into a dictionary
+  LogDictionaryType* logs = new LogDictionaryType();
   while (data.length() > 0) {
     std::string key = ReadKey(&data);
     TrimWhitespaceASCII(key, TRIM_ALL, &key);
@@ -149,19 +125,13 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* tmpfilename) {
       break;
     }
   }
-  std::cerr << "8" << std::endl;
 
   // Cleanup:
-  if (!file_util::SetCurrentDirectory(scripts_dir)) {
+  if (!file_util::SetCurrentDirectory(old_dir)) {
+    delete logs;
     return NULL;
   }
-  std::cerr << "9" << std::endl;
-  for (chromeos::LogDictionaryType::const_iterator i = logs->begin();
-              i != logs->end(); i++)
-    std::cerr << "Key: " << i->first << " and value: " << i->second << std::endl;
-  std::cerr << "0" << std::endl;
   return logs;
 }
-
 
 } // namespace chromeos
