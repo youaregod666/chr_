@@ -171,7 +171,7 @@ enum WmIpcMessageType {
   // Chrome should send a message to the WM at (the WM's) startup
   // containing the version number from the list below describing the
   // behavior that it implements.  For backwards compatibility, the WM
-  // assumes version 0 if it doesn't receive a message.  Here are the
+  // assumes version 1 if it doesn't receive a message.  Here are the
   // changes that have been made in successive versions of the protocol:
   //
   // 1: WM_NOTIFY_PANEL_DRAGGED contains the position of the
