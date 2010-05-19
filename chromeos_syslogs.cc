@@ -76,12 +76,16 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* temp_filename) {
 
   if (!file_util::GetCurrentDirectory(&old_dir))
     return NULL;
-  if (!file_util::SetCurrentDirectory(scripts_dir))
+  if (!file_util::SetCurrentDirectory(scripts_dir)) {
+    file_util::SetCurrentDirectory(old_dir);
     return NULL;
+  }
 
   // Create the temp file, logs will go here
-  if (!file_util::CreateTemporaryFile(temp_filename))
+  if (!file_util::CreateTemporaryFile(temp_filename)) {
+    file_util::SetCurrentDirectory(old_dir);
     return NULL;
+  }
 
   // Open scripts directory for listing
   dirent* dir_entry = NULL;
