@@ -28,11 +28,12 @@ const char kCandidateWindowInterface[] = "org.freedesktop.IBus.Panel";
 // ibus-m17n since we (will) have better equivalents outside of ibus-m17n.
 const char* kInputMethodIdsWhitelist[] = {
   "anthy",    // ibus-anthy (for libcros debugging on Ubuntu 9.10) - Japanese
+  "bopomofo",  // Bopomofo engine in ibus-pinyin - Traditional Chinese
   // "chewing",  // ibus-chewing - Traditional Chinese
   "hangul",   // ibus-hangul - Korean
   "mozc",     // ibus-mozc - Japanese (with English keyboard)
   "mozc-jp",  // ibus-mozc - Japanese (with Japanese keyboard)
-  "pinyin",   // ibus-pinyin - Simplified Chinese
+  "pinyin",   // Pinyin engine in ibus-pinyin - Simplified Chinese
   // TODO(yusukes): re-enable chewing once we resolve issue 1253.
 
   // ibus-table input methods.
@@ -67,6 +68,7 @@ const char* kInputMethodIdsWhitelist[] = {
   "xkb:bg::bul",        // Bulgaria - Bulgarian
   "xkb:cz::cze",        // Czech Republic - Czech
   "xkb:de::ger",        // Germany - German
+  "xkb:ee::est",        // Estonia - Estonian
   "xkb:es::spa",        // Spain - Spanish
   "xkb:es:cat:cat",     // Spain - Catalan
   "xkb:dk::dan",        // Denmark - Danish
