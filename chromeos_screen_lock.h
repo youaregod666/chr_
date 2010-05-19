@@ -9,14 +9,15 @@
 
 namespace chromeos {
 
-enum ScreenLockState {
-  Locked = 0,
-  Unlocked = 1,
+enum ScreenLockEvent {
+  LockScreen = 0,
+  UnlockScreen = 1,
+  UnlockScreenFailed = 2,
 };
 
 class OpaqueScreenLockConnection;
 typedef OpaqueScreenLockConnection* ScreenLockConnection;
-typedef void(*ScreenLockMonitor)(void*, ScreenLockState);
+typedef void(*ScreenLockMonitor)(void*, ScreenLockEvent);
 
 extern ScreenLockConnection (*MonitorScreenLock)
     (ScreenLockMonitor monitor, void*);
@@ -25,11 +26,14 @@ extern void (*DisconnectScreenLock)(ScreenLockConnection connection);
 // Notifies PowerManager that the screen lock has been completed.
 extern void (*NotifyScreenLockCompleted)();
 
-// Notifies PowerManager that the a user requested to lock the
+// Notifies PowerManager that the screen unlock has been completed.
+extern void (*NotifyScreenUnlockCompleted)();
+
+// Notifies PowerManager that the user requested to lock the
 // screen (ctrl-l).
 extern void (*NotifyScreenLockRequested)();
 
-// Notifies PowerManager that the a user unlocked the screen.
+// Notifies PowerManager that the user requested to unlock the screen.
 extern void (*NotifyScreenUnlockRequested)();
 
 // obsolete

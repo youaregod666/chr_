@@ -96,12 +96,14 @@
 //  31: Added NotifyScreenUnlockRequested, and obsoleted NotifyScreenUnlocked.
 //      Added new ScreenLockState argument to ScreenLockMonitor callback.
 //  32: Added orientation information to InputMethodLookupTable.
+//  33: Added NotifyScreenLockRequested.
+//      Renamed ScreenLockState to ScreenLockEvent
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 32
+  kCrosAPIVersion = 33
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
