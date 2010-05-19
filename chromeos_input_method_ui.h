@@ -20,10 +20,16 @@ namespace chromeos {
 // The struct represents the input method lookup table (list of candidates).
 // Used for InputMethodUpdateLookupTableMonitorFunction.
 struct InputMethodLookupTable {
+  enum Orientation {
+    kVertical,
+    kHorizontal,
+  };
+
   InputMethodLookupTable()
       : visible(false),
         cursor_absolute_index(0),
-        page_size(0) {
+        page_size(0),
+        orientation(kHorizontal) {
   }
 
   // Returns a string representation of the class. Used for debugging.
@@ -59,6 +65,9 @@ struct InputMethodLookupTable {
 
   // Candidate strings in UTF-8 for all pages.
   std::vector<std::string> candidates;
+
+  // The orientation of the candidates in the candidate window.
+  Orientation orientation;
 };
 
 // Callback function type for handling IBus's |HideAuxiliaryText| signal.

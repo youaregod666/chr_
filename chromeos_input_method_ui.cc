@@ -70,6 +70,7 @@ gboolean ibus_chromeos_panel_service_focus_in(IBusPanelService *panel,
   // |error| if we return FALSE.  Otherwise, the program will crash in
   // ibuspanelservice.cc as the caller expects an error object to be
   // returned.
+  LOG(INFO) << "Sending FocusIn signal to Chrome";
   g_return_val_if_fail(panel, FALSE);
   g_return_val_if_fail(input_context_path, FALSE);
 
@@ -218,6 +219,14 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
 
   InputMethodLookupTable lookup_table;
   lookup_table.visible = (visible == TRUE);
+
+  // Copy the orientation information.
+  const gint orientation = ibus_lookup_table_get_orientation(table);
+  if (orientation == IBUS_ORIENTATION_VERTICAL) {
+    lookup_table.orientation = InputMethodLookupTable::kVertical;
+  } else if (orientation == IBUS_ORIENTATION_HORIZONTAL) {
+    lookup_table.orientation = InputMethodLookupTable::kHorizontal;
+  }
 
   // Copy candidates to |lookup_table|.
   for (int i = 0; ; i++) {

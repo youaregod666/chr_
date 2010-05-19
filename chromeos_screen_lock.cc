@@ -13,52 +13,74 @@ namespace chromeos {
 
 class OpaqueScreenLockConnection {
  public:
-  typedef dbus::MonitorConnection<void (void)>* ConnectionType;
-
   OpaqueScreenLockConnection(const ScreenLockMonitor& monitor, void* object)
       : monitor_(monitor),
-        object_(object),
-        connection_(NULL) {
+        object_(object) {
   }
 
-  ConnectionType& connection() {
-    return connection_;
-  }
+  virtual ~OpaqueScreenLockConnection() {}
 
-  void Notify(ScreenLockState state) {
-    monitor_(object_, state);
+  void Notify(ScreenLockEvent event) {
+    monitor_(object_, event);
   }
 
  private:
   ScreenLockMonitor monitor_;
   void* object_;
-  ConnectionType connection_;
 
   DISALLOW_COPY_AND_ASSIGN(OpaqueScreenLockConnection);
 };
 
 namespace {
 
-#define SCREEN_LOCK_INTERFACE "org.chromium.ScreenLock"
-const char* kScreenLockedSignal = "ScreenLocked";
-const char* kScreenUnlockedSignal = "ScreenUnlocked";
+// Dbus Interface definitions.
+#define CHROMIUM_INTERFACE "org.chromium.Chromium"
+const char* kPowerManagerInterface = "org.chromium.PowerManager";
 
-//  static
+// ScreenLock inbound Dbus signals.
+const char* kLockScreenSignal = "LockScreen";
+const char* kUnlockScreenSignal = "UnlockScreen";
+const char* kUnlockFailedSignal = "UnlockFailed";
+
+// ScreenLock outbound Dbus signals.
+const char* kScreenIsLockedSignal = "ScreenIsLocked";
+const char* kScreenIsUnlockedSignal = "ScreenIsUnlocked";
+
+// A utility function to send a signal to PowerManager.
+void SendSignalToPowerManager(const char* signal_name) {
+  chromeos::dbus::Proxy proxy(chromeos::dbus::GetSystemBusConnection(),
+                              "/",
+                              kPowerManagerInterface);
+  DBusMessage* signal = ::dbus_message_new_signal("/",
+                                                  kPowerManagerInterface,
+                                                  signal_name);
+  DCHECK(signal);
+  ::dbus_g_proxy_send(proxy.gproxy(), signal, NULL);
+  ::dbus_message_unref(signal);
+}
+
+// A message filter to receive signals.
 DBusHandlerResult Filter(DBusConnection* connection,
                          DBusMessage* message,
                          void* object) {
   ScreenLockConnection self =
       static_cast<ScreenLockConnection>(object);
-  if (dbus_message_is_signal(message, SCREEN_LOCK_INTERFACE,
-                             kScreenLockedSignal)) {
-    DLOG(INFO) << "Filter:: ScreenLocked event";
-    self->Notify(Locked);
+  if (dbus_message_is_signal(message, CHROMIUM_INTERFACE,
+                             kUnlockFailedSignal)) {
+    LOG(INFO) << "Filter:: UnlockFailed event";
+    self->Notify(UnlockScreenFailed);
     return DBUS_HANDLER_RESULT_HANDLED;
-  } else if (dbus_message_is_signal(message, SCREEN_LOCK_INTERFACE,
-                                    kScreenUnlockedSignal)) {
-    self->Notify(Unlocked);
+  } else if (dbus_message_is_signal(message, CHROMIUM_INTERFACE,
+                                    kLockScreenSignal)) {
+    LOG(INFO) << "Filter:: LockScreen event";
+    self->Notify(LockScreen);
+    return DBUS_HANDLER_RESULT_HANDLED;
+  } else if (dbus_message_is_signal(message, CHROMIUM_INTERFACE,
+                                    kUnlockScreenSignal)) {
+    LOG(INFO) << "Filter:: UnlockScreen event";
+    self->Notify(UnlockScreen);
+    return DBUS_HANDLER_RESULT_HANDLED;
   } else {
-    DLOG(INFO) << "Filter:: not ScreenLocked event:";
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
   }
 }
@@ -67,17 +89,22 @@ DBusHandlerResult Filter(DBusConnection* connection,
 
 extern "C"
 void ChromeOSNotifyScreenLockCompleted() {
-  NOTREACHED();
+  SendSignalToPowerManager(kScreenIsLockedSignal);
+}
+
+extern "C"
+void ChromeOSNotifyScreenUnlockCompleted() {
+  SendSignalToPowerManager(kScreenIsUnlockedSignal);
 }
 
 extern "C"
 void ChromeOSNotifyScreenLockRequested() {
-  NOTREACHED();
+  SendSignalToPowerManager(kLockScreenSignal);
 }
 
 extern "C"
 void ChromeOSNotifyScreenUnlockRequested() {
-  NOTREACHED();
+  SendSignalToPowerManager(kUnlockScreenSignal);
 }
 
 extern "C"
@@ -90,47 +117,32 @@ void ChromeOSNotifyScreenUnlocked() {
 extern "C"
 ScreenLockConnection
 ChromeOSMonitorScreenLock(ScreenLockMonitor monitor, void* object) {
-  // TODO(oshima): Current implementation is for testing purpose only
-  // and using low level dbus API so that it can be receive a signal
-  // from dbus-send command line tool. This will be changed to use
-  // chromeos::dbus library once PowerManager implmenets dbus
-  // interface.
-
   DBusError error;
   dbus_error_init(&error);
+  DBusConnection* connection = ::dbus_g_connection_get_connection(
+      dbus::GetSystemBusConnection().g_connection());
+  ::dbus_bus_add_match(connection,
+                       "type='signal', interface='" CHROMIUM_INTERFACE "'",
+                       &error);
+  if (::dbus_error_is_set(&error)) {
+    DLOG(WARNING) << "Failed to add a filter:" << error.name << ", message="
+                  << SAFE_MESSAGE(error);
+    return NULL;
+  }
 
-  DBusConnection *connection = dbus_bus_get(DBUS_BUS_SYSTEM, &error);
-  LOG_IF(FATAL, dbus_error_is_set(&error)) <<
-      "No D-Bus connection: " << SAFE_MESSAGE(error);
+  ScreenLockConnection result = new OpaqueScreenLockConnection(monitor, object);
+  CHECK(dbus_connection_add_filter(connection, &Filter, result, NULL));
 
-  dbus_connection_setup_with_g_main(connection, NULL);
-  dbus_bus_add_match(connection,
-                     "type='signal', interface='" SCREEN_LOCK_INTERFACE "'",
-                     &error);
-
-  ScreenLockConnection result =
-      new OpaqueScreenLockConnection(monitor, object);
-
-
-  dbus_connection_add_filter(connection, &Filter, result, NULL);
-
+  DLOG(INFO) << "Screen Lock monitoring started";
   return result;
 }
 
 extern "C"
 void ChromeOSDisconnectScreenLock(ScreenLockConnection connection) {
-  // TODO(oshima): Use chromeos::dbus library. See comment above.
-
-  DBusError error;
-  dbus_error_init(&error);
-  DBusConnection *bus = dbus_bus_get(DBUS_BUS_SYSTEM, &error);
-  if (dbus_error_is_set(&error)) {
-    LOG(WARNING) << "No D-Bus connection: " << SAFE_MESSAGE(error);
-  } else {
-    dbus_connection_remove_filter(bus, &Filter, connection);
-  }
-  if (connection)
-    delete connection;
+  DBusConnection *bus = ::dbus_g_connection_get_connection(
+      dbus::GetSystemBusConnection().g_connection());
+  dbus_connection_remove_filter(bus, &Filter, connection);
+  delete connection;
 }
 
 }  // namespace chromeos

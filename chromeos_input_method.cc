@@ -28,11 +28,12 @@ const char kCandidateWindowInterface[] = "org.freedesktop.IBus.Panel";
 // ibus-m17n since we (will) have better equivalents outside of ibus-m17n.
 const char* kInputMethodIdsWhitelist[] = {
   "anthy",    // ibus-anthy (for libcros debugging on Ubuntu 9.10) - Japanese
+  "bopomofo",  // Bopomofo engine in ibus-pinyin - Traditional Chinese
   // "chewing",  // ibus-chewing - Traditional Chinese
   "hangul",   // ibus-hangul - Korean
   "mozc",     // ibus-mozc - Japanese (with English keyboard)
   "mozc-jp",  // ibus-mozc - Japanese (with Japanese keyboard)
-  "pinyin",   // ibus-pinyin - Simplified Chinese
+  "pinyin",   // Pinyin engine in ibus-pinyin - Simplified Chinese
   // TODO(yusukes): re-enable chewing once we resolve issue 1253.
 
   // ibus-table input methods.
@@ -67,6 +68,7 @@ const char* kInputMethodIdsWhitelist[] = {
   "xkb:bg::bul",        // Bulgaria - Bulgarian
   "xkb:cz::cze",        // Czech Republic - Czech
   "xkb:de::ger",        // Germany - German
+  "xkb:ee::est",        // Estonia - Estonian
   "xkb:es::spa",        // Spain - Spanish
   "xkb:es:cat:cat",     // Spain - Catalan
   "xkb:dk::dan",        // Denmark - Danish
@@ -458,6 +460,7 @@ class InputMethodStatusConnection {
         focus_changed_(focus_changed),
         language_library_(language_library),
         ibus_(NULL),
+        dbus_proxy_is_alive_(false),
         input_context_path_("") {
     DCHECK(current_input_method_changed),
     DCHECK(register_ime_properties_);
@@ -530,6 +533,13 @@ class InputMethodStatusConnection {
       LOG(ERROR) << "Failed to connect to the candidate_window.";
       return false;
     }
+
+    // Register the callback function.
+    dbus_proxy_is_alive_ = true;
+    g_signal_connect(dbus_proxy_->gproxy(),
+                     "destroy",
+                     G_CALLBACK(DBusProxyDestroyCallback),
+                     this);
 
     // Register DBus signal handler.
     dbus_connection_add_filter(
@@ -671,7 +681,7 @@ class InputMethodStatusConnection {
   bool ConnectionIsAlive() {
     // Note: Since the IBus connection automatically recovers even if
     // ibus-daemon reboots, ibus_bus_is_connected() usually returns true.
-    return (ibus_ && (ibus_bus_is_connected(ibus_) == TRUE)) ? true : false;
+    return dbus_proxy_is_alive_ && ibus_ && ibus_bus_is_connected(ibus_);
   }
   
  private:
@@ -824,6 +834,15 @@ class InputMethodStatusConnection {
     g_object_unref(context);
   }
 
+  static void DBusProxyDestroyCallback(DBusGProxy *proxy, gpointer user_data) {
+    InputMethodStatusConnection* self
+        = static_cast<InputMethodStatusConnection*>(user_data);
+    if (self) {
+      self->dbus_proxy_is_alive_ = false;
+    }
+    LOG(ERROR) << "D-Bus connection to candidate_window is terminated!";
+  }
+
   // Dispatches signals from candidate_window. In this function, we use the
   // IBus's DBus binding (rather than the dbus-glib and its C++ wrapper).
   // This is because arguments of "RegisterProperties" and "UpdateProperty"
@@ -941,6 +960,7 @@ class InputMethodStatusConnection {
   IBusBus* ibus_;
   scoped_ptr<dbus::BusConnection> dbus_connection_;
   scoped_ptr<dbus::Proxy> dbus_proxy_;
+  bool dbus_proxy_is_alive_;
 
   // Current input context path.
   std::string input_context_path_;
