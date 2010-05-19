@@ -1,7 +1,8 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "chromeos_syslogs.h" // NOLINT
 
 #include <dirent.h>
 #include <stdlib.h>
@@ -14,19 +15,17 @@
 #include <base/logging.h>
 
 
-#include "chromeos_syslogs.h" // NOLINT
-
 namespace chromeos { // NOLINT
 
 namespace {
-const char* kSysLogsDir = "/usr/share/userfeedback/scripts/";
-const char* kAppendRedirector = " >> ";
-const char* kMultilineQuote = "\"\"\"";
-const char* kNewLineChars = "\r\n";
+const char kSysLogsDir[] = "/usr/share/userfeedback/scripts/";
+const char kAppendRedirector[] = " >> ";
+const char kMultilineQuote[] = "\"\"\"";
+const char kNewLineChars[] = "\r\n";
 
 // reads a key from the input string; erasing the read values + delimiters read
 // from the initial string
-std::string ReadKey(std::string *data) {
+std::string ReadKey(std::string* data) {
   size_t equal_sign = data->find("=");
   if (equal_sign == std::string::npos)
     return std::string("");
@@ -43,7 +42,7 @@ std::string ReadKey(std::string *data) {
 // reads a value from the input string; erasing the read values from
 // the initial string; detects if the value is multiline and reads
 // accordingly
-std::string ReadValue(std::string *data) {
+std::string ReadValue(std::string* data) {
   // fast forward past leading whitespaces
   TrimWhitespaceASCII(*data, TRIM_LEADING, data);
 
@@ -88,14 +87,15 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* tmpfilename) {
   // Open scripts directory for listing
   dirent* dir_entry = NULL;
   DIR* dir = opendir(scripts_dir.value().c_str());
-  if (!dir) {
+  if (!dir)
     return NULL;
-  }
+
   while (dir_entry = readdir(dir)) {
     if (dir_entry->d_type == DT_REG) {
-      std::string cmd = scripts_dir.Append(std::string(dir_entry->d_name)).value() +
-                        std::string(kAppendRedirector) +
-                        tmpfilename->value();
+      std::string cmd =
+          scripts_dir.Append(std::string(dir_entry->d_name)).value() +
+                             std::string(kAppendRedirector) +
+                             tmpfilename->value();
       // Ignore the return value - if the script execution didn't work
       // sterr won't go into the output file anyway
       system(cmd.c_str());
@@ -103,7 +103,7 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* tmpfilename) {
   }
   closedir(dir);
 
-  // read logs from the temp file
+  // Read logs from the temp file
   std::string data;
   if (!file_util::ReadFileToString(FilePath(*tmpfilename), &data)) {
     file_util::SetCurrentDirectory(old_dir);
