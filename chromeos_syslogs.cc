@@ -90,8 +90,10 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* temp_filename) {
   // Open scripts directory for listing
   dirent* dir_entry = NULL;
   DIR* dir = opendir(scripts_dir.value().c_str());
-  if (!dir)
+  if (!dir) {
+    file_util::SetCurrentDirectory(old_dir);
     return NULL;
+  }
 
   while (dir_entry = readdir(dir)) {
     if (dir_entry->d_type == DT_REG) {
