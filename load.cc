@@ -180,7 +180,6 @@ DECL_FUNC_0(IsSpeaking, bool);
 DECL_FUNC_1(GetSystemLogs, LogDictionaryType*, FilePath*);
 
 
-
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
 // Initializes the variable by looking up the function by |name|.

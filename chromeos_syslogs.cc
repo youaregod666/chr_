@@ -14,7 +14,6 @@
 #include <base/file_util.h>
 #include <base/logging.h>
 
-
 namespace chromeos { // NOLINT
 
 namespace {
@@ -23,7 +22,7 @@ const char kAppendRedirector[] = " >> ";
 const char kMultilineQuote[] = "\"\"\"";
 const char kNewLineChars[] = "\r\n";
 
-// reads a key from the input string; erasing the read values + delimiters read
+// Reads a key from the input string erasing the read values + delimiters read
 // from the initial string
 std::string ReadKey(std::string* data) {
   size_t equal_sign = data->find("=");
@@ -31,29 +30,29 @@ std::string ReadKey(std::string* data) {
     return std::string("");
   std::string key = data->substr(0, equal_sign);
   data->erase(0, equal_sign);
-  if (data->length() > 0) {
+  if (data->size() > 0) {
     // erase the equal to sign also
     data->erase(0,1);
     return key;
   }
-  return std::string("");
+  return std::string();
 }
 
-// reads a value from the input string; erasing the read values from
+// Reads a value from the input string; erasing the read values from
 // the initial string; detects if the value is multiline and reads
 // accordingly
 std::string ReadValue(std::string* data) {
-  // fast forward past leading whitespaces
+  // Fast forward past leading whitespaces
   TrimWhitespaceASCII(*data, TRIM_LEADING, data);
 
-  // if multiline value
+  // If multiline value
   if (StartsWithASCII(*data, std::string(kMultilineQuote), false)) {
     data->erase(0, strlen(kMultilineQuote));
     size_t next_multi = data->find(kMultilineQuote);
     if (next_multi == std::string::npos) {
-      // error condition, clear data to stop further processing
+      // Error condition, clear data to stop further processing
       data->erase();
-      return std::string("");
+      return std::string();
     }
     std::string value = data->substr(0, next_multi);
     data->erase(0, next_multi + 3);
@@ -70,8 +69,8 @@ std::string ReadValue(std::string* data) {
 
 
 extern "C"
-LogDictionaryType* ChromeOSGetSystemLogs(FilePath* tmpfilename) {
-  // save current dir then switch to the logs dir
+LogDictionaryType* ChromeOSGetSystemLogs(FilePath* temp_filename) {
+  // Save current dir then switch to the logs dir
   FilePath old_dir;
   FilePath scripts_dir(kSysLogsDir);
 
@@ -81,7 +80,7 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* tmpfilename) {
     return NULL;
 
   // Create the temp file, logs will go here
-  if (!file_util::CreateTemporaryFile(tmpfilename))
+  if (!file_util::CreateTemporaryFile(temp_filename))
     return NULL;
 
   // Open scripts directory for listing
@@ -95,7 +94,7 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* tmpfilename) {
       std::string cmd =
           scripts_dir.Append(std::string(dir_entry->d_name)).value() +
                              std::string(kAppendRedirector) +
-                             tmpfilename->value();
+                             temp_filename->value();
       // Ignore the return value - if the script execution didn't work
       // sterr won't go into the output file anyway
       system(cmd.c_str());
@@ -105,7 +104,7 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* tmpfilename) {
 
   // Read logs from the temp file
   std::string data;
-  if (!file_util::ReadFileToString(FilePath(*tmpfilename), &data)) {
+  if (!file_util::ReadFileToString(FilePath(*temp_filename), &data)) {
     file_util::SetCurrentDirectory(old_dir);
     return NULL;
   }
@@ -115,7 +114,7 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* tmpfilename) {
   while (data.length() > 0) {
     std::string key = ReadKey(&data);
     TrimWhitespaceASCII(key, TRIM_ALL, &key);
-    if (key != "") {
+    if (!key.empty()) {
       std::string value = ReadValue(&data);
       TrimWhitespaceASCII(value, TRIM_ALL, &value);
       (*logs)[key] = value;
