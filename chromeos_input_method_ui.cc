@@ -70,6 +70,7 @@ gboolean ibus_chromeos_panel_service_focus_in(IBusPanelService *panel,
   // |error| if we return FALSE.  Otherwise, the program will crash in
   // ibuspanelservice.cc as the caller expects an error object to be
   // returned.
+  LOG(INFO) << "Sending FocusIn signal to Chrome";
   g_return_val_if_fail(panel, FALSE);
   g_return_val_if_fail(input_context_path, FALSE);
 
