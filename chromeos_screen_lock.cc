@@ -4,6 +4,7 @@
 
 #include "chromeos_screen_lock.h"  // NOLINT
 
+#include <base/string_util.h>
 #include <dbus/dbus-glib-lowlevel.h>
 #include <chromeos/dbus/dbus.h>
 #include <chromeos/dbus/service_constants.h>
@@ -33,27 +34,15 @@ class OpaqueScreenLockConnection {
 
 namespace {
 
-// Dbus Interface definitions.
-#define CHROMIUM_INTERFACE "org.chromium.Chromium"
-const char* kPowerManagerInterface = "org.chromium.PowerManager";
-
-// ScreenLock inbound Dbus signals.
-const char* kLockScreenSignal = "LockScreen";
-const char* kUnlockScreenSignal = "UnlockScreen";
-const char* kUnlockFailedSignal = "UnlockFailed";
-
-// ScreenLock outbound Dbus signals.
-const char* kScreenIsLockedSignal = "ScreenIsLocked";
-const char* kScreenIsUnlockedSignal = "ScreenIsUnlocked";
-
 // A utility function to send a signal to PowerManager.
 void SendSignalToPowerManager(const char* signal_name) {
   chromeos::dbus::Proxy proxy(chromeos::dbus::GetSystemBusConnection(),
                               "/",
-                              kPowerManagerInterface);
-  DBusMessage* signal = ::dbus_message_new_signal("/",
-                                                  kPowerManagerInterface,
-                                                  signal_name);
+                              power_manager::kPowerManagerInterface);
+  DBusMessage* signal = ::dbus_message_new_signal(
+      "/",
+      power_manager::kPowerManagerInterface,
+      signal_name);
   DCHECK(signal);
   ::dbus_g_proxy_send(proxy.gproxy(), signal, NULL);
   ::dbus_message_unref(signal);
@@ -65,18 +54,18 @@ DBusHandlerResult Filter(DBusConnection* connection,
                          void* object) {
   ScreenLockConnection self =
       static_cast<ScreenLockConnection>(object);
-  if (dbus_message_is_signal(message, CHROMIUM_INTERFACE,
-                             kUnlockFailedSignal)) {
-    LOG(INFO) << "Filter:: UnlockFailed event";
+  if (dbus_message_is_signal(message, chromium::kChromiumInterface,
+                             chromium::kUnlockScreenFailedSignal)) {
+    LOG(INFO) << "Filter:: UnlockScreenFailed event";
     self->Notify(UnlockScreenFailed);
     return DBUS_HANDLER_RESULT_HANDLED;
-  } else if (dbus_message_is_signal(message, CHROMIUM_INTERFACE,
-                                    kLockScreenSignal)) {
+  } else if (dbus_message_is_signal(message, chromium::kChromiumInterface,
+                                    chromium::kLockScreenSignal)) {
     LOG(INFO) << "Filter:: LockScreen event";
     self->Notify(LockScreen);
     return DBUS_HANDLER_RESULT_HANDLED;
-  } else if (dbus_message_is_signal(message, CHROMIUM_INTERFACE,
-                                    kUnlockScreenSignal)) {
+  } else if (dbus_message_is_signal(message, chromium::kChromiumInterface,
+                                    chromium::kUnlockScreenSignal)) {
     LOG(INFO) << "Filter:: UnlockScreen event";
     self->Notify(UnlockScreen);
     return DBUS_HANDLER_RESULT_HANDLED;
@@ -89,22 +78,22 @@ DBusHandlerResult Filter(DBusConnection* connection,
 
 extern "C"
 void ChromeOSNotifyScreenLockCompleted() {
-  SendSignalToPowerManager(kScreenIsLockedSignal);
+  SendSignalToPowerManager(power_manager::kScreenIsLockedSignal);
 }
 
 extern "C"
 void ChromeOSNotifyScreenUnlockCompleted() {
-  SendSignalToPowerManager(kScreenIsUnlockedSignal);
+  SendSignalToPowerManager(power_manager::kScreenIsUnlockedSignal);
 }
 
 extern "C"
 void ChromeOSNotifyScreenLockRequested() {
-  SendSignalToPowerManager(kLockScreenSignal);
+  SendSignalToPowerManager(power_manager::kRequestLockScreenSignal);
 }
 
 extern "C"
 void ChromeOSNotifyScreenUnlockRequested() {
-  SendSignalToPowerManager(kUnlockScreenSignal);
+  SendSignalToPowerManager(power_manager::kRequestUnlockScreenSignal);
 }
 
 extern "C"
@@ -117,13 +106,14 @@ void ChromeOSNotifyScreenUnlocked() {
 extern "C"
 ScreenLockConnection
 ChromeOSMonitorScreenLock(ScreenLockMonitor monitor, void* object) {
+  const std::string filter = StringPrintf("type='signal', interface='%s'",
+                                          chromium::kChromiumInterface).c_str();
+
   DBusError error;
-  dbus_error_init(&error);
+  ::dbus_error_init(&error);
   DBusConnection* connection = ::dbus_g_connection_get_connection(
       dbus::GetSystemBusConnection().g_connection());
-  ::dbus_bus_add_match(connection,
-                       "type='signal', interface='" CHROMIUM_INTERFACE "'",
-                       &error);
+  ::dbus_bus_add_match(connection, filter.c_str(), &error);
   if (::dbus_error_is_set(&error)) {
     DLOG(WARNING) << "Failed to add a filter:" << error.name << ", message="
                   << SAFE_MESSAGE(error);
@@ -141,7 +131,7 @@ extern "C"
 void ChromeOSDisconnectScreenLock(ScreenLockConnection connection) {
   DBusConnection *bus = ::dbus_g_connection_get_connection(
       dbus::GetSystemBusConnection().g_connection());
-  dbus_connection_remove_filter(bus, &Filter, connection);
+  ::dbus_connection_remove_filter(bus, &Filter, connection);
   delete connection;
 }
 
