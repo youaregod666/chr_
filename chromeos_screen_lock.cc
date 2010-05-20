@@ -107,7 +107,7 @@ extern "C"
 ScreenLockConnection
 ChromeOSMonitorScreenLock(ScreenLockMonitor monitor, void* object) {
   const std::string filter = StringPrintf("type='signal', interface='%s'",
-                                          chromium::kChromiumInterface).c_str();
+                                          chromium::kChromiumInterface);
 
   DBusError error;
   ::dbus_error_init(&error);
