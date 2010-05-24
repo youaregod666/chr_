@@ -147,30 +147,6 @@ extern void (*NotifyCandidateClicked)(
     InputMethodUiStatusConnection* connection,
     int index, int button, int flags);
 
-// DEPRECATED. TODO(satorux): Remove the followings once it's ready.
-typedef InputMethodLookupTable ImeLookupTable;
-typedef InputMethodHideAuxiliaryTextMonitorFunction
-        ImeHideAuxiliaryTextMonitorFunction;
-typedef InputMethodHideLookupTableMonitorFunction
-        ImeHideLookupTableMonitorFunction;
-typedef InputMethodSetCursorLocationMonitorFunction
-        ImeSetCursorLocationMonitorFunction;
-typedef InputMethodUpdateAuxiliaryTextMonitorFunction
-        ImeUpdateAuxiliaryTextMonitorFunction;
-typedef InputMethodUpdateLookupTableMonitorFunction
-        ImeUpdateLookupTableMonitorFunction;
-typedef InputMethodUpdateLookupTableMonitorFunction
-        ImeLookupTableMonitorFunction;
-typedef InputMethodUiStatusMonitorFunctions
-        ImeStatusMonitorFunctions;
-typedef InputMethodUiStatusConnection ImeStatusConnection;
-extern ImeStatusConnection* (*MonitorImeStatus)(
-    const ImeStatusMonitorFunctions& monitor_functions,
-    void* input_method_library);
-extern void (*DisconnectImeStatus)(
-    ImeStatusConnection* connection);
-
-
 }  // namespace chromeos
 
 #endif  // CHROMEOS_INPUT_METHOD_UI_H_

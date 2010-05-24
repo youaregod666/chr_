@@ -489,21 +489,6 @@ void ChromeOSDisconnectInputMethodUiStatus(
   delete connection;
 }
 
-// DEPRECATED: TODO(satorux): Remove this once it's ready.
-extern "C"
-InputMethodUiStatusConnection* ChromeOSMonitorImeStatus(
-    const InputMethodUiStatusMonitorFunctions& monitor_functions,
-    void* input_method_library) {
-  return ChromeOSMonitorInputMethodUiStatus(monitor_functions,
-                                            input_method_library);
-}
-
-// DEPRECATED: TODO(satorux): Remove this once it's ready.
-extern "C"
-void ChromeOSDisconnectImeStatus(InputMethodUiStatusConnection* connection) {
-  ChromeOSDisconnectInputMethodUiStatus(connection);
-}
-
 extern "C"
 void ChromeOSNotifyCandidateClicked(InputMethodUiStatusConnection* connection,
                                     int index, int button, int flags) {

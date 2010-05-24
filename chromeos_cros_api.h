@@ -100,12 +100,13 @@
 //      Renamed ScreenLockState to ScreenLockEvent
 //  34: Added GetSystemInfo. Logs returned by GetSystemInfo are consumed by
 //      the bug report dialog when submitting user feedback to Google Feedback
+//  35: Removed deprecated methods for input method (see v28).
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 34
+  kCrosAPIVersion = 35
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

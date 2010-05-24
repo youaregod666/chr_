@@ -997,30 +997,11 @@ InputMethodStatusConnection* ChromeOSMonitorInputMethodStatus(
   return connection;
 }
 
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-extern "C"
-InputMethodStatusConnection* ChromeOSMonitorLanguageStatus(
-    LanguageStatusMonitorFunctions monitor_functions, void* language_library) {
-  LOG(INFO) << "MonitorLanguageStatus";
-  return ChromeOSMonitorInputMethodStatus(
-      language_library,
-      monitor_functions.current_language,
-      monitor_functions.register_ime_properties,
-      monitor_functions.update_ime_property,
-      NULL);
-}
-
 extern "C"
 void ChromeOSDisconnectInputMethodStatus(
     InputMethodStatusConnection* connection) {
   LOG(INFO) << "DisconnectInputMethodStatus";
   delete connection;
-}
-
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-extern "C"
-void ChromeOSDisconnectLanguageStatus(InputMethodStatusConnection* connection) {
-  ChromeOSDisconnectInputMethodStatus(connection);
 }
 
 extern "C"
@@ -1167,11 +1148,4 @@ bool ChromeOSInputMethodStatusConnectionIsAlive(
   return is_connected;
 }
 
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-extern "C"
-bool ChromeOSLanguageStatusConnectionIsAlive(
-    InputMethodStatusConnection* connection) {
-  return ChromeOSInputMethodStatusConnectionIsAlive(connection);
-}
-    
 }  // namespace chromeos

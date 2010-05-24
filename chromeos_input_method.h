@@ -240,19 +240,6 @@ typedef void(*LanguageUpdateImePropertyFunction)(
 typedef void(*LanguageFocusChangeMonitorFunction)(
     void* language_library, bool focus_in);
 
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-struct LanguageStatusMonitorFunctions {
-  LanguageStatusMonitorFunctions()
-      : current_language(NULL),
-        register_ime_properties(NULL),
-        update_ime_property(NULL) {
-  }
-  // TODO(yusukes): Rename |current_language|. |current_input_method| is better?
-  LanguageCurrentInputMethodMonitorFunction current_language;
-  LanguageRegisterImePropertiesFunction register_ime_properties;
-  LanguageUpdateImePropertyFunction update_ime_property;
-};
-
 // Establishes IBus connection to the ibus-daemon and DBus connection to the
 // candidate window process. LanguageXXXFunction functions will be called when
 // status of input method engines is changed.
@@ -264,16 +251,8 @@ extern InputMethodStatusConnection* (*MonitorInputMethodStatus)(
     LanguageUpdateImePropertyFunction update_ime_property,
     LanguageFocusChangeMonitorFunction focus_changed);
 
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-extern InputMethodStatusConnection* (*MonitorLanguageStatus)(
-    LanguageStatusMonitorFunctions monitor_funcions, void* language_library);
-
 // Terminates IBus and DBus connections.
 extern void (*DisconnectInputMethodStatus)(
-    InputMethodStatusConnection* connection);
-
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-extern void (*DisconnectLanguageStatus)(
     InputMethodStatusConnection* connection);
 
 // Gets all input method engines that are currently active. Caller has to
@@ -334,13 +313,6 @@ extern bool (*SetImeConfig)(InputMethodStatusConnection* connection,
 // a new connection by calling MonitorInputMethodStatus() API.
 extern bool (*InputMethodStatusConnectionIsAlive)(
     InputMethodStatusConnection* connection);
-
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-extern bool (*LanguageStatusConnectionIsAlive)(
-    InputMethodStatusConnection* connection);
-
-// DEPRECATED: TODO(yusukes): Remove this when it's ready.
-typedef InputMethodStatusConnection LanguageStatusConnection;
 
 }  // namespace chromeos
 
