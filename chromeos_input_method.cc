@@ -51,8 +51,9 @@ const char* kInputMethodIdsWhitelist[] = {
   "m17n:hi:itrans",      // Hindi
   // Note: the m17n-contrib package has some more Hindi definitions.
   "m17n:fa:isiri",       // Persian
-  "m17n:th:pattachote",  // Thai
-  // TODO(yusukes): Add tis820 and kesmanee for Thai if needed.
+  "m17n:th:kesmanee",    // Thai (simulate the Kesmanee keyboard)
+  "m17n:th:pattachote",  // Thai (simulate the Pattachote keyboard)
+  "m17n:th:tis820",      // Thai (simulate the TIS-820.2538 keyboard)
   "m17n:vi:tcvn",        // Vietnames (TCVN6064 sequence)
   "m17n:vi:telex",       // Vietnames (TELEX key sequence)
   "m17n:vi:viqr",        // Vietnames (VIQR key sequence)
