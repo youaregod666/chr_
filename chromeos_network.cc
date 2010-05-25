@@ -353,7 +353,7 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
     const gchar* path = static_cast<const gchar*>(g_value_get_boxed (&val));
     info->device_path = NewStringCopy(path);
   } else {
-    info->device_path = NewStringCopy(kUnknownString);
+    info->device_path = NULL;
   }
 }
 

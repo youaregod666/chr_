@@ -101,12 +101,13 @@
 //  34: Added GetSystemInfo. Logs returned by GetSystemInfo are consumed by
 //      the bug report dialog when submitting user feedback to Google Feedback
 //  35: Removed deprecated methods for input method (see v28).
+//  36: Fix crashing but with device_path set to unknown.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 35
+  kCrosAPIVersion = 36
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
