@@ -29,7 +29,7 @@ const char kCandidateWindowInterface[] = "org.freedesktop.IBus.Panel";
 const char* kInputMethodIdsWhitelist[] = {
   "anthy",    // ibus-anthy (for libcros debugging on Ubuntu 9.10) - Japanese
   "bopomofo",  // Bopomofo engine in ibus-pinyin - Traditional Chinese
-  // "chewing",  // ibus-chewing - Traditional Chinese
+  "chewing",  // ibus-chewing - Traditional Chinese
   "hangul",   // ibus-hangul - Korean
   "mozc",     // ibus-mozc - Japanese (with English keyboard)
   "mozc-jp",  // ibus-mozc - Japanese (with Japanese keyboard)
