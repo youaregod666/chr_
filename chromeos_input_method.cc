@@ -539,13 +539,19 @@ class InputMethodStatusConnection {
       return false;
     }
 
-    // Register the callback function.
+    // Register the callback function for "destroy".
     dbus_proxy_is_alive_ = true;
     g_signal_connect(dbus_proxy_->gproxy(),
                      "destroy",
                      G_CALLBACK(DBusProxyDestroyCallback),
                      this);
 
+    // Register the callback function for "global-engine-changed".
+    g_signal_connect(ibus_,
+                     "global-engine-changed",
+                     G_CALLBACK(IBusBusGlobalEngineChangedCallback),
+                     this);
+    
     // Register DBus signal handler.
     dbus_connection_add_filter(
         dbus_g_connection_get_connection(dbus_connection_->g_connection()),
@@ -803,26 +809,9 @@ class InputMethodStatusConnection {
 
   // Retrieve input method status and notify them to the UI.
   void UpdateUI() {
-    if (input_context_path_.empty()) {
-      LOG(ERROR) << "Input context is unknown";
-      return;
-    }
-
-    IBusInputContext* context = GetInputContext(input_context_path_, ibus_);
-    if (!context) {
-      return;
-    }
-    if (!ibus_input_context_is_enabled(context)) {
-      DLOG(INFO)
-          << "input method is not active or text area does not have focus.";
-      g_object_unref(context);
-      return;
-    }
-
-    const IBusEngineDesc* engine_desc = ibus_input_context_get_engine(context);
+    IBusEngineDesc* engine_desc = ibus_bus_get_global_engine(ibus_);
     if (!engine_desc) {
-      DLOG(INFO) << "ibus_input_context_get_engine() returned NULL";
-      g_object_unref(context);
+      LOG(ERROR) << "Global engine is not set";
       return;
     }
 
@@ -836,10 +825,10 @@ class InputMethodStatusConnection {
 
     // Notify the change to update UI.
     current_input_method_changed_(language_library_, current_input_method);
-    g_object_unref(context);
+    g_object_unref(engine_desc);
   }
 
-  static void DBusProxyDestroyCallback(DBusGProxy *proxy, gpointer user_data) {
+  static void DBusProxyDestroyCallback(DBusGProxy* proxy, gpointer user_data) {
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(user_data);
     if (self) {
@@ -848,6 +837,16 @@ class InputMethodStatusConnection {
     LOG(ERROR) << "D-Bus connection to candidate_window is terminated!";
   }
 
+  static void IBusBusGlobalEngineChangedCallback(
+      IBusBus* bus, gpointer user_data) {
+    InputMethodStatusConnection* self
+        = static_cast<InputMethodStatusConnection*>(user_data);
+    if (self) {
+      self->UpdateUI();
+    }
+    DLOG(INFO) << "Global engine is changed";
+  }
+  
   // Dispatches signals from candidate_window. In this function, we use the
   // IBus's DBus binding (rather than the dbus-glib and its C++ wrapper).
   // This is because arguments of "RegisterProperties" and "UpdateProperty"
