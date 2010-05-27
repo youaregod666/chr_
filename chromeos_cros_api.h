@@ -102,6 +102,8 @@
 //      the bug report dialog when submitting user feedback to Google Feedback
 //  35: Removed deprecated methods for input method (see v28).
 //  36: Fix crashing but with device_path set to unknown.
+//  37: Added CryptohomeGetSystemSalt, CryptohomeMigrateKey, and
+//      CryptohomeRemove.
 
 namespace chromeos {  // NOLINT
 

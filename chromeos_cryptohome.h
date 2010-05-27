@@ -18,7 +18,7 @@ extern bool (*CryptohomeCheckKey)(const char* user_email,
 extern bool (*CryptohomeMigrateKey)(const char* user_email,
                                     const char* from_key,
                                     const char* to_key);
-extern bool (*CryptohomeCheckRemove)(const char* user_email);
+extern bool (*CryptohomeRemove)(const char* user_email);
 extern CryptohomeBlob (*CryptohomeGetSystemSalt)();
 extern bool (*CryptohomeIsMounted)();
 extern bool (*CryptohomeMount)(const char* user_email,
