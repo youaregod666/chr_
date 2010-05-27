@@ -471,6 +471,13 @@ class InputMethodStatusConnection {
   }
 
   ~InputMethodStatusConnection() {
+    if (dbus_proxy_.get() && dbus_proxy_->gproxy()) {
+      g_signal_handlers_disconnect_by_func(
+          dbus_proxy_->gproxy(),
+          reinterpret_cast<gpointer>(G_CALLBACK(DBusProxyDestroyCallback)),
+          this);
+    }
+
     if (dbus_connection_.get()) {
       // Close |dbus_connection_| since the connection is "private connection"
       // and we know |this| is the only instance which uses the
@@ -480,19 +487,22 @@ class InputMethodStatusConnection {
       DBusConnection* raw_connection = dbus_g_connection_get_connection(
           dbus_connection_->g_connection());
       if (raw_connection) {
-        ::dbus_connection_close(raw_connection);
+        dbus_connection_close(raw_connection);
       }
     }
+
     if (ibus_) {
       // Destruct IBus object.
+      g_signal_handlers_disconnect_by_func(
+          ibus_,
+          reinterpret_cast<gpointer>(
+              G_CALLBACK(IBusBusGlobalEngineChangedCallback)),
+          this);
       // Since the connection which ibus_ has is a "shared connection". We
       // should not close the connection. Just call g_object_unref.
       g_object_unref(ibus_);
     }
     // |dbus_connection_| and |dbus_proxy_| will be destructed by ~scoped_ptr().
-
-    // TODO(yusukes): We should unregister a handler function for the "destroy"
-    // glib signal here.
   }
 
   // Initializes IBus and DBus connections.
