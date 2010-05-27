@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "chromeos_cros_api.h" // NOLINT
+#include "chromeos_cryptohome.h" // NOLINT
 #include "chromeos_input_method.h"  // NOLINT
 #include "chromeos_input_method_ui.h"  // NOLINT
 #include "chromeos_keyboard.h"  // NOLINT
@@ -163,6 +164,9 @@ DECL_FUNC_0(NotifyScreenUnlocked, void);
 
 // Cryptohome
 DECL_FUNC_2(CryptohomeCheckKey, bool, const char*, const char*);
+DECL_FUNC_3(CryptohomeMigrateKey, bool, const char*, const char*, const char*);
+DECL_FUNC_1(CryptohomeRemove, bool, const char*);
+DECL_FUNC_0(CryptohomeGetSystemSalt, CryptohomeBlob);
 DECL_FUNC_0(CryptohomeIsMounted, bool);
 DECL_FUNC_2(CryptohomeMount, bool, const char*, const char*);
 DECL_FUNC_0(CryptohomeUnmount, bool);
@@ -313,6 +317,9 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
 
   // Cryptohome
   INIT_FUNC(CryptohomeCheckKey);
+  INIT_FUNC(CryptohomeMigrateKey);
+  INIT_FUNC(CryptohomeRemove);
+  INIT_FUNC(CryptohomeGetSystemSalt);
   INIT_FUNC(CryptohomeIsMounted);
   INIT_FUNC(CryptohomeMount);
   INIT_FUNC(CryptohomeUnmount);

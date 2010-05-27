@@ -107,7 +107,7 @@ namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 36
+  kCrosAPIVersion = 37
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

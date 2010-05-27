@@ -40,6 +40,93 @@ bool ChromeOSCryptohomeCheckKey(const char* user_email, const char* key) {
 }
 
 extern "C"
+bool ChromeOSCryptohomeMigrateKey(const char* user_email, const char* from_key,
+                                  const char* to_key) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gboolean done = false;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeMigrateKey,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           user_email,
+                           G_TYPE_STRING,
+                           from_key,
+                           G_TYPE_STRING,
+                           to_key,
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN,
+                           &done,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeMigrateKey << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+  return done;
+}
+
+extern "C"
+bool ChromeOSCryptohomeRemove(const char* user_email) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gboolean done = false;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeRemove,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           user_email,
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN,
+                           &done,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeRemove << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+  return done;
+}
+
+extern "C"
+CryptohomeBlob ChromeOSCryptohomeGetSystemSalt() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  GArray* salt;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeGetSystemSalt,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_UCHAR_ARRAY,
+                           &salt,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeGetSystemSalt << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+    return CryptohomeBlob();
+  }
+  CryptohomeBlob system_salt;
+  system_salt.resize(salt->len);
+  if(system_salt.size() == salt->len) {
+    memcpy(&system_salt[0], static_cast<const void*>(salt->data), salt->len);
+  } else {
+    system_salt.clear();
+  }
+  g_array_free(salt, false);
+  return system_salt;
+}
+
+extern "C"
 bool ChromeOSCryptohomeIsMounted() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy proxy(bus,
