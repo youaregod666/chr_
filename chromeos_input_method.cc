@@ -466,33 +466,33 @@ class InputMethodStatusConnection {
     DCHECK(current_input_method_changed),
     DCHECK(register_ime_properties_);
     DCHECK(update_ime_property_);
-    // TODO(yusukes): enable the DCHECK later (on cros API v23).
-    // DCHECK(focus_changed_);
+    DCHECK(focus_changed_);
     DCHECK(language_library_);
   }
 
   ~InputMethodStatusConnection() {
-    // Destruct IBus object.
-    if (ibus_) {
-      if (ibus_bus_is_connected(ibus_)) {
-        // Close |dbus_connection_| since the connection is "private connection"
-        // and we know |this| is the only instance which uses the
-        // |dbus_connection_|. Otherwise, we may see an error message from dbus
-        // library like "The last reference on a connection was dropped without
-        // closing the connection."
-        DBusConnection* raw_connection = dbus_g_connection_get_connection(
-            dbus_connection_->g_connection());
-        if (raw_connection) {
-          ::dbus_connection_close(raw_connection);
-        }
+    if (dbus_connection_.get()) {
+      // Close |dbus_connection_| since the connection is "private connection"
+      // and we know |this| is the only instance which uses the
+      // |dbus_connection_|. Otherwise, we may see an error message from dbus
+      // library like "The last reference on a connection was dropped without
+      // closing the connection."
+      DBusConnection* raw_connection = dbus_g_connection_get_connection(
+          dbus_connection_->g_connection());
+      if (raw_connection) {
+        ::dbus_connection_close(raw_connection);
       }
-
+    }
+    if (ibus_) {
+      // Destruct IBus object.
       // Since the connection which ibus_ has is a "shared connection". We
       // should not close the connection. Just call g_object_unref.
       g_object_unref(ibus_);
     }
-
     // |dbus_connection_| and |dbus_proxy_| will be destructed by ~scoped_ptr().
+
+    // TODO(yusukes): We should unregister a handler function for the "destroy"
+    // glib signal here.
   }
 
   // Initializes IBus and DBus connections.
@@ -516,6 +516,10 @@ class InputMethodStatusConnection {
     // Establish a DBus connection between the candidate_window process for
     // Chromium OS to handle signals (e.g. "FocusIn") from the process.
     const char* address = ibus_get_address();
+    if (!address) {
+      LOG(ERROR) << "ibus_get_address returned NULL";
+      return false;
+    }
     dbus_connection_.reset(
         new dbus::BusConnection(dbus::GetPrivateBusConnection(address)));
     LOG(INFO) << "Established private D-Bus connection to: '" << address << "'";
