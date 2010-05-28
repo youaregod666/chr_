@@ -34,12 +34,6 @@ const char* kInputMethodIdsWhitelist[] = {
   "mozc",     // ibus-mozc - Japanese (with English keyboard)
   "mozc-jp",  // ibus-mozc - Japanese (with Japanese keyboard)
   "pinyin",   // Pinyin engine in ibus-pinyin - Simplified Chinese
-  // TODO(yusukes): re-enable chewing once we resolve issue 1253.
-
-  // ibus-table input methods.
-  "cangjie3",  // ibus-table-cangjie - Traditional Chinese
-  "cangjie5",  // ibus-table-cangjie - Traditional Chinese
-  // TODO(yusukes): Add additional ibus-table modules here once they're ready.
 
   // ibus-m17n input methods (language neutral ones).
   "m17n:t:latn-pre",
@@ -62,7 +56,10 @@ const char* kInputMethodIdsWhitelist[] = {
   // Vietnames input methods, except 4 input methods above, in m17n-db should
   // not work fine. The 4 input methods in m17n-db (>= 1.6.0) don't require the
   // feature.
-
+  "m17n:zh:cangjie",     // Traditional Chinese (Cangjie)
+  "m17n:zh:quick",       // Traditional Chinese (Quick) in m17n-contrib
+  // TODO(suzhe): Add CantonHK and Stroke5 if (it's really) necessary.
+  
   // ibux-xkb-layouts input methods (keyboard layouts).
   "xkb:be::fra",        // Belgium - French
   "xkb:br::por",        // Brazil - Portuguese
