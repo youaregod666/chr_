@@ -37,6 +37,7 @@ enum WmIpcWindowType {
   //   param[0]: X ID of associated titlebar, which must be mapped before
   //             its content.
   //   param[1]: Initial state for panel (0 is collapsed, 1 is expanded).
+  //   param[2]: Should the panel be initially focused? (0 is no, 1 is yes).
   WM_IPC_WINDOW_CHROME_PANEL_CONTENT = 4,
 
   // A small window placed above the panel's contents containing its title
