@@ -468,7 +468,9 @@ class InputMethodStatusConnection {
   }
 
   ~InputMethodStatusConnection() {
-    if (dbus_proxy_.get() && dbus_proxy_->gproxy()) {
+    // We can call gproxy() only when the operator bool returns true (or DCHECK
+    // fails.)
+    if (dbus_proxy_.get() && (dbus_proxy_->operator bool())) {
       g_signal_handlers_disconnect_by_func(
           dbus_proxy_->gproxy(),
           reinterpret_cast<gpointer>(G_CALLBACK(DBusProxyDestroyCallback)),
@@ -697,8 +699,6 @@ class InputMethodStatusConnection {
 
   // Checks if IBus connection is alive.
   bool ConnectionIsAlive() {
-    // Note: Since the IBus connection automatically recovers even if
-    // ibus-daemon reboots, ibus_bus_is_connected() usually returns true.
     return dbus_proxy_is_alive_ && ibus_ && ibus_bus_is_connected(ibus_);
   }
   
