@@ -9,6 +9,7 @@
 
 #include <algorithm>  // for std::reverse.
 #include <cstring>  // for std::strcmp.
+#include <set>
 #include <sstream>
 #include <stack>
 #include <utility>
@@ -21,6 +22,10 @@ namespace {
 const char kCandidateWindowService[] = "org.freedesktop.IBus.Panel";
 const char kCandidateWindowObjectPath[] = "/org/chromium/Chrome/LanguageBar";
 const char kCandidateWindowInterface[] = "org.freedesktop.IBus.Panel";
+
+// Also defined in chrome/browser/chromeos/language_preferences.h (Chrome tree).
+const char kGeneralSectionName[] = "general";
+const char kPreloadEnginesConfigName[] = "preload_engines";
 
 // The list of input method IDs that we handle. This filtering is necessary
 // since some input methods are definitely unnecessary for us. For example, we
@@ -95,7 +100,7 @@ const char* kInputMethodIdsWhitelist[] = {
   "xkb:ua::ukr",        // Ukraine - Ukrainian
   "xkb:us::eng",        // US - English
   "xkb:us:dvorak:eng",  // US - Dvorak - English
-  // TODO(satorux): Add more keyboard layouts.
+  // TODO(satorux,jshin): Add more keyboard layouts.
 };
 
 // The list of input method property keys that we don't handle.
@@ -120,19 +125,34 @@ bool PropertyKeyIsBlacklisted(const char* key) {
 }
 
 // Returns true if |input_method_id| is whitelisted.
+// TODO(yusukes): Write unittest.
 bool InputMethodIdIsWhitelisted(const char* input_method_id) {
-  // TODO(yusukes): Use hash_set if necessary.
-  const std::string id = input_method_id;
-  for (size_t i = 0; i < arraysize(kInputMethodIdsWhitelist); ++i) {
-    // Older version of m17n-db which is used in Ubuntu 9.10
-    // doesn't add the "m17n:" prefix. We support both.
-    if ((id == kInputMethodIdsWhitelist[i]) ||
-        ("m17n:" + id == kInputMethodIdsWhitelist[i])) {
-      return true;
+  static std::set<std::string>* g_supported_input_methods = NULL;
+  if (!g_supported_input_methods) {
+    g_supported_input_methods = new std::set<std::string>;
+    for (size_t i = 0; i < arraysize(kInputMethodIdsWhitelist); ++i) {
+      g_supported_input_methods->insert(kInputMethodIdsWhitelist[i]);
     }
   }
-  return false;
+  return (g_supported_input_methods->count(input_method_id) > 0);
 }
+
+// Removes input methods that are not whitelisted from |requested_input_methods|
+// and stores them on |out_filtered_input_methods|.
+// TODO(yusukes): Write unittest.
+void FilterInputMethods(const std::vector<std::string>& requested_input_methods,
+                        std::vector<std::string>* out_filtered_input_methods) {
+  out_filtered_input_methods->clear();
+  for (size_t i = 0; i < requested_input_methods.size(); ++i) {
+    const std::string& input_method = requested_input_methods[i];
+    if (InputMethodIdIsWhitelisted(input_method.c_str())) {
+      out_filtered_input_methods->push_back(input_method);
+    } else {
+      LOG(ERROR) << "Unsupported input method: " << input_method;
+    }
+  }
+}
+    
 
 // Frees input method names in |engines| and the list itself. Please make sure
 // that |engines| points the head of the list.
@@ -146,6 +166,7 @@ void FreeInputMethodNames(GList* engines) {
 }
 
 // Copies input method names in |engines| to |out|.
+// TODO(yusukes): Write unittest.
 void AddInputMethodNames(
     const GList* engines, chromeos::InputMethodDescriptors* out) {
   DCHECK(out);
@@ -260,9 +281,9 @@ bool ConvertProperty(IBusProperty* ibus_prop,
 // Converts |ibus_prop| to |out_prop_list|. Please note that |ibus_prop|
 // may or may not have children. See the comment for FlattenPropertyList
 // for details. Returns true if no error is found.
+// TODO(yusukes): Write unittest.
 bool FlattenProperty(
     IBusProperty* ibus_prop, chromeos::ImePropertyList* out_prop_list) {
-  // TODO(yusukes): Find a good way to write unit tests for this function.
   DCHECK(ibus_prop);
   DCHECK(out_prop_list);
 
@@ -327,9 +348,9 @@ bool FlattenProperty(
 // Item-1, Item-2, Item-3-1, Item-3-2, Item-3-3, Item-4
 // (Note: SubMenuRoot does not appear in the output.)
 // ======================================================================
+// TODO(yusukes): Write unittest.
 bool FlattenPropertyList(
     IBusPropList* ibus_prop_list, chromeos::ImePropertyList* out_prop_list) {
-  // TODO(yusukes): Find a good way to write unit tests for this function.
   DCHECK(ibus_prop_list);
   DCHECK(out_prop_list);
 
@@ -650,48 +671,133 @@ class InputMethodStatusConnection {
   }
 
   // Get a configuration of ibus-daemon or IBus engines and stores it on
-  // |gvalue|. Returns true if |gvalue| is successfully updated.
+  // |out_value|. Returns true if |gvalue| is successfully updated.
   //
   // For more information, please read a comment for GetImeConfig() function
   // in chromeos_language.h.
   bool GetImeConfig(const char* section,
                     const char* config_name,
-                    GValue* gvalue) {
+                    ImeConfigValue* out_value) {
     DCHECK(section);
     DCHECK(config_name);
+    if (!section || !config_name) {
+      return false;
+    }
+    GValue gvalue = { 0 };  // g_value_init() is not necessary.
 
     IBusConfig* ibus_config = CreateConfigObject();
     g_return_val_if_fail(ibus_config, false);
 
     // TODO(yusukes): make sure the get_value() function does not abort even
     // when the ibus-memconf process does not exist.
-    const gboolean success = ibus_config_get_value(ibus_config,
-                                                   section,
-                                                   config_name,
-                                                   gvalue);
+    bool success =
+        ibus_config_get_value(ibus_config, section, config_name, &gvalue);
     g_object_unref(ibus_config);
-    return (success == TRUE);
+    if (!success) {
+      if (G_IS_VALUE(&gvalue)) {
+        g_value_unset(&gvalue);
+      }
+      return false;
+    }
+
+    // Convert the type of the result from GValue to our structure.
+    GType type = G_VALUE_TYPE(&gvalue);
+    if (type == G_TYPE_STRING) {
+      const char* value = g_value_get_string(&gvalue);
+      DCHECK(value);
+      out_value->type = ImeConfigValue::kValueTypeString;
+      out_value->string_value = value;
+    } else if (type == G_TYPE_INT) {
+      out_value->type = ImeConfigValue::kValueTypeInt;
+      out_value->int_value = g_value_get_int(&gvalue);
+    } else if (type == G_TYPE_BOOLEAN) {
+      out_value->type = ImeConfigValue::kValueTypeBool;
+      out_value->bool_value = g_value_get_boolean(&gvalue);
+    } else if (type == G_TYPE_VALUE_ARRAY) {
+      out_value->type = ImeConfigValue::kValueTypeStringList;
+      out_value->string_list_value.clear();
+      GValueArray* array
+          = reinterpret_cast<GValueArray*>(g_value_get_boxed(&gvalue));
+      for (guint i = 0; array && (i < array->n_values); ++i) {
+        const GType element_type = G_VALUE_TYPE(&(array->values[i]));
+        if (element_type != G_TYPE_STRING) {
+          LOG(ERROR) << "Array element type is not STRING: " << element_type;
+          g_value_unset(&gvalue);
+          return false;
+        }
+        const char* value = g_value_get_string(&(array->values[i]));
+        DCHECK(value);
+        out_value->string_list_value.push_back(value);
+      }
+    } else {
+      LOG(ERROR) << "Unsupported config type: " << G_VALUE_TYPE(&gvalue);
+      success = false;
+    }
+
+    g_value_unset(&gvalue);
+    return success;
   }
 
-  // Updates a configuration of ibus-daemon or IBus engines with |gvalue|.
+  // Updates a configuration of ibus-daemon or IBus engines with |value|.
   // Returns true if the configuration is successfully updated.
   //
   // For more information, please read a comment for SetImeConfig() function
   // in chromeos_language.h.
   bool SetImeConfig(const char* section,
                     const char* config_name,
-                    const GValue* gvalue) {
+                    const ImeConfigValue& value) {
     DCHECK(section);
     DCHECK(config_name);
+    if (!section || !config_name) {
+      return false;
+    }
+
+    // Sanity check: do not preload unknown/unsupported input methods.
+    std::vector<std::string> string_list = value.string_list_value;
+    if ((value.type == ImeConfigValue::kValueTypeStringList) &&
+        !strcmp(section, kGeneralSectionName) &&
+        !strcmp(config_name, kPreloadEnginesConfigName)) {
+      FilterInputMethods(value.string_list_value, &string_list);
+    }
+  
+    // Convert the type of |value| from our structure to GValue.
+    GValue gvalue = { 0 };
+    switch (value.type) {
+      case ImeConfigValue::kValueTypeString:
+        g_value_init(&gvalue, G_TYPE_STRING);
+        g_value_set_string(&gvalue, value.string_value.c_str());
+        break;
+      case ImeConfigValue::kValueTypeInt:
+        g_value_init(&gvalue, G_TYPE_INT);
+        g_value_set_int(&gvalue, value.int_value);
+        break;
+      case ImeConfigValue::kValueTypeBool:
+        g_value_init(&gvalue, G_TYPE_BOOLEAN);
+        g_value_set_boolean(&gvalue, value.bool_value);
+        break;
+      case ImeConfigValue::kValueTypeStringList:
+        g_value_init(&gvalue, G_TYPE_VALUE_ARRAY);
+        const size_t size = string_list.size();  // don't use string_list_value.
+        GValueArray* array = g_value_array_new(size);
+        for (size_t i = 0; i < size; ++i) {
+          GValue array_element = {0};
+          g_value_init(&array_element, G_TYPE_STRING);
+          g_value_set_string(&array_element, string_list[i].c_str());
+          g_value_array_append(array, &array_element);
+        }
+        g_value_take_boxed(&gvalue, array);
+        break;
+    }
 
     IBusConfig* ibus_config = CreateConfigObject();
     g_return_val_if_fail(ibus_config, false);
     const gboolean success = ibus_config_set_value(ibus_config,
                                                    section,
                                                    config_name,
-                                                   gvalue);
+                                                   &gvalue);
     g_object_unref(ibus_config);
-
+    g_value_unset(&gvalue);
+    
     DLOG(INFO) << "SetImeConfig: " << section << "/" << config_name
                << ": result=" << success;
     return (success == TRUE);
@@ -1057,52 +1163,7 @@ bool ChromeOSGetImeConfig(InputMethodStatusConnection* connection,
                           ImeConfigValue* out_value) {
   DCHECK(out_value);
   g_return_val_if_fail(connection, FALSE);
-
-  GValue gvalue = { 0 };  // g_value_init() is not necessary.
-  if (!connection->GetImeConfig(section, config_name, &gvalue)) {
-    if (G_IS_VALUE(&gvalue)) {
-      g_value_unset(&gvalue);
-    }
-    return false;
-  }
-
-  // Convert the type of the result from GValue to our structure.
-  bool success = true;
-  GType type = G_VALUE_TYPE(&gvalue);
-  if (type == G_TYPE_STRING) {
-    const char* value = g_value_get_string(&gvalue);
-    DCHECK(value);
-    out_value->type = ImeConfigValue::kValueTypeString;
-    out_value->string_value = value;
-  } else if (type == G_TYPE_INT) {
-    out_value->type = ImeConfigValue::kValueTypeInt;
-    out_value->int_value = g_value_get_int(&gvalue);
-  } else if (type == G_TYPE_BOOLEAN) {
-    out_value->type = ImeConfigValue::kValueTypeBool;
-    out_value->bool_value = g_value_get_boolean(&gvalue);
-  } else if (type == G_TYPE_VALUE_ARRAY) {
-    out_value->type = ImeConfigValue::kValueTypeStringList;
-    out_value->string_list_value.clear();
-    GValueArray* array
-        = reinterpret_cast<GValueArray*>(g_value_get_boxed(&gvalue));
-    for (guint i = 0; array && (i < array->n_values); ++i) {
-      const GType element_type = G_VALUE_TYPE(&(array->values[i]));
-      if (element_type != G_TYPE_STRING) {
-        LOG(ERROR) << "Array element type is not STRING: " << element_type;
-        g_value_unset(&gvalue);
-        return false;
-      }
-      const char* value = g_value_get_string(&(array->values[i]));
-      DCHECK(value);
-      out_value->string_list_value.push_back(value);
-    }
-  } else {
-    LOG(ERROR) << "Unsupported config type: " << G_VALUE_TYPE(&gvalue);
-    success = false;
-  }
-
-  g_value_unset(&gvalue);
-  return success;
+  return connection->GetImeConfig(section, config_name, out_value);
 }
 
 extern "C"
@@ -1111,40 +1172,7 @@ bool ChromeOSSetImeConfig(InputMethodStatusConnection* connection,
                           const char* config_name,
                           const ImeConfigValue& value) {
   g_return_val_if_fail(connection, FALSE);
-
-  // Convert the type of |value| from our structure to GValue.
-  GValue gvalue = { 0 };
-  switch (value.type) {
-    case ImeConfigValue::kValueTypeString:
-      g_value_init(&gvalue, G_TYPE_STRING);
-      g_value_set_string(&gvalue, value.string_value.c_str());
-      break;
-    case ImeConfigValue::kValueTypeInt:
-      g_value_init(&gvalue, G_TYPE_INT);
-      g_value_set_int(&gvalue, value.int_value);
-      break;
-    case ImeConfigValue::kValueTypeBool:
-      g_value_init(&gvalue, G_TYPE_BOOLEAN);
-      g_value_set_boolean(&gvalue, value.bool_value);
-      break;
-    case ImeConfigValue::kValueTypeStringList:
-      g_value_init(&gvalue, G_TYPE_VALUE_ARRAY);
-      const size_t size = value.string_list_value.size();
-      GValueArray* array = g_value_array_new(size);
-      for (size_t i = 0; i < size; ++i) {
-        GValue array_element = {0};
-        g_value_init(&array_element, G_TYPE_STRING);
-        g_value_set_string(&array_element, value.string_list_value[i].c_str());
-        g_value_array_append(array, &array_element);
-      }
-      g_value_take_boxed(&gvalue, array);
-      break;
-  }
-
-  const bool success = connection->SetImeConfig(section, config_name, &gvalue);
-  g_value_unset(&gvalue);
-
-  return success;
+  return connection->SetImeConfig(section, config_name, value);
 }
 
 extern "C"
