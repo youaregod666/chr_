@@ -29,10 +29,6 @@ enum WmIpcWindowType {
   //             Chrome window.
   WM_IPC_WINDOW_CHROME_TOPLEVEL = 1,
 
-  // TODO: Delete these.
-  DEPRECATED_WM_IPC_WINDOW_CHROME_TAB_SUMMARY = 2,
-  DEPRECATED_WM_IPC_WINDOW_CHROME_FLOATING_TAB = 3,
-
   // The contents of a popup window.
   //   param[0]: X ID of associated titlebar, which must be mapped before
   //             its content.
@@ -43,9 +39,6 @@ enum WmIpcWindowType {
   // A small window placed above the panel's contents containing its title
   // and a close button.
   WM_IPC_WINDOW_CHROME_PANEL_TITLEBAR = 5,
-
-  // TODO: Delete this.
-  DEPRECATED_WM_IPC_WINDOW_CREATE_BROWSER_WINDOW = 6,
 
   // A Chrome info bubble (e.g. the bookmark bubble).  These are
   // transient RGBA windows; we skip the usual transient behavior of
@@ -89,7 +82,10 @@ enum WmIpcWindowType {
   WM_IPC_WINDOW_LOGIN_GUEST = 14,
   WM_IPC_WINDOW_LOGIN_BACKGROUND = 15,
 
-  // NEXT VALUE TO USE: 16
+  // A window that Chrome opens when locking the screen.
+  WM_IPC_WINDOW_CHROME_SCREEN_LOCKER = 16,
+
+  // NEXT VALUE TO USE: 17
 };
 
 inline bool WmIpcWindowTypeIsChrome(WmIpcWindowType type) {
@@ -109,11 +105,6 @@ inline bool WmIpcWindowTypeIsChrome(WmIpcWindowType type) {
 enum WmIpcMessageType {
   WM_IPC_MESSAGE_UNKNOWN = 0,
 
-  // TODO: Delete these.
-  DEPRECATED_WM_IPC_MESSAGE_CHROME_NOTIFY_FLOATING_TAB_OVER_TAB_SUMMARY = 1,
-  DEPRECATED_WM_IPC_MESSAGE_CHROME_NOTIFY_FLOATING_TAB_OVER_TOPLEVEL = 2,
-  DEPRECATED_WM_IPC_MESSAGE_CHROME_SET_TAB_SUMMARY_VISIBILITY = 3,
-
   // Tell the WM to collapse or expand a panel.
   //   param[0]: X ID of the panel window.
   //   param[1]: Desired state (0 means collapsed, 1 means expanded).
@@ -125,9 +116,6 @@ enum WmIpcMessageType {
   // TODO: Deprecate this; Chrome can just watch for changes to the
   // _CHROME_STATE property to get the same information.
   WM_IPC_MESSAGE_CHROME_NOTIFY_PANEL_STATE = 5,
-
-  // TODO: Delete this.
-  DEPRECATED_WM_IPC_MESSAGE_WM_MOVE_FLOATING_TAB = 6,
 
   // Notify the WM that a panel has been dragged.
   //   param[0]: X ID of the panel's content window.
@@ -150,17 +138,11 @@ enum WmIpcMessageType {
   //   param[0]: X ID of the panel's content window.
   WM_IPC_MESSAGE_WM_NOTIFY_PANEL_DRAG_COMPLETE = 8,
 
-  // TODO: Delete this.
-  WM_IPC_MESSAGE_DEPRECATED_WM_FOCUS_WINDOW = 9,
-
   // Notify Chrome that the layout mode (for example, overview or
   // active) has changed.
   //   param[0]: New mode (0 means active, 1 means overview).
   //   param[1]: Was the mode cancelled? (0 means no, 1 means yes).
   WM_IPC_MESSAGE_CHROME_NOTIFY_LAYOUT_MODE = 10,
-
-  // TODO: Delete this.
-  DEPRECATED_WM_IPC_MESSAGE_WM_SWITCH_TO_OVERVIEW_MODE = 11,
 
   // Let the WM know which version of this file Chrome is using.  It's
   // difficult to make changes synchronously to Chrome and the WM (our
