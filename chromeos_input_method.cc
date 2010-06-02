@@ -516,6 +516,11 @@ class InputMethodStatusConnection {
       g_signal_handlers_disconnect_by_func(
           ibus_,
           reinterpret_cast<gpointer>(
+              G_CALLBACK(IBusBusDisconnectedCallback)),
+          this);
+      g_signal_handlers_disconnect_by_func(
+          ibus_,
+          reinterpret_cast<gpointer>(
               G_CALLBACK(IBusBusGlobalEngineChangedCallback)),
           this);
       // Since the connection which ibus_ has is a "shared connection". We
@@ -576,7 +581,11 @@ class InputMethodStatusConnection {
                      G_CALLBACK(DBusProxyDestroyCallback),
                      this);
 
-    // Register the callback function for "global-engine-changed".
+    // Register the callback function for IBusBus signals.
+    g_signal_connect(ibus_,
+                     "disconnected",
+                     G_CALLBACK(IBusBusDisconnectedCallback),
+                     this);
     g_signal_connect(ibus_,
                      "global-engine-changed",
                      G_CALLBACK(IBusBusGlobalEngineChangedCallback),
@@ -950,6 +959,11 @@ class InputMethodStatusConnection {
     LOG(ERROR) << "D-Bus connection to candidate_window is terminated!";
   }
 
+  static void IBusBusDisconnectedCallback(IBusBus* bus, gpointer user_data) {
+    LOG(ERROR) << "IBus connection to ibus-daemon is terminated!";
+    // TODO(yusukes): Desturct |ibus_| object.
+  }
+
   static void IBusBusGlobalEngineChangedCallback(
       IBusBus* bus, gpointer user_data) {
     InputMethodStatusConnection* self
@@ -959,7 +973,7 @@ class InputMethodStatusConnection {
     }
     DLOG(INFO) << "Global engine is changed";
   }
-  
+
   // Dispatches signals from candidate_window. In this function, we use the
   // IBus's DBus binding (rather than the dbus-glib and its C++ wrapper).
   // This is because arguments of "RegisterProperties" and "UpdateProperty"
