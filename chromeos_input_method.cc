@@ -833,7 +833,15 @@ class InputMethodStatusConnection {
       LOG(ERROR) << "ibus_bus_get_connection() failed";
       return NULL;
     }
-    
+    if (!ibus_connection_is_connected(ibus_connection)) {
+      LOG(ERROR) << "ibus_connection_is_connected() failed";
+      return NULL;
+    }
+
+    // TODO(satorux): Creating an IBusConfig is expensive. We should reuse
+    // this object. That is, SetImeConfig() is called many times from
+    // Chrome, and every time it's called, IBusConfig object is created
+    // here, which is not efficient.
     IBusConfig* ibus_config = ibus_config_new(ibus_connection);
     if (!ibus_config) {
       LOG(ERROR) << "ibus_config_new() failed";
