@@ -20,12 +20,12 @@ namespace chromeos {  // NOLINT
 namespace { // NOLINT
 
 // Connman D-Bus service identifiers.
-static const char* kConnmanManagerInterface = "org.moblin.connman.Manager";
-static const char* kConnmanServiceInterface = "org.moblin.connman.Service";
-static const char* kConnmanServiceName = "org.moblin.connman";
-static const char* kConnmanIPConfigInterface = "org.moblin.connman.IPConfig";
-static const char* kConnmanDeviceInterface = "org.moblin.connman.Device";
-static const char* kConnmanProfileInterface = "org.moblin.connman.Profile";
+static const char* kConnmanManagerInterface = "org.chromium.flimflam.Manager";
+static const char* kConnmanServiceInterface = "org.chromium.flimflam.Service";
+static const char* kConnmanServiceName = "org.chromium.flimflam";
+static const char* kConnmanIPConfigInterface = "org.chromium.flimflam.IPConfig";
+static const char* kConnmanDeviceInterface = "org.chromium.flimflam.Device";
+static const char* kConnmanProfileInterface = "org.chromium.flimflam.Profile";
 
 // Connman function names.
 static const char* kGetPropertiesFunction = "GetProperties";
