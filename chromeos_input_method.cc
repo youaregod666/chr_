@@ -185,8 +185,13 @@ void AddInputMethodNames(
 // Returns IBusInputContext for |input_context_path|. NULL on errors.
 IBusInputContext* GetInputContext(
     const std::string& input_context_path, IBusBus* ibus) {
+  IBusConnection* connection = ibus_bus_get_connection(ibus);
+  if (!connection) {
+    LOG(ERROR) << "IBusConnection is null";
+    return NULL;
+  }
   IBusInputContext* context = ibus_input_context_get_input_context(
-      input_context_path.c_str(), ibus_bus_get_connection(ibus));
+      input_context_path.c_str(), connection);
   if (!context) {
     LOG(ERROR) << "IBusInputContext is null: " << input_context_path;
   }
@@ -980,8 +985,14 @@ class InputMethodStatusConnection {
 
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(object);
-    IBusError* error = NULL;
+    // Checks the connection to ibus-daemon is still alive. Note that the
+    // |connection| object is for candidate_window, not for ibus-daemon!
+    if (!self->ConnectionIsAlive()) {
+      LOG(ERROR) << "D-Bus or IBus connection (likely the latter) is lost!";
+      return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+    }
 
+    IBusError* error = NULL;
     if (ibus_message_is_signal(message,
                                kCandidateWindowInterface,
                                "FocusIn")) {
