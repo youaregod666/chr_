@@ -29,11 +29,14 @@ enum WmIpcWindowType {
   //             Chrome window.
   WM_IPC_WINDOW_CHROME_TOPLEVEL = 1,
 
-  // The contents of a popup window.
+  // The contents of a popup window, displayed as a panel.
   //   param[0]: X ID of associated titlebar, which must be mapped before
   //             its content.
   //   param[1]: Initial state for panel (0 is collapsed, 1 is expanded).
   //   param[2]: Should the panel be initially focused? (0 is no, 1 is yes).
+  //   param[3]: Panel's creator.  If this contains the X ID of another
+  //             panel's content window, this panel will be opened to the
+  //             immediate left of it.
   WM_IPC_WINDOW_CHROME_PANEL_CONTENT = 4,
 
   // A small window placed above the panel's contents containing its title
