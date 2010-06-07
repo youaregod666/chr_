@@ -482,6 +482,7 @@ class InputMethodStatusConnection {
         focus_changed_(focus_changed),
         language_library_(language_library),
         ibus_(NULL),
+        dbus_proxy_(),
         dbus_proxy_is_alive_(false),
         input_context_path_("") {
     DCHECK(current_input_method_changed),
@@ -492,11 +493,9 @@ class InputMethodStatusConnection {
   }
 
   ~InputMethodStatusConnection() {
-    // We can call gproxy() only when the operator bool returns true (or DCHECK
-    // fails.)
-    if (dbus_proxy_.get() && (dbus_proxy_->operator bool())) {
+    if (dbus_proxy_) {
       g_signal_handlers_disconnect_by_func(
-          dbus_proxy_->gproxy(),
+          dbus_proxy_.gproxy(),
           reinterpret_cast<gpointer>(G_CALLBACK(DBusProxyDestroyCallback)),
           this);
     }
@@ -566,20 +565,19 @@ class InputMethodStatusConnection {
     // does not work without calling dbus::Proxy().
     // TODO(yusukes): Investigate how we can eliminate the call.
     const bool kConnectToNameOwner = true;
-    dbus_proxy_.reset(new dbus::Proxy(*dbus_connection_,
-                                      kCandidateWindowService,
-                                      kCandidateWindowObjectPath,
-                                      kCandidateWindowInterface,
-                                      kConnectToNameOwner));
-    // The operator bool checks if a D-Bus connection is established or not..
-    if (!(dbus_proxy_->operator bool())) {
+    dbus_proxy_ = dbus::Proxy(*dbus_connection_,
+                              kCandidateWindowService,
+                              kCandidateWindowObjectPath,
+                              kCandidateWindowInterface,
+                              kConnectToNameOwner);
+    if (!dbus_proxy_) {
       LOG(ERROR) << "Failed to connect to the candidate_window.";
       return false;
     }
 
     // Register the callback function for "destroy".
     dbus_proxy_is_alive_ = true;
-    g_signal_connect(dbus_proxy_->gproxy(),
+    g_signal_connect(dbus_proxy_.gproxy(),
                      "destroy",
                      G_CALLBACK(DBusProxyDestroyCallback),
                      this);
@@ -1093,7 +1091,7 @@ class InputMethodStatusConnection {
   // Connections to IBus and DBus.
   IBusBus* ibus_;
   scoped_ptr<dbus::BusConnection> dbus_connection_;
-  scoped_ptr<dbus::Proxy> dbus_proxy_;
+  dbus::Proxy dbus_proxy_;
   bool dbus_proxy_is_alive_;
 
   // Current input context path.
