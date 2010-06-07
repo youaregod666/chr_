@@ -636,6 +636,9 @@ class InputMethodStatusConnection {
 
   // Called by cros API ChromeOS(Activate|Deactive)ImeProperty().
   void SetImePropertyActivated(const char* key, bool activated) {
+    if (!key || (key[0] == '\0')) {
+      return;
+    }
     if (input_context_path_.empty()) {
       LOG(ERROR) << "Input context is unknown";
       return;
@@ -654,14 +657,11 @@ class InputMethodStatusConnection {
 
   // Called by cros API ChromeOSChangeInputMethod().
   bool ChangeInputMethod(const char* name) {
-    if (input_context_path_.empty()) {
-      LOG(ERROR) << "Input context is unknown";
+    if (!name) {
       return false;
     }
-
-    IBusInputContext* context = GetInputContext(input_context_path_, ibus_);
-    if (!context) {
-      LOG(ERROR) << "Input context is unknown";
+    if (!InputMethodIdIsWhitelisted(name)) {
+      LOG(ERROR) << "Input method '" << name << "' is not supported";
       return false;
     }
 
@@ -674,8 +674,7 @@ class InputMethodStatusConnection {
     // consistent.
     RegisterProperties(NULL);
 
-    ibus_input_context_set_engine(context, name);
-    g_object_unref(context);
+    ibus_bus_set_global_engine(ibus_, name);
     UpdateUI();
     return true;
   }
