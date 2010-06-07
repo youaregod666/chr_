@@ -32,7 +32,6 @@ const char kPreloadEnginesConfigName[] = "preload_engines";
 // should disable "ja:anthy", "zh:cangjie", and "zh:pinyin" engines in
 // ibus-m17n since we (will) have better equivalents outside of ibus-m17n.
 const char* kInputMethodIdsWhitelist[] = {
-  "anthy",    // ibus-anthy (for libcros debugging on Ubuntu 9.10) - Japanese
   "bopomofo",  // Bopomofo engine in ibus-pinyin - Traditional Chinese
   "chewing",  // ibus-chewing - Traditional Chinese
   "hangul",   // ibus-hangul - Korean
