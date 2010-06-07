@@ -8,7 +8,7 @@
 #include <vector>
 #include <cstring>
 
-#include "marshal.h"  // NOLINT
+#include "marshal.glibmarshal.h"  // NOLINT
 #include "base/string_util.h"
 #include "chromeos/dbus/dbus.h"  // NOLINT
 #include "chromeos/glib/object.h"  // NOLINT

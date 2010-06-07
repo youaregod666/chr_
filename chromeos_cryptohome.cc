@@ -8,7 +8,7 @@
 #include <chromeos/dbus/service_constants.h>
 #include <chromeos/glib/object.h>
 
-#include "marshal.h"  // NOLINT
+#include "marshal.glibmarshal.h"  // NOLINT
 
 namespace chromeos {  // NOLINT
 

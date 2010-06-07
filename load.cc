@@ -19,6 +19,7 @@
 #include "chromeos_speech_synthesis.h"  // NOLINT
 #include "chromeos_synaptics.h"  // NOLINT
 #include "chromeos_update.h"  // NOLINT
+#include "chromeos_update_engine.h"  // NOLINT
 #include "chromeos_syslogs.h"  // NOLINT
 
 namespace chromeos {  // NOLINT //
@@ -175,6 +176,12 @@ DECL_FUNC_0(CryptohomeUnmount, bool);
 DECL_FUNC_1(Update, bool, UpdateInformation*);
 DECL_FUNC_1(CheckForUpdate, bool, UpdateInformation*);
 
+// Update Engine (replacing Update library)
+DECL_FUNC_2(MonitorUpdateStatus, UpdateStatusConnection, UpdateMonitor, void*);
+DECL_FUNC_1(DisconnectUpdateProgress, void, UpdateStatusConnection);
+DECL_FUNC_1(RetrieveUpdateProgress, bool, UpdateProgress*);
+DECL_FUNC_0(InitiateUpdateCheck, bool);
+
 DECL_FUNC_1(Speak, bool, const char*);
 DECL_FUNC_1(SetSpeakProperties, bool, const char*);
 DECL_FUNC_0(StopSpeaking, bool);
@@ -327,6 +334,12 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   // Update
   INIT_FUNC(Update);
   INIT_FUNC(CheckForUpdate);
+  
+  // Update Engine
+  INIT_FUNC(MonitorUpdateStatus);
+  INIT_FUNC(DisconnectUpdateProgress);
+  INIT_FUNC(RetrieveUpdateProgress);
+  INIT_FUNC(InitiateUpdateCheck);
 
   INIT_FUNC(Speak);
   INIT_FUNC(SetSpeakProperties);
