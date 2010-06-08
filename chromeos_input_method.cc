@@ -478,18 +478,18 @@ class InputMethodStatusConnection {
           this);
     }
 
-    if (dbus_connection_.get()) {
-      // Close |dbus_connection_| since the connection is "private connection"
-      // and we know |this| is the only instance which uses the
-      // |dbus_connection_|. Otherwise, we may see an error message from dbus
-      // library like "The last reference on a connection was dropped without
-      // closing the connection."
-      DBusConnection* raw_connection = dbus_g_connection_get_connection(
-          dbus_connection_->g_connection());
-      if (raw_connection) {
-        dbus_connection_close(raw_connection);
-      }
-    }
+    // We don't close |dbus_connection_| since it actually shares the same
+    // socket file descriptor with the connection used in IBusBus. If we
+    // close |dbus_connection_| here, the connection used in the IBus IM
+    // module (im-ibus.so) and |ibus_| will also be closed, that causes
+    // input methods to malfunction in Chrome.
+    //
+    // Note that not closing |dbus_connection_| produces DBus warnings
+    // like below, but it's ok as warnings are not critical (See also
+    // crosbug.com/3596):
+    //
+    // The last reference on a connection was dropped without closing the
+    // connection.
 
     if (ibus_) {
       // Destruct IBus object.
