@@ -104,12 +104,13 @@
 //  36: Fix crashing but with device_path set to unknown.
 //  37: Added CryptohomeGetSystemSalt, CryptohomeMigrateKey, and
 //      CryptohomeRemove.
+//  38: Added InitTts function to the speech synthesis library.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 37
+  kCrosAPIVersion = 38
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

@@ -186,6 +186,7 @@ DECL_FUNC_1(Speak, bool, const char*);
 DECL_FUNC_1(SetSpeakProperties, bool, const char*);
 DECL_FUNC_0(StopSpeaking, bool);
 DECL_FUNC_0(IsSpeaking, bool);
+DECL_FUNC_1(InitTts, void, InitStatusCallback);
 
 // Syslogs
 DECL_FUNC_1(GetSystemLogs, LogDictionaryType*, FilePath*);
@@ -345,6 +346,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(SetSpeakProperties);
   INIT_FUNC(StopSpeaking);
   INIT_FUNC(IsSpeaking);
+  INIT_FUNC(InitTts);
 
   // Syslogs
   INIT_FUNC(GetSystemLogs);

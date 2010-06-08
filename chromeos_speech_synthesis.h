@@ -7,10 +7,15 @@
 
 namespace chromeos { // NOLINT
 
+class OpaqueTTSInitConnection;
+typedef OpaqueTTSInitConnection* TTSInitConnection;
+typedef void(*InitStatusCallback)(bool success);
+
 extern bool (*Speak)(const char* text);
 extern bool (*SetSpeakProperties)(const char* props);
 extern bool (*StopSpeaking)();
 extern bool (*IsSpeaking) ();
+extern void (*InitTts) (InitStatusCallback);
 
 }  // namespace chromeos
 
