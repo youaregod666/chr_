@@ -482,6 +482,7 @@ class InputMethodStatusConnection {
         focus_changed_(focus_changed),
         language_library_(language_library),
         ibus_(NULL),
+        ibus_config_(NULL),
         dbus_proxy_(),
         dbus_proxy_is_alive_(false),
         input_context_path_("") {
@@ -512,6 +513,15 @@ class InputMethodStatusConnection {
     //
     // The last reference on a connection was dropped without closing the
     // connection.
+
+    // It's unsafe to unref ibus_config_ if the ibus connection is closed,
+    // so we check the connection here. TODO(satorux,yusukes): Remove the
+    // check once it's fixed in the upstream. See:
+    // http://crosbug.com/3962
+    // http://code.google.com/p/ibus/issues/detail?id=959
+    if (ibus_config_ && ibus_ && ibus_bus_is_connected(ibus_)) {
+      g_object_unref(ibus_config_);
+    }
 
     if (ibus_) {
       // Destruct IBus object.
@@ -583,6 +593,25 @@ class InputMethodStatusConnection {
       return false;
     }
 
+    IBusConnection* ibus_connection = ibus_bus_get_connection(ibus_);
+    // The connection should be alive as we've already checked it with
+    // ibus_bus_is_connected() but just in case.
+    if (!ibus_connection) {
+      LOG(ERROR) << "ibus_bus_get_connection() failed";
+      return false;
+    }
+    if (!ibus_connection_is_connected(ibus_connection)) {
+      LOG(ERROR) << "ibus_connection_is_connected() failed";
+      return false;
+    }
+
+    ibus_config_ = ibus_config_new(ibus_connection);
+    if (!ibus_config_) {
+      LOG(ERROR) << "ibus_config_new() failed";
+      return false;
+    }
+    g_object_ref_sink(ibus_config_);  // ibus_config_ is floating.
+
     // Register the callback function for IBusBus signals.
     g_signal_connect(ibus_,
                      "disconnected",
@@ -592,7 +621,7 @@ class InputMethodStatusConnection {
                      "global-engine-changed",
                      G_CALLBACK(IBusBusGlobalEngineChangedCallback),
                      this);
-    
+
     // Register DBus signal handler.
     dbus_connection_add_filter(
         dbus_g_connection_get_connection(dbus_connection_->g_connection()),
@@ -695,14 +724,15 @@ class InputMethodStatusConnection {
     }
     GValue gvalue = { 0 };  // g_value_init() is not necessary.
 
-    IBusConfig* ibus_config = CreateConfigObject();
-    g_return_val_if_fail(ibus_config, false);
-
+    // Check if the connection is alive. The config object is invalidated
+    // if the connection has been closed.
+    if (!ConnectionIsAlive()) {
+      return false;
+    }
     // TODO(yusukes): make sure the get_value() function does not abort even
     // when the ibus-memconf process does not exist.
     bool success =
-        ibus_config_get_value(ibus_config, section, config_name, &gvalue);
-    g_object_unref(ibus_config);
+        ibus_config_get_value(ibus_config_, section, config_name, &gvalue);
     if (!success) {
       if (G_IS_VALUE(&gvalue)) {
         g_value_unset(&gvalue);
@@ -769,7 +799,7 @@ class InputMethodStatusConnection {
         !strcmp(config_name, kPreloadEnginesConfigName)) {
       FilterInputMethods(value.string_list_value, &string_list);
     }
-  
+
     // Convert the type of |value| from our structure to GValue.
     GValue gvalue = { 0 };
     switch (value.type) {
@@ -799,15 +829,16 @@ class InputMethodStatusConnection {
         break;
     }
 
-    IBusConfig* ibus_config = CreateConfigObject();
-    g_return_val_if_fail(ibus_config, false);
-    const gboolean success = ibus_config_set_value(ibus_config,
+    // See comments in GetImeConfig() where ibus_config_get_value() is used.
+    if (!ConnectionIsAlive()) {
+      return false;
+    }
+    const gboolean success = ibus_config_set_value(ibus_config_,
                                                    section,
                                                    config_name,
                                                    &gvalue);
-    g_object_unref(ibus_config);
     g_value_unset(&gvalue);
-    
+
     DLOG(INFO) << "SetImeConfig: " << section << "/" << config_name
                << ": result=" << success;
     return (success == TRUE);
@@ -817,41 +848,8 @@ class InputMethodStatusConnection {
   bool ConnectionIsAlive() {
     return dbus_proxy_is_alive_ && ibus_ && ibus_bus_is_connected(ibus_);
   }
-  
+
  private:
-  // Creates IBusConfig object. Caller have to call g_object_unref() for the
-  // returned object.
-  IBusConfig* CreateConfigObject() {
-    // Get the IBus connection which is owned by ibus_. ibus_bus_get_connection
-    // nor ibus_config_new don't ref() the |ibus_connection| object. This means
-    // that the |ibus_connection| object could be destructed, regardless of
-    // whether an IBusConfig object exists, when ibus-daemon reboots. For this
-    // reason, it seems to be safer to create IBusConfig object every time
-    // using a fresh pointer which is returned from ibus_bus_get_connection(),
-    // rather than holding it as a member varibale of this class.
-    IBusConnection* ibus_connection = ibus_bus_get_connection(ibus_);
-    if (!ibus_connection) {
-      LOG(ERROR) << "ibus_bus_get_connection() failed";
-      return NULL;
-    }
-    if (!ibus_connection_is_connected(ibus_connection)) {
-      LOG(ERROR) << "ibus_connection_is_connected() failed";
-      return NULL;
-    }
-
-    // TODO(satorux): Creating an IBusConfig is expensive. We should reuse
-    // this object. That is, SetImeConfig() is called many times from
-    // Chrome, and every time it's called, IBusConfig object is created
-    // here, which is not efficient.
-    IBusConfig* ibus_config = ibus_config_new(ibus_connection);
-    if (!ibus_config) {
-      LOG(ERROR) << "ibus_config_new() failed";
-      return NULL;
-    }
-
-    return ibus_config;
-  }
-
   // Handles "FocusIn" signal from the candidate_window process.
   void FocusIn(const char* input_context_path) {
     DCHECK(input_context_path) << "NULL context passed";
@@ -1090,6 +1088,7 @@ class InputMethodStatusConnection {
 
   // Connections to IBus and DBus.
   IBusBus* ibus_;
+  IBusConfig* ibus_config_;
   scoped_ptr<dbus::BusConnection> dbus_connection_;
   dbus::Proxy dbus_proxy_;
   bool dbus_proxy_is_alive_;
