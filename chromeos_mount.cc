@@ -48,17 +48,33 @@ MountStatus* CopyFromVector(const std::vector<DiskStatus>& services) {
 
 bool DeviceIsParentRemoveable(const dbus::BusConnection& bus,
                               dbus::Proxy& proxy) {
-  bool removeable = false;
+  // Assume that all devices which are not on sda are removeable
+  std::string devpath;
   if (!dbus::RetrieveProperty(proxy,
                               kDeviceKitDeviceInterface,
-                              "device-is-removable",
-                              &removeable)) {
+                              "device-file",
+                              &devpath)) {
     // Since we should always be able to get this property, if we can't,
     // there is some problem, so we should return null.
-    DLOG(WARNING) << "unable to determine if device is removeable";
+    DLOG(ERROR) << "unable to get the device-file";
     return false;
   }
-  return removeable;
+  // If this device is on sda, then its not removeable, otherwise
+  // make sure that its a drive before returning.
+  if (devpath == "/dev/sda") {
+    return false;
+  }
+  bool val;
+  if (!dbus::RetrieveProperty(proxy,
+                              kDeviceKitDeviceInterface,
+                              "device-is-drive",
+                              &val)) {
+    // Since we should always be able to get this property, if we can't,
+    // there is some problem, so we should return null.
+    DLOG(ERROR) << "unable to determine if device is a drive";
+    return false;
+  }
+  return val;
 }
 
 bool DeviceIsRemoveable(const dbus::BusConnection& bus, dbus::Proxy& proxy) {
