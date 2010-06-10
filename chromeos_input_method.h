@@ -144,7 +144,13 @@ struct ImeConfigValue {
         stream << ", bool_value=" << (bool_value ? "true" : "false");
         break;
       case kValueTypeStringList:
-        // TODO(yusukes): Support this type.
+        stream << ", string_list_value=";
+        for (size_t i = 0; i < string_list_value.size(); ++i) {
+          if (i) {
+            stream << ",";
+          }
+          stream << string_list_value[i];
+        }
         break;
     }
     return stream.str();
