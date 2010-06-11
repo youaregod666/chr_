@@ -117,7 +117,7 @@ CryptohomeBlob ChromeOSCryptohomeGetSystemSalt() {
   }
   CryptohomeBlob system_salt;
   system_salt.resize(salt->len);
-  if(system_salt.size() == salt->len) {
+  if (system_salt.size() == salt->len) {
     memcpy(&system_salt[0], static_cast<const void*>(salt->data), salt->len);
   } else {
     system_salt.clear();
@@ -152,12 +152,14 @@ bool ChromeOSCryptohomeIsMounted() {
 }
 
 extern "C"
-bool ChromeOSCryptohomeMount(const char* user_email, const char* key) {
+bool ChromeOSCryptohomeMountAllowFail(const char* user_email, const char* key,
+                                      int* mount_error) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy proxy(bus,
                     cryptohome::kCryptohomeServiceName,
                     cryptohome::kCryptohomeServicePath,
                     cryptohome::kCryptohomeInterface);
+  gint local_mount_error = 0;
   gboolean done = false;
   glib::ScopedError error;
 
@@ -169,11 +171,66 @@ bool ChromeOSCryptohomeMount(const char* user_email, const char* key) {
                            G_TYPE_STRING,
                            key,
                            G_TYPE_INVALID,
+                           G_TYPE_INT,
+                           &local_mount_error,
                            G_TYPE_BOOLEAN,
                            &done,
                            G_TYPE_INVALID)) {
     LOG(WARNING) << cryptohome::kCryptohomeMount << " failed: "
                  << (error->message ? error->message : "Unknown Error.");
+  }
+  if (mount_error) {
+    *mount_error = local_mount_error;
+  }
+  return done;
+}
+
+// This function implements the legacy functionality for CryptohomeMount, where
+// password migration wasn't supported.  To support that, if there is a key
+// failure when attempting to mount the user's cryptohome, it assumes a password
+// change and deletes the old cryptohome and creates a new one.
+// TODO(fes): Remove this once the login UI has been updated with password
+// migration functionality.
+extern "C"
+bool ChromeOSCryptohomeMount(const char* user_email, const char* key) {
+  int mount_error;
+  if (ChromeOSCryptohomeMountAllowFail(user_email, key, &mount_error)) {
+    return true;
+  }
+  if (mount_error != kCryptohomeMountErrorKeyFailure) {
+    return false;
+  }
+  if (!ChromeOSCryptohomeRemove(user_email)) {
+    return false;
+  }
+  return ChromeOSCryptohomeMountAllowFail(user_email, key, &mount_error);
+}
+
+extern "C"
+bool ChromeOSCryptohomeMountGuest(int* mount_error) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gint local_mount_error = 0;
+  gboolean done = false;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeMountGuest,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_INT,
+                           &local_mount_error,
+                           G_TYPE_BOOLEAN,
+                           &done,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeMountGuest << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+  if (mount_error) {
+    *mount_error = local_mount_error;
   }
   return done;
 }

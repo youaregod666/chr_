@@ -169,7 +169,9 @@ DECL_FUNC_3(CryptohomeMigrateKey, bool, const char*, const char*, const char*);
 DECL_FUNC_1(CryptohomeRemove, bool, const char*);
 DECL_FUNC_0(CryptohomeGetSystemSalt, CryptohomeBlob);
 DECL_FUNC_0(CryptohomeIsMounted, bool);
+DECL_FUNC_3(CryptohomeMountAllowFail, bool, const char*, const char*, int*);
 DECL_FUNC_2(CryptohomeMount, bool, const char*, const char*);
+DECL_FUNC_1(CryptohomeMountGuest, bool, int*);
 DECL_FUNC_0(CryptohomeUnmount, bool);
 
 // Update library
@@ -329,7 +331,9 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(CryptohomeRemove);
   INIT_FUNC(CryptohomeGetSystemSalt);
   INIT_FUNC(CryptohomeIsMounted);
+  INIT_FUNC(CryptohomeMountAllowFail);
   INIT_FUNC(CryptohomeMount);
+  INIT_FUNC(CryptohomeMountGuest);
   INIT_FUNC(CryptohomeUnmount);
 
   // Update

@@ -13,6 +13,12 @@ namespace chromeos { // NOLINT
 // headers.
 typedef std::vector<unsigned char> CryptohomeBlob;
 
+const int kCryptohomeMountErrorNone = 0;
+const int kCryptohomeMountErrorFatal = 1 << 0;
+const int kCryptohomeMountErrorKeyFailure = 1 << 1;
+const int kCryptohomeMountErrorMountPointBusy = 1 << 2;
+const int kCryptohomeMountErrorNoSuchFile = 1 << 3;
+
 extern bool (*CryptohomeCheckKey)(const char* user_email,
                                   const char* key);
 extern bool (*CryptohomeMigrateKey)(const char* user_email,
@@ -23,6 +29,10 @@ extern CryptohomeBlob (*CryptohomeGetSystemSalt)();
 extern bool (*CryptohomeIsMounted)();
 extern bool (*CryptohomeMount)(const char* user_email,
                                const char* key);
+extern bool (*CryptohomeMountAllowFail)(const char* user_email,
+                                        const char* key,
+                                        int* mount_error);
+extern bool (*CryptohomeMountGuest)(int* mount_error);
 extern bool (*CryptohomeUnmount)();
 
 }  // namespace chromeos
