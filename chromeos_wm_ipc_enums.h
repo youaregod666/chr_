@@ -88,7 +88,15 @@ enum WmIpcWindowType {
   // A window that Chrome opens when locking the screen.
   WM_IPC_WINDOW_CHROME_SCREEN_LOCKER = 16,
 
-  // NEXT VALUE TO USE: 17
+  // A window showing the title of a tab for use in overview mode.
+  //   param[0]: X ID of snapshot window that is associated with this title.
+  WM_IPC_WINDOW_CHROME_TAB_TITLE = 17,
+
+  // A window showing the favicon of a tab for use in overview mode.
+  //   param[0]: X ID of snapshot window that is associated with this favicon.
+  WM_IPC_WINDOW_CHROME_TAB_FAVICON = 18,
+
+  // NEXT VALUE TO USE: 19
 };
 
 inline bool WmIpcWindowTypeIsChrome(WmIpcWindowType type) {
