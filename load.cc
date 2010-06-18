@@ -161,7 +161,6 @@ DECL_FUNC_0(NotifyScreenLockCompleted, void);
 DECL_FUNC_0(NotifyScreenLockRequested, void);
 DECL_FUNC_0(NotifyScreenUnlockRequested, void);
 DECL_FUNC_0(NotifyScreenUnlockCompleted, void);
-DECL_FUNC_0(NotifyScreenUnlocked, void);
 
 // Cryptohome
 DECL_FUNC_2(CryptohomeCheckKey, bool, const char*, const char*);
@@ -323,7 +322,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(NotifyScreenLockRequested);
   INIT_FUNC(NotifyScreenUnlockRequested);
   INIT_FUNC(NotifyScreenUnlockCompleted);
-  INIT_FUNC(NotifyScreenUnlocked);
 
   // Cryptohome
   INIT_FUNC(CryptohomeCheckKey);
