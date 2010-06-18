@@ -36,6 +36,7 @@ namespace {
 
 // A utility function to send a signal to PowerManager.
 void SendSignalToPowerManager(const char* signal_name) {
+  LOG(INFO) << "Sending signal '" << signal_name << "' to PowerManager:";
   chromeos::dbus::Proxy proxy(chromeos::dbus::GetSystemBusConnection(),
                               "/",
                               power_manager::kPowerManagerInterface);
@@ -43,7 +44,7 @@ void SendSignalToPowerManager(const char* signal_name) {
       "/",
       power_manager::kPowerManagerInterface,
       signal_name);
-  DCHECK(signal);
+  CHECK(signal);
   ::dbus_g_proxy_send(proxy.gproxy(), signal, NULL);
   ::dbus_message_unref(signal);
 }
@@ -96,11 +97,6 @@ void ChromeOSNotifyScreenUnlockRequested() {
   SendSignalToPowerManager(power_manager::kRequestUnlockScreenSignal);
 }
 
-extern "C"
-void ChromeOSNotifyScreenUnlocked() {
-  NOTREACHED();
-}
-
 #define SAFE_MESSAGE(e) (e.message ? e.message : "unknown error")
 
 extern "C"
@@ -113,17 +109,18 @@ ChromeOSMonitorScreenLock(ScreenLockMonitor monitor, void* object) {
   ::dbus_error_init(&error);
   DBusConnection* connection = ::dbus_g_connection_get_connection(
       dbus::GetSystemBusConnection().g_connection());
+  CHECK(connection);
   ::dbus_bus_add_match(connection, filter.c_str(), &error);
   if (::dbus_error_is_set(&error)) {
-    DLOG(WARNING) << "Failed to add a filter:" << error.name << ", message="
-                  << SAFE_MESSAGE(error);
+    LOG(WARNING) << "Failed to add a filter:" << error.name << ", message="
+                 << SAFE_MESSAGE(error);
     return NULL;
   }
 
   ScreenLockConnection result = new OpaqueScreenLockConnection(monitor, object);
   CHECK(dbus_connection_add_filter(connection, &Filter, result, NULL));
 
-  DLOG(INFO) << "Screen Lock monitoring started";
+  LOG(INFO) << "Screen Lock monitoring started";
   return result;
 }
 
@@ -133,6 +130,7 @@ void ChromeOSDisconnectScreenLock(ScreenLockConnection connection) {
       dbus::GetSystemBusConnection().g_connection());
   ::dbus_connection_remove_filter(bus, &Filter, connection);
   delete connection;
+  LOG(INFO) << "Screen Lock monitor disconnected";
 }
 
 }  // namespace chromeos

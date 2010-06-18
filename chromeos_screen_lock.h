@@ -36,9 +36,6 @@ extern void (*NotifyScreenLockRequested)();
 // Notifies PowerManager that the user requested to unlock the screen.
 extern void (*NotifyScreenUnlockRequested)();
 
-// obsolete
-extern void (*NotifyScreenUnlocked)();
-
 }  // namespace chromeos
 
 #endif  // CROS_CHROMEOS_SCREEN_LOCK_H_
