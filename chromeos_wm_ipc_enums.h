@@ -92,9 +92,9 @@ enum WmIpcWindowType {
   //   param[0]: X ID of snapshot window that is associated with this title.
   WM_IPC_WINDOW_CHROME_TAB_TITLE = 17,
 
-  // A window showing the favicon of a tab for use in overview mode.
-  //   param[0]: X ID of snapshot window that is associated with this favicon.
-  WM_IPC_WINDOW_CHROME_TAB_FAVICON = 18,
+  // A window showing the fav icon of a tab for use in overview mode.
+  //   param[0]: X ID of snapshot window that is associated with this fav icon.
+  WM_IPC_WINDOW_CHROME_TAB_FAV_ICON = 18,
 
   // NEXT VALUE TO USE: 19
 };
