@@ -37,6 +37,9 @@ enum WmIpcWindowType {
   //   param[3]: Panel's creator.  If this contains the X ID of another
   //             panel's content window, this panel will be opened to the
   //             immediate left of it.
+  //   param[4]: How the user should be able to resize the panel.  See
+  //             the WmIpcPanelUserResizeType enum; defaults to allowing
+  //             both horizontal and vertical resizing.
   WM_IPC_WINDOW_CHROME_PANEL_CONTENT = 4,
 
   // A small window placed above the panel's contents containing its title
@@ -212,6 +215,15 @@ enum WmIpcSystemKey {
   WM_IPC_SYSTEM_KEY_VOLUME_MUTE = 0,
   WM_IPC_SYSTEM_KEY_VOLUME_DOWN = 1,
   WM_IPC_SYSTEM_KEY_VOLUME_UP = 2
+};
+
+// A parameter set on WM_IPC_WINDOW_CHROME_PANEL_CONTENT to describe how
+// the user should be allowed to resize a panel, if at all.
+enum WmIpcPanelUserResizeType {
+  WM_IPC_PANEL_USER_RESIZE_HORIZONTALLY_AND_VERTICALLY = 0,
+  WM_IPC_PANEL_USER_RESIZE_HORIZONTALLY,
+  WM_IPC_PANEL_USER_RESIZE_VERTICALLY,
+  WM_IPC_PANEL_USER_RESIZE_NONE,
 };
 
 }  // namespace chromeos
