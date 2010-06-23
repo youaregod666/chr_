@@ -206,7 +206,11 @@ enum WmIpcMessageType {
   // Chrome handling these sorts of keypresses internally.
   WM_IPC_MESSAGE_CHROME_NOTIFY_SYSKEY_PRESSED = 17,
 
-  // NEXT VALUE TO USE: 18
+  // Asks wm to select user on the login screen. User's index is passed as
+  // the first parameter.
+  WM_IPC_MESSAGE_WM_SELECT_LOGIN_USER = 18,
+
+  // NEXT VALUE TO USE: 19
 };
 
 // A parameter of WM_IPC_MESSAGE_CHROME_NOTIFY_SYSKEY_PRESSED message
