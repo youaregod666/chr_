@@ -5,10 +5,11 @@
 #include "chromeos_update_engine.h"
 #include <cstring>
 #include "chromeos/dbus/dbus.h"
+#include "chromeos/string.h"
 #include "marshal.glibmarshal.h"
 
 extern "C" {
-#include "update_engine.dbusclient.h"
+#include "chromeos/update_engine/update_engine.dbusclient.h"
 }
 
 namespace chromeos {
@@ -20,6 +21,11 @@ const char* const kUpdateEngineServicePath =
     "/org/chromium/UpdateEngine";
 const char* const kUpdateEngineServiceInterface =
     "org.chromium.UpdateEngineInterface";
+
+// This is the "virtualized" destructor for UpdateProgress.
+void Destruct(const UpdateProgress& x) {
+  delete x.new_version_;
+}
 
 // Returns -1 on error.
 UpdateStatusOperation UpdateStatusFromString(const char* str) {
@@ -118,8 +124,9 @@ class OpaqueUpdateStatusConnection {
     information.status_ = status;
     information.download_progress_ = progress;
     information.last_checked_time_ = last_checked_time;
-    information.new_version_ = new_version;
+    information.new_version_ = NewStringCopy(new_version);
     information.new_size_ = new_size;
+    information.destruct_ = &Destruct;
     monitor_(monitor_data_, information);
   }
  private:
@@ -174,11 +181,13 @@ bool ChromeOSRetrieveUpdateProgress(UpdateProgress* information) {
     LOG(ERROR) << "Error parsing status: " << current_op;
     return false;
   }
+  if (information->destruct_) information->destruct_(*information);
   information->status_ = status;
   information->download_progress_ = progress;
   information->last_checked_time_ = last_checked_time;
-  information->new_version_ = new_version;
+  information->new_version_ = NewStringCopy(new_version);
   information->new_size_ = new_size;
+  information->destruct_ = &Destruct;
   return true;
 }
 

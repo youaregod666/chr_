@@ -106,12 +106,14 @@
 //      CryptohomeRemove.
 //  38: Added InitTts function to the speech synthesis library.
 //  39: Added CryptohomeMountAllowFail and CryptohomeMountGuest
+//  40: Fixed update_engine API to be ABI safe. API was not called in prior
+//      versions of chrome so no backward compatibility provided.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 39
+  kCrosAPIVersion = 40
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
