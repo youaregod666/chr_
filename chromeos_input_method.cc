@@ -507,21 +507,7 @@ class InputMethodStatusConnection {
 
   // Initializes IBus and DBus connections.
   bool Init() {
-    // Establish IBus connection between ibus-daemon to retrieve the list of
-    // available input method engines, change the current input method engine,
-    // and so on.
     ibus_init();
-    ibus_ = ibus_bus_new();
-
-    // Check the IBus connection status.
-    if (!ibus_) {
-      LOG(ERROR) << "ibus_bus_new() failed";
-      return false;
-    }
-    if (!ibus_bus_is_connected(ibus_)) {
-      DLOG(INFO) << "ibus_bus_is_connected() failed";
-      return false;
-    }
 
     // Establish a DBus connection between the candidate_window process for
     // Chromium OS to handle signals (e.g. "FocusIn") from the process.
@@ -555,6 +541,21 @@ class InputMethodStatusConnection {
                      "destroy",
                      G_CALLBACK(DBusProxyDestroyCallback),
                      this);
+
+    // Establish IBus connection between ibus-daemon to retrieve the list of
+    // available input method engines, change the current input method engine,
+    // and so on.
+    ibus_ = ibus_bus_new();
+
+    // Check the IBus connection status.
+    if (!ibus_) {
+      LOG(ERROR) << "ibus_bus_new() failed";
+      return false;
+    }
+    if (!ibus_bus_is_connected(ibus_)) {
+      DLOG(INFO) << "ibus_bus_is_connected() failed";
+      return false;
+    }
 
     // Register the callback function for "global-engine-changed".
     g_signal_connect(ibus_,
