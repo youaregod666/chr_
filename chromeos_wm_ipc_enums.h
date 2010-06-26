@@ -200,7 +200,8 @@ enum WmIpcMessageType {
   // Notify Chrome when a system key of interest is clicked, so volume up/down
   // and mute can be handled (chrome can add visual feedback).  This message
   // could be extended for other special purpose keys (maybe multimedia keys
-  // like play/pause/ff/rr). See WmIpcSystemKey enum for param[0] values.
+  // like play/pause/ff/rr).
+  //   param[0]: Which key was pressed, from WmIpcSystemKey enum.
   //
   // TODO(davej): Eventually this message should be deprecated in favor of
   // Chrome handling these sorts of keypresses internally.
@@ -210,7 +211,16 @@ enum WmIpcMessageType {
   //   param[0]: 0-based index of entry to be selected.
   WM_IPC_MESSAGE_WM_SELECT_LOGIN_USER = 18,
 
-  // NEXT VALUE TO USE: 19
+  // Notify Chrome that the screen has been redrawn in response to a screen
+  // locker window having been mapped.  We use this to ensure that on
+  // suspend, the window manager gets a chance to draw the locked
+  // environment before the system is suspended -- otherwise, the
+  // pre-locked environment may be briefly visible on resume.  The message
+  // will be sent to the Chrome screen locker window that triggered the
+  // lock.
+  WM_IPC_MESSAGE_CHROME_NOTIFY_SCREEN_REDRAWN_FOR_LOCK = 19,
+
+  // NEXT VALUE TO USE: 20
 };
 
 // A parameter of WM_IPC_MESSAGE_CHROME_NOTIFY_SYSKEY_PRESSED message
