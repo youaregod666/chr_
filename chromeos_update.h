@@ -61,4 +61,4 @@ extern bool (*CheckForUpdate)(UpdateInformation* information);
 
 }  // namespace chromeos
 
-#endif  // CHROMEOS_POWER_H_
+#endif  // CHROMEOS_UPDATE_H_

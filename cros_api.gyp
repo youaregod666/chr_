@@ -14,6 +14,7 @@
         'chromeos_ime.h',  # TODO(satorux): Remove this once it's ready.
         'chromeos_language.h',  # TODO(satorux): Remove this once it's ready.
         'chromeos_syslogs.h',
+        'chromeos_system.h',
         'load.cc',
       ],
       'include_dirs': [

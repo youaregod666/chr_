@@ -21,6 +21,7 @@
 #include "chromeos_update.h"  // NOLINT
 #include "chromeos_update_engine.h"  // NOLINT
 #include "chromeos_syslogs.h"  // NOLINT
+#include "chromeos_system.h"  // NOLINT
 
 namespace chromeos {  // NOLINT //
 
@@ -192,6 +193,10 @@ DECL_FUNC_1(InitTts, void, InitStatusCallback);
 // Syslogs
 DECL_FUNC_1(GetSystemLogs, LogDictionaryType*, FilePath*);
 
+// System
+DECL_FUNC_0(GetTimezoneID, std::string);
+DECL_FUNC_1(SetTimezoneID, void, const std::string& id);
+
 
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
@@ -352,6 +357,10 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
 
   // Syslogs
   INIT_FUNC(GetSystemLogs);
+
+  // System
+  INIT_FUNC(GetTimezoneID);
+  INIT_FUNC(SetTimezoneID);
 
   return error_string.empty();
 }

@@ -27,4 +27,4 @@ extern bool (*SetKeyboardLayoutPerWindow)(bool is_per_window);
 
 }  // namespace chromeos
 
-#endif  // CHROMEOS_POWER_H_
+#endif  // CHROMEOS_KEYBOARD_H_
