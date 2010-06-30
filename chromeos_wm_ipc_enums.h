@@ -71,8 +71,7 @@ enum WmIpcWindowType {
   //             For example, all windows with an index of 0 occur first,
   //             followed by windows with an index of 1...
   //
-  // The following additional params are set on the first BORDER window
-  // (BORDER window whose param[0] == 0).
+  // The following additional params are set on all BORDER windows:
   //   param[1]: Total number of users.
   //   param[2]: Size of the unselected image.
   //   param[3]: Gap between image and controls.
