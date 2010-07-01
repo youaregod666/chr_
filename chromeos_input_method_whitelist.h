@@ -17,6 +17,7 @@ const char* kInputMethodIdsWhitelist[] = {
   "chewing",  // ibus-chewing - Traditional Chinese
   "hangul",   // ibus-hangul - Korean
   "mozc",     // ibus-mozc - Japanese (with English keyboard)
+  "mozc-dv",  // ibus-mozc - Japanese (with Dvorak keyboard)
   "mozc-jp",  // ibus-mozc - Japanese (with Japanese keyboard)
   "pinyin",   // Pinyin engine in ibus-pinyin - Simplified Chinese
 
