@@ -17,8 +17,8 @@
 namespace chromeos { // NOLINT
 
 namespace {
-const char kSysLogsDir[] = "/usr/share/userfeedback/scripts/";
-const char kAppendRedirector[] = " >> ";
+const char kSysLogsScript[] =
+    "/usr/share/userfeedback/scripts/sysinfo_script_runner";
 const char kMultilineQuote[] = "\"\"\"";
 const char kNewLineChars[] = "\r\n";
 
@@ -70,48 +70,21 @@ std::string ReadValue(std::string* data) {
 
 extern "C"
 LogDictionaryType* ChromeOSGetSystemLogs(FilePath* temp_filename) {
-  // Save current dir then switch to the logs dir
-  FilePath old_dir;
-  FilePath scripts_dir(kSysLogsDir);
-
-  if (!file_util::GetCurrentDirectory(&old_dir))
-    return NULL;
-  if (!file_util::SetCurrentDirectory(scripts_dir)) {
-    file_util::SetCurrentDirectory(old_dir);
-    return NULL;
-  }
-
-  // Create the temp file, logs will go here
+  // Create the temp file, logs will go here.
   if (!file_util::CreateTemporaryFile(temp_filename)) {
-    file_util::SetCurrentDirectory(old_dir);
     return NULL;
   }
 
-  // Open scripts directory for listing
-  dirent* dir_entry = NULL;
-  DIR* dir = opendir(scripts_dir.value().c_str());
-  if (!dir) {
-    file_util::SetCurrentDirectory(old_dir);
-    return NULL;
-  }
+  std::string cmd = std::string(kSysLogsScript) + " >> " +
+      temp_filename->value();
 
-  while (dir_entry = readdir(dir)) {
-    if (dir_entry->d_type == DT_REG) {
-      std::string cmd =
-          scripts_dir.Append(std::string(dir_entry->d_name)).value() +
-                             std::string(kAppendRedirector) +
-                             temp_filename->value();
-      // Ignore the return value - if the script execution didn't work
-      // sterr won't go into the output file anyway
-      system(cmd.c_str());
-    }
-  }
-  closedir(dir);
+  // Ignore the return value - if the script execution didn't work
+  // stderr won't go into the output file anyway.
+  system(cmd.c_str());
 
   // Read logs from the temp file
   std::string data;
   if (!file_util::ReadFileToString(FilePath(*temp_filename), &data)) {
-    file_util::SetCurrentDirectory(old_dir);
     return NULL;
   }
 
@@ -124,18 +97,12 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* temp_filename) {
       std::string value = ReadValue(&data);
       TrimWhitespaceASCII(value, TRIM_ALL, &value);
       (*logs)[key] = value;
-    }
-    else {
+    } else {
       // no more keys, we're done
       break;
     }
   }
 
-  // Cleanup:
-  if (!file_util::SetCurrentDirectory(old_dir)) {
-    delete logs;
-    return NULL;
-  }
   return logs;
 }
 
