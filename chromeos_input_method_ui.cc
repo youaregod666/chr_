@@ -236,6 +236,14 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
     }
     lookup_table.candidates.push_back(text->text);
   }
+  // Copy labels to |lookup_table|.
+  for (int i = 0; ; i++) {
+    IBusText *text = ibus_lookup_table_get_label(table, i);
+    if (!text) {
+      break;
+    }
+    lookup_table.labels.push_back(text->text);
+  }
 
   lookup_table.cursor_absolute_index =
       ibus_lookup_table_get_cursor_pos(table);

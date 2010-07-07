@@ -45,7 +45,11 @@ struct InputMethodLookupTable {
     stream << "page_size: " << page_size << "\n";
     stream << "candidates:";
     for (size_t i = 0; i < candidates.size(); ++i) {
-      stream << " " << candidates[i];
+      stream << " [" << candidates[i] << "]";
+    }
+    stream << "\nlabels:";
+    for (size_t i = 0; i < labels.size(); ++i) {
+      stream << " [" << labels[i] << "]";
     }
     return stream.str();
   }
@@ -63,11 +67,14 @@ struct InputMethodLookupTable {
   // it's about 10, depending on the backend conversion engine.
   int page_size;
 
-  // Candidate strings in UTF-8 for all pages.
+  // Candidate strings in UTF-8.
   std::vector<std::string> candidates;
 
   // The orientation of the candidates in the candidate window.
   Orientation orientation;
+
+  // Label strings in UTF-8 (ex. "1", "2", "3", ...).
+  std::vector<std::string> labels;
 };
 
 // Callback function type for handling IBus's |HideAuxiliaryText| signal.

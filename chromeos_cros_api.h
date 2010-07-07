@@ -109,12 +109,13 @@
 //  40: Fixed update_engine API to be ABI safe. API was not called in prior
 //      versions of chrome so no backward compatibility provided.
 //  41: Added chromeos_system timezone calls.
+//  42: Added label information to InputMethodLookupTable.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 41
+  kCrosAPIVersion = 42
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
