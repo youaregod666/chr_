@@ -42,8 +42,18 @@ std::string ReadKey(std::string* data) {
 // the initial string; detects if the value is multiline and reads
 // accordingly
 std::string ReadValue(std::string* data) {
-  // Fast forward past leading whitespaces
-  TrimWhitespaceASCII(*data, TRIM_LEADING, data);
+  // Trim the leading spaces and tabs. In order to use a multi-line
+  // value, you have to place the multi-line quote on the same line as
+  // the equal sign.
+  //
+  // Why not use TrimWhitespace? Consider the following input:
+  //
+  // KEY1=
+  // KEY2=VALUE
+  //
+  // If we use TrimWhitespace, we will incorrectly trim the new line
+  // and assume that KEY1's value is "KEY2=VALUE" rather than empty.
+  TrimString(*data, " \t", data);
 
   // If multiline value
   if (StartsWithASCII(*data, std::string(kMultilineQuote), false)) {
