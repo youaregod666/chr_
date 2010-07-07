@@ -110,12 +110,13 @@
 //      versions of chrome so no backward compatibility provided.
 //  41: Added chromeos_system timezone calls.
 //  42: Added label information to InputMethodLookupTable.
+//  43: Changed a string literal in chromeos_input_method.h.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 42
+  kCrosAPIVersion = 43
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

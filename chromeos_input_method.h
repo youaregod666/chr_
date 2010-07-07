@@ -13,7 +13,7 @@
 #include <base/logging.h>  // DCHECK
 
 static const char kFallbackInputMethodId[] = "xkb:us::eng";
-static const char kFallbackInputMethodDisplayName[] = "English";
+static const char kFallbackInputMethodDisplayName[] = "USA";
 static const char kFallbackKeyboardLayoutName[] = "us";
 static const char kFallbackInputMethodLanguageCode[] = "eng";
 static const int kInvalidSelectionItemId = -1;
