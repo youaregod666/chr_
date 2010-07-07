@@ -61,7 +61,7 @@ const char* kInputMethodIdsWhitelist[] = {
   "xkb:lv::lav",        // Latvia - Latvian
   "xkb:hr::scr",        // Croatia - Croatian
   "xkb:nl::nld",        // Netherlands - Dutch
-  "xkb:gb::eng",        // United Kingdom - English
+  "xkb:gb:extd:eng",    // United Kingdom - English
   "xkb:fi::fin",        // Finland - Finnish
   "xkb:fr::fra",        // France - French
   "xkb:hu::hun",        // Hungary - Hungarian
