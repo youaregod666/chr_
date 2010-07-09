@@ -48,8 +48,12 @@ const char* kInputMethodIdsWhitelist[] = {
 
   // ibux-xkb-layouts input methods (keyboard layouts).
   "xkb:be::fra",        // Belgium - French
+  "xkb:be::ger",        // Belgium - German
+  "xkb:be::nld",        // Belgium - Dutch
   "xkb:br::por",        // Brazil - Portuguese
   "xkb:bg::bul",        // Bulgaria - Bulgarian
+  "xkb:ca:eng:eng",     // Canada - English
+  "xkb:ca::fra",        // Canada - French
   "xkb:cz::cze",        // Czech Republic - Czech
   "xkb:de::ger",        // Germany - German
   "xkb:ee::est",        // Estonia - Estonian
@@ -76,6 +80,7 @@ const char* kInputMethodIdsWhitelist[] = {
   "xkb:si::slv",        // Slovenia - Slovene (Slovenian)
   "xkb:rs::srp",        // Serbia - Serbian
   "xkb:ch::ger",        // Switzerland - German
+  "xkb:ch:fr:fra",      // Switzerland - French
   "xkb:ru::rus",        // Russia - Russian
   "xkb:tr::tur",        // Turkey - Turkish
   "xkb:ua::ukr",        // Ukraine - Ukrainian
