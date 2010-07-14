@@ -48,6 +48,10 @@ glib_marshal_builder = Builder(generator = GlibMarshalGenerator,
 
 ibus_engines_builder = Builder(action = "./gen_engines.py $SOURCES > $TARGET")
 
+input_methodwhitelist_builder = Builder(action =
+                                        "./gen_input_method_whitelist.py " +
+                                        "$SOURCES > $TARGET")
+
 base_env = Environment(
     CPPPATH=['.', '..'],
     CCFLAGS=['-ggdb', '-fPIC', '-fno-exceptions', '-Wall', '-Werror'],
@@ -55,6 +59,7 @@ base_env = Environment(
 )
 base_env['BUILDERS']['GlibMarshal'] = glib_marshal_builder
 base_env['BUILDERS']['IBusEngines'] = ibus_engines_builder
+base_env['BUILDERS']['InputMethodWhitelist'] = input_methodwhitelist_builder
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
   value = os.environ.get(key)
   if value != None:
@@ -100,6 +105,11 @@ ibus_engines = re.findall(r"(?<=app-i18n\/ibus-)[-\w]*", os.environ['DEPEND'])
 env.IBusEngines('ibus_input_methods.h',
                 [ibus_component_dir + engine_name + '.xml'
                  for engine_name in ibus_engines])
+
+env.InputMethodWhitelist('chromeos_input_method_whitelist.h',
+                         env['ENV']['SYSROOT'] +
+                         '/usr/share/chromeos-assets' +
+                         '/input_methods/whitelist.txt')
 
 Default(env.SharedLibrary('cros', SOURCES))
 
