@@ -80,6 +80,10 @@ DECL_FUNC_1(GetSupportedInputMethods,
     InputMethodDescriptors*, InputMethodStatusConnection*);
 DECL_FUNC_1(GetActiveInputMethods,
     InputMethodDescriptors*, InputMethodStatusConnection*);
+DECL_FUNC_2(SetActiveInputMethods,
+    bool,
+    InputMethodStatusConnection*,
+    const ImeConfigValue&);
 DECL_FUNC_2(ChangeInputMethod,
     bool, InputMethodStatusConnection*, const char*);
 DECL_FUNC_3(SetImePropertyActivated,
@@ -267,6 +271,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(DisconnectInputMethodStatus);
   INIT_FUNC(GetSupportedInputMethods);
   INIT_FUNC(GetActiveInputMethods);
+  INIT_FUNC(SetActiveInputMethods);
   INIT_FUNC(ChangeInputMethod);
   INIT_FUNC(SetImePropertyActivated);
   INIT_FUNC(GetImeConfig);
@@ -342,7 +347,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   // Update
   INIT_FUNC(Update);
   INIT_FUNC(CheckForUpdate);
-  
+
   // Update Engine
   INIT_FUNC(MonitorUpdateStatus);
   INIT_FUNC(DisconnectUpdateProgress);

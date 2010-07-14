@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import os
+import re
 import sys
 
 def GlibMarshalEmitter(target, source, env):
@@ -45,6 +46,7 @@ glib_marshal_builder = Builder(generator = GlibMarshalGenerator,
                                single_source = 1,
                                suffix = 'glibmarshal.c')
 
+ibus_engines_builder = Builder(action = "./gen_engines.py $SOURCES > $TARGET")
 
 base_env = Environment(
     CPPPATH=['.', '..'],
@@ -52,6 +54,7 @@ base_env = Environment(
     LINKFLAGS=['-fPIC'],
 )
 base_env['BUILDERS']['GlibMarshal'] = glib_marshal_builder
+base_env['BUILDERS']['IBusEngines'] = ibus_engines_builder
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
   value = os.environ.get(key)
   if value != None:
@@ -88,6 +91,15 @@ env.Append(LIBS=['base', 'chromeos', 'rt'])
 env.ParseConfig('%s --cflags --libs dbus-1 glib-2.0 gudev-1.0 dbus-glib-1 ibus-1.0 libpcrecpp libxklavier' % env['ENV']['PKG_CONFIG'])
 
 env.GlibMarshal('marshal.glibmarshal.c', 'marshal.list')
+ibus_component_dir = "%s%s" % (env['ENV']['SYSROOT'],
+                               '/usr/share/ibus/component/')
+# We extract the list of ibus engines from the DEPEND environment variable,
+# which is exported in the libcros ebuild file.  All ibus engines are in the
+# form "app-i18n/ibus-ENGINE_NAME"
+ibus_engines = re.findall(r"(?<=app-i18n\/ibus-)[-\w]*", os.environ['DEPEND'])
+env.IBusEngines('ibus_input_methods.h',
+                [ibus_component_dir + engine_name + '.xml'
+                 for engine_name in ibus_engines])
 
 Default(env.SharedLibrary('cros', SOURCES))
 

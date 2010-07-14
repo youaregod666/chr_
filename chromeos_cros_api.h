@@ -111,12 +111,13 @@
 //  41: Added chromeos_system timezone calls.
 //  42: Added label information to InputMethodLookupTable.
 //  43: Changed a string literal in chromeos_input_method.h.
+//  44: Added SetActiveInputMethods() to chromeos_input_method.{cc,h}.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 43
+  kCrosAPIVersion = 44
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

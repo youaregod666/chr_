@@ -18,6 +18,7 @@
 #include "base/singleton.h"
 #include "chromeos/dbus/dbus.h"
 #include "chromeos/glib/object.h"
+#include "ibus_input_methods.h"
 
 namespace {
 
@@ -430,8 +431,8 @@ class InputMethodStatusConnection {
     MaybeRestoreDBus();
   }
 
-  // GetInputMethodMode is used for GetInputMethods().
-  enum GetInputMethodMode {
+  // InputMethodType is used for GetInputMethods().
+  enum InputMethodType {
     kActiveInputMethods,  // Get active input methods.
     kSupportedInputMethods,  // Get supported input methods.
   };
@@ -439,31 +440,38 @@ class InputMethodStatusConnection {
   // Called by cros API ChromeOSGet(Active|Supported)InputMethods().
   // Returns a list of input methods that are currently active or supported
   // depending on |mode|. Returns NULL on error.
-  InputMethodDescriptors* GetInputMethods(GetInputMethodMode mode) {
-    if (!IBusConnectionIsAlive()) {
+  InputMethodDescriptors* GetInputMethods(InputMethodType type) {
+    if (type == kActiveInputMethods &&
+        active_engines_.empty() &&
+        !IBusConnectionIsAlive()) {
       LOG(ERROR) << "GetInputMethods: IBus connection is not alive";
       return NULL;
     }
 
-    GList* engines = NULL;
-    if (mode == kActiveInputMethods) {
-      DLOG(INFO) << "GetInputMethods (kActiveInputMethods)";
-      engines = ibus_bus_list_active_engines(ibus_);
-    } else if (mode == kSupportedInputMethods) {
-      DLOG(INFO) << "GetInputMethods (kSupportedInputMethods)";
-      engines = ibus_bus_list_engines(ibus_);
-    } else {
-      NOTREACHED();
-      return NULL;
-    }
-    // Note that it's not an error for |engines| to be NULL.
-    // NULL simply means an empty GList.
-
     InputMethodDescriptors* input_methods = new InputMethodDescriptors;
-    AddInputMethodNames(engines, input_methods);
+    if (type == kActiveInputMethods && IBusConnectionIsAlive()) {
+      GList* engines = NULL;
+      engines = ibus_bus_list_active_engines(ibus_);
+      // Note that it's not an error for |engines| to be NULL.
+      // NULL simply means an empty GList.
+      AddInputMethodNames(engines, input_methods);
+      FreeInputMethodNames(engines);
+    } else {
+      AddIBusInputMethodNames(type, input_methods);
+    }
 
-    FreeInputMethodNames(engines);
     return input_methods;
+  }
+
+  bool SetActiveInputMethods(const ImeConfigValue& value) {
+    DCHECK(value.type == ImeConfigValue::kValueTypeStringList);
+
+    // Sanity check: do not preload unknown/unsupported input methods.
+    std::vector<std::string> string_list;
+    FilterInputMethods(value.string_list_value, &string_list);
+
+    active_engines_.clear();
+    active_engines_.insert(string_list.begin(), string_list.end());
   }
 
   // Called by cros API ChromeOS(Activate|Deactive)ImeProperty().
@@ -608,7 +616,7 @@ class InputMethodStatusConnection {
     }
 
     // Sanity check: do not preload unknown/unsupported input methods.
-    std::vector<std::string> string_list = value.string_list_value;
+    std::vector<std::string> string_list;
     if ((value.type == ImeConfigValue::kValueTypeStringList) &&
         !strcmp(section, kGeneralSectionName) &&
         !strcmp(config_name, kPreloadEnginesConfigName)) {
@@ -973,6 +981,23 @@ class InputMethodStatusConnection {
     g_object_unref(engine_desc);
   }
 
+  void AddIBusInputMethodNames(InputMethodType type,
+                               chromeos::InputMethodDescriptors* out) {
+    DCHECK(out);
+    for (size_t i = 0; i < arraysize(chromeos::ibus_engines); ++i) {
+      if (InputMethodIdIsWhitelisted(chromeos::ibus_engines[i].name) &&
+          (type == kSupportedInputMethods ||
+           active_engines_.count(chromeos::ibus_engines[i].name) > 0)) {
+        out->push_back(chromeos::InputMethodDescriptor(
+            chromeos::ibus_engines[i].name,
+            chromeos::ibus_engines[i].longname,
+            chromeos::ibus_engines[i].layout,
+            chromeos::ibus_engines[i].language));
+        DLOG(INFO) << chromeos::ibus_engines[i].name << " (SUPPORTED)";
+      }
+    }
+  }
+
   static void DBusProxyDestroyCallback(DBusGProxy* proxy, gpointer user_data) {
     LOG(ERROR) << "DBus proxy for candidate_window is destroyed!";
     // candidate_window might be terminated. libdbus automatically recovers
@@ -1153,6 +1178,8 @@ class InputMethodStatusConnection {
 
   // Current input context path.
   std::string input_context_path_;
+
+  std::set<std::string> active_engines_;
 };
 
 //
@@ -1196,10 +1223,18 @@ InputMethodDescriptors* ChromeOSGetActiveInputMethods(
 }
 
 extern "C"
+bool ChromeOSSetActiveInputMethods(InputMethodStatusConnection* connection,
+                                   const ImeConfigValue& value) {
+  g_return_val_if_fail(connection, FALSE);
+  return connection->SetActiveInputMethods(value);
+}
+
+extern "C"
 InputMethodDescriptors* ChromeOSGetSupportedInputMethods(
     InputMethodStatusConnection* connection) {
   g_return_val_if_fail(connection, NULL);
-  connection->MaybeRestoreConnections();
+  // We don't need to try to restore the connection here because GetInputMethods
+  // does not communicate with ibus.
   // Pass ownership to a caller. Note: GetInputMethods() might return NULL.
   return connection->GetInputMethods(
       InputMethodStatusConnection::kSupportedInputMethods);

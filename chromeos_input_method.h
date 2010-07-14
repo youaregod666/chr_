@@ -261,6 +261,11 @@ extern InputMethodStatusConnection* (*MonitorInputMethodStatus)(
 extern void (*DisconnectInputMethodStatus)(
     InputMethodStatusConnection* connection);
 
+// Updates the list of active input methods.  This will be returned by
+// GetActiveInputMethods() if an ibus connection is not available.
+extern bool (*SetActiveInputMethods)(InputMethodStatusConnection* connection,
+                                     const ImeConfigValue& value);
+
 // Gets all input method engines that are currently active. Caller has to
 // delete the returned list. This function might return NULL on error.
 extern InputMethodDescriptors* (*GetActiveInputMethods)(
