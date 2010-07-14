@@ -26,6 +26,7 @@ static const char* kConnmanServiceName = "org.chromium.flimflam";
 static const char* kConnmanIPConfigInterface = "org.chromium.flimflam.IPConfig";
 static const char* kConnmanDeviceInterface = "org.chromium.flimflam.Device";
 static const char* kConnmanProfileInterface = "org.chromium.flimflam.Profile";
+static const char* kConnmanNetworkInterface = "org.chromium.flimflam.Network";
 
 // Connman function names.
 static const char* kGetPropertiesFunction = "GetProperties";
@@ -67,6 +68,12 @@ static const char* kErrorProperty = "Error";
 static const char* kActiveProfileProperty = "ActiveProfile";
 static const char* kEntriesProperty = "Entries";
 static const char* kSSIDProperty = "SSID";
+static const char* kDevicesProperty = "Devices";
+static const char* kNetworksProperty = "Networks";
+static const char* kConnectedProperty = "Connected";
+static const char* kWifiChannelProperty = "WiFi.Channel";
+static const char* kScanIntervalProperty = "ScanInterval";
+static const char* kPoweredProperty = "Powered";
 
 // Connman network state
 static const char* kOnline = "online";
@@ -1272,6 +1279,141 @@ bool ChromeOSSetCertPath(const char* service_path, const char* cert_path) {
   return SetServiceStringProperty(service_path, kCertPathProperty, cert_path);
 }
 
+namespace {
+// Returns a DeviceNetworkInfo object populated with data from a
+// given DBus object path.
+//
+// returns true on success.
+bool ParseDeviceNetworkInfo(dbus::BusConnection bus,
+                            const char* path,
+                            DeviceNetworkInfo* info) {
+  dbus::Proxy network_proxy(bus,
+                            kConnmanServiceName,
+                            path,
+                            kConnmanNetworkInterface);
+  glib::ScopedHashTable properties;
+  if (!GetProperties(network_proxy, &properties))
+    return false;
+  info->network_path = NewStringCopy(path);
 
+  // Address (mandatory)
+  const char* default_string = kUnknownString;
+  if (!properties.Retrieve(kAddressProperty, &default_string))
+    return false;
+  info->address = NewStringCopy(default_string);
+  // CAREFULL: Do not return false after here, without freeing strings.
+
+  // Name
+  default_string = kUnknownString;
+  properties.Retrieve(kNameProperty, &default_string);
+  info->name = NewStringCopy(default_string);
+
+  // Strength
+  uint8 default_uint8 = 0;
+  properties.Retrieve(kSignalStrengthProperty, &default_uint8);
+  info->strength = default_uint8;
+
+  // kWifi.Channel
+  // (This is a uint16, stored in GValue as a uint;
+  // see http://dbus.freedesktop.org/doc/dbus-tutorial.html)
+  uint default_uint = 0;
+  properties.Retrieve(kWifiChannelProperty, &default_uint);
+  info->channel = default_uint;
+
+  // Connected
+  bool default_bool = false;
+  properties.Retrieve(kConnectedProperty, &default_bool);
+  info->connected = default_bool;
+
+  return true;
+}
+}  // namespace
+
+extern "C"
+DeviceNetworkList* ChromeOSGetDeviceNetworkList() {
+  glib::Value devices_val;
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  {
+    dbus::Proxy manager_proxy(bus,
+                              kConnmanServiceName,
+                              "/",
+                              kConnmanManagerInterface);
+
+    glib::ScopedHashTable properties;
+    if (!GetProperties(manager_proxy, &properties)) {
+      LOG(WARNING) << "Couldn't read managers's properties";
+      return NULL;
+    }
+
+    // Get the Devices property from the manager
+    if (!properties.Retrieve(kDevicesProperty, &devices_val)) {
+      LOG(WARNING) << kDevicesProperty << " property not found";
+      return NULL;
+    }
+  }
+  GPtrArray* devices = static_cast<GPtrArray*>(g_value_get_boxed(&devices_val));
+  std::vector<DeviceNetworkInfo> buffer;
+  bool found_at_least_one_device = false;
+  for (size_t i = 0; i < devices->len; i++) {
+    const char* device_path =
+        static_cast<const char*>(g_ptr_array_index(devices, i));
+    dbus::Proxy device_proxy(bus,
+                             kConnmanServiceName,
+                             device_path,
+                             kConnmanDeviceInterface);
+ 
+    glib::ScopedHashTable properties;
+    if (!GetProperties(device_proxy, &properties)) {
+      LOG(WARNING) << "Couldn't read device's properties";
+      continue;
+    }
+
+    glib::Value networks_val;
+    if (!properties.Retrieve(kNetworksProperty, &networks_val))
+      continue;  // Some devices do not list networks, e.g. ethernet.
+    GPtrArray* networks =
+        static_cast<GPtrArray*>(g_value_get_boxed(&networks_val));
+    DCHECK(networks);
+
+    bool device_powered = false;
+    if (properties.Retrieve(kPoweredProperty, &device_powered)
+        && !device_powered) {
+      continue;  // Skip devices that are not powered up.
+    }
+    uint scan_interval = 0;
+    properties.Retrieve(kScanIntervalProperty, &scan_interval);
+
+    found_at_least_one_device = true;
+    for (size_t j = 0; j < networks->len; j++) {
+      const char* network_path =
+	  static_cast<const char*>(g_ptr_array_index(networks, j));
+      DeviceNetworkInfo info = {};
+      if (!ParseDeviceNetworkInfo(bus, network_path, &info))
+        continue;
+      info.device_path = NewStringCopy(device_path);
+      // Using the scan interval as a proxy for approximate age.
+      // TODO(joth): Replace with actual age, when available from dbus.
+      info.age_seconds = scan_interval;
+      buffer.push_back(info);
+    }
+  }
+  if (!found_at_least_one_device) {
+    DCHECK_EQ(0u, buffer.size());
+    return NULL;  // No powered device found that has a 'Networks' array.
+  }
+  DeviceNetworkList* network_list = new DeviceNetworkList();
+  network_list->network_size = buffer.size();
+  network_list->networks = network_list->network_size == 0 ? NULL :
+                           new DeviceNetworkInfo[network_list->network_size];
+  std::copy(buffer.begin(), buffer.end(), network_list->networks);
+  return network_list;
+}
+
+extern "C"
+void ChromeOSFreeDeviceNetworkList(DeviceNetworkList* list) {
+  delete [] list->networks;
+  delete list;
+}
 
 }  // namespace chromeos
+

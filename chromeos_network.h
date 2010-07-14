@@ -114,6 +114,24 @@ struct IPConfigStatus {
   int size;
 };
 
+// Represents a single network object (i.e. access point) from the list
+// networks DBus API.
+struct DeviceNetworkInfo {
+  const char* device_path;   // Path to the device that owns this network
+  const char* network_path;  // Path to this network object itself
+  const char* address;       // Mac address, format 11:22:33:44:55:66
+  const char* name;          // SSID for wifi
+  int strength;              // Signal strengh
+  int channel;               // Wifi channel number
+  bool connected;            // True if this network is connected
+  int age_seconds;           // Time in seconds since this network was seen
+};
+
+struct DeviceNetworkList {
+  size_t network_size;
+  DeviceNetworkInfo* networks;
+};
+
 // Returns the system info, which includes the state of the system and a list of
 // all of the available services that a user can connect to.
 // The SystemInfo instance that is returned by this function MUST be
@@ -248,6 +266,18 @@ extern void (*FreeIPConfig)(IPConfig* config);
 // Free out a full status
 extern void (*FreeIPConfigStatus)(IPConfigStatus* status);
 
+// Retrieves the list of visible network objects. This structure is not cached
+// within the DLL, and is fetched via d-bus on each call.
+// Ownership of the DeviceNetworkList is returned to the caller; use
+// FreeDeviceNetworkList to release it.
+extern DeviceNetworkList* (*GetDeviceNetworkList)();
+
+// Deletes a DeviceNetworkList type that was allocated in the ChromeOS dll. We
+// need to do this to safely pass data over the dll boundary between our .so
+// and Chrome.
+extern void (*FreeDeviceNetworkList)(DeviceNetworkList* network_list);
+
 }  // namespace chromeos
 
 #endif  // CHROMEOS_NETWORK_H_
+

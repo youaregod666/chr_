@@ -149,6 +149,8 @@ DECL_FUNC_1(SaveIPConfig, bool, IPConfig*);
 DECL_FUNC_1(RemoveIPConfig, bool, IPConfig*);
 DECL_FUNC_1(FreeIPConfig, void, IPConfig*);
 DECL_FUNC_1(FreeIPConfigStatus, void, IPConfigStatus*);
+DECL_FUNC_0(GetDeviceNetworkList, DeviceNetworkList*);
+DECL_FUNC_1(FreeDeviceNetworkList, void, DeviceNetworkList*);
 
 // Touchpad
 DECL_FUNC_2(SetSynapticsParameter, void, SynapticsParameter, int);
@@ -316,6 +318,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RemoveIPConfig);
   INIT_FUNC(FreeIPConfig);
   INIT_FUNC(FreeIPConfigStatus);
+  INIT_FUNC(GetDeviceNetworkList);
+  INIT_FUNC(FreeDeviceNetworkList);
 
   // Touchpad
   INIT_FUNC(SetSynapticsParameter);
