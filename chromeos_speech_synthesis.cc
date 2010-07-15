@@ -107,7 +107,6 @@ bool ChromeOSSpeak(const char* text) {
       speech_synthesis::kSpeechSynthesizerServicePath,
       speech_synthesis::kSpeechSynthesizerInterface);
   DCHECK(tts_proxy.gproxy()) << "Failed to acquire proxy";
-  gboolean done = false;
   chromeos::glib::ScopedError error;
   if (!::dbus_g_proxy_call(tts_proxy.gproxy(),
                            "Speak",
@@ -115,8 +114,6 @@ bool ChromeOSSpeak(const char* text) {
                            G_TYPE_STRING,
                            text,
                            G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN,
-                           &done,
                            G_TYPE_INVALID)) {
     LOG(WARNING) << "Speak" << " failed: "
                  << (error->message ? error->message : "Unknown Error.");
@@ -134,7 +131,6 @@ bool ChromeOSSetSpeakProperties(const char* props) {
       speech_synthesis::kSpeechSynthesizerServicePath,
       speech_synthesis::kSpeechSynthesizerInterface);
   DCHECK(tts_proxy.gproxy()) << "Failed to acquire proxy";
-  gboolean done = false;
   chromeos::glib::ScopedError error;
   if (!::dbus_g_proxy_call(tts_proxy.gproxy(),
                            "SetProperties",
@@ -142,8 +138,6 @@ bool ChromeOSSetSpeakProperties(const char* props) {
                            G_TYPE_STRING,
                            props,
                            G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN,
-                           &done,
                            G_TYPE_INVALID)) {
     LOG(WARNING) << "SetProperties" << " failed: "
                  << (error->message ? error->message : "Unknown Error.");
@@ -161,14 +155,11 @@ bool ChromeOSStopSpeaking() {
       speech_synthesis::kSpeechSynthesizerServicePath,
       speech_synthesis::kSpeechSynthesizerInterface);
   DCHECK(tts_proxy.gproxy()) << "Failed to acquire proxy";
-  gboolean done = false;
   chromeos::glib::ScopedError error;
   if (!::dbus_g_proxy_call(tts_proxy.gproxy(),
                            "Stop",
                            &Resetter(&error).lvalue(),
                            G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN,
-                           &done,
                            G_TYPE_INVALID)) {
     LOG(WARNING) << "Stop" << " failed: "
                  << (error->message ? error->message : "Unknown Error.");
@@ -195,7 +186,7 @@ bool ChromeOSIsSpeaking() {
                            G_TYPE_BOOLEAN,
                            &done,
                            G_TYPE_INVALID)) {
-    LOG(WARNING) << "Speak" << " failed: "
+    LOG(WARNING) << "IsSpeaking" << " failed: "
                  << (error->message ? error->message : "Unknown Error.");
     return false;
   }
