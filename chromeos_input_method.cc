@@ -404,7 +404,8 @@ class InputMethodStatusConnection {
       void* language_library,
       LanguageCurrentInputMethodMonitorFunction current_input_method_changed,
       LanguageRegisterImePropertiesFunction register_ime_properties,
-      LanguageUpdateImePropertyFunction update_ime_property) {
+      LanguageUpdateImePropertyFunction update_ime_property,
+      LanguageConnectionChangeMonitorFunction connection_change_handler) {
     DCHECK(language_library);
     DCHECK(current_input_method_changed),
     DCHECK(register_ime_properties);
@@ -417,6 +418,7 @@ class InputMethodStatusConnection {
       object->current_input_method_changed_ = current_input_method_changed;
       object->register_ime_properties_= register_ime_properties;
       object->update_ime_property_ = update_ime_property;
+      object->connection_change_handler_ = connection_change_handler;
       object->MaybeRestoreConnections();
     } else if (object->language_library_ != language_library) {
       LOG(ERROR) << "Unknown language_library is passed";
@@ -456,6 +458,11 @@ class InputMethodStatusConnection {
       // NULL simply means an empty GList.
       AddInputMethodNames(engines, input_methods);
       FreeInputMethodNames(engines);
+      // An empty list is returned if preload engines has not yet been set.
+      // If that happens, we instead use our cached list.
+      if (input_methods->empty()) {
+        AddIBusInputMethodNames(type, input_methods);
+      }
     } else {
       AddIBusInputMethodNames(type, input_methods);
     }
@@ -688,6 +695,7 @@ class InputMethodStatusConnection {
       : current_input_method_changed_(NULL),
         register_ime_properties_(NULL),
         update_ime_property_(NULL),
+        connection_change_handler_(NULL),
         language_library_(NULL),
         ibus_(NULL),
         ibus_config_(NULL) {
@@ -811,6 +819,8 @@ class InputMethodStatusConnection {
                      << "ibus_connection_is_connected() returned false.";
         return;
       }
+      // If memconf has not successfully started yet, ibus_config_new() will
+      // return NULL.
       ibus_config_ = ibus_config_new(ibus_connection);
       if (!ibus_config_) {
         LOG(ERROR) << "ibus_config_new() failed";
@@ -1019,6 +1029,8 @@ class InputMethodStatusConnection {
         = static_cast<InputMethodStatusConnection*>(user_data);
     if (self) {
       self->MaybeRestoreConnections();
+      if (self->connection_change_handler_)
+        self->connection_change_handler_(self->language_library_, true);
     }
     // TODO(yusukes): Probably we should send all input method preferences in
     // Chrome to ibus-memconf as soon as |ibus_config_| gets ready again.
@@ -1034,6 +1046,8 @@ class InputMethodStatusConnection {
         = static_cast<InputMethodStatusConnection*>(user_data);
     if (self) {
       self->MaybeRestoreConnections();
+      if (self->connection_change_handler_)
+        self->connection_change_handler_(self->language_library_, false);
     }
   }
 
@@ -1161,6 +1175,7 @@ class InputMethodStatusConnection {
   LanguageCurrentInputMethodMonitorFunction current_input_method_changed_;
   LanguageRegisterImePropertiesFunction register_ime_properties_;
   LanguageUpdateImePropertyFunction update_ime_property_;
+  LanguageConnectionChangeMonitorFunction connection_change_handler_;
 
   // Points to a chromeos::LanguageLibrary object. |language_library_| is used
   // as the first argument of the monitor functions above.
@@ -1189,20 +1204,20 @@ class InputMethodStatusConnection {
 // The function will be bound to chromeos::MonitorInputMethodStatus with dlsym()
 // in load.cc so it needs to be in the C linkage, so the symbol name does not
 // get mangled.
-// TODO(yusukes): Remove |focus_changed| argument.
 extern "C"
 InputMethodStatusConnection* ChromeOSMonitorInputMethodStatus(
     void* language_library,
     LanguageCurrentInputMethodMonitorFunction current_input_method_changed,
     LanguageRegisterImePropertiesFunction register_ime_properties,
     LanguageUpdateImePropertyFunction update_ime_property,
-    LanguageFocusChangeMonitorFunction focus_changed) {
+    LanguageConnectionChangeMonitorFunction connection_changed) {
   DLOG(INFO) << "MonitorInputMethodStatus";
   return InputMethodStatusConnection::GetConnection(
       language_library,
       current_input_method_changed,
       register_ime_properties,
-      update_ime_property);
+      update_ime_property,
+      connection_changed);
 }
 
 // TODO(yusukes): remove the function.

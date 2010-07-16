@@ -74,7 +74,7 @@ DECL_FUNC_5(MonitorInputMethodStatus,
     chromeos::LanguageCurrentInputMethodMonitorFunction,
     chromeos::LanguageRegisterImePropertiesFunction,
     chromeos::LanguageUpdateImePropertyFunction,
-    chromeos::LanguageFocusChangeMonitorFunction);
+    chromeos::LanguageConnectionChangeMonitorFunction);
 DECL_FUNC_1(DisconnectInputMethodStatus, void, InputMethodStatusConnection*);
 DECL_FUNC_1(GetSupportedInputMethods,
     InputMethodDescriptors*, InputMethodStatusConnection*);

@@ -241,10 +241,9 @@ typedef void(*LanguageRegisterImePropertiesFunction)(
 typedef void(*LanguageUpdateImePropertyFunction)(
     void* language_library, const ImePropertyList& prop_list);
 
-// A monitor function which is called when "FocusIn" or "FocusOut" signals are
-// sent from the candidate_window process.
-typedef void(*LanguageFocusChangeMonitorFunction)(
-    void* language_library, bool focus_in);
+// A monitor function which is called when ibus connects or disconnects.
+typedef void(*LanguageConnectionChangeMonitorFunction)(
+    void* language_library, bool connected);
 
 // Establishes IBus connection to the ibus-daemon and DBus connection to the
 // candidate window process. LanguageXXXFunction functions will be called when
@@ -255,7 +254,7 @@ extern InputMethodStatusConnection* (*MonitorInputMethodStatus)(
     LanguageCurrentInputMethodMonitorFunction current_input_method,
     LanguageRegisterImePropertiesFunction register_ime_properties,
     LanguageUpdateImePropertyFunction update_ime_property,
-    LanguageFocusChangeMonitorFunction focus_changed);
+    LanguageConnectionChangeMonitorFunction connection_changed);
 
 // Terminates IBus and DBus connections.
 extern void (*DisconnectInputMethodStatus)(
