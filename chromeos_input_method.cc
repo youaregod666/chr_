@@ -628,6 +628,8 @@ class InputMethodStatusConnection {
         !strcmp(section, kGeneralSectionName) &&
         !strcmp(config_name, kPreloadEnginesConfigName)) {
       FilterInputMethods(value.string_list_value, &string_list);
+    } else {
+      string_list = value.string_list_value;
     }
 
     // Convert the type of |value| from our structure to GValue.
