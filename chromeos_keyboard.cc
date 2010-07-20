@@ -85,8 +85,12 @@ extern "C"
 bool ChromeOSSetCurrentKeyboardLayoutByName(const std::string& layout_name) {
   // TODO(satorux): Rewrite this function with xklavier.
   // The implementation is more like a prototype. Will rework later.
-  std::string layouts_to_set = layout_name;
-  if ((layouts_to_set != "us") && (layouts_to_set.substr(0, 3) != "us(")) {
+
+  // Use CapsLock as the second Windows-L key so netbook users could open/close
+  // NTP by pressing CapsLock.
+  std::string layouts_to_set = layout_name + "+capslock(super)";
+  if ((layouts_to_set.substr(0, 3) != "us+") &&
+      (layouts_to_set.substr(0, 3) != "us(")) {
     layouts_to_set += ",us";
   }
   std::string command = StringPrintf("setxkbmap -layout '%s'",
