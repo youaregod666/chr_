@@ -114,13 +114,12 @@
 //  44: Added SetActiveInputMethods() to chromeos_input_method.{cc,h}.
 //  45: Added DeviceNetworkList + associated Get & Free functions.
 //  46: Change the meaning of the last argument in MonitorInputMethodStatus().
-//  47: Added UPDATE_STATUS_REPORTING_ERROR_EVENT.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 47
+  kCrosAPIVersion = 46
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

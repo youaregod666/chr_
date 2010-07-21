@@ -47,8 +47,6 @@ UpdateStatusOperation UpdateStatusFromString(const char* str) {
     return UPDATE_STATUS_FINALIZING;
   if (!strcmp(main_str, "UPDATED_NEED_REBOOT"))
     return UPDATE_STATUS_UPDATED_NEED_REBOOT;
-  if (!strcmp(main_str, "REPORTING_ERROR_EVENT"))
-    return UPDATE_STATUS_REPORTING_ERROR_EVENT;
   return UPDATE_STATUS_ERROR;
 }
 
@@ -159,7 +157,7 @@ bool ChromeOSRetrieveUpdateProgress(UpdateProgress* information) {
                            kUpdateEngineServicePath,
                            kUpdateEngineServiceInterface);
   GError* error = NULL;
-
+  
   gint64 last_checked_time = 0;
   gdouble progress = 0.0;
   char* current_op = NULL;
