@@ -98,13 +98,13 @@ env.ParseConfig('%s --cflags --libs dbus-1 glib-2.0 gudev-1.0 dbus-glib-1 ibus-1
 env.GlibMarshal('marshal.glibmarshal.c', 'marshal.list')
 ibus_component_dir = "%s%s" % (env['ENV']['SYSROOT'],
                                '/usr/share/ibus/component/')
-# We extract the list of ibus engines from the DEPEND environment variable,
-# which is exported in the libcros ebuild file.  All ibus engines are in the
-# form "app-i18n/ibus-ENGINE_NAME"
-ibus_engines = re.findall(r"(?<=app-i18n\/ibus-)[-\w]*", os.environ['DEPEND'])
 env.IBusEngines('ibus_input_methods.h',
-                [ibus_component_dir + engine_name + '.xml'
-                 for engine_name in ibus_engines])
+                [ibus_component_dir + 'chewing.xml',
+                 ibus_component_dir + 'hangul.xml',
+                 ibus_component_dir + 'm17n.xml',
+                 ibus_component_dir + 'mozc.xml',
+                 ibus_component_dir + 'pinyin.xml',
+                 ibus_component_dir + 'xkb-layouts.xml'])
 
 env.InputMethodWhitelist('chromeos_input_method_whitelist.h',
                          env['ENV']['SYSROOT'] +
