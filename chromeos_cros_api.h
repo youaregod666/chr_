@@ -115,12 +115,13 @@
 //  45: Added DeviceNetworkList + associated Get & Free functions.
 //  46: Change the meaning of the last argument in MonitorInputMethodStatus().
 //  47: Added RemapModifierKeys
+//  48: Added UPDATE_STATUS_REPORTING_ERROR_EVENT.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 47
+  kCrosAPIVersion = 48
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
