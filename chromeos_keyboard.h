@@ -5,16 +5,46 @@
 #ifndef CHROMEOS_KEYBOARD_H_
 #define CHROMEOS_KEYBOARD_H_
 
+#include <map>
 #include <string>
+#include <vector>
 
 namespace chromeos {
+
+enum ModifierKey {
+  kSearchKey = 0,
+  kLeftControlKey,
+  kLeftAltKey,
+  kVoidKey,
+
+  // kCapsLockKey should be the last one. See InitializeStringToModifierMap()
+  // and chromeos_keyboard_unittest.cc.
+  kCapsLockKey,
+};
+
+struct ModifierKeyPair {
+  ModifierKeyPair(ModifierKey in_original, ModifierKey in_replacement)
+      : original(in_original), replacement(in_replacement) {}
+  bool operator==(const ModifierKeyPair& rhs) const {
+    // For CheckMap() in chromeos_keyboard_unittest.cc.
+    return (rhs.original == original) && (rhs.replacement == replacement);
+  }
+  ModifierKey original;      // Replace the key with
+  ModifierKey replacement;   // this key.
+};
+typedef std::vector<ModifierKeyPair> ModifierMap;
 
 // Returns the current layout name like "us". On error, returns "".
 extern std::string (*GetCurrentKeyboardLayoutName)();
 
-// Sets the current keyboard layout to |layout_name|.  Returns true on
-// success.
+// Sets the current keyboard layout to |layout_name|. This function does not
+// change the current mapping of the modifier keys. Returns true on success.
 extern bool (*SetCurrentKeyboardLayoutByName)(const std::string& layout_name);
+
+// Remaps modifier keys. This function does not change the current keyboard
+// layout. Returns true on success.
+// Notice: For now, you can't remap Left Control and Left Alt keys to CapsLock.
+extern bool (*RemapModifierKeys)(const ModifierMap& modifier_map);
 
 // Gets whehter we have separate keyboard layout per window, or not. The
 // result is stored in |is_per_window|.  Returns true on success.
@@ -24,6 +54,63 @@ extern bool (*GetKeyboardLayoutPerWindow)(bool* is_per_window);
 // is given, the same keyboard layout will be shared for all applications.
 // Returns true on success.
 extern bool (*SetKeyboardLayoutPerWindow)(bool is_per_window);
+
+
+//
+// WARNING: DO NOT USE FUNCTIONS/CLASSES/TYPEDEFS BELOW. They are only for
+// unittests. See the definitions in chromeos_keyboard.cc for details.
+//
+typedef std::map<std::string, ModifierMap> StringToModifierMap;
+
+// Converts |key| to a modifier key name which is used in
+// /usr/share/X11/xkb/symbols/chromeos.
+inline std::string ModifierKeyToString(ModifierKey key) {
+  switch (key) {
+    case kSearchKey:
+      return "search";
+    case kLeftControlKey:
+      return "leftcontrol";
+    case kLeftAltKey:
+      return "leftalt";
+    case kVoidKey:
+      return "disabled";
+    case kCapsLockKey:
+      return "capslock";
+  }
+  return "";
+}
+
+// Creates a full XKB layout name like
+//   "gb(extd)+chromeos(leftcontrol_disabled_leftalt),us"
+// from modifier key mapping and |layout_name|, such as "us", "us(dvorak)", and
+// "gb(extd)". Returns an empty string on error.
+std::string CreateFullXkbLayoutName(const std::string& layout_name,
+                                    const ModifierMap& modifire_map);
+
+// Returns a layout name which is used in libcros from a full XKB layout name.
+// On error, it returns an empty string.
+// Example: "gb(extd)+chromeos(leftcontrol_disabled_leftalt),us" -> "gb(extd)"
+std::string ExtractLayoutNameFromFullXkbLayoutName(
+    const std::string& full_xkb_layout_name);
+
+// Initializes a std::map that holds mappings like:
+//   "leftcontrol_disabled_leftalt" ->
+//     {{ kSearchKey -> kLeftControlKey },
+//      { kLeftControlKey -> kVoidKey },
+//      { kLeftAltKey -> kLeftAltKey }}
+void InitializeStringToModifierMap(
+    StringToModifierMap* out_string_to_modifier_map);
+
+// Returns a mapping of modifier keys from a full XKB layout name. Returns true
+// on success.
+// Example: "gb(extd)+chromeos(leftcontrol_disabled_leftalt),us" ->
+//     {{ kSearchKey -> kLeftControlKey },
+//      { kLeftControlKey -> kVoidKey },
+//      { kLeftAltKey -> kLeftAltKey }}
+bool ExtractModifierMapFromFullXkbLayoutName(
+    const std::string& full_xkb_layout_name,
+    const StringToModifierMap& string_to_modifier_map,
+    ModifierMap* out_modifier_map);
 
 }  // namespace chromeos
 

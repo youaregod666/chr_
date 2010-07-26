@@ -116,13 +116,31 @@ Default(env.SharedLibrary('cros', SOURCES))
 env_test = base_env.Clone()
 env_test.Append(LIBS=['base', 'dl', 'rt'])
 
-env_test.ParseConfig('%s --cflags --libs gobject-2.0 dbus-1' % env_test['ENV']['PKG_CONFIG'])
+env_test.ParseConfig('%s --cflags --libs gobject-2.0 dbus-1' % (
+    env_test['ENV']['PKG_CONFIG']))
 
 env_gtest = env_test.Clone()
 env_gtest.Append(LIBS=['gtest'])
 
+env_gtest_main = env_test.Clone()
+env_gtest_main.Append(LIBS=['gtest', 'gtest_main'])
+env_gtest_main.ParseConfig('%s --cflags --libs libxklavier' % (
+    env_test['ENV']['PKG_CONFIG']))
+
 Load = base_env.Object('load.cc')
 
+# Tests that do not require libcros.so. The ebuild script for libcros
+# automatically builds and runs the tests (libcros_unittests) if FEATURES="test"
+# is set.
+unittests = [
+  env_gtest_main.Program('libcros_unittests',
+                         ['chromeos_keyboard.cc',
+                          'chromeos_keyboard_unittest.cc']),
+]
+unittest_alias = Alias('unittest', unittests)
+AlwaysBuild(unittest_alias)
+
+# Tests that do require libcros.so.
 tests = [
   env_test.Program('monitor_power', ['monitor_power.cc', Load]),
   # This doesn't compile:

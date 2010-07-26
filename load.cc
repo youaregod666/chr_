@@ -113,6 +113,7 @@ DECL_FUNC_4(NotifyCandidateClicked, void,
             InputMethodUiStatusConnection*, int, int, int);
 DECL_FUNC_0(GetCurrentKeyboardLayoutName, std::string);
 DECL_FUNC_1(SetCurrentKeyboardLayoutByName, bool, const std::string&);
+DECL_FUNC_1(RemapModifierKeys, bool, const ModifierMap&);
 DECL_FUNC_1(GetKeyboardLayoutPerWindow, bool, bool*);
 DECL_FUNC_1(SetKeyboardLayoutPerWindow, bool, bool);
 
@@ -284,6 +285,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(NotifyCandidateClicked);
   INIT_FUNC(GetCurrentKeyboardLayoutName);
   INIT_FUNC(SetCurrentKeyboardLayoutByName);
+  INIT_FUNC(RemapModifierKeys);
   INIT_FUNC(GetKeyboardLayoutPerWindow);
   INIT_FUNC(SetKeyboardLayoutPerWindow);
 
