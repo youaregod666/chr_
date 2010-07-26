@@ -21,6 +21,7 @@ const char kSysLogsScript[] =
     "/usr/share/userfeedback/scripts/sysinfo_script_runner";
 const char kMultilineQuote[] = "\"\"\"";
 const char kNewLineChars[] = "\r\n";
+const char kInvalidLogEntry[] = "<invalid characters in log entry>";
 
 // Reads a key from the input string erasing the read values + delimiters read
 // from the initial string
@@ -105,8 +106,13 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* temp_filename) {
     TrimWhitespaceASCII(key, TRIM_ALL, &key);
     if (!key.empty()) {
       std::string value = ReadValue(&data);
-      TrimWhitespaceASCII(value, TRIM_ALL, &value);
-      (*logs)[key] = value;
+      if (IsStringUTF8(value)) {
+        TrimWhitespaceASCII(value, TRIM_ALL, &value);
+        (*logs)[key] = value;
+      } else {
+        LOG(WARNING) << "Invalid characters in system log entry: " << key;
+        (*logs)[key] = kInvalidLogEntry;
+      }
     } else {
       // no more keys, we're done
       break;
