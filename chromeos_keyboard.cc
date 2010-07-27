@@ -182,9 +182,9 @@ class XKeyboard {
                                gint* out_exit_status) {
     *out_exit_status = -1;
 
-    char* quoted = g_strdup_printf("'%s'", layouts_to_set.c_str());
     gchar* argv[] = {
-      g_strdup(kSetxkbmapCommand), g_strdup("-layout"), quoted, NULL
+      g_strdup(kSetxkbmapCommand), g_strdup("-layout"),
+      g_strdup(layouts_to_set.c_str()), NULL
     };
     GError* error = NULL;
     const gboolean successful = g_spawn_sync(NULL, argv, NULL,
@@ -321,13 +321,6 @@ std::string CreateFullXkbLayoutName(const std::string& layout_name,
     return "";
   }
 
-  // TODO(yusukes): Remove the restriction.
-  if ((use_left_control_key_as_str == ModifierKeyToString(kCapsLockKey)) ||
-      (use_left_alt_key_as_str == ModifierKeyToString(kCapsLockKey))) {
-    LOG(ERROR) << "We don't support remaping Ctrl/Alt to Caps Lock";
-    return "";
-  }
-
   std::string full_xkb_layout_name =
       StringPrintf("%s+chromeos(%s_%s_%s)", layout_name.c_str(),
                    use_search_key_as_str.c_str(),
@@ -356,11 +349,9 @@ void InitializeStringToModifierMap(StringToModifierMap* out_map) {
   DCHECK(out_map);
   out_map->clear();
 
-  // We use kCapsLockKey for |i|, but don't use it for |j| and |k|.
-  // TODO(yusukes): Remove the restriction.
-  for (int i = 0; i <= static_cast<int>(kCapsLockKey); ++i) {
-    for (int j = 0; j < static_cast<int>(kCapsLockKey); ++j) {
-      for (int k = 0; k < static_cast<int>(kCapsLockKey); ++k) {
+  for (int i = 0; i < static_cast<int>(kNumModifierKeys); ++i) {
+    for (int j = 0; j < static_cast<int>(kNumModifierKeys); ++j) {
+      for (int k = 0; k < static_cast<int>(kNumModifierKeys); ++k) {
         const std::string string_rep = StringPrintf(
             "%s_%s_%s",
             ModifierKeyToString(ModifierKey(i)).c_str(),

@@ -84,18 +84,16 @@ TEST(ChromeOSKeyboardTest, TestCreateFullXkbLayoutNameBasic) {
   tmp_map.push_back(ModifierKeyPair(kCapsLockKey, kSearchKey));  // ditto
   EXPECT_STREQ("", CreateFullXkbLayoutName("us", tmp_map).c_str());
 
-  // CreateFullXkbLayoutName can remap Search to CapsLock.
+  // CreateFullXkbLayoutName can remap Search/Ctrl/Alt to CapsLock.
   EXPECT_STREQ("us+chromeos(capslock_disabled_disabled)",
                CreateFullXkbLayoutName(
                    "us", GetMap(kCapsLockKey, kVoidKey, kVoidKey)).c_str());
-
-  // CreateFullXkbLayoutName should not remap Ctrl to CapsLock.
-  EXPECT_STREQ("", CreateFullXkbLayoutName(
-      "us", GetMap(kVoidKey, kCapsLockKey, kVoidKey)).c_str());
-
-  // CreateFullXkbLayoutName should not remap Alt to CapsLock.
-  EXPECT_STREQ("", CreateFullXkbLayoutName(
-      "us", GetMap(kVoidKey, kVoidKey, kCapsLockKey)).c_str());
+  EXPECT_STREQ("us+chromeos(disabled_capslock_disabled)",
+               CreateFullXkbLayoutName(
+                   "us", GetMap(kVoidKey, kCapsLockKey, kVoidKey)).c_str());
+  EXPECT_STREQ("us+chromeos(disabled_disabled_capslock)",
+               CreateFullXkbLayoutName(
+                   "us", GetMap(kVoidKey, kVoidKey, kCapsLockKey)).c_str());
 
   // CreateFullXkbLayoutName should not accept non-alphanumeric characters
   // except "()-_".
@@ -150,9 +148,9 @@ TEST(ChromeOSKeyboardTest, TestCreateFullXkbLayoutNameBasic) {
 // functions could handle all combinations of modifier remapping.
 TEST(ChromeOSKeyboardTest, TestCreateFullXkbLayoutNameModifierKeys) {
   std::set<std::string> layouts;
-  for (int i = 0; i <= static_cast<int>(kCapsLockKey); ++i) {
-    for (int j = 0; j < static_cast<int>(kCapsLockKey); ++j) {
-      for (int k = 0; k < static_cast<int>(kCapsLockKey); ++k) {
+  for (int i = 0; i < static_cast<int>(kNumModifierKeys); ++i) {
+    for (int j = 0; j < static_cast<int>(kNumModifierKeys); ++j) {
+      for (int k = 0; k < static_cast<int>(kNumModifierKeys); ++k) {
         const std::string layout = CreateFullXkbLayoutName(
             "us", GetMap(ModifierKey(i), ModifierKey(j), ModifierKey(k)));
         // CreateFullXkbLayoutName should succeed (i.e. should not return "".)
@@ -236,9 +234,9 @@ TEST(ChromeOSKeyboardTest, TestExtractModifierMapFromFullXkbLayoutName) {
   EXPECT_TRUE(CheckMap(modifier_map, kVoidKey, kVoidKey, kVoidKey));
 
   // Check all cases just in case.
-  for (int i = 0; i <= static_cast<int>(kCapsLockKey); ++i) {
-    for (int j = 0; j < static_cast<int>(kCapsLockKey); ++j) {
-      for (int k = 0; k < static_cast<int>(kCapsLockKey); ++k) {
+  for (int i = 0; i < static_cast<int>(kNumModifierKeys); ++i) {
+    for (int j = 0; j < static_cast<int>(kNumModifierKeys); ++j) {
+      for (int k = 0; k < static_cast<int>(kNumModifierKeys); ++k) {
         const std::string layout = CreateFullXkbLayoutName(
             "us", GetMap(ModifierKey(i), ModifierKey(j), ModifierKey(k)));
         EXPECT_TRUE(ExtractModifierMapFromFullXkbLayoutName(

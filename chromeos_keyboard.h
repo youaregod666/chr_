@@ -16,10 +16,9 @@ enum ModifierKey {
   kLeftControlKey,
   kLeftAltKey,
   kVoidKey,
-
-  // kCapsLockKey should be the last one. See InitializeStringToModifierMap()
-  // and chromeos_keyboard_unittest.cc.
   kCapsLockKey,
+
+  kNumModifierKeys,
 };
 
 struct ModifierKeyPair {
@@ -76,6 +75,8 @@ inline std::string ModifierKeyToString(ModifierKey key) {
       return "disabled";
     case kCapsLockKey:
       return "capslock";
+    case kNumModifierKeys:
+      break;
   }
   return "";
 }
