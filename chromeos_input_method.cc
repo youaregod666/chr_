@@ -529,7 +529,9 @@ class InputMethodStatusConnection {
     // consistent.
     RegisterProperties(NULL);
 
-    ibus_bus_set_global_engine(ibus_, name);
+    if (!ibus_bus_set_global_engine(ibus_, name)) {
+      return false;
+    }
     UpdateUI();
     return true;
   }
