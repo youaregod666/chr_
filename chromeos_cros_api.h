@@ -116,12 +116,13 @@
 //  46: Change the meaning of the last argument in MonitorInputMethodStatus().
 //  47: Added RemapModifierKeys
 //  48: Added UPDATE_STATUS_REPORTING_ERROR_EVENT.
+//  49: Added RebootIfUpdated.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 48
+  kCrosAPIVersion = 49
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

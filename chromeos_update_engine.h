@@ -64,6 +64,9 @@ extern void (*DisconnectUpdateProgress)(UpdateStatusConnection connection);
 extern bool (*RetrieveUpdateProgress)(UpdateProgress* information);
 // Tell UpdateEngine daemon to check for an update. Returns true on success.
 extern bool (*InitiateUpdateCheck)();
+// Tell UpdateEngine daemon to reboot the system if an update has been
+// downloaded and installed.
+extern bool (*RebootIfUpdated)();
 
 }  // namespace chromeos
 

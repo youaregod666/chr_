@@ -202,9 +202,25 @@ bool ChromeOSInitiateUpdateCheck() {
                            kUpdateEngineServiceInterface);
   GError* error = NULL;
 
-  gboolean rc = org_chromium_UpdateEngineInterface_check_for_update(
-      update_proxy.gproxy(), &error);
+  gboolean rc = org_chromium_UpdateEngineInterface_attempt_update(
+      update_proxy.gproxy(), "", "", &error);
   LOG_IF(ERROR, rc == FALSE) << "Error checking for update: "
+                             << GetGErrorMessage(error);
+  return rc == TRUE;
+}
+
+extern "C"
+bool ChromeOSRebootIfUpdated() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy update_proxy(bus,
+                           kUpdateEngineServiceName,
+                           kUpdateEngineServicePath,
+                           kUpdateEngineServiceInterface);
+  GError* error = NULL;
+
+  gboolean rc = org_chromium_UpdateEngineInterface_reboot_if_needed(
+      update_proxy.gproxy(), &error);
+  LOG_IF(ERROR, rc == FALSE) << "Error requesting a reboot: "
                              << GetGErrorMessage(error);
   return rc == TRUE;
 }
