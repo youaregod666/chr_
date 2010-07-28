@@ -532,6 +532,20 @@ class InputMethodStatusConnection {
     if (!ibus_bus_set_global_engine(ibus_, name)) {
       return false;
     }
+
+    // Sometimes ibus_bus_set_global_engine() fails, but still returns true.
+    // Therefore, we need to check that the engine was actually set.
+    // See: http://crosbug.com/5188
+    IBusEngineDesc* engine_desc = ibus_bus_get_global_engine(ibus_);
+    if (!engine_desc) {
+      return false;
+    }
+    bool success = (engine_desc->name == name);
+    g_object_unref(engine_desc);
+    if (!success) {
+      return false;
+    }
+
     UpdateUI();
     return true;
   }
