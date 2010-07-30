@@ -111,6 +111,8 @@ static const char* kErrorOutOfRange = "out-of-range";
 static const char* kErrorPinMissing = "pin-missing";
 static const char* kErrorDhcpFailed = "dhcp-failed";
 static const char* kErrorConnectFailed = "connect-failed";
+static const char* kErrorBadPassphrase = "bad-passphrase";
+static const char* kErrorBadWEPKey = "bad-wepkey";
 
 // IPConfig property names.
 static const char* kMethodProperty = "Method";
@@ -243,6 +245,10 @@ static ConnectionError ParseError(const std::string& error) {
     return ERROR_DHCP_FAILED;
   if (error == kErrorConnectFailed)
     return ERROR_CONNECT_FAILED;
+  if (error == kErrorBadPassphrase)
+    return ERROR_BAD_PASSPHRASE;
+  if (error == kErrorBadWEPKey)
+    return ERROR_BAD_WEPKEY;
   return ERROR_UNKNOWN;
 }
 

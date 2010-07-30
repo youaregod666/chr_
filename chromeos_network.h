@@ -45,15 +45,18 @@ enum ConnectionState {
   STATE_FAILURE       = 7,
 };
 
+// connection errors (see flimflam/include/service.h)
 enum ConnectionError {
   ERROR_UNKNOWN        = 0,
   ERROR_OUT_OF_RANGE   = 1,
   ERROR_PIN_MISSING    = 2,
   ERROR_DHCP_FAILED    = 3,
   ERROR_CONNECT_FAILED = 4,
+  ERROR_BAD_PASSPHRASE = 5,
+  ERROR_BAD_WEPKEY     = 6,
 };
 
-// ipconfig types (see flimflam/files/doc/ipconfig-api.txt
+// ipconfig types (see flimflam/files/doc/ipconfig-api.txt)
 enum IPConfigType {
   IPCONFIG_TYPE_UNKNOWN,
   IPCONFIG_TYPE_IPV4,

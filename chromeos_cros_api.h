@@ -117,12 +117,13 @@
 //  47: Added RemapModifierKeys
 //  48: Added UPDATE_STATUS_REPORTING_ERROR_EVENT.
 //  49: Added RebootIfUpdated.
+//  50: Added new flimflam error codes.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 49
+  kCrosAPIVersion = 50
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
