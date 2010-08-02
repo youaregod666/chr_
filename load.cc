@@ -204,6 +204,8 @@ DECL_FUNC_1(GetSystemLogs, LogDictionaryType*, FilePath*);
 // System
 DECL_FUNC_0(GetTimezoneID, std::string);
 DECL_FUNC_1(SetTimezoneID, void, const std::string& id);
+DECL_FUNC_0(GetMachineInfo, MachineInfo*);
+DECL_FUNC_1(FreeMachineInfo, void, MachineInfo*);
 
 
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
@@ -374,6 +376,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   // System
   INIT_FUNC(GetTimezoneID);
   INIT_FUNC(SetTimezoneID);
+  INIT_FUNC(GetMachineInfo);
+  INIT_FUNC(FreeMachineInfo);
 
   return error_string.empty();
 }
