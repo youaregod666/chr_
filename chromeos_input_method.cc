@@ -540,7 +540,7 @@ class InputMethodStatusConnection {
     if (!engine_desc) {
       return false;
     }
-    bool success = (engine_desc->name == name);
+    bool success = (0 == strcmp(name, engine_desc->name));
     g_object_unref(engine_desc);
     if (!success) {
       return false;
