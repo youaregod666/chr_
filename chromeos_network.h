@@ -157,6 +157,20 @@ extern void (*RequestScan)(ConnectionType type);
 extern ServiceInfo* (*GetWifiService)(const char* ssid,
                                       ConnectionSecurity security);
 
+// Set up the configuration for a wifi service with |ssid| and the
+// provided security parameters. If the ssid is currently known and
+// visible, the configuration will be applied to the existing service;
+// otherwise, the configuration will be saved for use when the network
+// is found.
+//
+// Returns false on failure and true on success.
+extern bool (*ConfigureWifiService)(const char* ssid,
+                                    ConnectionSecurity security,
+                                    const char* passphrase,
+                                    const char* identity,
+                                    const char* certpath);
+
+
 // Connects to the network with the |service_path|.
 //
 // Set |passphrase| to NULL if the network doesn't require authentication.
@@ -283,4 +297,3 @@ extern void (*FreeDeviceNetworkList)(DeviceNetworkList* network_list);
 }  // namespace chromeos
 
 #endif  // CHROMEOS_NETWORK_H_
-

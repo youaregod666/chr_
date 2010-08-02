@@ -119,12 +119,13 @@
 //  49: Added RebootIfUpdated.
 //  50: Added new flimflam error codes.
 //  51: Added GetMachineInfo
+//  52: Added ConfigureWifiService.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 51
+  kCrosAPIVersion = 52
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

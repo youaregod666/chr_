@@ -35,6 +35,7 @@ static const char* kConnectFunction = "Connect";
 static const char* kDisconnectFunction = "Disconnect";
 static const char* kRequestScanFunction = "RequestScan";
 static const char* kGetWifiServiceFunction = "GetWifiService";
+static const char* kConfigureWifiServiceFunction = "ConfigureWifiService";
 static const char* kEnableTechnologyFunction = "EnableTechnology";
 static const char* kDisableTechnologyFunction = "DisableTechnology";
 static const char* kAddIPConfigFunction = "AddIPConfig";
@@ -880,6 +881,68 @@ ServiceInfo* ChromeOSGetWifiService(const char* ssid,
 }
 
 extern "C"
+bool ChromeOSConfigureWifiService(const char* ssid,
+                                  ConnectionSecurity security,
+                                  const char* passphrase,
+                                  const char* identity,
+                                  const char* certpath) {
+
+  dbus::Proxy manager_proxy(dbus::GetSystemBusConnection(),
+                            kConnmanServiceName,
+                            "/",
+                            kConnmanManagerInterface);
+
+  glib::ScopedHashTable scoped_properties =
+      glib::ScopedHashTable(
+          ::g_hash_table_new_full(::g_str_hash,
+                                  ::g_str_equal,
+                                  ::g_free,
+                                  NULL));
+
+  glib::Value value_mode(kModeManaged);
+  glib::Value value_type(kTypeWifi);
+  glib::Value value_ssid(ssid);
+  if (security == SECURITY_UNKNOWN)
+    security = SECURITY_RSN;
+  glib::Value value_security(SecurityToString(security));
+  glib::Value value_passphrase(passphrase);
+  glib::Value value_identity(identity);
+  glib::Value value_cert_path(certpath);
+
+  ::GHashTable* properties = scoped_properties.get();
+  ::g_hash_table_insert(properties, ::g_strdup(kModeProperty), &value_mode);
+  ::g_hash_table_insert(properties, ::g_strdup(kTypeProperty), &value_type);
+  ::g_hash_table_insert(properties, ::g_strdup(kSSIDProperty), &value_ssid);
+  ::g_hash_table_insert(properties, ::g_strdup(kSecurityProperty),
+                        &value_security);
+  ::g_hash_table_insert(properties, ::g_strdup(kPassphraseProperty),
+                        &value_passphrase);
+  ::g_hash_table_insert(properties, ::g_strdup(kIdentityProperty),
+                        &value_identity);
+  ::g_hash_table_insert(properties, ::g_strdup(kCertPathProperty),
+                        &value_cert_path);
+
+
+  glib::ScopedError error;
+  char* path;
+  if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
+                           kConfigureWifiServiceFunction,
+                           &Resetter(&error).lvalue(),
+                           ::dbus_g_type_get_map("GHashTable",
+                                                 G_TYPE_STRING,
+                                                 G_TYPE_VALUE),
+                           properties,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "ChromeOSConfigureWifiService failed: "
+        << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+
+  return true;
+}
+
+extern "C"
 bool ChromeOSConnectToNetworkWithCertInfo(const char* service_path,
                                           const char* passphrase,
                                           const char* identity,
@@ -1422,4 +1485,3 @@ void ChromeOSFreeDeviceNetworkList(DeviceNetworkList* list) {
 }
 
 }  // namespace chromeos
-

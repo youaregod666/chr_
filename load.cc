@@ -128,6 +128,8 @@ DECL_FUNC_1(MountDevicePath, bool, const char*);
 DECL_FUNC_0(GetSystemInfo, SystemInfo*);
 DECL_FUNC_1(RequestScan, void, ConnectionType);
 DECL_FUNC_2(GetWifiService, ServiceInfo*, const char*, ConnectionSecurity);
+DECL_FUNC_5(ConfigureWifiService, bool, const char*, ConnectionSecurity,
+            const char*, const char*, const char*);
 DECL_FUNC_2(ConnectToNetwork, bool, const char*, const char*);
 DECL_FUNC_4(ConnectToNetworkWithCertInfo, bool, const char*, const char*,
             const char*, const char*);
@@ -303,6 +305,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(GetSystemInfo);
   INIT_FUNC(RequestScan);
   INIT_FUNC(GetWifiService);
+  INIT_FUNC(ConfigureWifiService);
   INIT_FUNC(ConnectToNetwork);
   INIT_FUNC(ConnectToNetworkWithCertInfo);
   INIT_FUNC(DisconnectFromNetwork);
