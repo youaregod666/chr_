@@ -5,6 +5,7 @@
 #ifndef CHROMEOS_CRYPTOHOME_H_
 #define CHROMEOS_CRYPTOHOME_H_
 
+#include <string>
 #include <vector>
 
 namespace chromeos { // NOLINT
@@ -34,6 +35,9 @@ extern bool (*CryptohomeMountAllowFail)(const char* user_email,
                                         int* mount_error);
 extern bool (*CryptohomeMountGuest)(int* mount_error);
 extern bool (*CryptohomeUnmount)();
+extern bool (*CryptohomeTpmIsReady)();
+extern bool (*CryptohomeTpmIsEnabled)();
+extern bool (*CryptohomeTpmGetPassword)(std::string* password);
 
 }  // namespace chromeos
 

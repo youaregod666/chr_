@@ -15,6 +15,7 @@
 #include "monitor_utils.h" //NOLINT
 
 static const char kDoUnmount[] = "do-unmount";
+static const char kTpmStatus[] = "tpm-status";
 
 int main(int argc, const char** argv) {
   CommandLine::Init(argc, argv);
@@ -29,9 +30,17 @@ int main(int argc, const char** argv) {
   // done by chrome.
   ::g_type_init();
   GMainLoop* loop = ::g_main_loop_new(NULL, false);
-  DCHECK(loop);
+  CHECK(loop);
 
-  DCHECK(LoadCrosLibrary(argv)) << "Failed to load cros .so";
+  CHECK(LoadCrosLibrary(argv)) << "Failed to load cros .so";
+
+  if (cl->HasSwitch(kTpmStatus)) {
+    LOG(INFO) << "TPM Enabled: " << chromeos::CryptohomeTpmIsEnabled();
+    LOG(INFO) << "TPM Ready: " << chromeos::CryptohomeTpmIsReady();
+    std::string tpm_password;
+    chromeos::CryptohomeTpmGetPassword(&tpm_password);
+    LOG(INFO) << "TPM Password: " << tpm_password;
+  }
 
   std::string name = WideToASCII(loose_wide_args[0]);
   std::string hash = WideToASCII(loose_wide_args[1]);

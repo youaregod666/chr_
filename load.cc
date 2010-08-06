@@ -182,6 +182,9 @@ DECL_FUNC_3(CryptohomeMountAllowFail, bool, const char*, const char*, int*);
 DECL_FUNC_2(CryptohomeMount, bool, const char*, const char*);
 DECL_FUNC_1(CryptohomeMountGuest, bool, int*);
 DECL_FUNC_0(CryptohomeUnmount, bool);
+DECL_FUNC_0(CryptohomeTpmIsReady, bool);
+DECL_FUNC_0(CryptohomeTpmIsEnabled, bool);
+DECL_FUNC_1(CryptohomeTpmGetPassword, bool, std::string*);
 
 // Update library
 DECL_FUNC_1(Update, bool, UpdateInformation*);
@@ -355,6 +358,9 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(CryptohomeMount);
   INIT_FUNC(CryptohomeMountGuest);
   INIT_FUNC(CryptohomeUnmount);
+  INIT_FUNC(CryptohomeTpmIsReady);
+  INIT_FUNC(CryptohomeTpmIsEnabled);
+  INIT_FUNC(CryptohomeTpmGetPassword);
 
   // Update
   INIT_FUNC(Update);

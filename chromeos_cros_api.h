@@ -120,12 +120,13 @@
 //  50: Added new flimflam error codes.
 //  51: Added GetMachineInfo
 //  52: Added ConfigureWifiService.
+//  53: Added TPM APIs to Cryptohome.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 52
+  kCrosAPIVersion = 53
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

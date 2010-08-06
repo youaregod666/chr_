@@ -260,4 +260,85 @@ bool ChromeOSCryptohomeUnmount() {
   return done;
 }
 
+extern "C"
+bool ChromeOSCryptohomeTpmIsReady() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gboolean done = false;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeTpmIsReady,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN,
+                           &done,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << cryptohome::kCryptohomeTpmIsReady << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+
+  }
+  return done;
+}
+
+extern "C"
+bool ChromeOSCryptohomeTpmIsEnabled() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gboolean done = false;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeTpmIsEnabled,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN,
+                           &done,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << cryptohome::kCryptohomeTpmIsEnabled << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+
+  }
+  return done;
+}
+
+extern "C"
+bool ChromeOSCryptohomeTpmGetPassword(std::string* password) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gchar* local_password = NULL;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeTpmGetPassword,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_STRING,
+                           &local_password,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << cryptohome::kCryptohomeTpmGetPassword << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+
+  }
+
+  if (local_password) {
+    password->assign(local_password);
+    g_free(local_password);
+    return true;
+  }
+  return false;
+}
+
 }  // namespace chromeos
