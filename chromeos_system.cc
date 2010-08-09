@@ -4,10 +4,10 @@
 
 #include "chromeos_system.h"
 
-#include <base/command_line.h>
-#include <base/file_path.h>
-#include <base/file_util.h>
-#include <base/logging.h>
+#include "base/command_line.h"
+#include "base/file_path.h"
+#include "base/file_util.h"
+#include "base/logging.h"
 #include "base/string_tokenizer.h"
 #include "chromeos/string.h"
 
@@ -28,13 +28,13 @@ static const char kHardwareClassKey[] = "hardware_class";
 static const char kHardwareClassTool[] = "/usr/bin/hardware_class";
 static const char kUnknownHardwareClass[] = "unknown";
 
-// File with machine hardware info and key/value delimiters.
-static const char kMachineHardwareInfoFile[] = "/tmp/machine-info";
+// Command to get machine hardware info and key/value delimiters.
+static const char kMachineHardwareInfoTool[] = "cat /tmp/machine-info";
 static const char kMachineHardwareInfoEq[] = "=";
 static const char kMachineHardwareInfoDelim[] = " \n";
 
-// File with machine OS info and key/value delimiters.
-static const char kMachineOSInfoFile[] = "/etc/lsb-release";
+// Command to get machine OS info and key/value delimiters.
+static const char kMachineOSInfoTool[] = "cat /etc/lsb-release";
 static const char kMachineOSInfoEq[] = "=";
 static const char kMachineOSInfoDelim[] = "\n";
 
@@ -99,27 +99,35 @@ void ChromeOSSetTimezoneID(const std::string& id) {
   }
 }
 
-// This will parse files with output in the format:
-// <key><EQ><value><DELIM>[<key><EQ><value>][...]
-// e.g. key1=value1 key2=value2
-static bool ParseNVPairs(
-    const std::string& in_string,
-    const std::string& eq,
-    const std::string& delim,
-    std::vector<std::pair<std::string, std::string> >* nvpairs) {
+void ChromeOSSystem::AddNVPair(const std::string& key,
+                               const std::string& value) {
+  nv_pairs_.push_back(std::make_pair(key,value));
+}
+
+bool ChromeOSSystem::ParseNVPairs(const std::string& in_string,
+                                  const std::string& eq,
+                                  const std::string& delim) {
   // Set up the pair tokenizer.
   StringTokenizer pair_toks(in_string, delim);
   pair_toks.set_quote_chars("\"");
   // Process token pairs.
-  std::vector<std::pair<std::string, std::string> > new_pairs;
+  NameValuePairs new_pairs;
   while (pair_toks.GetNext()) {
     std::string pair(pair_toks.token());
+    if (pair.find(eq) == 0) {
+      LOG(WARNING) << "Empty key: '" << pair << "'. Aborting.";
+      return false;
+    }
     StringTokenizer keyvalue(pair, eq);
     std::string key,value;
     if (keyvalue.GetNext()) {
       key = keyvalue.token();
       if (keyvalue.GetNext()) {
         value = keyvalue.token();
+        if (keyvalue.GetNext()) {
+          LOG(WARNING) << "Multiple key tokens: '" << pair << "'. Aborting.";
+          return false;
+        }
       }
     }
     if (key.empty()) {
@@ -128,12 +136,12 @@ static bool ParseNVPairs(
     }
     new_pairs.push_back(std::make_pair(key, value));
   }
-  nvpairs->insert(nvpairs->end(), new_pairs.begin(), new_pairs.end());
+  nv_pairs_.insert(nv_pairs_.end(), new_pairs.begin(), new_pairs.end());
   return true;
 }
 
-// Similar to file_util::ReadFileToString, but executes a command using popen.
-static bool ExecCmdToString(const std::string& command, std::string* contents) {
+bool ChromeOSSystem::ExecCmdToString(const std::string& command,
+                                     std::string* contents) {
   FILE* fp = popen(command.c_str(), "r");
   if (!fp) {
     return false;
@@ -147,59 +155,64 @@ static bool ExecCmdToString(const std::string& command, std::string* contents) {
   return true;
 }
 
+bool ChromeOSSystem::GetSingleValueFromTool(const std::string& tool,
+                                            const std::string& key) {
+  std::string output_string;
+  if (tool.empty() || !ExecCmdToString(tool, &output_string)) {
+    LOG(WARNING) << "Error excuting: " << tool;
+    return false;
+  }
+  TrimWhitespaceASCII(output_string, TRIM_ALL, &output_string);
+  nv_pairs_.push_back(std::make_pair(key, output_string));
+  return true;
+}
+
+bool ChromeOSSystem::ParseNVPairsFromTool(const std::string& tool,
+                                          const std::string& eq,
+                                          const std::string& delim) {
+  std::string output_string;
+  if (tool.empty() || !ExecCmdToString(tool, &output_string)) {
+    LOG(WARNING) << "Error excuting: " << tool;
+    return false;
+  }
+  if (!ParseNVPairs(output_string, eq, delim)) {
+    LOG(WARNING) << "Error parsing values while excuting: " << tool;
+    return false;
+  }
+  return true;
+}
+
+void ChromeOSSystem::SetMachineInfo(MachineInfo* machine_info) {
+  // Set the MachineInfo struct.
+  machine_info->name_value_size = nv_pairs_.size();
+  machine_info->name_values = new MachineInfo::NVPair[nv_pairs_.size()];
+  int idx = 0;
+  for (NameValuePairs::iterator iter = nv_pairs_.begin();
+       iter != nv_pairs_.end(); ++iter) {
+    machine_info->name_values[idx].name = NewStringCopy(iter->first.c_str());
+    machine_info->name_values[idx].value = NewStringCopy(iter->second.c_str());
+    ++idx;
+  }
+}
+
 extern "C"
 MachineInfo* ChromeOSGetMachineInfo() {
   MachineInfo* machine_info = new MachineInfo();
   if (!machine_info)
     return NULL;
 
-  // Ensure the struct is initialized.
-  machine_info->name_value_size = 0;
-  machine_info->name_values = NULL;
-
-  std::vector<std::pair<std::string, std::string> > nv_pairs;
-
-  {
-    // Get the hardware class.
-    std::string hardware_class = kUnknownHardwareClass;
-    if (ExecCmdToString(kHardwareClassTool, &hardware_class)) {
-      TrimWhitespaceASCII(hardware_class, TRIM_ALL, &hardware_class);
-    }
-    nv_pairs.push_back(std::make_pair(std::string(kHardwareClassKey),
-                                      hardware_class));
+  ChromeOSSystem system;
+  if (!system.GetSingleValueFromTool(kHardwareClassTool, kHardwareClassKey)) {
+    // Use kUnknownHardwareClass if the hardware class command fails.
+    system.AddNVPair(kHardwareClassKey, kUnknownHardwareClass);
   }
-
-  {
-    // Get additional name value pairs from machine info files.
-    FilePath output_file(kMachineHardwareInfoFile);
-    std::string eq = kMachineHardwareInfoEq;
-    std::string delim = kMachineHardwareInfoDelim;
-    std::string output_string;
-    if (file_util::ReadFileToString(output_file, &output_string)) {
-      if (!ParseNVPairs(output_string, eq, delim, &nv_pairs))
-        LOG(WARNING) << "Error parsing MachineInfo in: " + output_file.value();
-    }
-    output_file = FilePath(kMachineOSInfoFile);
-    eq = kMachineOSInfoEq;
-    delim = kMachineOSInfoDelim;
-    output_string.clear();
-    if (file_util::ReadFileToString(output_file, &output_string)) {
-      if (!ParseNVPairs(output_string, eq, delim, &nv_pairs))
-        LOG(WARNING) << "Error parsing MachineInfo in: " + output_file.value();
-    }
-  }
-
-  // Set the MachineInfo struct.
-  machine_info->name_value_size = nv_pairs.size();
-  machine_info->name_values = new MachineInfo::NVPair[nv_pairs.size()];
-  std::vector<std::pair<std::string, std::string> >::iterator iter;
-  int idx = 0;
-  for (iter = nv_pairs.begin(); iter != nv_pairs.end(); ++iter) {
-    machine_info->name_values[idx].name = NewStringCopy(iter->first.c_str());
-    machine_info->name_values[idx].value = NewStringCopy(iter->second.c_str());
-    ++idx;
-  }
-
+  system.ParseNVPairsFromTool(kMachineHardwareInfoTool,
+                              kMachineHardwareInfoEq,
+                              kMachineHardwareInfoDelim);
+  system.ParseNVPairsFromTool(kMachineOSInfoTool,
+                              kMachineOSInfoEq,
+                              kMachineOSInfoDelim);
+  system.SetMachineInfo(machine_info);
   return machine_info;
 }
 
@@ -214,6 +227,5 @@ void ChromeOSFreeMachineInfo(MachineInfo* info) {
     delete info;
   }
 }
-
 
 }  // namespace chromeos

@@ -123,8 +123,8 @@ env_gtest = env_test.Clone()
 env_gtest.Append(LIBS=['gtest'])
 
 env_gtest_main = env_test.Clone()
-env_gtest_main.Append(LIBS=['gtest', 'gtest_main'])
-env_gtest_main.ParseConfig('%s --cflags --libs libxklavier' % (
+env_gtest_main.Append(LIBS=['gtest', 'gtest_main', 'chromeos'])
+env_gtest_main.ParseConfig('%s --cflags --libs libpcrecpp libxklavier' % (
     env_test['ENV']['PKG_CONFIG']))
 
 Load = base_env.Object('load.cc')
@@ -135,7 +135,9 @@ Load = base_env.Object('load.cc')
 unittests = [
   env_gtest_main.Program('libcros_unittests',
                          ['chromeos_keyboard.cc',
-                          'chromeos_keyboard_unittest.cc']),
+                          'chromeos_keyboard_unittest.cc',
+                          'chromeos_system.cc',
+                          'chromeos_system_unittest.cc']),
 ]
 unittest_alias = Alias('unittest', unittests)
 AlwaysBuild(unittest_alias)
