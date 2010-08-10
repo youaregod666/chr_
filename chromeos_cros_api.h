@@ -121,12 +121,14 @@
 //  51: Added GetMachineInfo
 //  52: Added ConfigureWifiService.
 //  53: Added TPM APIs to Cryptohome.
+//  54: Added GetAutoRepeatEnabled, SetAutoRepeatEnabled, GetAutoRepeatRate, and
+//      SetAutoRepeatRate
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 53
+  kCrosAPIVersion = 54
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

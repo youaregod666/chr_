@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include <X11/XKBlib.h>
 #include <X11/Xlib.h>
 #include <glib.h>
 #include <libxklavier/xklavier.h>
@@ -22,44 +23,30 @@ namespace {
 // mapping.
 const char kSetxkbmapCommand[] = "/usr/bin/setxkbmap";
 
-// This is a wrapper class around XklEngine, that opens and closes X
-// display as needed.
-class XklEngineWrapper {
+// This is a wrapper class around Display, that opens and closes X display in
+// the constructor and destructor.
+class ScopedDisplay {
  public:
-  XklEngineWrapper()
-      : display_(NULL),
-        xkl_engine_(NULL) {
-  }
-
-  // Initializes the object. Returns true on success.
-  bool Init() {
-    display_ = XOpenDisplay(NULL);
+  explicit ScopedDisplay(Display* display) : display_(display) {
     if (!display_) {
-      LOG(ERROR) << "XOpenDisplay() failed";
-      return false;
+      LOG(ERROR) << "NULL display_ is passed";
     }
-    xkl_engine_ = xkl_engine_get_instance(display_);
-    if (!xkl_engine_) {
-      LOG(ERROR) << "xkl_engine_get_instance() failed";
-      return false;
-    }
-    return true;
   }
 
-  ~XklEngineWrapper() {
+  ~ScopedDisplay() {
     if (display_) {
       XCloseDisplay(display_);
     }
-    // We don't destruct xkl_engine_ as it's a singleton.
   }
 
-  XklEngine* xkl_engine() { return xkl_engine_; }
+  Display* get() const {
+    return display_;
+  }
 
  private:
   Display* display_;
-  XklEngine* xkl_engine_;
 
-  DISALLOW_COPY_AND_ASSIGN(XklEngineWrapper);
+  DISALLOW_COPY_AND_ASSIGN(ScopedDisplay);
 };
 
 // A singleton class which wraps the setxkbmap command.
@@ -109,6 +96,136 @@ class XKeyboard {
         chromeos::ExtractLayoutNameFromFullXkbLayoutName(command_output);
     LOG(INFO) << "Current XKB layout name: " << layout_name;
     return layout_name;
+  }
+
+  // Gets whehter we have separate keyboard layout per window, or not. The
+  // result is stored in |is_per_window|.  Returns true on success.
+  bool GetKeyboardLayoutPerWindow(bool* is_per_window) {
+    DCHECK(is_per_window);
+    ScopedDisplay display(XOpenDisplay(NULL));  // A connection to the X server.
+    if (!display.get()) {
+      return false;
+    }
+    XklEngine* xkl_engine = xkl_engine_get_instance(display.get());
+    if (!xkl_engine) {
+      LOG(ERROR) << "Can't get XklEngine instance";
+      return false;
+    }
+    *is_per_window = xkl_engine_is_group_per_toplevel_window(xkl_engine);
+    return true;
+  }
+
+  // Sets whether we have separate keyboard layout per window, or not. If false
+  // is given, the same keyboard layout will be shared for all applications.
+  // Returns true on success.
+  bool SetKeyboardLayoutPerWindow(bool is_per_window) {
+    ScopedDisplay display(XOpenDisplay(NULL));
+    if (!display.get()) {
+      return false;
+    }
+    XklEngine* xkl_engine = xkl_engine_get_instance(display.get());
+    if (!xkl_engine) {
+      LOG(ERROR) << "Can't get XklEngine instance";
+      return false;
+    }
+    xkl_engine_set_group_per_toplevel_window(xkl_engine, is_per_window);
+    return true;
+  }
+
+  // Gets the current auto-repeat mode of the keyboard. The result is stored in
+  // |mode|. Returns true on success.
+  bool GetAutoRepeatEnabled(bool* enabled) {
+    // TODO(yusukes): write auto tests for the function.
+    DCHECK(enabled);
+    ScopedDisplay display(XOpenDisplay(NULL));
+    if (!display.get()) {
+      return false;
+    }
+    XKeyboardState values = {};
+    XGetKeyboardControl(display.get(), &values);
+    if (values.global_auto_repeat == 0) {
+      *enabled = false;
+    } else {
+      *enabled = true;
+    }
+    return true;
+  }
+
+  // Turns on and off the auto-repeat of the keyboard. Returns true on success.
+  bool SetAutoRepeatEnabled(bool enabled) {
+    // TODO(yusukes): write auto tests for the function.
+    ScopedDisplay display(XOpenDisplay(NULL));
+    if (!display.get()) {
+      return false;
+    }
+    if (enabled) {
+      XAutoRepeatOn(display.get());
+    } else {
+      XAutoRepeatOff(display.get());
+    }
+    DLOG(INFO) << "Set auto-repeat mode to: " << (enabled ? "on" : "off");
+    return true;
+  }
+
+  // Gets the current auto-repeat rate of the keyboard. The result is stored in
+  // |out_rate|. Returns true on success.
+  bool GetAutoRepeatRate(chromeos::AutoRepeatRate* out_rate) {
+    // TODO(yusukes): write auto tests for the function.
+    ScopedDisplay display(XOpenDisplay(NULL));
+    if (!display.get()) {
+      return false;
+    }
+    // XkbDescPtr is defined in /usr/include/X11/extensions/XKBstr.h.
+    XkbDescPtr xkb = XkbAllocKeyboard();
+    if (!xkb) {
+      return false;
+    }
+
+    bool successful = false;
+    if (XkbGetControls(
+            display.get(), XkbRepeatKeysMask, xkb) == Success) {
+      out_rate->initial_delay_in_ms = xkb->ctrls->repeat_delay;
+      out_rate->repeat_interval_in_ms = xkb->ctrls->repeat_interval;
+      successful = true;
+    } else {
+      out_rate->initial_delay_in_ms = 0;
+      out_rate->repeat_interval_in_ms = 0;
+    }
+    XkbFreeKeyboard(xkb, 0, True /* free_all */);
+    return successful;
+  }
+
+  // Sets the auto-repeat rate of the keyboard, initial delay in ms, and repeat
+  // interval in ms.  Returns true on success.
+  bool SetAutoRepeatRate(const chromeos::AutoRepeatRate& rate) {
+    // TODO(yusukes): write auto tests for the function.
+    ScopedDisplay display(XOpenDisplay(NULL));
+    if (!display.get()) {
+      return false;
+    }
+    XkbDescPtr xkb = XkbAllocKeyboard();
+    if (!xkb) {
+      return false;
+    }
+
+    bool successful = false;
+    if (XkbGetControls(
+            display.get(), XkbRepeatKeysMask, xkb) == Success) {
+      xkb->ctrls->repeat_delay = rate.initial_delay_in_ms;
+      xkb->ctrls->repeat_interval = rate.repeat_interval_in_ms;
+      if (XkbSetControls(display.get(), XkbRepeatKeysMask, xkb) == True) {
+        successful = true;
+      }
+    }
+    XkbFreeKeyboard(xkb, 0, True /* free_all */);
+
+    DLOG(INFO) << "Set auto-repeat rate to: "
+               << rate.initial_delay_in_ms << " ms delay, "
+               << rate.repeat_interval_in_ms << " ms interval";
+    if (!successful) {
+      LOG(ERROR) << "Failed to set auto-repeat rate";
+    }
+    return successful;
   }
 
  private:
@@ -162,9 +279,8 @@ class XKeyboard {
 
     // On success, update the cache and return true.
     if (successful && (exit_status == 0)) {
-      XklEngineWrapper wrapper;
-      if (wrapper.Init() &&
-          !xkl_engine_is_group_per_toplevel_window(wrapper.xkl_engine())) {
+      bool is_per_window = true;
+      if (GetKeyboardLayoutPerWindow(&is_per_window) && !is_per_window) {
         // Use caching only when XKB setting is not per-window.
         last_full_layout_name_ = layouts_to_set;
       }
@@ -413,32 +529,12 @@ bool ExtractModifierMapFromFullXkbLayoutName(
 //
 extern "C"
 bool ChromeOSSetKeyboardLayoutPerWindow(bool is_per_window) {
-  XklEngineWrapper wrapper;
-  if (!wrapper.Init()) {
-    LOG(ERROR) << "XklEngineWrapper::Init() failed";
-    return false;
-  }
-
-  xkl_engine_set_group_per_toplevel_window(wrapper.xkl_engine(),
-                                           is_per_window);
-  LOG(INFO) << "XKB layout per window setting is changed to: "
-            << is_per_window;
-  return true;
+  return XKeyboard::Get()->SetKeyboardLayoutPerWindow(is_per_window);
 }
 
 extern "C"
 bool ChromeOSGetKeyboardLayoutPerWindow(bool* is_per_window) {
-  CHECK(is_per_window);
-  XklEngineWrapper wrapper;
-  if (!wrapper.Init()) {
-    LOG(ERROR) << "XklEngineWrapper::Init() failed";
-    return false;
-  }
-
-  *is_per_window = xkl_engine_is_group_per_toplevel_window(
-      wrapper.xkl_engine());
-  LOG(INFO) << "XKB layout per window setting is: " << *is_per_window;
-  return true;
+  return XKeyboard::Get()->GetKeyboardLayoutPerWindow(is_per_window);
 }
 
 extern "C"
@@ -454,4 +550,24 @@ bool ChromeOSRemapModifierKeys(const chromeos::ModifierMap& modifier_map) {
 extern "C"
 const std::string ChromeOSGetCurrentKeyboardLayoutName() {
   return XKeyboard::Get()->GetLayout();
+}
+
+extern "C"
+bool ChromeOSGetAutoRepeatEnabled(bool* enabled) {
+  return XKeyboard::Get()->GetAutoRepeatEnabled(enabled);
+}
+
+extern "C"
+bool ChromeOSSetAutoRepeatEnabled(bool enabled) {
+  return XKeyboard::Get()->SetAutoRepeatEnabled(enabled);
+}
+
+extern "C"
+bool ChromeOSGetAutoRepeatRate(chromeos::AutoRepeatRate* out_rate) {
+  return XKeyboard::Get()->GetAutoRepeatRate(out_rate);
+}
+
+extern "C"
+bool ChromeOSSetAutoRepeatRate(const chromeos::AutoRepeatRate& rate) {
+  return XKeyboard::Get()->SetAutoRepeatRate(rate);
 }

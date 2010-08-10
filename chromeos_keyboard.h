@@ -11,6 +11,12 @@
 
 namespace chromeos {
 
+struct AutoRepeatRate {
+  AutoRepeatRate() : initial_delay_in_ms(0), repeat_interval_in_ms(0) {}
+  int initial_delay_in_ms;
+  int repeat_interval_in_ms;
+};
+
 enum ModifierKey {
   kSearchKey = 0,
   kLeftControlKey,
@@ -54,6 +60,20 @@ extern bool (*GetKeyboardLayoutPerWindow)(bool* is_per_window);
 // Returns true on success.
 extern bool (*SetKeyboardLayoutPerWindow)(bool is_per_window);
 
+// Gets the current auto-repeat mode of the keyboard. The result is stored in
+// |out_mode|. Returns true on success.
+extern bool (*GetAutoRepeatEnabled)(bool* enabled);
+
+// Turns on and off the auto-repeat of the keyboard. Returns true on success.
+extern bool (*SetAutoRepeatEnabled)(bool enabled);
+
+// Gets the current auto-repeat rate of the keyboard. The result is stored in
+// |out_rate|. Returns true on success.
+extern bool (*GetAutoRepeatRate)(AutoRepeatRate* out_rate);
+
+// Sets the auto-repeat rate of the keyboard, initial delay in ms, and repeat
+// interval in ms.  Returns true on success.
+extern bool (*SetAutoRepeatRate)(const AutoRepeatRate& rate);
 
 //
 // WARNING: DO NOT USE FUNCTIONS/CLASSES/TYPEDEFS BELOW. They are only for

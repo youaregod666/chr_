@@ -111,11 +111,17 @@ DECL_FUNC_1(DisconnectInputMethodUiStatus,
             InputMethodUiStatusConnection*);
 DECL_FUNC_4(NotifyCandidateClicked, void,
             InputMethodUiStatusConnection*, int, int, int);
+
+// Keyboard
 DECL_FUNC_0(GetCurrentKeyboardLayoutName, std::string);
 DECL_FUNC_1(SetCurrentKeyboardLayoutByName, bool, const std::string&);
 DECL_FUNC_1(RemapModifierKeys, bool, const ModifierMap&);
 DECL_FUNC_1(GetKeyboardLayoutPerWindow, bool, bool*);
 DECL_FUNC_1(SetKeyboardLayoutPerWindow, bool, bool);
+DECL_FUNC_1(GetAutoRepeatEnabled, bool, bool*);
+DECL_FUNC_1(SetAutoRepeatEnabled, bool, bool);
+DECL_FUNC_1(GetAutoRepeatRate, bool, chromeos::AutoRepeatRate*);
+DECL_FUNC_1(SetAutoRepeatRate, bool, const chromeos::AutoRepeatRate&);
 
 // Mount
 DECL_FUNC_2(MonitorMountStatus, MountStatusConnection, MountMonitor, void*);
@@ -291,11 +297,17 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MonitorInputMethodUiStatus);
   INIT_FUNC(DisconnectInputMethodUiStatus);
   INIT_FUNC(NotifyCandidateClicked);
+
+  // Keyboard
   INIT_FUNC(GetCurrentKeyboardLayoutName);
   INIT_FUNC(SetCurrentKeyboardLayoutByName);
   INIT_FUNC(RemapModifierKeys);
   INIT_FUNC(GetKeyboardLayoutPerWindow);
   INIT_FUNC(SetKeyboardLayoutPerWindow);
+  INIT_FUNC(GetAutoRepeatEnabled);
+  INIT_FUNC(SetAutoRepeatEnabled);
+  INIT_FUNC(GetAutoRepeatRate);
+  INIT_FUNC(SetAutoRepeatRate);
 
   // Mount
   INIT_FUNC(MonitorMountStatus);
