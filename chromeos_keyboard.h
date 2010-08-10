@@ -13,8 +13,8 @@ namespace chromeos {
 
 struct AutoRepeatRate {
   AutoRepeatRate() : initial_delay_in_ms(0), repeat_interval_in_ms(0) {}
-  int initial_delay_in_ms;
-  int repeat_interval_in_ms;
+  unsigned int initial_delay_in_ms;
+  unsigned int repeat_interval_in_ms;
 };
 
 enum ModifierKey {

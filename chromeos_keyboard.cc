@@ -175,24 +175,14 @@ class XKeyboard {
     if (!display.get()) {
       return false;
     }
-    // XkbDescPtr is defined in /usr/include/X11/extensions/XKBstr.h.
-    XkbDescPtr xkb = XkbAllocKeyboard();
-    if (!xkb) {
-      return false;
-    }
-
-    bool successful = false;
-    if (XkbGetControls(
-            display.get(), XkbRepeatKeysMask, xkb) == Success) {
-      out_rate->initial_delay_in_ms = xkb->ctrls->repeat_delay;
-      out_rate->repeat_interval_in_ms = xkb->ctrls->repeat_interval;
-      successful = true;
-    } else {
+    if (XkbGetAutoRepeatRate(display.get(), XkbUseCoreKbd,
+                             &(out_rate->initial_delay_in_ms),
+                             &(out_rate->repeat_interval_in_ms)) != True) {
       out_rate->initial_delay_in_ms = 0;
       out_rate->repeat_interval_in_ms = 0;
+      return false;
     }
-    XkbFreeKeyboard(xkb, 0, True /* free_all */);
-    return successful;
+    return true;
   }
 
   // Sets the auto-repeat rate of the keyboard, initial delay in ms, and repeat
@@ -203,29 +193,17 @@ class XKeyboard {
     if (!display.get()) {
       return false;
     }
-    XkbDescPtr xkb = XkbAllocKeyboard();
-    if (!xkb) {
-      return false;
-    }
-
-    bool successful = false;
-    if (XkbGetControls(
-            display.get(), XkbRepeatKeysMask, xkb) == Success) {
-      xkb->ctrls->repeat_delay = rate.initial_delay_in_ms;
-      xkb->ctrls->repeat_interval = rate.repeat_interval_in_ms;
-      if (XkbSetControls(display.get(), XkbRepeatKeysMask, xkb) == True) {
-        successful = true;
-      }
-    }
-    XkbFreeKeyboard(xkb, 0, True /* free_all */);
 
     DLOG(INFO) << "Set auto-repeat rate to: "
                << rate.initial_delay_in_ms << " ms delay, "
                << rate.repeat_interval_in_ms << " ms interval";
-    if (!successful) {
+    if (XkbSetAutoRepeatRate(display.get(), XkbUseCoreKbd,
+                             rate.initial_delay_in_ms,
+                             rate.repeat_interval_in_ms) != True) {
       LOG(ERROR) << "Failed to set auto-repeat rate";
+      return false;
     }
-    return successful;
+    return true;
   }
 
  private:
