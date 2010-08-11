@@ -98,8 +98,12 @@ env.ParseConfig('%s --cflags --libs dbus-1 glib-2.0 gudev-1.0 dbus-glib-1 ibus-1
 env.GlibMarshal('marshal.glibmarshal.c', 'marshal.list')
 ibus_component_dir = "%s%s" % (env['ENV']['SYSROOT'],
                                '/usr/share/ibus/component/')
+ime_whitelist_file = env['ENV']['SYSROOT'] + '/usr/share/chromeos-assets/' + \
+                     'input_methods/whitelist.txt'
+
 env.IBusEngines('ibus_input_methods.h',
-                [ibus_component_dir + 'chewing.xml',
+                [ime_whitelist_file, # The first argument must be whitelist.
+                 ibus_component_dir + 'chewing.xml',
                  ibus_component_dir + 'hangul.xml',
                  ibus_component_dir + 'm17n.xml',
                  ibus_component_dir + 'mozc.xml',
@@ -107,9 +111,7 @@ env.IBusEngines('ibus_input_methods.h',
                  ibus_component_dir + 'xkb-layouts.xml'])
 
 env.InputMethodWhitelist('chromeos_input_method_whitelist.h',
-                         env['ENV']['SYSROOT'] +
-                         '/usr/share/chromeos-assets' +
-                         '/input_methods/whitelist.txt')
+                         ime_whitelist_file)
 
 Default(env.SharedLibrary('cros', SOURCES))
 
