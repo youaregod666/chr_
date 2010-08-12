@@ -7,6 +7,7 @@
 
 namespace chromeos { // NOLINT
 
+static const char kOwnerKeyFile[] = "/var/lib/whitelist/owner.key";
 
 extern bool (*EmitLoginPromptReady)();
 extern bool (*StartSession)(const char* user_email,
