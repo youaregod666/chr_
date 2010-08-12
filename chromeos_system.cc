@@ -9,6 +9,7 @@
 #include "base/file_util.h"
 #include "base/logging.h"
 #include "base/string_tokenizer.h"
+#include "base/string_util.h"
 #include "chromeos/string.h"
 
 namespace chromeos {  // NOLINT
