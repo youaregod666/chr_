@@ -48,7 +48,7 @@ OUTPUT_FOOTER = """
 
 def main():
   if len(sys.argv) != 2:
-    print 'Usage: gen_input_method_whitelist.py [file]'
+    print >> sys.stderr, 'Usage: gen_input_method_whitelist.py [file]'
     sys.exit(1)
   print OUTPUT_HEADER
   for line in fileinput.input(sys.argv[1]):

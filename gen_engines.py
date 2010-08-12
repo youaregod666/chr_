@@ -149,7 +149,8 @@ def SortEnginesWithWhitelist(engines, whitelist):
     engine_names_map[engine['name']] = engine
   for lang in whitelist:
     if lang not in engine_names_map:
-      print "%s not listed in supported engine, but in whitelist.txt" % lang
+      print >> sys.stderr, (
+          "%s not listed in supported engine, but in whitelist.txt" % lang)
       sys.exit(1)
     sorted_engines.append(engine_names_map[lang])
   return sorted_engines
@@ -174,14 +175,14 @@ def CreateEngineHeader(engines):
 
 def main(argv):
   if len(argv) < 3:
-    print 'Usage: gen_engines.py [whitelist] [files]'
+    print >> sys.stderr, 'Usage: gen_engines.py [whitelist] [files]'
     sys.exit(1)
   engines = []
   whitelist = GetWhitelist(argv[1])
   for filename in argv[2:]:
     new_engines = ExtractEngines(filename)
     if len(new_engines) == 0:
-      print "%s had no engines" % filename
+      print >> sys.stderr, "%s had no engines" % filename
       sys.exit(2)
     engines.extend(new_engines)
   engines = SortEnginesWithWhitelist(engines, whitelist)
