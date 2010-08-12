@@ -24,7 +24,7 @@ int main(int argc, const char** argv) {
                        logging::DONT_LOCK_LOG_FILE,
                        logging::APPEND_TO_OLD_LOG_FILE);
   CommandLine *cl = CommandLine::ForCurrentProcess();
-  std::vector<std::wstring> loose_wide_args = cl->GetLooseValues();
+  std::vector<std::string> loose_args = cl->args();
 
   // Initialize the g_type systems an g_main event loop, normally this would be
   // done by chrome.
@@ -42,8 +42,8 @@ int main(int argc, const char** argv) {
     LOG(INFO) << "TPM Password: " << tpm_password;
   }
 
-  std::string name = WideToASCII(loose_wide_args[0]);
-  std::string hash = WideToASCII(loose_wide_args[1]);
+  std::string name = loose_args[0];
+  std::string hash = loose_args[1];
   LOG(INFO) << "Trying " << name << " " << hash;
   CHECK(chromeos::CryptohomeCheckKey(name.c_str(), hash.c_str())) <<
       "Credentials are no good on this device";
