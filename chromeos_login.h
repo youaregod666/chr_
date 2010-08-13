@@ -13,6 +13,7 @@ extern bool (*EmitLoginPromptReady)();
 extern bool (*StartSession)(const char* user_email,
                             const char* unique_id /* unused */);
 extern bool (*StopSession)(const char* unique_id /* unused */);
+extern bool (*RestartJob)(int pid, const char* command_line);
 
 }  // namespace chromeos
 

@@ -168,6 +168,7 @@ DECL_FUNC_2(SetSynapticsParameter, void, SynapticsParameter, int);
 DECL_FUNC_0(EmitLoginPromptReady, bool);
 DECL_FUNC_2(StartSession, bool, const char*, const char*);
 DECL_FUNC_1(StopSession, bool, const char*);
+DECL_FUNC_2(RestartJob, bool, int, const char*);
 
 // Screen Lock
 DECL_FUNC_2(MonitorScreenLock,
@@ -351,6 +352,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(EmitLoginPromptReady);
   INIT_FUNC(StartSession);
   INIT_FUNC(StopSession);
+  INIT_FUNC(RestartJob);
 
   // Screen Lock
   INIT_FUNC(MonitorScreenLock);

@@ -93,4 +93,32 @@ bool ChromeOSStopSession(const char* unique_id /* unused */) {
   return done;
 }
 
+extern "C"
+bool ChromeOSRestartJob(int pid, const char* command_line) {
+  chromeos::dbus::BusConnection bus =
+      chromeos::dbus::GetSystemBusConnection();
+  chromeos::dbus::Proxy proxy(bus,
+                              login_manager::kSessionManagerServiceName,
+                              login_manager::kSessionManagerServicePath,
+                              login_manager::kSessionManagerInterface);
+  gboolean done = false;
+  chromeos::glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           login_manager::kSessionManagerRestartJob,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INT,
+                           pid,
+                           G_TYPE_STRING,
+                           command_line,
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN,
+                           &done,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << login_manager::kSessionManagerRestartJob << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+  return done;
+}
+
 }  // namespace chromeos
