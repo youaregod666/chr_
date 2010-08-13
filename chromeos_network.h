@@ -94,9 +94,19 @@ struct SystemInfo {
   ConnectionType default_technology;
   bool offline_mode;
   int service_size;
-  ServiceInfo *services;
+  ServiceInfo *services; // Do not access this directly, use GetServiceInfo().
   int remembered_service_size;
-  ServiceInfo *remembered_services;
+  ServiceInfo *remembered_services; // Use GetRememberedServiceInfo().
+  int service_info_size; // Size of the ServiceInfo stuct.
+  // Client needs to call this method to get each ServiceInfo object.
+  ServiceInfo* GetServiceInfo(int index) {
+    size_t ptr = reinterpret_cast<size_t>(services);
+    return reinterpret_cast<ServiceInfo*>(ptr + index * service_info_size);
+  }
+  ServiceInfo* GetRememberedServiceInfo(int index) {
+    size_t ptr = reinterpret_cast<size_t>(remembered_services);
+    return reinterpret_cast<ServiceInfo*>(ptr + index * service_info_size);
+  }
 };
 
 struct IPConfig {

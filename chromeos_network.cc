@@ -1214,6 +1214,9 @@ SystemInfo* ChromeOSGetSystemInfo() {
   std::copy(remembered_buffer.begin(), remembered_buffer.end(),
             system->remembered_services);
 
+  // Set the runtime size of the ServiceInfo struct for GetServiceInfo() calls.
+  system->service_info_size = sizeof(ServiceInfo);
+
   return system;
 }
 
