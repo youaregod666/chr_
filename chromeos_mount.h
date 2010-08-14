@@ -58,6 +58,10 @@ extern void (*DisconnectMountStatus)(MountStatusConnection connection);
 // after the call. Returns false on failure.
 extern bool (*MountDevicePath)(const char* device_path);
 
+// Unmounts a given device path. If successfull, a DISK_CHANGED event will fire
+// after the call. Returns false on failure.
+extern bool (*UnmountDevicePath)(const char* device_path);
+
 // Returns a list of all the available removeable devices that are found on
 // the device.  If the device not mounted, it will be mounted, and an event
 // will be sent when the mounting is complete.  The MountStatus returned by

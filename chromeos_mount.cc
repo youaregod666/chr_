@@ -159,6 +159,26 @@ bool MountRemoveableDevice(const dbus::BusConnection& bus, const char* path) {
   return true;
 }
 
+bool UnmountRemoveableDevice(const dbus::BusConnection& bus, const char* path) {
+  dbus::Proxy proxy(bus,
+                    kDeviceKitDisksInterface,
+                    path,
+                    kDeviceKitDeviceInterface);
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           "FilesystemUnmount",
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRV, NULL,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "Filesystem Unmount failed: "
+        << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+
+  return true;
+}
+
 }  // namespace
 
 
@@ -362,6 +382,12 @@ extern "C"
 bool ChromeOSMountDevicePath(const char* device_path) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   return MountRemoveableDevice(bus, device_path);
+}
+
+extern "C"
+bool ChromeOSUnmountDevicePath(const char* device_path) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  return UnmountRemoveableDevice(bus, device_path);
 }
 
 extern "C"
