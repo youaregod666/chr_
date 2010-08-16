@@ -39,6 +39,9 @@ struct ModifierKeyPair {
 };
 typedef std::vector<ModifierKeyPair> ModifierMap;
 
+// Returns the hardware layout name.
+extern std::string (*GetHardwareKeyboardLayoutName)();
+
 // Returns the current layout name like "us". On error, returns "".
 extern std::string (*GetCurrentKeyboardLayoutName)();
 

@@ -126,12 +126,13 @@
 //  55: Added GetServiceInfo and GetRememberedServiceInfo on SystemInfo struct.
 //  56: Added RestartJob to chromeos_login.{cc,h}.
 //  57: Added UnmountDevicePath to chromeos_mount.h
+//  58: Added GetHardwareKeyboardLayoutName
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 57
+  kCrosAPIVersion = 58
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

@@ -113,6 +113,7 @@ DECL_FUNC_4(NotifyCandidateClicked, void,
             InputMethodUiStatusConnection*, int, int, int);
 
 // Keyboard
+DECL_FUNC_0(GetHardwareKeyboardLayoutName, std::string);
 DECL_FUNC_0(GetCurrentKeyboardLayoutName, std::string);
 DECL_FUNC_1(SetCurrentKeyboardLayoutByName, bool, const std::string&);
 DECL_FUNC_1(RemapModifierKeys, bool, const ModifierMap&);
@@ -301,6 +302,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(NotifyCandidateClicked);
 
   // Keyboard
+  INIT_FUNC(GetHardwareKeyboardLayoutName);
   INIT_FUNC(GetCurrentKeyboardLayoutName);
   INIT_FUNC(SetCurrentKeyboardLayoutByName);
   INIT_FUNC(RemapModifierKeys);
