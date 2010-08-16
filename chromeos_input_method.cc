@@ -400,6 +400,8 @@ class InputMethodStatusConnection {
  public:
   // Returns a singleton object of the class. If the singleton object is already
   // initialized, the arguments are ignored.
+  // Warning: you can call the callback functions only in the ibus callback
+  // functions like FocusIn(). See http://crosbug.com/5217#c9 for details.
   static InputMethodStatusConnection* GetConnection(
       void* language_library,
       LanguageCurrentInputMethodMonitorFunction current_input_method_changed,
@@ -502,8 +504,6 @@ class InputMethodStatusConnection {
     ibus_input_context_property_activate(
         context, key, (activated ? PROP_STATE_CHECKED : PROP_STATE_UNCHECKED));
     g_object_unref(context);
-
-    UpdateUI();
   }
 
   // Called by cros API ChromeOSChangeInputMethod().
@@ -540,14 +540,9 @@ class InputMethodStatusConnection {
     if (!engine_desc) {
       return false;
     }
-    bool success = (0 == strcmp(name, engine_desc->name));
+    const bool success = (0 == strcmp(name, engine_desc->name));
     g_object_unref(engine_desc);
-    if (!success) {
-      return false;
-    }
-
-    UpdateUI();
-    return true;
+    return success;
   }
 
   // Get a configuration of ibus-daemon or IBus engines and stores it on
@@ -988,7 +983,9 @@ class InputMethodStatusConnection {
     }
   }
 
-  // Retrieve input method status and notify them to the UI.
+  // Retrieves input method status and notifies them to the UI.
+  // Warning: you can call this function only from ibus callback functions
+  // like FocusIn(). See http://crosbug.com/5217#c9 for details.
   void UpdateUI() {
     IBusEngineDesc* engine_desc = ibus_bus_get_global_engine(ibus_);
     if (!engine_desc) {
