@@ -42,6 +42,7 @@ static const char* kAddIPConfigFunction = "AddIPConfig";
 static const char* kRemoveConfigFunction = "Remove";
 static const char* kGetEntryFunction = "GetEntry";
 static const char* kDeleteEntryFunction = "DeleteEntry";
+static const char* kActivateCellularModemFunction = "ActivateCellularModem";
 
 // Connman property names.
 static const char* kSecurityProperty = "Security";
@@ -62,6 +63,7 @@ static const char* kTypeProperty = "Type";
 static const char* kUnknownString = "UNKNOWN";
 static const char* kIPConfigsProperty = "IPConfigs";
 static const char* kDeviceProperty = "Device";
+static const char* kActivationStateProperty = "ActivationState";
 static const char* kFavoriteProperty = "Favorite";
 static const char* kAutoConnectProperty = "AutoConnect";
 static const char* kModeProperty = "Mode";
@@ -369,6 +371,11 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   } else {
     info->device_path = NULL;
   }
+
+  // ActivationState
+  default_string = kUnknownString;
+  properties.Retrieve(kActivationStateProperty, &default_string);
+  info->activation_state = NewStringCopy(default_string);
 }
 
 // Returns a ServiceInfo object populated with data from a
@@ -402,6 +409,8 @@ void DeleteServiceInfoProperties(ServiceInfo info) {
     delete info.identity;
   if (info.cert_path)
     delete info.cert_path;
+  if (info.activation_state)
+    delete info.activation_state;
 
   info.service_path = NULL;
   info.name = NULL;
@@ -409,6 +418,7 @@ void DeleteServiceInfoProperties(ServiceInfo info) {
   info.device_path = NULL;
   info.identity = NULL;
   info.cert_path = NULL;
+  info.activation_state = NULL;
 }
 
 }  // namespace
@@ -878,6 +888,33 @@ ServiceInfo* ChromeOSGetWifiService(const char* ssid,
   }
   ::g_free(path);
   return info;
+}
+
+extern "C"
+bool ChromeOSActivateCellularModem(const char* service_path,
+                                   const char* carrier) {
+  if (carrier == NULL)
+    carrier = "";
+
+  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
+                            kConnmanServiceName,
+                            service_path,
+                            kConnmanServiceInterface);
+
+  // Now try activating.
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_call(service_proxy.gproxy(),
+                           kActivateCellularModemFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           &carrier,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "ActivateCellularNetwork failed: "
+        << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+  return true;
 }
 
 extern "C"

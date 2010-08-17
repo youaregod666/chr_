@@ -84,6 +84,7 @@ struct ServiceInfo {
   bool favorite;
   bool auto_connect;
   const char* device_path;
+  const char* activation_state;
 };
 
 struct SystemInfo {
@@ -167,6 +168,15 @@ extern void (*RequestScan)(ConnectionType type);
 extern ServiceInfo* (*GetWifiService)(const char* ssid,
                                       ConnectionSecurity security);
 
+// Activates the cellular modem specified by |service_path| with carrier
+// specified by |carrier|.
+// |carrier| is NULL or an empty string, this will activate with the currently
+// active carrier.
+//
+// Returns false on failure and true on success.
+extern bool (*ActivateCellularModem)(const char* service_path,
+                                     const char* carrier);
+
 // Set up the configuration for a wifi service with |ssid| and the
 // provided security parameters. If the ssid is currently known and
 // visible, the configuration will be applied to the existing service;
@@ -179,7 +189,6 @@ extern bool (*ConfigureWifiService)(const char* ssid,
                                     const char* passphrase,
                                     const char* identity,
                                     const char* certpath);
-
 
 // Connects to the network with the |service_path|.
 //

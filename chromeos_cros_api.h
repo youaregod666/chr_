@@ -127,12 +127,15 @@
 //  56: Added RestartJob to chromeos_login.{cc,h}.
 //  57: Added UnmountDevicePath to chromeos_mount.h
 //  58: Added GetHardwareKeyboardLayoutName
+//  59: Added ActivateCellularModem and activation_state
+//      This is not backwards compatible, b/c we added a field to ServiceInfo.
+//      Client will need to use GetServiceInfo() which was added in version 55.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 29,
-  kCrosAPIVersion = 58
+  kCrosAPIMinVersion = 55,
+  kCrosAPIVersion = 59
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
