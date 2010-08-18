@@ -130,12 +130,15 @@
 //  59: Added ActivateCellularModem and activation_state
 //      This is not backwards compatible, b/c we added a field to ServiceInfo.
 //      Client will need to use GetServiceInfo() which was added in version 55.
+//  60: Changed GetSystemLogs to accept a NULL parameter
+>>>>>>> a6488bbae920777e6890548e033144182d81fb66
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
+<<<<<<< HEAD
   kCrosAPIMinVersion = 55,
-  kCrosAPIVersion = 59
+  kCrosAPIVersion = 60
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

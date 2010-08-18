@@ -13,6 +13,7 @@
 #include <base/file_path.h>
 #include <base/file_util.h>
 #include <base/logging.h>
+#include <base/scoped_ptr.h>
 
 namespace chromeos { // NOLINT
 
@@ -79,12 +80,24 @@ std::string ReadValue(std::string* data) {
 } // namespace
 
 
+// Returns a map of system log keys and values.
+//
+// Parameters:
+// temp_filename: This is an out parameter that holds the name of a file in
+//                /tmp that contains the system logs in a KEY=VALUE format.
+//                If this parameter is NULL, system logs are not retained on
+//                the filesystem after this call completes.
 extern "C"
 LogDictionaryType* ChromeOSGetSystemLogs(FilePath* temp_filename) {
-  // Create the temp file, logs will go here.
-  if (!file_util::CreateTemporaryFile(temp_filename)) {
-    return NULL;
+  // Create the temp file, logs will go here
+  scoped_ptr<FilePath> internal_tmp_file;
+  if (!temp_filename) {
+    internal_tmp_file.reset(new FilePath());
+    temp_filename = internal_tmp_file.get();
   }
+
+  if (!file_util::CreateTemporaryFile(temp_filename))
+    return NULL;
 
   std::string cmd = std::string(kSysLogsScript) + " >> " +
       temp_filename->value();
@@ -95,9 +108,16 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* temp_filename) {
 
   // Read logs from the temp file
   std::string data;
-  if (!file_util::ReadFileToString(FilePath(*temp_filename), &data)) {
-    return NULL;
+  bool read_success = file_util::ReadFileToString(FilePath(*temp_filename),
+                                                  &data);
+  // if we were using an internal temp file, the user does not need the
+  // logs to stay past the ReadFile call - delete the file
+  if (internal_tmp_file.get()) {
+    file_util::Delete(*internal_tmp_file, false);
   }
+
+  if (!read_success)
+    return NULL;
 
   // Parse the return data into a dictionary
   LogDictionaryType* logs = new LogDictionaryType();
