@@ -105,6 +105,28 @@ inline bool WmIpcWindowTypeIsChrome(WmIpcWindowType type) {
   return type != WM_IPC_WINDOW_UNKNOWN;
 }
 
+inline const char* WmIpcWindowTypeToString(WmIpcWindowType type) {
+  switch (type) {
+    case WM_IPC_WINDOW_UNKNOWN:                return "UNKNOWN";
+    case WM_IPC_WINDOW_CHROME_TOPLEVEL:        return "CHROME_TOPLEVEL";
+    case WM_IPC_WINDOW_CHROME_PANEL_CONTENT:   return "CHROME_PANEL_CONTENT";
+    case WM_IPC_WINDOW_CHROME_PANEL_TITLEBAR:  return "CHROME_PANEL_TITLEBAR";
+    case WM_IPC_WINDOW_CHROME_INFO_BUBBLE:     return "CHROME_INFO_BUBBLE";
+    case WM_IPC_WINDOW_CHROME_TAB_SNAPSHOT:    return "CHROME_TAB_SNAPSHOT";
+    case WM_IPC_WINDOW_LOGIN_BORDER:           return "LOGIN_BORDER";
+    case WM_IPC_WINDOW_LOGIN_IMAGE:            return "LOGIN_IMAGE";
+    case WM_IPC_WINDOW_LOGIN_CONTROLS:         return "LOGIN_CONTROLS";
+    case WM_IPC_WINDOW_LOGIN_LABEL:            return "LOGIN_LABEL";
+    case WM_IPC_WINDOW_LOGIN_UNSELECTED_LABEL: return "LOGIN_UNSELECTED_LABEL";
+    case WM_IPC_WINDOW_LOGIN_GUEST:            return "LOGIN_GUEST";
+    case WM_IPC_WINDOW_LOGIN_BACKGROUND:       return "LOGIN_BACKGROUND";
+    case WM_IPC_WINDOW_CHROME_SCREEN_LOCKER:   return "CHROME_SCREEN_LOCKER";
+    case WM_IPC_WINDOW_CHROME_TAB_TITLE:       return "CHROME_TAB_TITLE";
+    case WM_IPC_WINDOW_CHROME_TAB_FAV_ICON:    return "CHROME_TAB_FAV_ICON";
+    default:                                   return "INVALID";
+  }
+}
+
 // Messages are sent via ClientMessage events that have 'message_type' set
 // to _CHROME_WM_MESSAGE, 'format' set to 32 (that is, 32-bit values), and
 // l[0] set to a value from the WmIpcMessageType enum.  The remaining four
@@ -221,6 +243,41 @@ enum WmIpcMessageType {
 
   // NEXT VALUE TO USE: 20
 };
+
+inline const char* WmIpcMessageTypeToString(WmIpcMessageType type) {
+  switch (type) {
+    case WM_IPC_MESSAGE_UNKNOWN:
+      return "UNKNOWN";
+    case WM_IPC_MESSAGE_WM_SET_PANEL_STATE:
+      return "WM_SET_PANEL_STATE";
+    case WM_IPC_MESSAGE_CHROME_NOTIFY_PANEL_STATE:
+      return "CHROME_NOTIFY_PANEL_STATE";
+    case WM_IPC_MESSAGE_WM_NOTIFY_PANEL_DRAGGED:
+      return "WM_NOTIFY_PANEL_DRAGGED";
+    case WM_IPC_MESSAGE_WM_NOTIFY_PANEL_DRAG_COMPLETE:
+      return "WM_NOTIFY_PANEL_DRAG_COMPLETE";
+    case WM_IPC_MESSAGE_CHROME_NOTIFY_LAYOUT_MODE:
+      return "CHROME_NOTIFY_LAYOUT_MODE";
+    case WM_IPC_MESSAGE_WM_NOTIFY_IPC_VERSION:
+      return "WM_NOTIFY_IPC_VERSION";
+    case WM_IPC_MESSAGE_CHROME_NOTIFY_TAB_SELECT:
+      return "CHROME_NOTIFY_TAB_SELECT";
+    case WM_IPC_MESSAGE_WM_HIDE_LOGIN:
+      return "WM_HIDE_LOGIN";
+    case WM_IPC_MESSAGE_WM_SET_LOGIN_STATE:
+      return "WM_SET_LOGIN_STATE";
+    case WM_IPC_MESSAGE_CHROME_CREATE_GUEST_WINDOW:
+      return "CHROME_CREATE_GUEST_WINDOW";
+    case WM_IPC_MESSAGE_CHROME_NOTIFY_SYSKEY_PRESSED:
+      return "CHROME_NOTIFY_SYSKEY_PRESSED";
+    case WM_IPC_MESSAGE_WM_SELECT_LOGIN_USER:
+      return "WM_SELECT_LOGIN_USER";
+    case WM_IPC_MESSAGE_CHROME_NOTIFY_SCREEN_REDRAWN_FOR_LOCK:
+      return "CHROME_NOTIFY_SCREEN_REDRAWN_FOR_LOCK";
+    default:
+      return "INVALID";
+  }
+}
 
 // A parameter of WM_IPC_MESSAGE_CHROME_NOTIFY_SYSKEY_PRESSED message
 // denoting which key is pressed.
