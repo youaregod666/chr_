@@ -5,6 +5,9 @@
 #include <cstdio>
 #include <dlfcn.h>
 #include <string.h>
+#include <vector>
+
+#include <base/basictypes.h>
 
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_cryptohome.h" // NOLINT
@@ -170,9 +173,12 @@ DECL_FUNC_2(SetSynapticsParameter, void, SynapticsParameter, int);
 
 // Login
 DECL_FUNC_0(EmitLoginPromptReady, bool);
+DECL_FUNC_1(SetOwnerKey, bool, const std::vector<uint8>&);
 DECL_FUNC_2(StartSession, bool, const char*, const char*);
 DECL_FUNC_1(StopSession, bool, const char*);
 DECL_FUNC_2(RestartJob, bool, int, const char*);
+DECL_FUNC_2(MonitorSession, SessionConnection, SessionMonitor, void*);
+DECL_FUNC_1(DisconnectSession, void, SessionConnection);
 
 // Screen Lock
 DECL_FUNC_2(MonitorScreenLock,
@@ -362,9 +368,12 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
 
   // Login
   INIT_FUNC(EmitLoginPromptReady);
+  INIT_FUNC(SetOwnerKey);
   INIT_FUNC(StartSession);
   INIT_FUNC(StopSession);
   INIT_FUNC(RestartJob);
+  INIT_FUNC(MonitorSession);
+  INIT_FUNC(DisconnectSession);
 
   // Screen Lock
   INIT_FUNC(MonitorScreenLock);
@@ -392,7 +401,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MonitorBurnStatus);
   INIT_FUNC(DisconnectBurnStatus);
   INIT_FUNC(StartBurn);
-  
+
   // Update
   INIT_FUNC(Update);
   INIT_FUNC(CheckForUpdate);

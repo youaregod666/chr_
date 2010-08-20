@@ -130,8 +130,9 @@
 //  59: Added ActivateCellularModem and activation_state
 //      This is not backwards compatible, b/c we added a field to ServiceInfo.
 //      Client will need to use GetServiceInfo() which was added in version 55.
-//  60: Changed GetSystemLogs to accept a NULL parameter
+//  60: Changed GetSystemLogs to accept a NULL parameter.
 //  61: Added chromeos_imageburn.{cc,h} API for burning a recovery image
+//  62: Added async API for setting the Owner's public key.
 
 namespace chromeos {  // NOLINT
 
