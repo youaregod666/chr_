@@ -71,6 +71,7 @@ for key in Split('PKG_CONFIG PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
     base_env['ENV'][key] = os.environ[key]
 
 SOURCES=['chromeos_cryptohome.cc',
+         'chromeos_imageburn.cc',
          'chromeos_input_method.cc',
          'chromeos_input_method_ui.cc',
          'chromeos_keyboard.cc',

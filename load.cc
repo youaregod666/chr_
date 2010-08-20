@@ -8,6 +8,7 @@
 
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_cryptohome.h" // NOLINT
+#include "chromeos_imageburn.h"  //NOLINT
 #include "chromeos_input_method.h"  // NOLINT
 #include "chromeos_input_method_ui.h"  // NOLINT
 #include "chromeos_keyboard.h"  // NOLINT
@@ -196,6 +197,11 @@ DECL_FUNC_0(CryptohomeTpmIsReady, bool);
 DECL_FUNC_0(CryptohomeTpmIsEnabled, bool);
 DECL_FUNC_1(CryptohomeTpmGetPassword, bool, std::string*);
 
+// Imageburn
+DECL_FUNC_2(MonitorBurnStatus, BurnStatusConnection, BurnMonitor, void*);
+DECL_FUNC_1(DisconnectBurnStatus, void, BurnStatusConnection);
+DECL_FUNC_3(StartBurn, void, const char*, const char*, BurnStatusConnection);
+
 // Update library
 DECL_FUNC_1(Update, bool, UpdateInformation*);
 DECL_FUNC_1(CheckForUpdate, bool, UpdateInformation*);
@@ -382,6 +388,11 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(CryptohomeTpmIsEnabled);
   INIT_FUNC(CryptohomeTpmGetPassword);
 
+  // Imageburn
+  INIT_FUNC(MonitorBurnStatus);
+  INIT_FUNC(DisconnectBurnStatus);
+  INIT_FUNC(StartBurn);
+  
   // Update
   INIT_FUNC(Update);
   INIT_FUNC(CheckForUpdate);

@@ -131,12 +131,13 @@
 //      This is not backwards compatible, b/c we added a field to ServiceInfo.
 //      Client will need to use GetServiceInfo() which was added in version 55.
 //  60: Changed GetSystemLogs to accept a NULL parameter
+//  61: Added chromeos_imageburn.{cc,h} API for burning a recovery image
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 55,
-  kCrosAPIVersion = 60
+  kCrosAPIVersion = 61
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
