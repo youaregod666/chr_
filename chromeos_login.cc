@@ -194,8 +194,8 @@ DBusHandlerResult Filter(DBusConnection* connection,
     self->Notify(IsSuccess(message) ? SetKeySuccess : SetKeyFailure);
     return DBUS_HANDLER_RESULT_HANDLED;
   } else if (dbus_message_is_signal(message, chromium::kChromiumInterface,
-                                    chromium::kSettingChangeCompleteSignal)) {
-    LOG(INFO) << "Filter:: SettingChangeComplete signal received";
+                                    chromium::kPropertyChangeCompleteSignal)) {
+    LOG(INFO) << "Filter:: PropertyChangeComplete signal received";
     self->Notify(IsSuccess(message) ? SetKeySuccess : SetKeyFailure);
     return DBUS_HANDLER_RESULT_HANDLED;
   } else if (dbus_message_is_signal(message, chromium::kChromiumInterface,
