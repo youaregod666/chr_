@@ -101,7 +101,17 @@ int main(int argc, const char** argv) {
   if (chromeos::SetOwnerKey(key))
     LOG(INFO) << "Sent key!";
   else
-    LOG(FATAL) << "Setting key failed.";
+    LOG(ERROR) << "Setting key failed.";
+
+  if (chromeos::Whitelist("cmasone@gmail.com", key))
+    LOG(INFO) << "Attempted to whitelist";
+  else
+    LOG(INFO) << "Could not attempt to whitelist.";
+
+  if (chromeos::CheckWhitelist("cmasone@gmail.com", &key))
+    LOG(INFO) << "On the whitelist";
+  else
+    LOG(INFO) << "Not on the whitelist.";
 
   ::g_main_loop_run(loop);
 

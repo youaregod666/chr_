@@ -133,12 +133,13 @@
 //  60: Changed GetSystemLogs to accept a NULL parameter.
 //  61: Added chromeos_imageburn.{cc,h} API for burning a recovery image
 //  62: Added async API for setting the Owner's public key.
+//  63: Added async APIs for managing user whitelist and system settings.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 55,
-  kCrosAPIVersion = 61
+  kCrosAPIVersion = 63
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

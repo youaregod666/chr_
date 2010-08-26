@@ -5,6 +5,7 @@
 #ifndef CHROMEOS_LOGIN_H_
 #define CHROMEOS_LOGIN_H_
 
+#include <string>
 #include <vector>
 
 #include <base/basictypes.h>
@@ -20,8 +21,8 @@ enum OwnershipEvent {
   SetKeyFailure = 1,
   WhitelistOpSuccess = 2,
   WhitelistOpFailure = 3,
-  SettingsOpSuccess = 4,
-  SettingsOpFailure = 5,
+  PropertyOpSuccess = 4,
+  PropertyOpFailure = 5,
 };
 
 static const char kOwnerKeyFile[] = "/var/lib/whitelist/owner.key";
@@ -33,12 +34,24 @@ typedef void(*SessionMonitor)(void*, const OwnershipEvent&);
 extern SessionConnection (*MonitorSession)(SessionMonitor monitor, void*);
 extern void (*DisconnectSession)(SessionConnection connection);
 
+extern bool (*CheckWhitelist)(const char* email,
+                              std::vector<uint8>* OUT_signature);
 extern bool (*EmitLoginPromptReady)();
+extern bool (*RestartJob)(int pid, const char* command_line);
+extern bool (*RetrieveProperty)(const char* name,
+                                std::string* OUT_value,
+                                std::vector<uint8>* OUT_signature);
 extern bool (*SetOwnerKey)(const std::vector<uint8>& public_key_der);
 extern bool (*StartSession)(const char* user_email,
                             const char* unique_id /* unused */);
 extern bool (*StopSession)(const char* unique_id /* unused */);
-extern bool (*RestartJob)(int pid, const char* command_line);
+extern bool (*StoreProperty)(const char* name,
+                             const char* value,
+                             const std::vector<uint8>& signature);
+extern bool (*Unwhitelist)(const char* email,
+                           const std::vector<uint8>& signature);
+extern bool (*Whitelist)(const char* email,
+                         const std::vector<uint8>& signature);
 
 }  // namespace chromeos
 

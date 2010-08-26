@@ -17,6 +17,9 @@
 
 namespace chromeos {  // NOLINT
 
+
+#define SCOPED_SAFE_MESSAGE(e) (e->message ? e->message : "unknown error")
+
 namespace {
 chromeos::dbus::Proxy CreateProxy() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -48,6 +51,36 @@ class OpaqueSessionConnection {
 };
 
 extern "C"
+bool ChromeOSCheckWhitelist(const char* email,
+                            std::vector<uint8>* signature) {
+  DCHECK(signature);
+  chromeos::dbus::Proxy proxy = CreateProxy();
+  chromeos::glib::ScopedError error;
+
+  GArray* sig;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           login_manager::kSessionManagerCheckWhitelist,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING, email,
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_UCHAR_ARRAY, &sig,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << login_manager::kSessionManagerCheckWhitelist << " failed: "
+                 << SCOPED_SAFE_MESSAGE(error);
+    return false;
+  }
+  bool rv = false;
+  signature->resize(sig->len);
+  if (signature->size() == sig->len) {
+    memcpy(&(signature->at(0)), static_cast<const void*>(sig->data), sig->len);
+    rv = true;
+  }
+  g_array_free(sig, false);
+  return rv;
+}
+
+extern "C"
 bool ChromeOSEmitLoginPromptReady() {
   chromeos::dbus::Proxy proxy = CreateProxy();
   gboolean done = false;
@@ -57,16 +90,48 @@ bool ChromeOSEmitLoginPromptReady() {
                            login_manager::kSessionManagerEmitLoginPromptReady,
                            &Resetter(&error).lvalue(),
                            G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN,
-                           &done,
+                           G_TYPE_BOOLEAN, &done,
                            G_TYPE_INVALID)) {
 
     LOG(WARNING) << login_manager::kSessionManagerEmitLoginPromptReady
-                 << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
+                 << " failed: " << SCOPED_SAFE_MESSAGE(error);
 
   }
   return done;
+}
+
+extern "C"
+bool ChromeOSCheckRetrieveProperty(const char* name,
+                                   std::string* out_value,
+                                   std::vector<uint8>* signature) {
+  DCHECK(signature);
+  chromeos::dbus::Proxy proxy = CreateProxy();
+  chromeos::glib::ScopedError error;
+
+  GArray* sig;
+  gchar* value;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           login_manager::kSessionManagerCheckWhitelist,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING, name,
+                           G_TYPE_INVALID,
+                           G_TYPE_STRING, value,
+                           DBUS_TYPE_G_UCHAR_ARRAY, &sig,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << login_manager::kSessionManagerCheckWhitelist << " failed: "
+                 << SCOPED_SAFE_MESSAGE(error);
+    return false;
+  }
+  bool rv = false;
+  signature->resize(sig->len);
+  if (signature->size() == sig->len) {
+    memcpy(&(signature->at(0)), static_cast<const void*>(sig->data), sig->len);
+    rv = true;
+  }
+  g_array_free(sig, false);
+  out_value->assign(value);
+  return rv;
 }
 
 extern "C"
@@ -81,12 +146,11 @@ bool ChromeOSSetOwnerKey(const std::vector<uint8>& public_key_der) {
   if (!::dbus_g_proxy_call(proxy.gproxy(),
                            login_manager::kSessionManagerSetOwnerKey,
                            &Resetter(&error).lvalue(),
-                           DBUS_TYPE_G_UCHAR_ARRAY,
-                           key_der,
+                           DBUS_TYPE_G_UCHAR_ARRAY, key_der,
                            G_TYPE_INVALID,
                            G_TYPE_INVALID)) {
     LOG(WARNING) << login_manager::kSessionManagerSetOwnerKey << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
+                 << SCOPED_SAFE_MESSAGE(error);
     rv = false;
   }
   g_array_free(key_der, TRUE);
@@ -103,16 +167,13 @@ bool ChromeOSStartSession(const char* user_email,
   if (!::dbus_g_proxy_call(proxy.gproxy(),
                            login_manager::kSessionManagerStartSession,
                            &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           user_email,
-                           G_TYPE_STRING,
-                           unique_id,
+                           G_TYPE_STRING, user_email,
+                           G_TYPE_STRING, unique_id,
                            G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN,
-                           &done,
+                           G_TYPE_BOOLEAN, &done,
                            G_TYPE_INVALID)) {
     LOG(WARNING) << login_manager::kSessionManagerStartSession << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
+                 << SCOPED_SAFE_MESSAGE(error);
   }
   return done;
 }
@@ -126,14 +187,12 @@ bool ChromeOSStopSession(const char* unique_id /* unused */) {
   if (!::dbus_g_proxy_call(proxy.gproxy(),
                            login_manager::kSessionManagerStopSession,
                            &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           unique_id,
+                           G_TYPE_STRING, unique_id,
                            G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN,
-                           &done,
+                           G_TYPE_BOOLEAN, &done,
                            G_TYPE_INVALID)) {
     LOG(WARNING) << login_manager::kSessionManagerStopSession << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
+                 << SCOPED_SAFE_MESSAGE(error);
   }
   return done;
 }
@@ -147,25 +206,89 @@ bool ChromeOSRestartJob(int pid, const char* command_line) {
   if (!::dbus_g_proxy_call(proxy.gproxy(),
                            login_manager::kSessionManagerRestartJob,
                            &Resetter(&error).lvalue(),
-                           G_TYPE_INT,
-                           pid,
-                           G_TYPE_STRING,
-                           command_line,
+                           G_TYPE_INT, pid,
+                           G_TYPE_STRING, command_line,
                            G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN,
-                           &done,
+                           G_TYPE_BOOLEAN, &done,
                            G_TYPE_INVALID)) {
     LOG(WARNING) << login_manager::kSessionManagerRestartJob << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
+                 << SCOPED_SAFE_MESSAGE(error);
   }
   return done;
 }
 
+extern "C"
+bool ChromeOSStoreProperty(const char* name,
+                           const char* value,
+                           const std::vector<uint8>& signature) {
+  chromeos::dbus::Proxy proxy = CreateProxy();
+  chromeos::glib::ScopedError error;
 
+  GArray* sig = g_array_sized_new(FALSE, FALSE, 1, signature.size());
+  g_array_append_vals(sig, &signature[0], signature.size());
 
-#define SAFE_MESSAGE(e) (e.message ? e.message : "unknown error")
+  bool rv = true;
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           login_manager::kSessionManagerStoreProperty,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING, name,
+                           G_TYPE_STRING, value,
+                           DBUS_TYPE_G_UCHAR_ARRAY, sig,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << login_manager::kSessionManagerStoreProperty << " failed: "
+                 << SCOPED_SAFE_MESSAGE(error);
+    rv = false;
+  }
+  g_array_free(sig, TRUE);
+  return rv;
+}
 
 namespace {
+bool WhitelistOpHelper(const char* op,
+                       const char* email,
+                       const std::vector<uint8>& signature) {
+  chromeos::dbus::Proxy proxy = CreateProxy();
+  chromeos::glib::ScopedError error;
+
+  GArray* sig = g_array_sized_new(FALSE, FALSE, 1, signature.size());
+  g_array_append_vals(sig, &signature[0], signature.size());
+
+  bool rv = true;
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           op,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING, email,
+                           DBUS_TYPE_G_UCHAR_ARRAY, sig,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << op << " failed: " << SCOPED_SAFE_MESSAGE(error);
+    rv = false;
+  }
+  g_array_free(sig, TRUE);
+  return rv;
+}
+}  // anonymous namespace
+
+extern "C"
+bool ChromeOSUnwhitelist(const char* email,
+                         const std::vector<uint8>& signature) {
+  return WhitelistOpHelper(login_manager::kSessionManagerUnwhitelist,
+                           email,
+                           signature);
+}
+
+extern "C"
+bool ChromeOSWhitelist(const char* email,
+                       const std::vector<uint8>& signature) {
+  return WhitelistOpHelper(login_manager::kSessionManagerWhitelist,
+                           email,
+                           signature);
+}
+
+namespace {
+#define SAFE_MESSAGE(e) (e.message ? e.message : "unknown error")
+
 bool IsSuccess(DBusMessage* message) {
   char* out_string = NULL;
   DBusError error;

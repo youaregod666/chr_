@@ -172,11 +172,24 @@ DECL_FUNC_1(FreeDeviceNetworkList, void, DeviceNetworkList*);
 DECL_FUNC_2(SetSynapticsParameter, void, SynapticsParameter, int);
 
 // Login
+DECL_FUNC_2(CheckWhitelist, bool, const char*, std::vector<uint8>*);
 DECL_FUNC_0(EmitLoginPromptReady, bool);
+DECL_FUNC_2(RestartJob, bool, int, const char*);
+DECL_FUNC_3(RetrieveProperty,
+            bool,
+            const char*,
+            std::string*,
+            std::vector<uint8>*);
 DECL_FUNC_1(SetOwnerKey, bool, const std::vector<uint8>&);
 DECL_FUNC_2(StartSession, bool, const char*, const char*);
 DECL_FUNC_1(StopSession, bool, const char*);
-DECL_FUNC_2(RestartJob, bool, int, const char*);
+DECL_FUNC_3(StoreProperty,
+            bool,
+            const char*,
+            const char*,
+            const std::vector<uint8>&);
+DECL_FUNC_2(Unwhitelist, bool, const char*, const std::vector<uint8>&);
+DECL_FUNC_2(Whitelist, bool, const char*, const std::vector<uint8>&);
 DECL_FUNC_2(MonitorSession, SessionConnection, SessionMonitor, void*);
 DECL_FUNC_1(DisconnectSession, void, SessionConnection);
 
@@ -367,11 +380,16 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(SetSynapticsParameter);
 
   // Login
+  INIT_FUNC(CheckWhitelist);
   INIT_FUNC(EmitLoginPromptReady);
+  INIT_FUNC(RestartJob);
+  INIT_FUNC(RetrieveProperty);
   INIT_FUNC(SetOwnerKey);
   INIT_FUNC(StartSession);
   INIT_FUNC(StopSession);
-  INIT_FUNC(RestartJob);
+  INIT_FUNC(StoreProperty);
+  INIT_FUNC(Unwhitelist);
+  INIT_FUNC(Whitelist);
   INIT_FUNC(MonitorSession);
   INIT_FUNC(DisconnectSession);
 
