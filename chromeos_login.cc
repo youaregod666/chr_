@@ -101,9 +101,9 @@ bool ChromeOSEmitLoginPromptReady() {
 }
 
 extern "C"
-bool ChromeOSCheckRetrieveProperty(const char* name,
-                                   std::string* out_value,
-                                   std::vector<uint8>* signature) {
+bool ChromeOSRetrieveProperty(const char* name,
+                              std::string* out_value,
+                              std::vector<uint8>* signature) {
   DCHECK(signature);
   chromeos::dbus::Proxy proxy = CreateProxy();
   chromeos::glib::ScopedError error;
