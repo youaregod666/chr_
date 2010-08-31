@@ -14,6 +14,12 @@ namespace chromeos { // NOLINT
 // headers.
 typedef std::vector<unsigned char> CryptohomeBlob;
 
+struct CryptohomeAsyncCallStatus {
+  int async_id;
+  bool return_status;
+  int return_code;
+};
+
 // These constants must match the MountError enumeration in mount.h from
 // cryptohome.
 const int kCryptohomeMountErrorNone = 0;
@@ -26,9 +32,14 @@ const int kCryptohomeMountErrorRecreated = 1 << 31;
 
 extern bool (*CryptohomeCheckKey)(const char* user_email,
                                   const char* key);
+extern int (*CryptohomeAsyncCheckKey)(const char* user_email,
+                                      const char* key);
 extern bool (*CryptohomeMigrateKey)(const char* user_email,
                                     const char* from_key,
                                     const char* to_key);
+extern int (*CryptohomeAsyncMigrateKey)(const char* user_email,
+                                        const char* from_key,
+                                        const char* to_key);
 extern bool (*CryptohomeRemove)(const char* user_email);
 extern CryptohomeBlob (*CryptohomeGetSystemSalt)();
 extern bool (*CryptohomeIsMounted)();
@@ -37,11 +48,22 @@ extern bool (*CryptohomeMount)(const char* user_email,
 extern bool (*CryptohomeMountAllowFail)(const char* user_email,
                                         const char* key,
                                         int* mount_error);
+extern int (*CryptohomeAsyncMount)(const char* user_email,
+                                   const char* key);
 extern bool (*CryptohomeMountGuest)(int* mount_error);
+extern int (*CryptohomeAsyncMountGuest)();
 extern bool (*CryptohomeUnmount)();
 extern bool (*CryptohomeTpmIsReady)();
 extern bool (*CryptohomeTpmIsEnabled)();
 extern bool (*CryptohomeTpmGetPassword)(std::string* password);
+
+typedef void(*CryptohomeSignalCallback)(
+    const CryptohomeAsyncCallStatus& call_status, void* callback_context);
+
+extern void* (*CryptohomeMonitorSession)(
+    CryptohomeSignalCallback monitor,
+    void* monitor_context);
+extern void (*CryptohomeDisconnectSession)(void* connection);
 
 }  // namespace chromeos
 

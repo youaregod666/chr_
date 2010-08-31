@@ -4,6 +4,9 @@
 
 #include "chromeos_cryptohome.h"  // NOLINT
 
+#include <base/basictypes.h>
+#include <base/string_util.h>
+#include <dbus/dbus-glib-lowlevel.h>
 #include <chromeos/dbus/dbus.h>
 #include <chromeos/dbus/service_constants.h>
 #include <chromeos/glib/object.h>
@@ -40,6 +43,33 @@ bool ChromeOSCryptohomeCheckKey(const char* user_email, const char* key) {
 }
 
 extern "C"
+int ChromeOSCryptohomeAsyncCheckKey(const char* user_email, const char* key) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gint async_call_id = 0;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeAsyncCheckKey,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           user_email,
+                           G_TYPE_STRING,
+                           key,
+                           G_TYPE_INVALID,
+                           G_TYPE_INT,
+                           &async_call_id,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeAsyncCheckKey << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+  return async_call_id;
+}
+
+extern "C"
 bool ChromeOSCryptohomeMigrateKey(const char* user_email, const char* from_key,
                                   const char* to_key) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -67,6 +97,37 @@ bool ChromeOSCryptohomeMigrateKey(const char* user_email, const char* from_key,
                  << (error->message ? error->message : "Unknown Error.");
   }
   return done;
+}
+
+extern "C"
+int ChromeOSCryptohomeAsyncMigrateKey(const char* user_email,
+                                      const char* from_key,
+                                      const char* to_key) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gint async_call_id = 0;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeAsyncMigrateKey,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           user_email,
+                           G_TYPE_STRING,
+                           from_key,
+                           G_TYPE_STRING,
+                           to_key,
+                           G_TYPE_INVALID,
+                           G_TYPE_INT,
+                           &async_call_id,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeAsyncMigrateKey << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+  return async_call_id;
 }
 
 extern "C"
@@ -185,6 +246,33 @@ bool ChromeOSCryptohomeMountAllowFail(const char* user_email, const char* key,
   return done;
 }
 
+extern "C"
+int ChromeOSCryptohomeAsyncMount(const char* user_email, const char* key) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gint async_call_id = 0;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeAsyncMount,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           user_email,
+                           G_TYPE_STRING,
+                           key,
+                           G_TYPE_INVALID,
+                           G_TYPE_INT,
+                           &async_call_id,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeAsyncMount << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+  return async_call_id;
+}
+
 // This function implements the legacy functionality for CryptohomeMount, where
 // password migration wasn't supported.  To support that, if there is a key
 // failure when attempting to mount the user's cryptohome, it assumes a password
@@ -233,6 +321,29 @@ bool ChromeOSCryptohomeMountGuest(int* mount_error) {
     *mount_error = local_mount_error;
   }
   return done;
+}
+
+extern "C"
+int ChromeOSCryptohomeAsyncMountGuest() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gint async_call_id = 0;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeAsyncMountGuest,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_INT,
+                           &async_call_id,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeAsyncMountGuest << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+  return async_call_id;
 }
 
 extern "C"
@@ -339,6 +450,113 @@ bool ChromeOSCryptohomeTpmGetPassword(std::string* password) {
     return true;
   }
   return false;
+}
+
+class CryptohomeSessionConnection {
+ public:
+  CryptohomeSessionConnection(const CryptohomeSignalCallback& monitor,
+                              void* monitor_context)
+      : monitor_(monitor),
+        monitor_context_(monitor_context) {
+  }
+
+  virtual ~CryptohomeSessionConnection() {}
+
+  void Notify(const CryptohomeAsyncCallStatus& call_status) {
+    monitor_(call_status, monitor_context_);
+  }
+
+ private:
+  CryptohomeSignalCallback monitor_;
+  void* monitor_context_;
+
+  DISALLOW_COPY_AND_ASSIGN(CryptohomeSessionConnection);
+};
+
+
+#ifndef SAFE_MESSAGE
+#define SAFE_MESSAGE(e) (e.message ? e.message : "unknown error")
+#endif  // SAFE_MESSAGE
+
+bool CryptohomeExtractAsyncStatus(DBusMessage* message,
+                                  CryptohomeAsyncCallStatus* call_status) {
+  DBusError error;
+  dbus_error_init (&error);
+  bool unpack = dbus_message_get_args(message,
+                                      &error,
+                                      DBUS_TYPE_INT32,
+                                      &(call_status->async_id),
+                                      DBUS_TYPE_BOOLEAN,
+                                      &(call_status->return_status),
+                                      DBUS_TYPE_INT32,
+                                      &(call_status->return_code),
+                                      DBUS_TYPE_INVALID);
+  if (!unpack) {
+    LOG(INFO) << "Couldn't get arg: " << SAFE_MESSAGE(error);
+    return false;
+  }
+  return true;
+}
+
+// A message filter to receive signals.
+DBusHandlerResult CryptohomeSignalFilter(DBusConnection* dbus_connection,
+                         DBusMessage* message,
+                         void* connection) {
+  CryptohomeSessionConnection* self =
+      static_cast<CryptohomeSessionConnection*>(connection);
+  if (dbus_message_is_signal(message, cryptohome::kCryptohomeInterface,
+                             cryptohome::kSignalAsyncCallStatus)) {
+    LOG(INFO) << "Filter:: AsyncCallStatus signal received";
+    CryptohomeAsyncCallStatus call_status;
+    if (CryptohomeExtractAsyncStatus(message, &call_status)) {
+      self->Notify(call_status);
+      return DBUS_HANDLER_RESULT_HANDLED;
+    }
+  }
+  return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+}
+
+extern "C"
+void* ChromeOSCryptohomeMonitorSession(CryptohomeSignalCallback monitor,
+                                       void* monitor_context) {
+  const std::string filter = StringPrintf("type='signal', interface='%s'",
+                                          cryptohome::kCryptohomeInterface);
+
+  DBusError error;
+  ::dbus_error_init(&error);
+  DBusConnection* dbus_connection = ::dbus_g_connection_get_connection(
+      dbus::GetSystemBusConnection().g_connection());
+  CHECK(dbus_connection);
+  ::dbus_bus_add_match(dbus_connection, filter.c_str(), &error);
+  if (::dbus_error_is_set(&error)) {
+    LOG(WARNING) << "Failed to add a filter:" << error.name << ", message="
+                 << SAFE_MESSAGE(error);
+    return NULL;
+  }
+
+  CryptohomeSessionConnection* connection = new CryptohomeSessionConnection(
+      monitor,
+      monitor_context);
+  CHECK(dbus_connection_add_filter(dbus_connection,
+                                   &CryptohomeSignalFilter,
+                                   connection,
+                                   NULL));
+
+  LOG(INFO) << "Cryptohome API event monitoring started";
+  return connection;
+}
+
+extern "C"
+void ChromeOSCryptohomeDisconnectSession(void* connection) {
+  CryptohomeSessionConnection* self =
+      static_cast<CryptohomeSessionConnection*>(connection);
+  DBusConnection *dbus_connection = ::dbus_g_connection_get_connection(
+      dbus::GetSystemBusConnection().g_connection());
+  ::dbus_connection_remove_filter(dbus_connection,
+                                  &CryptohomeSignalFilter,
+                                  connection);
+  delete self;
+  LOG(INFO) << "Disconnected from Cryptohome event monitoring";
 }
 
 }  // namespace chromeos

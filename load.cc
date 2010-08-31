@@ -204,17 +204,27 @@ DECL_FUNC_0(NotifyScreenUnlockCompleted, void);
 
 // Cryptohome
 DECL_FUNC_2(CryptohomeCheckKey, bool, const char*, const char*);
+DECL_FUNC_2(CryptohomeAsyncCheckKey, int, const char*, const char*);
 DECL_FUNC_3(CryptohomeMigrateKey, bool, const char*, const char*, const char*);
+DECL_FUNC_3(CryptohomeAsyncMigrateKey,
+            int,
+            const char*,
+            const char*,
+            const char*);
 DECL_FUNC_1(CryptohomeRemove, bool, const char*);
 DECL_FUNC_0(CryptohomeGetSystemSalt, CryptohomeBlob);
 DECL_FUNC_0(CryptohomeIsMounted, bool);
 DECL_FUNC_3(CryptohomeMountAllowFail, bool, const char*, const char*, int*);
 DECL_FUNC_2(CryptohomeMount, bool, const char*, const char*);
+DECL_FUNC_2(CryptohomeAsyncMount, int, const char*, const char*);
 DECL_FUNC_1(CryptohomeMountGuest, bool, int*);
+DECL_FUNC_0(CryptohomeAsyncMountGuest, int);
 DECL_FUNC_0(CryptohomeUnmount, bool);
 DECL_FUNC_0(CryptohomeTpmIsReady, bool);
 DECL_FUNC_0(CryptohomeTpmIsEnabled, bool);
 DECL_FUNC_1(CryptohomeTpmGetPassword, bool, std::string*);
+DECL_FUNC_2(CryptohomeMonitorSession, void*, CryptohomeSignalCallback, void*);
+DECL_FUNC_1(CryptohomeDisconnectSession, void, void*);
 
 // Imageburn
 DECL_FUNC_2(MonitorBurnStatus, BurnStatusConnection, BurnMonitor, void*);
@@ -403,17 +413,23 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
 
   // Cryptohome
   INIT_FUNC(CryptohomeCheckKey);
+  INIT_FUNC(CryptohomeAsyncCheckKey);
   INIT_FUNC(CryptohomeMigrateKey);
+  INIT_FUNC(CryptohomeAsyncMigrateKey);
   INIT_FUNC(CryptohomeRemove);
   INIT_FUNC(CryptohomeGetSystemSalt);
   INIT_FUNC(CryptohomeIsMounted);
   INIT_FUNC(CryptohomeMountAllowFail);
   INIT_FUNC(CryptohomeMount);
+  INIT_FUNC(CryptohomeAsyncMount);
   INIT_FUNC(CryptohomeMountGuest);
+  INIT_FUNC(CryptohomeAsyncMountGuest);
   INIT_FUNC(CryptohomeUnmount);
   INIT_FUNC(CryptohomeTpmIsReady);
   INIT_FUNC(CryptohomeTpmIsEnabled);
   INIT_FUNC(CryptohomeTpmGetPassword);
+  INIT_FUNC(CryptohomeMonitorSession);
+  INIT_FUNC(CryptohomeDisconnectSession);
 
   // Imageburn
   INIT_FUNC(MonitorBurnStatus);
