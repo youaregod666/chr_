@@ -55,7 +55,10 @@ extern int (*CryptohomeAsyncMountGuest)();
 extern bool (*CryptohomeUnmount)();
 extern bool (*CryptohomeTpmIsReady)();
 extern bool (*CryptohomeTpmIsEnabled)();
+extern bool (*CryptohomeTpmIsOwned)();
+extern bool (*CryptohomeTpmIsBeingOwned)();
 extern bool (*CryptohomeTpmGetPassword)(std::string* password);
+extern bool (*CryptohomeGetStatusString)(std::string* status);
 
 typedef void(*CryptohomeSignalCallback)(
     const CryptohomeAsyncCallStatus& call_status, void* callback_context);

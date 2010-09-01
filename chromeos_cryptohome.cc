@@ -422,6 +422,56 @@ bool ChromeOSCryptohomeTpmIsEnabled() {
 }
 
 extern "C"
+bool ChromeOSCryptohomeTpmIsOwned() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gboolean done = false;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeTpmIsOwned,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN,
+                           &done,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << cryptohome::kCryptohomeTpmIsOwned << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+
+  }
+  return done;
+}
+
+extern "C"
+bool ChromeOSCryptohomeTpmIsBeingOwned() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gboolean done = false;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeTpmIsBeingOwned,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN,
+                           &done,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << cryptohome::kCryptohomeTpmIsBeingOwned << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+
+  }
+  return done;
+}
+
+extern "C"
 bool ChromeOSCryptohomeTpmGetPassword(std::string* password) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy proxy(bus,
@@ -447,6 +497,37 @@ bool ChromeOSCryptohomeTpmGetPassword(std::string* password) {
   if (local_password) {
     password->assign(local_password);
     g_free(local_password);
+    return true;
+  }
+  return false;
+}
+
+extern "C"
+bool ChromeOSCryptohomeGetStatusString(std::string* status) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gchar* local_status = NULL;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeGetStatusString,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_STRING,
+                           &local_status,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << cryptohome::kCryptohomeGetStatusString << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+
+  }
+
+  if (local_status) {
+    status->assign(local_status);
+    g_free(local_status);
     return true;
   }
   return false;

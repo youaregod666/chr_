@@ -20,6 +20,7 @@ static const char kCheckKey[] = "check-key";
 static const char kTestMount[] = "test-mount";
 static const char kChangeKey[] = "change-key";
 static const char kMountGuest[] = "mount-guest";
+static const char kStatus[] = "status";
 static const char kAsync[] = "async";
 
 class ClientLoop {
@@ -95,14 +96,22 @@ int main(int argc, const char** argv) {
   if (cl->HasSwitch(kTpmStatus)) {
     LOG(INFO) << "TPM Enabled: " << chromeos::CryptohomeTpmIsEnabled();
     LOG(INFO) << "TPM Ready: " << chromeos::CryptohomeTpmIsReady();
+    LOG(INFO) << "TPM Owned: " << chromeos::CryptohomeTpmIsOwned();
+    LOG(INFO) << "TPM Being Owned: " << chromeos::CryptohomeTpmIsBeingOwned();
     std::string tpm_password;
     chromeos::CryptohomeTpmGetPassword(&tpm_password);
     LOG(INFO) << "TPM Password: " << tpm_password;
   }
 
-  std::string name = loose_args[0];
-  std::string hash = loose_args[1];
+  if (cl->HasSwitch(kStatus)) {
+    std::string status;
+    chromeos::CryptohomeGetStatusString(&status);
+    LOG(INFO) << "Cryptohome Status: \n" << status;
+  }
+
   if (cl->HasSwitch(kCheckKey)) {
+    std::string name = loose_args[0];
+    std::string hash = loose_args[1];
     if (cl->HasSwitch(kAsync)) {
       ClientLoop client_loop;
       client_loop.Initialize();
@@ -125,6 +134,8 @@ int main(int argc, const char** argv) {
     }
   }
   if (cl->HasSwitch(kTestMount)) {
+    std::string name = loose_args[0];
+    std::string hash = loose_args[1];
     if (cl->HasSwitch(kAsync)) {
       ClientLoop client_loop;
       client_loop.Initialize();
@@ -159,6 +170,8 @@ int main(int argc, const char** argv) {
     }
   }
   if (cl->HasSwitch(kChangeKey)) {
+    std::string name = loose_args[0];
+    std::string hash = loose_args[1];
     std::string new_hash = loose_args[2];
     if (cl->HasSwitch(kAsync)) {
       ClientLoop client_loop;
