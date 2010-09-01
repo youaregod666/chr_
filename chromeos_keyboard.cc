@@ -12,6 +12,7 @@
 #include <libxklavier/xklavier.h>
 #include <stdlib.h>
 #include <string.h>
+#include <xkeyboard_config_version.h>
 
 #include "base/logging.h"
 #include "base/singleton.h"
@@ -66,7 +67,11 @@ class XKeyboard {
     if (!GetModifierMapping(&modifier_map)) {
       return false;
     }
-    return SetLayoutInternal(layout_name, modifier_map);
+    if (SetLayoutInternal(layout_name, modifier_map, true)) {
+      return true;
+    }
+    LOG(ERROR) << "SetLayoutInternal failed. Retrying without +version option";
+    return SetLayoutInternal(layout_name, modifier_map, false);
   }
 
   // Remaps modifier keys. This function does not change the current keyboard
@@ -77,7 +82,11 @@ class XKeyboard {
     if (layout_name.empty()) {
       return false;
     }
-    return SetLayoutInternal(layout_name, modifier_map);
+    if (SetLayoutInternal(layout_name, modifier_map, true)) {
+      return true;
+    }
+    LOG(ERROR) << "SetLayoutInternal failed. Retrying without +version option";
+    return SetLayoutInternal(layout_name, modifier_map, false);
   }
 
   // Returns the hardware layout name.
@@ -241,10 +250,13 @@ class XKeyboard {
 
   // This function is used by SetLayout() and RemapModifierKeys(). Calls
   // setxkbmap command if needed, and updates the last_full_layout_name_ cache.
+  // If |use_version| is false, the function does not add "+version(...)" to the
+  // layout name. See http://crosbug.com/6261 for details.
   bool SetLayoutInternal(const std::string& layout_name,
-                         const chromeos::ModifierMap& modifier_map) {
-    const std::string layouts_to_set =
-        chromeos::CreateFullXkbLayoutName(layout_name, modifier_map);
+                         const chromeos::ModifierMap& modifier_map,
+                         bool use_version) {
+    const std::string layouts_to_set = chromeos::CreateFullXkbLayoutName(
+        layout_name, modifier_map, use_version);
     if (layouts_to_set.empty()) {
       return false;
     }
@@ -306,8 +318,8 @@ class XKeyboard {
 
   // Executes 'setxkbmap -print' command and parses the output (stdout) from the
   // command. Returns true if both execve and parsing the output succeed.
-  // On success, it stores a string like "us+chromeos(...)+..." on
-  // |out_command_output|.
+  // On success, it stores a string like "us+chromeos(..)+version(..)+inet(..)"
+  // on |out_command_output|.
   bool ExecuteGetLayoutCommand(std::string* out_command_output) {
     out_command_output->clear();
 
@@ -341,7 +353,7 @@ class XKeyboard {
       return false;
     }
     // Parse a line like:
-    //   "xkb_symbols { include "pc+us+chromeos(...)+inet(pc105)" };"
+    //   "xkb_symbols { include "pc+us+chromeos(..)+version(..)+inet(pc105)" };"
     const size_t cursor = command_output.find("pc+");
     if (cursor == std::string::npos) {
       LOG(ERROR) << "pc+ is not found: " << command_output;
@@ -367,7 +379,8 @@ class XKeyboard {
 namespace chromeos {
 
 std::string CreateFullXkbLayoutName(const std::string& layout_name,
-                                    const ModifierMap& modifier_map) {
+                                    const ModifierMap& modifier_map,
+                                    bool use_version) {
   static const char kValidLayoutNameCharacters[] =
       "abcdefghijklmnopqrstuvwxyz0123456789()-_";
 
@@ -421,11 +434,16 @@ std::string CreateFullXkbLayoutName(const std::string& layout_name,
     return "";
   }
 
+  std::string version;
+  if (use_version) {
+    version = std::string("+version(") + kXkeyboardConfigPackageVersion + ")";
+  }
   std::string full_xkb_layout_name =
-      StringPrintf("%s+chromeos(%s_%s_%s)", layout_name.c_str(),
+      StringPrintf("%s+chromeos(%s_%s_%s)%s", layout_name.c_str(),
                    use_search_key_as_str.c_str(),
                    use_left_control_key_as_str.c_str(),
-                   use_left_alt_key_as_str.c_str());
+                   use_left_alt_key_as_str.c_str(),
+                   version.c_str());
 
   if ((full_xkb_layout_name.substr(0, 3) != "us+") &&
       (full_xkb_layout_name.substr(0, 3) != "us(")) {
