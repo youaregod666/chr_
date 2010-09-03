@@ -4,118 +4,282 @@
 
 #include <dlfcn.h>
 #include <glib-object.h>
+#include <stdlib.h>
 
 #include <iostream>  // NOLINT
 #include <vector>
 
+#include <base/at_exit.h>
+#include <base/crypto/rsa_private_key.h>
+#include <base/crypto/signature_creator.h>
+#include <base/crypto/signature_verifier.h>
+#include <base/command_line.h>
 #include <base/logging.h>
+#include <base/file_path.h>
+#include <base/file_util.h>
+#include <base/nss_util.h>
+#include <base/scoped_temp_dir.h>
+#include <base/stringprintf.h>
 
 #include "chromeos_cros_api.h"  // NOLINT
 #include "chromeos_login.h"
 #include "monitor_utils.h" //NOLINT
 
 namespace {
-void monitor(void* loop, const chromeos::OwnershipEvent& event) {
-  GMainLoop* my_loop = static_cast<GMainLoop*>(loop);
-  CHECK(event == chromeos::SetKeySuccess);
-  LOG(INFO) << "Persisted key!";
-  ::g_main_loop_quit(my_loop);
+static const char kEmit[] = "emit-login-prompt-ready";
+static const char kStartSession[] = "start-session";
+static const char kStopSession[] = "stop-session";
+static const char kSetOwnerKey[] = "set-owner-key";
+static const char kWhitelist[] = "whitelist";
+static const char kUnwhitelist[] = "unwhitelist";
+static const char kCheckWhitelist[] = "check-whitelist";
+static const char kEnumerate[] = "enumerate-whitelisted";
+
+class ClientLoop {
+ public:
+  ClientLoop()
+      : loop_(NULL),
+        connection_(NULL) { }
+
+  virtual ~ClientLoop() {
+    if (connection_) {
+      chromeos::DisconnectSession(connection_);
+    }
+    if (loop_) {
+      g_main_loop_unref(loop_);
+    }
+  }
+
+  void Initialize() {
+    loop_ = g_main_loop_new(NULL, TRUE);
+    connection_ = chromeos::MonitorSession(
+        reinterpret_cast<chromeos::SessionMonitor>(
+            ClientLoop::CallbackThunk), this);
+  }
+
+  void Run() {
+    g_main_loop_run(loop_);
+  }
+
+  chromeos::OwnershipEvent what_happened() { return what_happened_; }
+
+ private:
+  void Callback(const chromeos::OwnershipEvent& what_happened) {
+    what_happened_ = what_happened;
+    g_main_loop_quit(loop_);
+  }
+
+  static void CallbackThunk(ClientLoop* client_loop,
+                            const chromeos::OwnershipEvent& call_status) {
+    client_loop->Callback(call_status);
+  }
+
+  GMainLoop *loop_;
+  chromeos::OwnershipEvent what_happened_;
+  chromeos::SessionConnection connection_;
+};
+
+bool LoadPublicKey(FilePath file, std::vector<uint8>* key) {
+  int64 file_size;
+  if (!file_util::GetFileSize(file, &file_size)) {
+    LOG(ERROR) << "Could not get size of " << file.value();
+    return false;
+  } else {
+    LOG(INFO) << "Loaded key of " << file_size << " bytes";
+  }
+  int file_size_32 = static_cast<int32>(file_size);
+  key->resize(file_size_32);
+
+  int data_read = file_util::ReadFile(file,
+                                      reinterpret_cast<char*>(&(key->at(0))),
+                                      file_size_32);
+  return file_size_32 = data_read;
 }
 
-// The public key is specified as the following ASN.1 structure:
-//   SubjectPublicKeyInfo  ::=  SEQUENCE  {
-//       algorithm            AlgorithmIdentifier,
-//       subjectPublicKey     BIT STRING  }
-const uint8 public_key_info[294] = {
-  0x30, 0x82, 0x01, 0x22,  // a SEQUENCE of length 290 (0x122)
-    // algorithm
-    0x30, 0x0d,  // a SEQUENCE of length 13
-      0x06, 0x09,  // an OBJECT IDENTIFIER of length 9
-        0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01,
-    0x05, 0x00,  // a NULL of length 0
-    // subjectPublicKey
-    0x03, 0x82, 0x01, 0x0f,  // a BIT STRING of length 271 (0x10f)
-      0x00,  // number of unused bits
-      0x30, 0x82, 0x01, 0x0a,  // a SEQUENCE of length 266 (0x10a)
-        // modulus
-        0x02, 0x82, 0x01, 0x01,  // an INTEGER of length 257 (0x101)
-          0x00, 0xc4, 0x2d, 0xd5, 0x15, 0x8c, 0x9c, 0x26, 0x4c, 0xec,
-          0x32, 0x35, 0xeb, 0x5f, 0xb8, 0x59, 0x01, 0x5a, 0xa6, 0x61,
-          0x81, 0x59, 0x3b, 0x70, 0x63, 0xab, 0xe3, 0xdc, 0x3d, 0xc7,
-          0x2a, 0xb8, 0xc9, 0x33, 0xd3, 0x79, 0xe4, 0x3a, 0xed, 0x3c,
-          0x30, 0x23, 0x84, 0x8e, 0xb3, 0x30, 0x14, 0xb6, 0xb2, 0x87,
-          0xc3, 0x3d, 0x95, 0x54, 0x04, 0x9e, 0xdf, 0x99, 0xdd, 0x0b,
-          0x25, 0x1e, 0x21, 0xde, 0x65, 0x29, 0x7e, 0x35, 0xa8, 0xa9,
-          0x54, 0xeb, 0xf6, 0xf7, 0x32, 0x39, 0xd4, 0x26, 0x55, 0x95,
-          0xad, 0xef, 0xfb, 0xfe, 0x58, 0x86, 0xd7, 0x9e, 0xf4, 0x00,
-          0x8d, 0x8c, 0x2a, 0x0c, 0xbd, 0x42, 0x04, 0xce, 0xa7, 0x3f,
-          0x04, 0xf6, 0xee, 0x80, 0xf2, 0xaa, 0xef, 0x52, 0xa1, 0x69,
-          0x66, 0xda, 0xbe, 0x1a, 0xad, 0x5d, 0xda, 0x2c, 0x66, 0xea,
-          0x1a, 0x6b, 0xbb, 0xe5, 0x1a, 0x51, 0x4a, 0x00, 0x2f, 0x48,
-          0xc7, 0x98, 0x75, 0xd8, 0xb9, 0x29, 0xc8, 0xee, 0xf8, 0x66,
-          0x6d, 0x0a, 0x9c, 0xb3, 0xf3, 0xfc, 0x78, 0x7c, 0xa2, 0xf8,
-          0xa3, 0xf2, 0xb5, 0xc3, 0xf3, 0xb9, 0x7a, 0x91, 0xc1, 0xa7,
-          0xe6, 0x25, 0x2e, 0x9c, 0xa8, 0xed, 0x12, 0x65, 0x6e, 0x6a,
-          0xf6, 0x12, 0x44, 0x53, 0x70, 0x30, 0x95, 0xc3, 0x9c, 0x2b,
-          0x58, 0x2b, 0x3d, 0x08, 0x74, 0x4a, 0xf2, 0xbe, 0x51, 0xb0,
-          0xbf, 0x87, 0xd0, 0x4c, 0x27, 0x58, 0x6b, 0xb5, 0x35, 0xc5,
-          0x9d, 0xaf, 0x17, 0x31, 0xf8, 0x0b, 0x8f, 0xee, 0xad, 0x81,
-          0x36, 0x05, 0x89, 0x08, 0x98, 0xcf, 0x3a, 0xaf, 0x25, 0x87,
-          0xc0, 0x49, 0xea, 0xa7, 0xfd, 0x67, 0xf7, 0x45, 0x8e, 0x97,
-          0xcc, 0x14, 0x39, 0xe2, 0x36, 0x85, 0xb5, 0x7e, 0x1a, 0x37,
-          0xfd, 0x16, 0xf6, 0x71, 0x11, 0x9a, 0x74, 0x30, 0x16, 0xfe,
-          0x13, 0x94, 0xa3, 0x3f, 0x84, 0x0d, 0x4f,
-        // public exponent
-        0x02, 0x03,  // an INTEGER of length 3
-           0x01, 0x00, 0x01
-};
+// Man, this is ugly.  Better than trying to do it all programmatically, though.
+bool GenerateOwnerKey(std::vector<uint8>* key) {
+  ScopedTempDir tmpdir;
+  FilePath randomness;
+  FilePath scratch_file;
+  FilePath cert_file;
+  if (!tmpdir.CreateUniqueTempDir())
+    return false;
+  if (!file_util::CreateTemporaryFileInDir(tmpdir.path(), &randomness) &&
+      !file_util::CreateTemporaryFileInDir(tmpdir.path(), &scratch_file) &&
+      !file_util::CreateTemporaryFileInDir(tmpdir.path(), &cert_file)) {
+    return false;
+  }
+  std::string command =
+      base::StringPrintf("head -c 20 /dev/urandom > %s",
+                         randomness.value().c_str());
+  if (system(command.c_str()))  // get randomness.
+    return false;
+
+  command =
+      base::StringPrintf("nsscertutil -d 'sql:/home/chronos/user/.pki/nssdb' "
+                         "-S -x -n Fake -t 'C,,' -s CN=you -z %s",
+                         randomness.value().c_str());
+  if (system(command.c_str()))
+    return false;
+
+  command =
+      base::StringPrintf("nsspk12util -d 'sql:/home/chronos/user/.pki/nssdb' "
+                         "-n Fake -o %s -W ''",
+                         scratch_file.value().c_str());
+  if (system(command.c_str()))
+    return false;
+
+  command =
+      base::StringPrintf("openssl pkcs12 -in %s -passin pass: -passout pass: "
+                         "-nokeys"
+                         "| openssl x509 -pubkey -noout -outform DER"
+                         "| openssl rsa -outform DER -pubin -out %s",
+                         scratch_file.value().c_str(),
+                         cert_file.value().c_str());
+  if (system(command.c_str()))
+    return false;
+
+  return LoadPublicKey(cert_file, key);
 }
+
+
+bool Sign(std::string data, base::RSAPrivateKey* key, std::vector<uint8>* sig) {
+  scoped_ptr<base::SignatureCreator> signer(
+      base::SignatureCreator::Create(key));
+  if (!signer->Update(reinterpret_cast<const uint8*>(data.c_str()),
+                      data.length())) {
+    return false;
+  }
+  return signer->Final(sig);
+}
+
+base::RSAPrivateKey* GetPrivateKey(FilePath file) {
+  std::vector<uint8> pubkey;
+  if (!LoadPublicKey(file, &pubkey))
+    LOG(FATAL) << "Can't read public key off disk";
+
+  base::EnsureNSSInit();
+  base::OpenPersistentNSSDB();
+  scoped_ptr<base::RSAPrivateKey> private_key;
+  private_key.reset(base::RSAPrivateKey::FindFromPublicKeyInfo(pubkey));
+  if (private_key.get())
+    LOG(INFO) << "Re-read key data and reloaded private key";
+  else
+    LOG(FATAL) << "Can't get private key for public key I just created";
+  return private_key.release();
+}
+
+}  // namespace
 
 int main(int argc, const char** argv) {
+  base::AtExitManager exit_manager;
+  CommandLine::Init(argc, argv);
+  CommandLine *cl = CommandLine::ForCurrentProcess();
+  putenv("HOME=/home/chronos/user");
+
+  FilePath dir = file_util::GetHomeDir();
+  LOG(INFO) << "Homedir is " << dir.value();
+
   // Initialize the g_type systems an g_main event loop, normally this would be
   // done by chrome.
   ::g_type_init();
-  GMainLoop* loop = ::g_main_loop_new(NULL, false);
-  CHECK(loop);
 
   CHECK(LoadCrosLibrary(argv)) << "Failed to load cros .so";
 
-  if (chromeos::EmitLoginPromptReady())
-    LOG(INFO) << "Emitted!";
-  else
-    LOG(FATAL) << "Emitting login-prompt-ready failed.";
+  if (cl->HasSwitch(kEmit)) {
+    if (chromeos::EmitLoginPromptReady())
+      LOG(INFO) << "Emitted!";
+    else
+      LOG(FATAL) << "Emitting login-prompt-ready failed.";
+  }
+  if (cl->HasSwitch(kStartSession)) {
+    if (chromeos::StartSession("foo@bar.com", ""))
+      LOG(INFO) << "Started session!";
+    else
+      LOG(FATAL) << "Starting session failed.";
+  }
 
-  if (chromeos::StartSession("foo@bar.com", ""))
-    LOG(INFO) << "Started session!";
-  else
-    LOG(FATAL) << "Starting session failed.";
+  // Really have to do this after clearing owner key, starting BWSI session.
+  // Note that Chrome will get the signal that this has been done and CHECK.
+  if (cl->HasSwitch(kSetOwnerKey)) {
+    std::vector<uint8> pubkey;
+    if (!GenerateOwnerKey(&pubkey))
+      LOG(FATAL) << "Couldn't generate fakey owner key";
 
-  chromeos::SessionConnection connection;
-  if (connection = chromeos::MonitorSession(&monitor, loop))
-    LOG(INFO) << "Started monitoring!";
-  else
-    LOG(FATAL) << "Starting monitoring failed.";
+    ClientLoop client_loop;
+    client_loop.Initialize();
 
-  std::vector<uint8> key(public_key_info,
-                         public_key_info + sizeof(public_key_info));
-  if (chromeos::SetOwnerKey(key))
-    LOG(INFO) << "Sent key!";
-  else
-    LOG(ERROR) << "Setting key failed.";
+    if (!chromeos::SetOwnerKey(pubkey)) {
+      LOG(FATAL) << "Could not send SetOwnerKey?";
+    }
+    client_loop.Run();
+    LOG(INFO) << (client_loop.what_happened() == chromeos::SetKeySuccess ?
+                  "Successfully set owner key" : "Didn't set owner key");
+    exit(0);
+  }
+  if (cl->HasSwitch(kWhitelist)) {
+    scoped_ptr<base::RSAPrivateKey> private_key(
+        GetPrivateKey(FilePath(chromeos::kOwnerKeyFile)));
 
-  if (chromeos::Whitelist("cmasone@gmail.com", key))
-    LOG(INFO) << "Attempted to whitelist";
-  else
-    LOG(INFO) << "Could not attempt to whitelist.";
+    std::string name = cl->GetSwitchValueASCII(kWhitelist);
+    std::vector<uint8> sig;
+    if (!Sign(name, private_key.get(), &sig))
+      LOG(FATAL) << "Can't sign " << name;
 
-  if (chromeos::CheckWhitelist("cmasone@gmail.com", &key))
-    LOG(INFO) << "On the whitelist";
-  else
-    LOG(INFO) << "Not on the whitelist.";
+    ClientLoop client_loop;
+    client_loop.Initialize();
 
-  ::g_main_loop_run(loop);
+    if (!chromeos::Whitelist(name.c_str(), sig))
+      LOG(FATAL) << "Could not send SetOwnerKey?";
 
-  chromeos::DisconnectSession(connection);
+    client_loop.Run();
+    LOG(INFO) << (client_loop.what_happened() == chromeos::WhitelistOpSuccess ?
+                  "Whitelisted " : "Failed to whitelist ") << name;
+    exit(0);
+  }
+  if (cl->HasSwitch(kUnwhitelist)) {
+    scoped_ptr<base::RSAPrivateKey> private_key(
+        GetPrivateKey(FilePath(chromeos::kOwnerKeyFile)));
+
+    std::string name = cl->GetSwitchValueASCII(kUnwhitelist);
+    std::vector<uint8> sig;
+    if (!Sign(name, private_key.get(), &sig))
+      LOG(FATAL) << "Can't sign " << name;
+
+    ClientLoop client_loop;
+    client_loop.Initialize();
+
+    if (!chromeos::Unwhitelist(name.c_str(), sig))
+      LOG(FATAL) << "Could not send SetOwnerKey?";
+
+    client_loop.Run();
+    LOG(INFO) << (client_loop.what_happened() == chromeos::WhitelistOpSuccess ?
+                  "Whitelisted " : "Failed to whitelist ") << name;
+    exit(0);
+  }
+  if (cl->HasSwitch(kEnumerate)) {
+    std::vector<std::string> whitelisted;
+    if (!chromeos::EnumerateWhitelisted(&whitelisted)) {
+      LOG(FATAL) << "Could not enumerate the whitelisted";
+    }
+    std::vector<std::string>::iterator it;
+
+    for (it = whitelisted.begin(); it < whitelisted.end(); ++it)
+      LOG(INFO) << *it << " is whitelisted";
+
+    exit(0);
+  }
+  if (cl->HasSwitch(kCheckWhitelist)) {
+    std::string name = cl->GetSwitchValueASCII(kCheckWhitelist);
+    std::vector<uint8> sig;
+
+    if (!chromeos::CheckWhitelist(name.c_str(), &sig))
+      LOG(WARNING) << name << " not on whitelist.";
+    else
+      LOG(INFO) << name << " is on the whitelist.";
+
+    exit(0);
+  }
 
   return 0;
 }

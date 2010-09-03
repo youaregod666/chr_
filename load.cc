@@ -174,6 +174,7 @@ DECL_FUNC_2(SetSynapticsParameter, void, SynapticsParameter, int);
 // Login
 DECL_FUNC_2(CheckWhitelist, bool, const char*, std::vector<uint8>*);
 DECL_FUNC_0(EmitLoginPromptReady, bool);
+DECL_FUNC_1(EnumerateWhitelisted, bool, std::vector<std::string>*);
 DECL_FUNC_2(RestartJob, bool, int, const char*);
 DECL_FUNC_3(RetrieveProperty,
             bool,
@@ -395,6 +396,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   // Login
   INIT_FUNC(CheckWhitelist);
   INIT_FUNC(EmitLoginPromptReady);
+  INIT_FUNC(EnumerateWhitelisted);
   INIT_FUNC(RestartJob);
   INIT_FUNC(RetrieveProperty);
   INIT_FUNC(SetOwnerKey);

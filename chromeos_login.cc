@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <base/basictypes.h>
+#include <base/logging.h>
 #include <base/string_util.h>
 #include <dbus/dbus-glib-lowlevel.h>
 #include <chromeos/dbus/dbus.h>
@@ -95,9 +96,32 @@ bool ChromeOSEmitLoginPromptReady() {
 
     LOG(WARNING) << login_manager::kSessionManagerEmitLoginPromptReady
                  << " failed: " << SCOPED_SAFE_MESSAGE(error);
-
   }
   return done;
+}
+
+extern "C"
+bool ChromeOSEnumerateWhitelisted(std::vector<std::string>* out_whitelisted) {
+  chromeos::dbus::Proxy proxy = CreateProxy();
+  gchar** whitelisted = NULL;
+  chromeos::glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           login_manager::kSessionManagerEnumerateWhitelisted,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_STRV, &whitelisted,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << login_manager::kSessionManagerEnumerateWhitelisted
+                 << " failed: " << SCOPED_SAFE_MESSAGE(error);
+    return false;
+  }
+  for (int i = 0; whitelisted[i] != NULL; ++i)
+    out_whitelisted->push_back(std::string(whitelisted[i]));
+
+  g_strfreev(whitelisted);
+  return true;
 }
 
 extern "C"
@@ -319,12 +343,12 @@ DBusHandlerResult Filter(DBusConnection* connection,
   } else if (dbus_message_is_signal(message, chromium::kChromiumInterface,
                                     chromium::kPropertyChangeCompleteSignal)) {
     LOG(INFO) << "Filter:: PropertyChangeComplete signal received";
-    self->Notify(IsSuccess(message) ? SetKeySuccess : SetKeyFailure);
+    self->Notify(IsSuccess(message) ? PropertyOpSuccess : PropertyOpFailure);
     return DBUS_HANDLER_RESULT_HANDLED;
   } else if (dbus_message_is_signal(message, chromium::kChromiumInterface,
                                     chromium::kWhitelistChangeCompleteSignal)) {
     LOG(INFO) << "Filter:: WhitelistChangeComplete signal received";
-    self->Notify(IsSuccess(message) ? SetKeySuccess : SetKeyFailure);
+    self->Notify(IsSuccess(message) ? WhitelistOpSuccess : WhitelistOpFailure);
     return DBUS_HANDLER_RESULT_HANDLED;
   } else {
     return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;

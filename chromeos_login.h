@@ -37,6 +37,12 @@ extern void (*DisconnectSession)(SessionConnection connection);
 extern bool (*CheckWhitelist)(const char* email,
                               std::vector<uint8>* OUT_signature);
 extern bool (*EmitLoginPromptReady)();
+
+// EnumerateWhitelisted() is for informational purposes only.  The data
+// is returned without signatures.  To determine if a user is allowed to log in
+// to the device, YOU MUST use CheckWhitelist and verify the signature that is
+// returned.
+extern bool (*EnumerateWhitelisted)(std::vector<std::string>* OUT_whitelisted);
 extern bool (*RestartJob)(int pid, const char* command_line);
 extern bool (*RetrieveProperty)(const char* name,
                                 std::string* OUT_value,

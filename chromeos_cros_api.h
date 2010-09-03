@@ -137,12 +137,13 @@
 //  64: Added async APIs for cryptohome
 //  65: Added more status APIs for cryptohome
 //  66: Added annotation information to InputMethodLookupTable.
+//  67: Added an un-signed API for enumerating the whitelisted users.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 55,
-  kCrosAPIVersion = 66
+  kCrosAPIVersion = 67
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
