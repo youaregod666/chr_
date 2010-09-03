@@ -961,7 +961,6 @@ bool ChromeOSConfigureWifiService(const char* ssid,
 
 
   glib::ScopedError error;
-  char* path;
   if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
                            kConfigureWifiServiceFunction,
                            &Resetter(&error).lvalue(),

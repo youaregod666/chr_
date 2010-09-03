@@ -133,18 +133,18 @@ bool ChromeOSRetrieveProperty(const char* name,
   chromeos::glib::ScopedError error;
 
   GArray* sig;
-  gchar* value;
+  gchar* value = NULL;
 
   if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           login_manager::kSessionManagerCheckWhitelist,
+                           login_manager::kSessionManagerRetrieveProperty,
                            &Resetter(&error).lvalue(),
                            G_TYPE_STRING, name,
                            G_TYPE_INVALID,
-                           G_TYPE_STRING, value,
+                           G_TYPE_STRING, &value,
                            DBUS_TYPE_G_UCHAR_ARRAY, &sig,
                            G_TYPE_INVALID)) {
-    LOG(WARNING) << login_manager::kSessionManagerCheckWhitelist << " failed: "
-                 << SCOPED_SAFE_MESSAGE(error);
+    LOG(WARNING) << login_manager::kSessionManagerRetrieveProperty
+                 << " failed: " << SCOPED_SAFE_MESSAGE(error);
     return false;
   }
   bool rv = false;
@@ -155,6 +155,7 @@ bool ChromeOSRetrieveProperty(const char* name,
   }
   g_array_free(sig, false);
   out_value->assign(value);
+  g_free(value);
   return rv;
 }
 

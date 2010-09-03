@@ -481,6 +481,7 @@ class InputMethodStatusConnection {
 
     active_engines_.clear();
     active_engines_.insert(string_list.begin(), string_list.end());
+    return true;
   }
 
   // Called by cros API ChromeOS(Activate|Deactive)ImeProperty().

@@ -271,7 +271,7 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
       }
 
       // Check that the attribute indicates annotation.
-      if (IsAnnotation(attr) && j + 1 == length) {
+      if (IsAnnotation(attr) && j + 1 == static_cast<int>(length)) {
         const std::wstring candidate_word =
             UTF8ToWide(text->text).substr(0, attr->start_index);
         lookup_table.candidates.push_back(WideToUTF8(candidate_word));

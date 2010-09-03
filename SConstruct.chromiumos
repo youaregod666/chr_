@@ -52,11 +52,7 @@ input_methodwhitelist_builder = Builder(action =
                                         "./gen_input_method_whitelist.py " +
                                         "$SOURCES > $TARGET")
 
-base_env = Environment(
-    CPPPATH=['.', '..'],
-    CCFLAGS=['-ggdb', '-fPIC', '-fno-exceptions', '-Wall', '-Werror'],
-    LINKFLAGS=['-fPIC'],
-)
+base_env = Environment()
 base_env['BUILDERS']['GlibMarshal'] = glib_marshal_builder
 base_env['BUILDERS']['IBusEngines'] = ibus_engines_builder
 base_env['BUILDERS']['InputMethodWhitelist'] = input_methodwhitelist_builder
@@ -69,6 +65,12 @@ for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
 for key in Split('PKG_CONFIG PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
   if os.environ.has_key(key):
     base_env['ENV'][key] = os.environ[key]
+
+# Append these after pulling in the stuff from the environment so they
+# don't get overwritten.
+base_env.Append(CPPPATH=Split('. ..'))
+base_env.Append(CCFLAGS=Split('-ggdb -fPIC -fno-exceptions -Wall -Werror'))
+base_env.Append(LINKFLAGS=Split('-fPIC'))
 
 SOURCES=['chromeos_cryptohome.cc',
          'chromeos_imageburn.cc',

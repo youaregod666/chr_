@@ -104,7 +104,8 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* temp_filename) {
 
   // Ignore the return value - if the script execution didn't work
   // stderr won't go into the output file anyway.
-  system(cmd.c_str());
+  if (system(cmd.c_str()) == -1)
+    LOG(WARNING) << "Command " << cmd << " failed to run";
 
   // Read logs from the temp file
   std::string data;
