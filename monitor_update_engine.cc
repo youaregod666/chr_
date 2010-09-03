@@ -42,8 +42,10 @@ void PrintUpdateProgress(const chromeos::UpdateProgress& progress) {
     case chromeos::UPDATE_STATUS_UPDATED_NEED_REBOOT:
       op = "UPDATED_NEED_REBOOT";
       break;
+    default:
+      NOTREACHED() << "Unhandled status " << progress.status_;
   }
-  
+
   cout << "status_: " << op << endl;
   cout << "download_progress_: " << progress.download_progress_ << endl;
   cout << "last_checked_time_: " << progress.last_checked_time_ << endl;

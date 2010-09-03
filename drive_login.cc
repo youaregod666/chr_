@@ -93,7 +93,7 @@ bool LoadPublicKey(FilePath file, std::vector<uint8>* key) {
   int data_read = file_util::ReadFile(file,
                                       reinterpret_cast<char*>(&(key->at(0))),
                                       file_size_32);
-  return file_size_32 = data_read;
+  return file_size_32 == data_read;
 }
 
 // Man, this is ugly.  Better than trying to do it all programmatically, though.
@@ -175,7 +175,7 @@ int main(int argc, const char** argv) {
   base::AtExitManager exit_manager;
   CommandLine::Init(argc, argv);
   CommandLine *cl = CommandLine::ForCurrentProcess();
-  putenv("HOME=/home/chronos/user");
+  putenv(strdup("HOME=/home/chronos/user"));
 
   FilePath dir = file_util::GetHomeDir();
   LOG(INFO) << "Homedir is " << dir.value();

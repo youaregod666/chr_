@@ -192,7 +192,6 @@ int main(int argc, const char** argv) {
         LOG(INFO) << "AsyncMigrateKey success";
       } while(false);
     } else {
-      int mount_error;
       CHECK(chromeos::CryptohomeMigrateKey(name.c_str(), hash.c_str(),
                                            new_hash.c_str()))
           << "Cannot migrate key for " << name;
