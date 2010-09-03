@@ -75,6 +75,9 @@ struct InputMethodLookupTable {
 
   // Label strings in UTF-8 (ex. "1", "2", "3", ...).
   std::vector<std::string> labels;
+
+  // Annotation strings in UTF-8 (ex. "Hankaku Katakana").
+  std::vector<std::string> annotations;
 };
 
 // Callback function type for handling IBus's |HideAuxiliaryText| signal.

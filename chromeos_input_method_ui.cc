@@ -6,6 +6,7 @@
 
 #include <base/logging.h>
 #include <base/string_util.h>
+#include <base/utf_string_conversions.h>
 #include <ibus.h>
 #include <ibuspanelservice.h>
 
@@ -60,6 +61,22 @@ struct IBusChromeOSPanelServiceClass {
 
 G_DEFINE_TYPE(IBusChromeOSPanelService, ibus_chromeos_panel_service,
               IBUS_TYPE_PANEL_SERVICE)
+
+// Checks the attribute if this indicates annotation.
+gboolean IsAnnotation(IBusAttribute *attr) {
+  g_return_val_if_fail(attr, FALSE);
+
+  // Define annotation text color.
+  static const guint kAnnotationColor = 0x888888;
+
+  // Currently, we can discriminate annotation by specific value |attr->value|
+  // TODO(nhiroki): We should change the way when iBus supports annotations.
+  if (attr->type == IBUS_ATTR_TYPE_FOREGROUND &&
+      attr->value == kAnnotationColor) {
+    return TRUE;
+  }
+  return FALSE;
+}
 
 // Handles IBus's |FocusIn| method call.
 // Just sends a signal to the language bar.
@@ -228,14 +245,48 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
     lookup_table.orientation = InputMethodLookupTable::kHorizontal;
   }
 
-  // Copy candidates to |lookup_table|.
+  // Copy candidates and annotations to |lookup_table|.
   for (int i = 0; ; i++) {
     IBusText *text = ibus_lookup_table_get_candidate(table, i);
     if (!text) {
       break;
     }
-    lookup_table.candidates.push_back(text->text);
+
+    if (!text->attrs || !text->attrs->attributes) {
+      lookup_table.candidates.push_back(text->text);
+      lookup_table.annotations.push_back("");
+      continue;
+    }
+
+    // Divide candidate and annotation by specific attribute.
+    const guint length = text->attrs->attributes->len;
+    for (int j = 0; ; j++) {
+      IBusAttribute *attr = ibus_attr_list_get(text->attrs, j);
+
+      // The candidate does not have annotation.
+      if (!attr) {
+        lookup_table.candidates.push_back(text->text);
+        lookup_table.annotations.push_back("");
+        break;
+      }
+
+      // Check that the attribute indicates annotation.
+      if (IsAnnotation(attr) && j + 1 == length) {
+        const std::wstring candidate_word =
+            UTF8ToWide(text->text).substr(0, attr->start_index);
+        lookup_table.candidates.push_back(WideToUTF8(candidate_word));
+
+        const std::wstring annotation_word =
+            UTF8ToWide(text->text).substr(attr->start_index, attr->end_index);
+        lookup_table.annotations.push_back(WideToUTF8(annotation_word));
+
+        break;
+      }
+    }
   }
+  DCHECK_EQ(lookup_table.candidates.size(),
+            lookup_table.annotations.size());
+
   // Copy labels to |lookup_table|.
   for (int i = 0; ; i++) {
     IBusText *text = ibus_lookup_table_get_label(table, i);
