@@ -104,8 +104,8 @@ bool GenerateOwnerKey(std::vector<uint8>* key) {
   FilePath cert_file;
   if (!tmpdir.CreateUniqueTempDir())
     return false;
-  if (!file_util::CreateTemporaryFileInDir(tmpdir.path(), &randomness) &&
-      !file_util::CreateTemporaryFileInDir(tmpdir.path(), &scratch_file) &&
+  if (!file_util::CreateTemporaryFileInDir(tmpdir.path(), &randomness) ||
+      !file_util::CreateTemporaryFileInDir(tmpdir.path(), &scratch_file) ||
       !file_util::CreateTemporaryFileInDir(tmpdir.path(), &cert_file)) {
     return false;
   }
@@ -119,13 +119,15 @@ bool GenerateOwnerKey(std::vector<uint8>* key) {
       base::StringPrintf("nsscertutil -d 'sql:/home/chronos/user/.pki/nssdb' "
                          "-S -x -n Fake -t 'C,,' -s CN=you -z %s",
                          randomness.value().c_str());
+  LOG(INFO) << command;
   if (system(command.c_str()))
     return false;
 
   command =
       base::StringPrintf("nsspk12util -d 'sql:/home/chronos/user/.pki/nssdb' "
-                         "-n Fake -o %s -W ''",
+                         "-n Fake -W '' -o %s",
                          scratch_file.value().c_str());
+  LOG(INFO) << command;
   if (system(command.c_str()))
     return false;
 
@@ -136,6 +138,7 @@ bool GenerateOwnerKey(std::vector<uint8>* key) {
                          "| openssl rsa -outform DER -pubin -out %s",
                          scratch_file.value().c_str(),
                          cert_file.value().c_str());
+  LOG(INFO) << command;
   if (system(command.c_str()))
     return false;
 
@@ -225,6 +228,8 @@ int main(int argc, const char** argv) {
     std::vector<uint8> sig;
     if (!Sign(name, private_key.get(), &sig))
       LOG(FATAL) << "Can't sign " << name;
+    else
+      LOG(INFO) << "Signature is " << sig.size();
 
     ClientLoop client_loop;
     client_loop.Initialize();
