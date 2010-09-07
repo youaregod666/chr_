@@ -22,6 +22,7 @@
 #include "chromeos_screen_lock.h"  // NOLINT
 #include "chromeos_speech_synthesis.h"  // NOLINT
 #include "chromeos_synaptics.h"  // NOLINT
+#include "chromeos_touchpad.h"  // NOLINT
 #include "chromeos_update.h"  // NOLINT
 #include "chromeos_update_engine.h"  // NOLINT
 #include "chromeos_syslogs.h"  // NOLINT
@@ -168,8 +169,12 @@ DECL_FUNC_1(FreeIPConfigStatus, void, IPConfigStatus*);
 DECL_FUNC_0(GetDeviceNetworkList, DeviceNetworkList*);
 DECL_FUNC_1(FreeDeviceNetworkList, void, DeviceNetworkList*);
 
-// Touchpad
+// Synaptics
 DECL_FUNC_2(SetSynapticsParameter, void, SynapticsParameter, int);
+
+// Touchpad
+DECL_FUNC_1(SetTouchpadSensitivity, void, int);
+DECL_FUNC_1(SetTouchpadTapToClick, void, bool);
 
 // Login
 DECL_FUNC_2(CheckWhitelist, bool, const char*, std::vector<uint8>*);
@@ -390,8 +395,12 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(GetDeviceNetworkList);
   INIT_FUNC(FreeDeviceNetworkList);
 
-  // Touchpad
+  // Synaptics
   INIT_FUNC(SetSynapticsParameter);
+
+  // Touchpad
+  INIT_FUNC(SetTouchpadSensitivity);
+  INIT_FUNC(SetTouchpadTapToClick);
 
   // Login
   INIT_FUNC(CheckWhitelist);
