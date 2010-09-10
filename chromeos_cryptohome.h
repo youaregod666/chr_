@@ -41,6 +41,7 @@ extern int (*CryptohomeAsyncMigrateKey)(const char* user_email,
                                         const char* from_key,
                                         const char* to_key);
 extern bool (*CryptohomeRemove)(const char* user_email);
+extern int (*CryptohomeAsyncRemove)(const char* user_email);
 extern CryptohomeBlob (*CryptohomeGetSystemSalt)();
 extern bool (*CryptohomeIsMounted)();
 extern bool (*CryptohomeMount)(const char* user_email,

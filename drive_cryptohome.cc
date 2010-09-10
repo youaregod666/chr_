@@ -20,6 +20,7 @@ static const char kCheckKey[] = "check-key";
 static const char kTestMount[] = "test-mount";
 static const char kChangeKey[] = "change-key";
 static const char kMountGuest[] = "mount-guest";
+static const char kRemove[] = "remove";
 static const char kStatus[] = "status";
 static const char kAsync[] = "async";
 
@@ -195,6 +196,29 @@ int main(int argc, const char** argv) {
       CHECK(chromeos::CryptohomeMigrateKey(name.c_str(), hash.c_str(),
                                            new_hash.c_str()))
           << "Cannot migrate key for " << name;
+    }
+  }
+  if (cl->HasSwitch(kRemove)) {
+    std::string name = loose_args[0];
+    if (cl->HasSwitch(kAsync)) {
+      ClientLoop client_loop;
+      client_loop.Initialize();
+      do {
+        int async_id = chromeos::CryptohomeAsyncRemove(name.c_str());
+        if (async_id <= 0) {
+          LOG(ERROR) << "Failed to call AsyncRemove";
+          break;
+        }
+        client_loop.Run(async_id);
+        if (!client_loop.get_return_status()) {
+          LOG(INFO) << "AsyncRemove returned false";
+          break;
+        }
+        LOG(INFO) << "AsyncRemove success";
+      } while(false);
+    } else {
+      CHECK(chromeos::CryptohomeRemove(name.c_str()))
+          << "Cannot remove cryptohome for " << name;
     }
   }
   if (cl->HasSwitch(kMountGuest)) {

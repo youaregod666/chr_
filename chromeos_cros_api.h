@@ -139,12 +139,13 @@
 //  66: Added annotation information to InputMethodLookupTable.
 //  67: Added an un-signed API for enumerating the whitelisted users.
 //  68: Added new generic touchpad api.
+//  69: Added async API for removing a user's cryptohome
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 55,
-  kCrosAPIVersion = 68
+  kCrosAPIVersion = 69
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

@@ -156,6 +156,31 @@ bool ChromeOSCryptohomeRemove(const char* user_email) {
 }
 
 extern "C"
+int ChromeOSCryptohomeAsyncRemove(const char* user_email) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gint async_call_id = 0;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeAsyncRemove,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           user_email,
+                           G_TYPE_INVALID,
+                           G_TYPE_INT,
+                           &async_call_id,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeAsyncRemove << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+  return async_call_id;
+}
+
+extern "C"
 CryptohomeBlob ChromeOSCryptohomeGetSystemSalt() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy proxy(bus,
