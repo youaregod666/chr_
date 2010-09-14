@@ -447,6 +447,7 @@ class InputMethodUiStatusConnection {
       const InputMethodUiStatusMonitorFunctions& monitor_functions,
       void* input_method_library)
       : monitor_functions_(monitor_functions),
+        connection_change_handler_(NULL),
         input_method_library_(input_method_library),
         ibus_(NULL),
         ibus_panel_service_(NULL) {
@@ -458,6 +459,16 @@ class InputMethodUiStatusConnection {
       g_object_unref(ibus_panel_service_);
     }
     if (ibus_) {
+       g_signal_handlers_disconnect_by_func(
+           ibus_,
+           reinterpret_cast<gpointer>(
+               G_CALLBACK(IBusBusConnectedCallback)),
+           this);
+       g_signal_handlers_disconnect_by_func(
+           ibus_,
+           reinterpret_cast<gpointer>(
+               G_CALLBACK(IBusBusDisconnectedCallback)),
+           this);
       g_object_unref(ibus_);
     }
   }
@@ -477,6 +488,15 @@ class InputMethodUiStatusConnection {
       LOG(ERROR) << "ibus_bus_is_connected() failed";
       return false;
     }
+
+    g_signal_connect(ibus_,
+                     "connected",
+                     G_CALLBACK(IBusBusConnectedCallback),
+                     this);
+    g_signal_connect(ibus_,
+                     "disconnected",
+                     G_CALLBACK(IBusBusDisconnectedCallback),
+                     this);
 
     // Request the object name.
     const int status = ibus_bus_request_name(ibus_, IBUS_SERVICE_PANEL, 0);
@@ -509,8 +529,35 @@ class InputMethodUiStatusConnection {
     return ibus_panel_service_;
   }
 
+  void MonitorInputMethodConnection(
+      InputMethodConnectionChangeMonitorFunction connection_change_handler) {
+    connection_change_handler_ = connection_change_handler;
+  }
+
  private:
+
+  static void IBusBusConnectedCallback(IBusBus* bus, gpointer user_data) {
+    LOG(WARNING) << "IBus connection is recovered.";
+    InputMethodUiStatusConnection* self
+        = static_cast<InputMethodUiStatusConnection*>(user_data);
+    if (self) {
+      if (self->connection_change_handler_)
+        self->connection_change_handler_(self->input_method_library_, true);
+    }
+  }
+
+  static void IBusBusDisconnectedCallback(IBusBus* bus, gpointer user_data) {
+    LOG(ERROR) << "IBus connection is terminated!";
+    InputMethodUiStatusConnection* self
+        = static_cast<InputMethodUiStatusConnection*>(user_data);
+    if (self) {
+      if (self->connection_change_handler_)
+        self->connection_change_handler_(self->input_method_library_, false);
+    }
+  }
+
   InputMethodUiStatusMonitorFunctions monitor_functions_;
+  InputMethodConnectionChangeMonitorFunction connection_change_handler_;
   void* input_method_library_;
   IBusBus* ibus_;
   IBusPanelService* ibus_panel_service_;
@@ -558,6 +605,17 @@ void ChromeOSNotifyCandidateClicked(InputMethodUiStatusConnection* connection,
                                          index,
                                          button,
                                          flags);
+  }
+}
+
+extern "C"
+void ChromeOSMonitorInputMethodConnection(
+    InputMethodUiStatusConnection* connection,
+    InputMethodConnectionChangeMonitorFunction connection_change_handler) {
+  DLOG(INFO) << "MonitorInputMethodConnection";
+  DCHECK(connection);
+  if (connection) {
+    connection->MonitorInputMethodConnection(connection_change_handler);
   }
 }
 

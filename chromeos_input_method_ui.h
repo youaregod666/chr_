@@ -104,6 +104,10 @@ typedef void (*InputMethodUpdateLookupTableMonitorFunction)(
     void* input_method_library,
     const InputMethodLookupTable& table);
 
+// A monitor function which is called when ibus connects or disconnects.
+typedef void(*InputMethodConnectionChangeMonitorFunction)(
+    void* input_method_library, bool connected);
+
 // A set of function pointers used for monitoring the input method UI status.
 struct InputMethodUiStatusMonitorFunctions {
   InputMethodUiStatusMonitorFunctions()
@@ -156,6 +160,11 @@ extern void (*DisconnectInputMethodUiStatus)(
 extern void (*NotifyCandidateClicked)(
     InputMethodUiStatusConnection* connection,
     int index, int button, int flags);
+
+// Set a notification function for changes to an ibus connection.
+extern void (*MonitorInputMethodConnection)(
+    InputMethodUiStatusConnection* connection,
+    InputMethodConnectionChangeMonitorFunction connection_change_handler);
 
 }  // namespace chromeos
 

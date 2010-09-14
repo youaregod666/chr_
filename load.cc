@@ -116,6 +116,10 @@ DECL_FUNC_1(DisconnectInputMethodUiStatus,
             InputMethodUiStatusConnection*);
 DECL_FUNC_4(NotifyCandidateClicked, void,
             InputMethodUiStatusConnection*, int, int, int);
+DECL_FUNC_2(MonitorInputMethodConnection,
+            void,
+            InputMethodUiStatusConnection*,
+            InputMethodConnectionChangeMonitorFunction);
 
 // Keyboard
 DECL_FUNC_0(GetHardwareKeyboardLayoutName, std::string);
@@ -346,6 +350,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MonitorInputMethodUiStatus);
   INIT_FUNC(DisconnectInputMethodUiStatus);
   INIT_FUNC(NotifyCandidateClicked);
+  INIT_FUNC(MonitorInputMethodConnection);
 
   // Keyboard
   INIT_FUNC(GetHardwareKeyboardLayoutName);
