@@ -62,11 +62,9 @@ enum WmIpcWindowType {
   // Visually the BORDER contains the IMAGE and CONTROLS windows, the LABEL
   // and UNSELECTED_LABEL are placed beneath the BORDER. The LABEL window is
   // onscreen when the user is selected, otherwise the UNSELECTED_LABEL is
-  // on screen. The GUEST window is used when the user clicks on the entry
-  // that represents the 'guest' user.
+  // on screen.
   //
-  // The following parameters are set for these windows (except GUEST and
-  // BACKGROUND):
+  // The following parameters are set for these windows (except BACKGROUND):
   //   param[0]: Visual index of the user the window corresponds to.
   //             For example, all windows with an index of 0 occur first,
   //             followed by windows with an index of 1...
@@ -84,8 +82,17 @@ enum WmIpcWindowType {
   WM_IPC_WINDOW_LOGIN_CONTROLS = 11,
   WM_IPC_WINDOW_LOGIN_LABEL = 12,
   WM_IPC_WINDOW_LOGIN_UNSELECTED_LABEL = 13,
-  WM_IPC_WINDOW_LOGIN_GUEST = 14,
   WM_IPC_WINDOW_LOGIN_BACKGROUND = 15,
+
+  // The GUEST window is used for all OOBE windows and other
+  // wizard windows such as "Create account".
+  // param[0]: Non-zero value represents "initial show".
+  // That means that screen is created for the first time
+  // (device is booted). Both screen and background are animated.
+  // Zero value represents that screen is recreated but
+  // background animation is not needed.
+  // This parameter is only checked when window is mapped.
+  WM_IPC_WINDOW_LOGIN_GUEST = 14,
 
   // A window that Chrome opens when locking the screen.
   WM_IPC_WINDOW_CHROME_SCREEN_LOCKER = 16,
