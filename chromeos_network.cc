@@ -63,7 +63,9 @@ static const char* kTypeProperty = "Type";
 static const char* kUnknownString = "UNKNOWN";
 static const char* kIPConfigsProperty = "IPConfigs";
 static const char* kDeviceProperty = "Device";
-static const char* kActivationStateProperty = "ActivationState";
+static const char* kActivationStateProperty = "Cellular.ActivationState";
+static const char* kNetworkTechnologyProperty = "Cellular.NetworkTechnology";
+static const char* kRoamingStateProperty = "Cellular.RoamingState";
 static const char* kFavoriteProperty = "Favorite";
 static const char* kAutoConnectProperty = "AutoConnect";
 static const char* kModeProperty = "Mode";
@@ -108,6 +110,28 @@ static const char* kStateConfiguration = "configuration";
 static const char* kStateReady = "ready";
 static const char* kStateDisconnect = "disconnect";
 static const char* kStateFailure = "failure";
+
+// Connman network technology options.
+static const char* kNetworkTechnology1Xrtt = "1xRTT";
+static const char* kNetworkTechnologyEvdo = "EVDO";
+static const char* kNetworkTechnologyGprs = "GPRS";
+static const char* kNetworkTechnologyEdge = "EDGE";
+static const char* kNetworkTechnologyUmts = "UMTS";
+static const char* kNetworkTechnologyHspa = "HSPA";
+static const char* kNetworkTechnologyHspaPlus = "HSPA+";
+static const char* kNetworkTechnologyLte = "LTE";
+static const char* kNetworkTechnologyLteAdvanced = "LTE Advanced";
+
+// Connman roaming state options
+static const char* kRoamingStateHome = "home";
+static const char* kRoamingStateRoaming = "roaming";
+static const char* kRoamingStateUnknown = "unknown";
+
+// Connman activation state options
+static const char* kActivationStateActivated = "activated";
+static const char* kActivationStateActivating = "activating";
+static const char* kActivationStateNotActivated = "not-activated";
+static const char* kActivationStateUnknown = "unknown";
 
 // Connman error options.
 static const char* kErrorOutOfRange = "out-of-range";
@@ -239,6 +263,53 @@ static ConnectionState ParseState(const std::string& state) {
   return STATE_UNKNOWN;
 }
 
+static NetworkTechnology ParseNetworkTechnology(
+    const std::string& technology) {
+  if (technology == kNetworkTechnology1Xrtt)
+    return NETWORK_TECHNOLOGY_1XRTT;
+  else if (technology == kNetworkTechnologyEvdo)
+    return NETWORK_TECHNOLOGY_EVDO;
+  else if (technology == kNetworkTechnologyGprs)
+    return NETWORK_TECHNOLOGY_GPRS;
+  else if (technology == kNetworkTechnologyEdge)
+    return NETWORK_TECHNOLOGY_EDGE;
+  else if (technology == kNetworkTechnologyUmts)
+    return NETWORK_TECHNOLOGY_UMTS;
+  else if (technology == kNetworkTechnologyHspa)
+    return NETWORK_TECHNOLOGY_HSPA;
+  else if (technology == kNetworkTechnologyHspaPlus)
+    return NETWORK_TECHNOLOGY_HSPA_PLUS;
+  else if (technology == kNetworkTechnologyLte)
+    return NETWORK_TECHNOLOGY_LTE;
+  else if (technology == kNetworkTechnologyLteAdvanced)
+    return NETWORK_TECHNOLOGY_LTE_ADVANCED;
+  return NETWORK_TECHNOLOGY_UNKNOWN;
+}
+
+static NetworkRoamingState ParseRoamingState(
+    const std::string& roaming_state) {
+  if (roaming_state == kRoamingStateHome)
+    return ROAMING_STATE_HOME;
+  else if (roaming_state == kRoamingStateRoaming)
+    return ROAMING_STATE_ROAMING;
+  else if (roaming_state == kRoamingStateUnknown)
+    return ROAMING_STATE_UNKNOWN;
+  return ROAMING_STATE_UNKNOWN;
+}
+
+static ActivationState ParseActivationState(
+    const std::string& activation_state) {
+  if (activation_state == kActivationStateActivated)
+    return ACTIVATION_STATE_ACTIVATED;
+  else if (activation_state == kActivationStateActivating)
+    return ACTIVATION_STATE_ACTIVATING;
+  else if (activation_state == kActivationStateNotActivated)
+    return ACTIVATION_STATE_NOT_ACTIVATED;
+  else if (activation_state == kActivationStateUnknown)
+    return ACTIVATION_STATE_UNKNOWN;
+  return ACTIVATION_STATE_UNKNOWN;
+}
+
 static ConnectionError ParseError(const std::string& error) {
   if (error == kErrorOutOfRange)
     return ERROR_OUT_OF_RANGE;
@@ -323,6 +394,16 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   properties.Retrieve(kStateProperty, &default_string);
   info->state = ParseState(default_string);
 
+  // Network technology
+  default_string = kUnknownString;
+  properties.Retrieve(kNetworkTechnologyProperty, &default_string);
+  info->network_technology = ParseNetworkTechnology(default_string);
+
+  // Roaming state
+  default_string = kUnknownString;
+  properties.Retrieve(kRoamingStateProperty, &default_string);
+  info->roaming_state = ParseRoamingState(default_string);
+
   // Error
   default_string = kUnknownString;
   properties.Retrieve(kErrorProperty, &default_string);
@@ -375,7 +456,7 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   // ActivationState
   default_string = kUnknownString;
   properties.Retrieve(kActivationStateProperty, &default_string);
-  info->activation_state = NewStringCopy(default_string);
+  info->activation_state = ParseActivationState(default_string);
 }
 
 // Returns a ServiceInfo object populated with data from a
@@ -409,8 +490,6 @@ void DeleteServiceInfoProperties(ServiceInfo info) {
     delete info.identity;
   if (info.cert_path)
     delete info.cert_path;
-  if (info.activation_state)
-    delete info.activation_state;
 
   info.service_path = NULL;
   info.name = NULL;
@@ -418,7 +497,6 @@ void DeleteServiceInfoProperties(ServiceInfo info) {
   info.device_path = NULL;
   info.identity = NULL;
   info.cert_path = NULL;
-  info.activation_state = NULL;
 }
 
 }  // namespace
@@ -449,6 +527,7 @@ void ChromeOSFreeServiceInfo(ServiceInfo* info) {
   DeleteServiceInfoProperties(*info);
 }
 
+// TODO(ers) ManagerPropertyChangedHandler is deprecated
 class ManagerPropertyChangedHandler {
  public:
   typedef dbus::MonitorConnection<void(const char*, const glib::Value*)>*
@@ -477,6 +556,41 @@ class ManagerPropertyChangedHandler {
   MonitorNetworkCallback callback_;
   void* object_;
   MonitorConnection connection_;
+};
+
+class PropertyChangedHandler {
+ public:
+  typedef dbus::MonitorConnection<void(const char*, const glib::Value*)>*
+      MonitorConnection;
+
+  PropertyChangedHandler(const MonitorPropertyCallback& callback,
+                         const char* path,
+                         void* object)
+     : callback_(callback),
+       path_(path),
+       object_(object),
+       connection_(NULL) {
+  }
+
+  static void Run(void* object,
+                  const char* property,
+                  const glib::Value* value) {
+    PropertyChangedHandler* self =
+        static_cast<PropertyChangedHandler*>(object);
+    self->callback_(self->object_, self->path_.c_str(), property, value);
+  }
+
+  MonitorConnection& connection() {
+    return connection_;
+  }
+
+ private:
+  MonitorPropertyCallback callback_;
+  std::string path_;
+  void* object_;
+  MonitorConnection connection_;
+
+  DISALLOW_COPY_AND_ASSIGN(PropertyChangedHandler);
 };
 
 IPConfigType ParseIPConfigType(const std::string& type) {
@@ -512,7 +626,7 @@ std::string PrefixlenToNetmask(int32 prefixlen) {
     if (i > 0)
       netmask += ".";
     int num = len == 0 ? 0 : ((2L << (len - 1)) - 1) << (8 - len);
-    netmask += StringPrintf("%d", num); 
+    netmask += StringPrintf("%d", num);
   }
   return netmask;
 }
@@ -699,7 +813,7 @@ bool ChromeOSSaveIPConfig(IPConfig* config) {
                            kConnmanIPConfigInterface);
 /*
   TODO(chocobo): Save all the values
-  
+
   glib::Value value_set;
 
   glib::ScopedError error;
@@ -776,6 +890,7 @@ void ChromeOSFreeIPConfigStatus(IPConfigStatus* status) {
 
 }
 
+// BEGIN DEPRECATED
 extern "C"
 MonitorNetworkConnection ChromeOSMonitorNetwork(MonitorNetworkCallback callback,
                                                 void* object) {
@@ -799,6 +914,58 @@ MonitorNetworkConnection ChromeOSMonitorNetwork(MonitorNetworkCallback callback,
 
 extern "C"
 void ChromeOSDisconnectMonitorNetwork(MonitorNetworkConnection connection) {
+  dbus::Disconnect(connection->connection());
+  delete connection;
+}
+// END DEPRECATED
+
+extern "C"
+PropertyChangeMonitor ChromeOSMonitorNetworkManager(
+    MonitorPropertyCallback callback,
+    void* object) {
+  // TODO(rtc): Figure out where the best place to init the marshaler is, also
+  // it may need to be freed.
+  dbus_g_object_register_marshaller(marshal_VOID__STRING_BOXED,
+                                    G_TYPE_NONE,
+                                    G_TYPE_STRING,
+                                    G_TYPE_VALUE,
+                                    G_TYPE_INVALID);
+  dbus::Proxy proxy(dbus::GetSystemBusConnection(),
+                    kConnmanServiceName,
+                    "/",
+                    kConnmanManagerInterface);
+  PropertyChangeMonitor monitor =
+      new PropertyChangedHandler(callback, "/", object);
+  monitor->connection() = dbus::Monitor(
+      proxy, "PropertyChanged", &PropertyChangedHandler::Run, monitor);
+  return monitor;
+}
+
+extern "C"
+void ChromeOSDisconnectPropertyChangeMonitor(
+    PropertyChangeMonitor connection) {
+  dbus::Disconnect(connection->connection());
+  delete connection;
+}
+
+extern "C"
+PropertyChangeMonitor ChromeOSMonitorNetworkService(
+    MonitorPropertyCallback callback,
+    const char* service_path,
+    void* object) {
+  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
+                            kConnmanServiceName,
+                            service_path,
+                            kConnmanServiceInterface);
+  PropertyChangeMonitor monitor =
+      new PropertyChangedHandler(callback, service_path, object);
+  monitor->connection() = dbus::Monitor(
+      service_proxy, "PropertyChanged", &PropertyChangedHandler::Run, monitor);
+  return monitor;
+}
+
+extern "C"
+void ChromeOSDisconnectMonitorService(PropertyChangeMonitor connection) {
   dbus::Disconnect(connection->connection());
   delete connection;
 }
@@ -910,7 +1077,7 @@ bool ChromeOSActivateCellularModem(const char* service_path,
                            &carrier,
                            G_TYPE_INVALID,
                            G_TYPE_INVALID)) {
-    LOG(WARNING) << "ActivateCellularNetwork failed: "
+    LOG(WARNING) << "ChromeOSActivateCellularModem failed: "
         << (error->message ? error->message : "Unknown Error.");
     return false;
   }
@@ -1469,7 +1636,7 @@ DeviceNetworkList* ChromeOSGetDeviceNetworkList() {
                              kConnmanServiceName,
                              device_path,
                              kConnmanDeviceInterface);
- 
+
     glib::ScopedHashTable properties;
     if (!GetProperties(device_proxy, &properties)) {
       LOG(WARNING) << "Couldn't read device's properties";
@@ -1494,7 +1661,7 @@ DeviceNetworkList* ChromeOSGetDeviceNetworkList() {
     found_at_least_one_device = true;
     for (size_t j = 0; j < networks->len; j++) {
       const char* network_path =
-	  static_cast<const char*>(g_ptr_array_index(networks, j));
+          static_cast<const char*>(g_ptr_array_index(networks, j));
       DeviceNetworkInfo info = {};
       if (!ParseDeviceNetworkInfo(bus, network_path, &info))
         continue;

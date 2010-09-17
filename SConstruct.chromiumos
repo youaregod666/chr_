@@ -137,6 +137,9 @@ env_gtest_main.Append(LIBS=['gtest', 'gtest_main', 'chromeos'])
 env_gtest_main.ParseConfig('%s --cflags --libs libpcrecpp libxklavier' % (
     env_test['ENV']['PKG_CONFIG']))
 
+env_network_monitor = env_test.Clone()
+env_network_monitor.Append(LIBS=['dbus-glib-1'])
+
 Load = base_env.Object('load.cc')
 
 # Tests that do not require libcros.so. The ebuild script for libcros
@@ -159,8 +162,7 @@ tests = [
   # env_gtest.Program('monitor_input_method',
   #                   ['monitor_input_method.cc', Load]),
   env_gtest.Program('monitor_keyboard', ['monitor_keyboard.cc', Load]),
-  # This is broken now.
-  # env_test.Program('monitor_network', ['monitor_network.cc', Load]),
+  env_network_monitor.Program('monitor_network', ['monitor_network.cc', Load]),
   env_test.Program('monitor_mount', ['monitor_mount.cc', Load]),
   env_test.Program('monitor_input_method_ui',
                    ['monitor_input_method_ui.cc', Load]),

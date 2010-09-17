@@ -9,7 +9,11 @@
 
 namespace chromeos { // NOLINT
 
-// Connection enums (see flimflam/files/include/service.h)
+namespace glib {
+class Value;
+}
+
+// Connection enums (see flimflam/include/service.h)
 enum ConnectionType {
   TYPE_UNKNOWN   = 0,
   TYPE_ETHERNET  = 1,
@@ -43,6 +47,33 @@ enum ConnectionState {
   STATE_READY         = 5,
   STATE_DISCONNECT    = 6,
   STATE_FAILURE       = 7,
+};
+
+// Network enums (see flimflam/include/network.h)
+enum NetworkTechnology {
+  NETWORK_TECHNOLOGY_UNKNOWN      = 0,
+  NETWORK_TECHNOLOGY_1XRTT        = 1,
+  NETWORK_TECHNOLOGY_EVDO         = 2,
+  NETWORK_TECHNOLOGY_GPRS         = 3,
+  NETWORK_TECHNOLOGY_EDGE         = 4,
+  NETWORK_TECHNOLOGY_UMTS         = 5,
+  NETWORK_TECHNOLOGY_HSPA         = 6,
+  NETWORK_TECHNOLOGY_HSPA_PLUS    = 7,
+  NETWORK_TECHNOLOGY_LTE          = 8,
+  NETWORK_TECHNOLOGY_LTE_ADVANCED = 9,
+};
+
+enum ActivationState {
+  ACTIVATION_STATE_UNKNOWN       = 0,
+  ACTIVATION_STATE_ACTIVATED     = 1,
+  ACTIVATION_STATE_ACTIVATING    = 2,
+  ACTIVATION_STATE_NOT_ACTIVATED = 3,
+};
+
+enum NetworkRoamingState {
+  ROAMING_STATE_UNKNOWN = 0,
+  ROAMING_STATE_HOME    = 1,
+  ROAMING_STATE_ROAMING = 2,
 };
 
 // connection errors (see flimflam/include/service.h)
@@ -84,7 +115,10 @@ struct ServiceInfo {
   bool favorite;
   bool auto_connect;
   const char* device_path;
-  const char* activation_state;
+  const char* activation_state_dont_use;  // DEPRECATED - use the enum below
+  ActivationState activation_state;
+  NetworkTechnology network_technology;
+  NetworkRoamingState roaming_state;
 };
 
 struct SystemInfo {
@@ -235,24 +269,62 @@ extern void (*FreeSystemInfo)(SystemInfo* system);
 // Chrome.
 extern void (*FreeServiceInfo)(ServiceInfo* info);
 
+// BEGIN DEPRECATED
 // An internal listener to a d-bus signal. When notifications are received
 // they are rebroadcasted in non-glib form.
+// MonitorNetworkConnection is deprecated: use PropertyChangeMonitor.
 class ManagerPropertyChangedHandler;
 typedef ManagerPropertyChangedHandler* MonitorNetworkConnection;
 
 // The expected callback signature that will be provided by the client who
-// calls MonitorNetworkStatus. Callbacks are only called with |object| being
+// calls MonitorNetwork. Callbacks are only called with |object| being
 // the caller. The recipient of the callback should call GetSystemInfo to
 // retrieve the current state of things.
+// MonitorNetworkCallback is deprecated: Use MonitorPropertyCallback.
 typedef void(*MonitorNetworkCallback)(void* object);
 
-// Sets up monitoring of the PropertyChanged signal on the Connman manager.
+// Sets up monitoring of the PropertyChanged signal on the flimflam manager.
 // The provided MonitorNetworkCallback will be called whenever that happens.
-extern MonitorNetworkConnection (*MonitorNetwork)(MonitorNetworkCallback,
-                                                  void*);
+// MonitorNetwork is deprecated: use MonitorNetworkManager.
+extern MonitorNetworkConnection (*MonitorNetwork)(
+    MonitorNetworkCallback callback,
+    void* object);
 
 // Disconnects a MonitorNetworkConnection.
+// DisconnectMonitorNetwork is deprecated: use DisconnectPropertyChangeMonitor.
 extern void (*DisconnectMonitorNetwork)(MonitorNetworkConnection connection);
+// END DEPRECATED
+
+// An internal listener to a d-bus signal. When notifications are received
+// they are rebroadcasted in non-glib form.
+class PropertyChangedHandler;
+typedef PropertyChangedHandler* PropertyChangeMonitor;
+
+typedef void (*MonitorPropertyCallback)(void* object,
+                                        const char* path,
+                                        const char* key,
+                                        const glib::Value* value);
+
+// Sets up monitoring of the PropertyChanged signal on the flimflam manager.
+// The provided MonitorPropertyCallback will be called whenever a manager
+// property changes. |object| will be supplied as the first argument to the
+// callback.
+extern PropertyChangeMonitor (*MonitorNetworkManager)(
+    MonitorPropertyCallback callback,
+    void* object);
+
+// Disconnects a PropertyChangeMonitor.
+extern void (*DisconnectPropertyChangeMonitor)(
+    PropertyChangeMonitor monitor);
+
+// Sets up monitoring of the PropertyChanged signal on the specified service.
+// The provided MonitorPropertyCallback will be called whenever a service
+// property changes. |object| will be supplied as the first argument to the
+// callback.
+extern PropertyChangeMonitor (*MonitorNetworkService)(
+    MonitorPropertyCallback callback,
+    const char* service_path,
+    void* object);
 
 // Enable or disable the specific network device for connection.
 //

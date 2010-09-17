@@ -141,12 +141,14 @@
 //  68: Added new generic touchpad api.
 //  69: Added async API for removing a user's cryptohome
 //  70: Added ibus connection change callback for UI.
+//  71: Added new network service properties, and handlers for service property
+//      change signals.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 55,
-  kCrosAPIVersion = 70
+  kCrosAPIVersion = 71
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
