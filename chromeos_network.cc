@@ -80,6 +80,9 @@ static const char* kWifiChannelProperty = "WiFi.Channel";
 static const char* kScanIntervalProperty = "ScanInterval";
 static const char* kPoweredProperty = "Powered";
 
+// Connman monitored properties
+static const char* kMonitorPropertyChanged = "PropertyChanged";
+
 // Connman network state
 static const char* kOnline = "online";
 
@@ -140,6 +143,32 @@ static const char* kErrorDhcpFailed = "dhcp-failed";
 static const char* kErrorConnectFailed = "connect-failed";
 static const char* kErrorBadPassphrase = "bad-passphrase";
 static const char* kErrorBadWEPKey = "bad-wepkey";
+
+// Cashew D-Bus service identifiers.
+static const char* kCashewServiceName = "org.chromium.Cashew";
+static const char* kCashewServicePath = "/org/chromium/Cashew";
+static const char* kCashewServiceInterface = "org.chromium.Cashew";
+
+// Cashew function names.
+static const char* kRequestDataPlanFunction = "RequestDataPlansUpdate";
+static const char* kRetrieveDataPlanFunction = "GetDataPlans";
+
+// Connman monitored properties
+static const char* kMonitorDataPlanUpdate = "DataPlansUpdate";
+
+// Cashew data plan properties
+static const char* kCellularPlanNameProperty = "CellularPlanName";
+static const char* kCellularPlanTypeProperty = "CellularPlanType";
+static const char* kCellularPlanUpdateTimeProperty = "CellularPlanUpdateTime";
+static const char* kCellularPlanStartProperty = "CellularPlanStart";
+static const char* kCellularPlanEndProperty = "CellularPlanEnd";
+static const char* kCellularPlanDataBytesProperty = "CellularPlanDataBytes";
+static const char* kCellularDataBytesUsedProperty = "CellularDataBytesUsed";
+
+// Cashew Data Plan types
+static const char* kCellularDataPlanUnlimited = "UNLIMITED";
+static const char* kCellularDataPlanMeteredPaid = "METERED_PAID";
+static const char* kCellularDataPlanMeteredBase = "METERED_BASE";
 
 // IPConfig property names.
 static const char* kMethodProperty = "Method";
@@ -326,6 +355,16 @@ static ConnectionError ParseError(const std::string& error) {
   return ERROR_UNKNOWN;
 }
 
+static CellularDataPlanType ParseCellularDataPlanType(const std::string& type) {
+  if (type == kCellularDataPlanUnlimited)
+    return CELLULAR_DATA_PLAN_UNLIMITED;
+  if (type == kCellularDataPlanMeteredPaid)
+    return CELLULAR_DATA_PLAN_METERED_PAID;
+  if (type == kCellularDataPlanMeteredBase)
+    return CELLULAR_DATA_PLAN_METERED_BASE;
+  return CELLULAR_DATA_PLAN_UNKNOWN;
+}
+
 // Invokes the given method on the proxy and stores the result
 // in the ScopedHashTable. The hash table will map strings to glib values.
 bool GetProperties(const dbus::Proxy& proxy, glib::ScopedHashTable* result) {
@@ -497,6 +536,71 @@ void DeleteServiceInfoProperties(ServiceInfo info) {
   info.device_path = NULL;
   info.identity = NULL;
   info.cert_path = NULL;
+}
+
+void ParseCellularDataPlan(const glib::ScopedHashTable& properties,
+                           CellularDataPlan* plan) {
+  DCHECK(plan);
+  // Plan Name
+  const char* default_string = kUnknownString;
+  properties.Retrieve(kCellularPlanNameProperty, &default_string);
+  if (default_string)
+    plan->plan_name = std::string(default_string);
+  // Plan Type
+  default_string = kUnknownString;
+  properties.Retrieve(kCellularPlanTypeProperty, &default_string);
+  plan->plan_type = ParseCellularDataPlanType(default_string);
+  // Plan Update Time
+  int64 default_time = 0;
+  properties.Retrieve(kCellularPlanUpdateTimeProperty, &default_time);
+  plan->update_time = default_time;
+  // Plan Start Time
+  default_time = 0;
+  properties.Retrieve(kCellularPlanStartProperty, &default_time);
+  plan->plan_start_time = default_time;
+  // Plan End Time
+  default_time = 0;
+  properties.Retrieve(kCellularPlanEndProperty, &default_time);
+  plan->plan_end_time = default_time;
+  // Plan Data Bytes
+  int64 default_bytes = 0;
+  properties.Retrieve(kCellularPlanDataBytesProperty, &default_bytes);
+  plan->plan_data_bytes = default_bytes;
+  // Plan Bytes Used
+  default_bytes = 0;
+  properties.Retrieve(kCellularDataBytesUsedProperty, &default_bytes);
+  plan->data_bytes_used = default_bytes;
+}
+
+void ParseCellularDataPlanList(
+    const glib::ScopedPtrArray<GHashTable*>& properties_array,
+    CellularDataPlanList* data_plan_list) {
+  DCHECK(data_plan_list);
+  glib::ScopedPtrArray<GHashTable*>::const_iterator iter;
+  for (iter = properties_array.begin(); iter != properties_array.end(); ++iter) {
+    glib::ScopedHashTable scoped_properties(*iter);
+    CellularDataPlan plan;
+    ParseCellularDataPlan(scoped_properties, &plan);
+    data_plan_list->push_back(plan);
+  }
+}
+
+// Register all dbus marshallers once.
+void RegisterMarshallers() {
+  static bool registered(false);
+  // TODO(rtc/stevenjb): Do these need to be freed?
+  if (!registered) {
+    dbus_g_object_register_marshaller(marshal_VOID__STRING_BOXED,
+                                      G_TYPE_NONE,
+                                      G_TYPE_STRING,
+                                      G_TYPE_VALUE,
+                                      G_TYPE_INVALID);
+    // NOTE: We have a second marshaller type that is also VOID__STRING_BOXED,
+    // except it takes a GPtrArray BOXED type instead of G_TYPE_VALYE.
+    // Because both map to marshal_VOID__STRING_BOXED, I am assuming that
+    // we don't need to register both. -stevenjb
+    registered = true;
+  }
 }
 
 }  // namespace
@@ -892,15 +996,9 @@ void ChromeOSFreeIPConfigStatus(IPConfigStatus* status) {
 
 // BEGIN DEPRECATED
 extern "C"
-MonitorNetworkConnection ChromeOSMonitorNetwork(MonitorNetworkCallback callback,
-                                                void* object) {
-  // TODO(rtc): Figure out where the best place to init the marshaler is, also
-  // it may need to be freed.
-  dbus_g_object_register_marshaller(marshal_VOID__STRING_BOXED,
-                                    G_TYPE_NONE,
-                                    G_TYPE_STRING,
-                                    G_TYPE_VALUE,
-                                    G_TYPE_INVALID);
+MonitorNetworkConnection ChromeOSMonitorNetwork(
+    MonitorNetworkCallback callback, void* object) {
+  RegisterMarshallers();
   dbus::Proxy proxy(dbus::GetSystemBusConnection(),
                     kConnmanServiceName,
                     "/",
@@ -908,7 +1006,8 @@ MonitorNetworkConnection ChromeOSMonitorNetwork(MonitorNetworkCallback callback,
   MonitorNetworkConnection result =
       new ManagerPropertyChangedHandler(callback, object);
   result->connection() = dbus::Monitor(
-      proxy, "PropertyChanged", &ManagerPropertyChangedHandler::Run, result);
+      proxy, kMonitorPropertyChanged,
+      &ManagerPropertyChangedHandler::Run, result);
   return result;
 }
 
@@ -923,21 +1022,17 @@ extern "C"
 PropertyChangeMonitor ChromeOSMonitorNetworkManager(
     MonitorPropertyCallback callback,
     void* object) {
-  // TODO(rtc): Figure out where the best place to init the marshaler is, also
-  // it may need to be freed.
-  dbus_g_object_register_marshaller(marshal_VOID__STRING_BOXED,
-                                    G_TYPE_NONE,
-                                    G_TYPE_STRING,
-                                    G_TYPE_VALUE,
-                                    G_TYPE_INVALID);
+  RegisterMarshallers();
   dbus::Proxy proxy(dbus::GetSystemBusConnection(),
                     kConnmanServiceName,
                     "/",
                     kConnmanManagerInterface);
   PropertyChangeMonitor monitor =
       new PropertyChangedHandler(callback, "/", object);
-  monitor->connection() = dbus::Monitor(
-      proxy, "PropertyChanged", &PropertyChangedHandler::Run, monitor);
+  monitor->connection() = dbus::Monitor(proxy,
+                                        kMonitorPropertyChanged,
+                                        &PropertyChangedHandler::Run,
+                                        monitor);
   return monitor;
 }
 
@@ -953,14 +1048,17 @@ PropertyChangeMonitor ChromeOSMonitorNetworkService(
     MonitorPropertyCallback callback,
     const char* service_path,
     void* object) {
+  RegisterMarshallers();
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
                             kConnmanServiceName,
                             service_path,
                             kConnmanServiceInterface);
   PropertyChangeMonitor monitor =
       new PropertyChangedHandler(callback, service_path, object);
-  monitor->connection() = dbus::Monitor(
-      service_proxy, "PropertyChanged", &PropertyChangedHandler::Run, monitor);
+  monitor->connection() = dbus::Monitor(service_proxy,
+                                        kMonitorPropertyChanged,
+                                        &PropertyChangedHandler::Run,
+                                        monitor);
   return monitor;
 }
 
@@ -1689,5 +1787,160 @@ void ChromeOSFreeDeviceNetworkList(DeviceNetworkList* list) {
   delete [] list->networks;
   delete list;
 }
+
+
+// Cashew services
+
+// NOTE: We can't use dbus::MonitorConnection here because there is no
+// type_to_gtypeid<GHashTable>, and MonitorConnection only takes
+// up to 3 arguments, so we can't pass each argument either.
+// Instead, make dbus calls directly.
+
+class DataPlanUpdateHandler {
+ public:
+  DataPlanUpdateHandler(const MonitorDataPlanCallback& callback,
+                         void* object)
+     : callback_(callback),
+       object_(object) {
+    proxy_ = dbus::Proxy(dbus::GetSystemBusConnection(),
+                         kCashewServiceName,
+                         kCashewServicePath,
+                         kCashewServiceInterface);
+
+  ::GType g_type_map = ::dbus_g_type_get_map("GHashTable",
+                                             G_TYPE_STRING,
+                                             G_TYPE_VALUE);
+  ::GType g_type_map_array = ::dbus_g_type_get_collection("GPtrArray",
+                                                          g_type_map);
+  ::dbus_g_proxy_add_signal(proxy_.gproxy(), kMonitorDataPlanUpdate,
+                            G_TYPE_STRING,
+                            g_type_map_array,
+                            G_TYPE_INVALID);
+  ::dbus_g_proxy_connect_signal(proxy_.gproxy(), kMonitorDataPlanUpdate,
+                                G_CALLBACK(&DataPlanUpdateHandler::Run),
+                                this,
+                                NULL);
+
+  }
+  ~DataPlanUpdateHandler() {
+    ::dbus_g_proxy_disconnect_signal(proxy_.gproxy(),
+                                     kMonitorDataPlanUpdate,
+                                     G_CALLBACK(&DataPlanUpdateHandler::Run),
+                                     this);
+  }
+
+  static void Run(::DBusGProxy*,
+                  const char* modem_service_path,
+                  GPtrArray* properties_array,
+                  void* object) {
+    DataPlanUpdateHandler* self =
+        static_cast<DataPlanUpdateHandler*>(object);
+    CellularDataPlanList data_plan_list;
+    glib::ScopedPtrArray<GHashTable*>
+        scoped_properties_array(properties_array);
+    ParseCellularDataPlanList(scoped_properties_array, &data_plan_list);
+    // NOTE: callback_ needs to copy 'data_plan_list'.
+    self->callback_(self->object_, modem_service_path, &data_plan_list);
+  }
+
+ private:
+  MonitorDataPlanCallback callback_;
+  void* object_;
+  dbus::Proxy proxy_;
+
+  DISALLOW_COPY_AND_ASSIGN(DataPlanUpdateHandler);
+};
+
+
+extern "C"
+DataPlanUpdateMonitor ChromeOSMonitorCellularDataPlan(
+    MonitorDataPlanCallback callback,
+    void* object) {
+  RegisterMarshallers();
+
+  DataPlanUpdateMonitor monitor =
+      new DataPlanUpdateHandler(callback, object);
+
+  return monitor;
+}
+
+extern "C"
+void ChromeOSDisconnectDataPlanUpdateMonitor(
+    DataPlanUpdateMonitor connection) {
+  delete connection;
+}
+
+extern "C"
+void ChromeOSRequestCellularDataPlanUpdate(
+    const char* modem_service_path) {
+  // TODO(vlaviano): Confirm and test this once dbus command is added.
+  dbus::Proxy proxy(dbus::GetSystemBusConnection(),
+                    kCashewServiceName,
+                    kCashewServicePath,
+                    kCashewServiceInterface);
+  glib::ScopedError error;
+  dbus_g_proxy_call_no_reply(proxy.gproxy(),
+                             kRequestDataPlanFunction,
+                             // Inputs:
+                             G_TYPE_STRING,
+                             modem_service_path,
+                             G_TYPE_INVALID);
+}
+
+extern "C"
+bool ChromeOSRetrieveCellularDataPlans(
+    const char* modem_service_path, CellularDataPlanList* data_plan_list) {
+  if (!modem_service_path || !data_plan_list)
+    return false;
+
+  // TODO(vlaviano): Remove test code when DBUS path is enabled
+  // and update monitor_network.cc with a useful test service path.
+  if (strcmp(modem_service_path, "test") == 0) {
+    CellularDataPlan data;
+    data.plan_name = "test";
+    data.plan_type = CELLULAR_DATA_PLAN_UNLIMITED;
+    data.update_time = 0;
+    data.plan_start_time = time(NULL) - 12*3600;  // 12 hours ago
+    data.plan_end_time = time(NULL) + 12*3600;  // 12 hours hence
+    data.plan_data_bytes = 100*1024*1024;   // 100 MB
+    data.data_bytes_used = 30*1024*1024;   // 30 MB
+    data_plan_list->push_back(data);
+    return true;
+  }
+
+  dbus::Proxy proxy(dbus::GetSystemBusConnection(),
+                    kCashewServiceName,
+                    kCashewServicePath,
+                    kCashewServiceInterface);
+
+  // Fetch the plan data from cashew across dbus.
+  // TODO(vlaviano): Correctly implement and test.
+  glib::ScopedError error;
+  glib::ScopedPtrArray<GHashTable*> properties_array;
+  ::GType g_type_map = ::dbus_g_type_get_map("GHashTable",
+                                             G_TYPE_STRING,
+                                             G_TYPE_VALUE);
+  ::GType g_type_map_array = ::dbus_g_type_get_collection("GPtrArray",
+                                                          g_type_map);
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           kRetrieveDataPlanFunction,
+                           &Resetter(&error).lvalue(),
+                           // Inputs:
+                           G_TYPE_STRING,
+                           modem_service_path,
+                           G_TYPE_INVALID,
+                           // Outputs:
+                           g_type_map_array,
+                           &Resetter(&properties_array).lvalue(),
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "GetProperties on path '" << proxy.path() << "' failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+
+  ParseCellularDataPlanList(properties_array, data_plan_list);
+  return true;
+}
+
 
 }  // namespace chromeos

@@ -143,12 +143,13 @@
 //  70: Added ibus connection change callback for UI.
 //  71: Added new network service properties, and handlers for service property
 //      change signals.
+//  72: Added cellular data plan (CellularDataPlan) and monitoring.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 55,
-  kCrosAPIVersion = 71
+  kCrosAPIVersion = 72
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

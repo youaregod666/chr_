@@ -17,14 +17,17 @@
 
 
 void DumpServices(const chromeos::SystemInfo* info);
+void DumpDataPlans(const char* service_path,
+                   const chromeos::CellularDataPlanList* data_plan_list);
 void PrintProperty(const char* path,
                    const char* key,
                    const chromeos::glib::Value* value);
+
 // Callback is an example of how to use the network monitoring functionality.
-class Callback {
+class CallbackMonitorNetwork {
  public:
   // You can store whatever state is needed in the function object.
-  explicit Callback() :
+  explicit CallbackMonitorNetwork() :
     count_(0) {
   }
 
@@ -48,9 +51,32 @@ class Callback {
       DumpServices(info);
       chromeos::FreeSystemInfo(info);
     }
-    Callback* self = static_cast<Callback*>(object);
+    CallbackMonitorNetwork* self = static_cast<CallbackMonitorNetwork*>(object);
     ++self->count_;
   }
+
+ private:
+  int count_;
+};
+
+// CallbackMonitorDataPlan is an example of how to use the cellular
+// data plan monitoring functionality.
+class CallbackMonitorDataPlan {
+ public:
+  explicit CallbackMonitorDataPlan() :
+    count_(0) {
+  }
+
+  static void Run(void* object,
+                  const char* path,
+                  const chromeos::CellularDataPlanList* data) {
+    DumpDataPlans(path, data);
+
+    CallbackMonitorDataPlan* self =
+        static_cast<CallbackMonitorDataPlan*>(object);
+    ++self->count_;
+  }
+
  private:
   int count_;
 };
@@ -59,7 +85,7 @@ struct ServiceMonitor {
   ServiceMonitor() : monitor(NULL), callback(NULL), last_scangen(0) { }
   ~ServiceMonitor() { delete callback; }
   chromeos::PropertyChangeMonitor monitor;
-  Callback *callback;
+  CallbackMonitorNetwork *callback;
   int last_scangen;
   static int scangen;
 };
@@ -153,7 +179,7 @@ void DumpServices(const chromeos::SystemInfo* info) {
     if (servmon == NULL) {
       LOG(INFO) << "New service " << sinfo->service_path;
       servmon = new ServiceMonitor;
-      servmon->callback = new Callback();
+      servmon->callback = new CallbackMonitorNetwork();
       monitor_map[sinfo->service_path] = servmon;
     }
     servmon->last_scangen = ServiceMonitor::scangen;
@@ -165,9 +191,10 @@ void DumpServices(const chromeos::SystemInfo* info) {
         sinfo->type == chromeos::TYPE_CELLULAR) {
       if (servmon->monitor == NULL) {
         LOG(INFO) << "Start monitoring service " << sinfo->service_path;
-        servmon->monitor = chromeos::MonitorNetworkService(&Callback::Run,
-                                                           sinfo->service_path,
-                                                           servmon->callback);
+        servmon->monitor = chromeos::MonitorNetworkService(
+            &CallbackMonitorNetwork::Run,
+            sinfo->service_path,
+            servmon->callback);
       }
     } else if (servmon->monitor != NULL) {
         LOG(INFO) << "Stop monitoring service " << sinfo->service_path;
@@ -192,6 +219,22 @@ void DumpServices(const chromeos::SystemInfo* info) {
   }
 }
 
+void DumpDataPlans(const char* modem_service_path,
+                  const chromeos::CellularDataPlanList* data_plan_list) {
+  LOG(INFO) << "Data Plans for: '" << modem_service_path;
+  chromeos::CellularDataPlanList::const_iterator iter;
+  for (iter = data_plan_list->begin(); iter != data_plan_list->end(); ++iter) {
+    const chromeos::CellularDataPlan& data = *iter;
+    LOG(INFO) << "Plan Name: " << data.plan_name
+              << ", Type=" << data.plan_type
+              << ", Update Time=" << data.update_time
+              << ", Start Time=" << data.plan_start_time
+              << ", End Time=" << data.plan_end_time
+              << ", Data Bytes=" << data.plan_data_bytes
+              << ", Bytes Used=" << data.data_bytes_used;
+  }
+}
+
 // A simple example program demonstrating how to use the ChromeOS network API.
 int main(int argc, const char** argv) {
   ::g_type_init();
@@ -201,11 +244,13 @@ int main(int argc, const char** argv) {
   if (!LoadCrosLibrary(argv))
     LOG(INFO) << "Failed to load cros .so";
 
-  chromeos::SystemInfo* info = chromeos::GetSystemInfo();
-  DCHECK(info) << "Unable to get SystemInfo";
+  // Synchronous request of network info.
+
+  chromeos::SystemInfo* network_info = chromeos::GetSystemInfo();
+  DCHECK(network_info) << "Unable to get SystemInfo";
 
   LOG(INFO) << "Enabled network devices:";
-  int technologies = info->enabled_technologies;
+  int technologies = network_info->enabled_technologies;
   if (technologies & (1 << chromeos::TYPE_ETHERNET))
     LOG(INFO) << "  ethernet";
   if (technologies & (1 << chromeos::TYPE_WIFI))
@@ -217,14 +262,50 @@ int main(int argc, const char** argv) {
   if (technologies & (1 << chromeos::TYPE_CELLULAR))
     LOG(INFO) << "  cellular";
 
-  Callback callback;
-  chromeos::PropertyChangeMonitor connection =
-      chromeos::MonitorNetworkManager(&Callback::Run, &callback);
+  DumpServices(network_info);
 
-  DumpServices(info);
-  chromeos::FreeSystemInfo(info);
+  // Synchronous request of data plan.
+
+  chromeos::CellularDataPlanList data_plan_list;
+  LOG(INFO) << "Retrieving Cellular Data Plans:";
+  bool res = chromeos::RetrieveCellularDataPlans("test", &data_plan_list);
+  if (!res)
+    LOG(WARNING) << "RetrieveCellularDataPlan failed.";
+  DumpDataPlans("test", &data_plan_list);
+
+  // Asynchronous network monitoring.
+
+  LOG(INFO) << "Starting Monitor Network:";
+  CallbackMonitorNetwork callback_network;
+  chromeos::PropertyChangeMonitor connection_network =
+      chromeos::MonitorNetworkManager(&CallbackMonitorNetwork::Run,
+                                      &callback_network);
+
+  // Asynchronous data plan monitoring.
+
+  LOG(INFO) << "Starting Monitor Data Plan:";
+  CallbackMonitorDataPlan callback_dataplan;
+  chromeos::DataPlanUpdateMonitor connection_dataplan =
+      chromeos::MonitorCellularDataPlan(&CallbackMonitorDataPlan::Run,
+                                        &callback_dataplan);
+  LOG(INFO) << "Requesting Cellular Data Plan Updates:";
+  for (int i = 0; i < network_info->service_size; i++) {
+    chromeos::ServiceInfo *sinfo = &network_info->services[i];
+    if (sinfo->type == chromeos::TYPE_CELLULAR) {
+      LOG(INFO) << " Requesting Data Plan Update for: " << sinfo->service_path;
+      chromeos::RequestCellularDataPlanUpdate(sinfo->service_path);
+    }
+  }
+
+  LOG(INFO) << "Starting g_main_loop.";
 
   ::g_main_loop_run(loop);
-  chromeos::DisconnectPropertyChangeMonitor(connection);
+
+  LOG(INFO) << "Shutting down.";
+
+  chromeos::FreeSystemInfo(network_info);
+  chromeos::DisconnectPropertyChangeMonitor(connection_network);
+  chromeos::DisconnectDataPlanUpdateMonitor(connection_dataplan);
+
   return 0;
 }

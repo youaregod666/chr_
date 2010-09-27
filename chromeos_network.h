@@ -5,6 +5,8 @@
 #ifndef CHROMEOS_NETWORK_H_
 #define CHROMEOS_NETWORK_H_
 
+#include <string>
+#include <vector>
 #include <base/basictypes.h>
 
 namespace chromeos { // NOLINT
@@ -98,6 +100,25 @@ enum IPConfigType {
   IPCONFIG_TYPE_DHCP6,
   IPCONFIG_TYPE_PPP,
 };
+
+enum CellularDataPlanType {
+  CELLULAR_DATA_PLAN_UNKNOWN = 0,
+  CELLULAR_DATA_PLAN_UNLIMITED = 1,
+  CELLULAR_DATA_PLAN_METERED_PAID = 2,
+  CELLULAR_DATA_PLAN_METERED_BASE = 3
+};
+
+struct CellularDataPlan {
+  std::string plan_name;
+  CellularDataPlanType plan_type;
+  int64 update_time;
+  int64 plan_start_time;
+  int64 plan_end_time;
+  int64 plan_data_bytes;
+  int64 data_bytes_used;
+};
+
+typedef std::vector<CellularDataPlan> CellularDataPlanList;
 
 struct ServiceInfo {
   const char* service_path;
@@ -269,6 +290,16 @@ extern void (*FreeSystemInfo)(SystemInfo* system);
 // Chrome.
 extern void (*FreeServiceInfo)(ServiceInfo* info);
 
+// Get the list of data plans for the cellular network corresponding to path.
+// Return true if data is available.
+extern bool (*RetrieveCellularDataPlans)(
+    const char* modem_service_path, CellularDataPlanList* data_plan_list);
+
+// Request an update of the data plans. A callback will be received by any
+// object that invoked MonitorCellularDataPlan when up to date data is ready.
+extern void (*RequestCellularDataPlanUpdate)(const char* modem_service_path);
+
+
 // BEGIN DEPRECATED
 // An internal listener to a d-bus signal. When notifications are received
 // they are rebroadcasted in non-glib form.
@@ -300,6 +331,7 @@ extern void (*DisconnectMonitorNetwork)(MonitorNetworkConnection connection);
 class PropertyChangedHandler;
 typedef PropertyChangedHandler* PropertyChangeMonitor;
 
+// Callback for MonitorNetworkManager.
 typedef void (*MonitorPropertyCallback)(void* object,
                                         const char* path,
                                         const char* key,
@@ -325,6 +357,26 @@ extern PropertyChangeMonitor (*MonitorNetworkService)(
     MonitorPropertyCallback callback,
     const char* service_path,
     void* object);
+
+
+// An internal listener to a d-bus signal for plan data.
+class DataPlanUpdateHandler;
+typedef DataPlanUpdateHandler* DataPlanUpdateMonitor;
+
+// Callback for MonitorCellularDataPlan.
+// NOTE: callback function must copy 'dataplan' if it wants it to persist.
+typedef void (*MonitorDataPlanCallback)(void* object,
+                                        const char* modem_service_path,
+                                        const CellularDataPlanList* dataplan);
+
+// Sets up monitoring of the cellular data plan updates from Cashew.
+extern DataPlanUpdateMonitor (*MonitorCellularDataPlan)(
+    MonitorDataPlanCallback callback,
+    void* object);
+
+// Disconnects a DataPlanUpdateMonitor.
+extern void (*DisconnectDataPlanUpdateMonitor)(
+    DataPlanUpdateMonitor monitor);
 
 // Enable or disable the specific network device for connection.
 //
