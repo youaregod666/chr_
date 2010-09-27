@@ -144,12 +144,13 @@
 //  71: Added new network service properties, and handlers for service property
 //      change signals.
 //  72: Added cellular data plan (CellularDataPlan) and monitoring.
+//  73: Changed cryptohome Mount APIs to support better configuration
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 55,
-  kCrosAPIVersion = 72
+  kCrosAPIVersion = 73
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

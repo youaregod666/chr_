@@ -64,6 +64,10 @@ static std::string error_string;
   typedef ret (*name##Type)(arg1, arg2, arg3, arg4, arg5); \
   name##Type name = 0;
 
+#define DECL_FUNC_6(name, ret, arg1, arg2, arg3, arg4, arg5, arg6) \
+  typedef ret (*name##Type)(arg1, arg2, arg3, arg4, arg5, arg6); \
+  name##Type name = 0;
+
 // Version
 DECL_FUNC_1(CrosVersionCheck, bool, chromeos::CrosAPIVersion);
 
@@ -238,11 +242,15 @@ DECL_FUNC_1(CryptohomeAsyncRemove, int, const char*);
 DECL_FUNC_0(CryptohomeGetSystemSalt, CryptohomeBlob);
 DECL_FUNC_0(CryptohomeIsMounted, bool);
 DECL_FUNC_3(CryptohomeMountAllowFail, bool, const char*, const char*, int*);
-DECL_FUNC_2(CryptohomeMount, bool, const char*, const char*);
-DECL_FUNC_2(CryptohomeAsyncMount, int, const char*, const char*);
+DECL_FUNC_6(CryptohomeMount, bool, const char*, const char*, bool, bool,
+            const std::vector<std::string>&, int*);
+DECL_FUNC_5(CryptohomeAsyncMount, int, const char*, const char*, bool, bool,
+            const std::vector<std::string>&);
 DECL_FUNC_1(CryptohomeMountGuest, bool, int*);
 DECL_FUNC_0(CryptohomeAsyncMountGuest, int);
 DECL_FUNC_0(CryptohomeUnmount, bool);
+DECL_FUNC_0(CryptohomeRemoveTrackedSubdirectories, bool);
+DECL_FUNC_0(CryptohomeAsyncRemoveTrackedSubdirectories, int);
 DECL_FUNC_0(CryptohomeTpmIsReady, bool);
 DECL_FUNC_0(CryptohomeTpmIsEnabled, bool);
 DECL_FUNC_0(CryptohomeTpmIsOwned, bool);
@@ -468,6 +476,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(CryptohomeMountGuest);
   INIT_FUNC(CryptohomeAsyncMountGuest);
   INIT_FUNC(CryptohomeUnmount);
+  INIT_FUNC(CryptohomeRemoveTrackedSubdirectories);
+  INIT_FUNC(CryptohomeAsyncRemoveTrackedSubdirectories);
   INIT_FUNC(CryptohomeTpmIsReady);
   INIT_FUNC(CryptohomeTpmIsEnabled);
   INIT_FUNC(CryptohomeTpmIsOwned);

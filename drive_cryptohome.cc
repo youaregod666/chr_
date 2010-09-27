@@ -137,12 +137,19 @@ int main(int argc, const char** argv) {
   if (cl->HasSwitch(kTestMount)) {
     std::string name = loose_args[0];
     std::string hash = loose_args[1];
+    std::vector<std::string> tracked_dirs;
+    if (loose_args.size() > 2) {
+      tracked_dirs.assign(loose_args.begin() + 2, loose_args.end());
+    }
     if (cl->HasSwitch(kAsync)) {
       ClientLoop client_loop;
       client_loop.Initialize();
       do {
         int async_id = chromeos::CryptohomeAsyncMount(name.c_str(),
-                                                      hash.c_str());
+                           hash.c_str(),
+                           true,
+                           (tracked_dirs.size() != 0),
+                           tracked_dirs);
         if (async_id <= 0) {
           LOG(ERROR) << "Failed to call AsyncMount";
           break;
@@ -160,8 +167,11 @@ int main(int argc, const char** argv) {
       } while(false);
     } else {
       int mount_error;
-      CHECK(chromeos::CryptohomeMountAllowFail(name.c_str(), hash.c_str(),
-          &mount_error)) << "Cannot mount cryptohome for " << name;
+      CHECK(chromeos::CryptohomeMount(name.c_str(), hash.c_str(),
+                true,
+                (tracked_dirs.size() != 0),
+                tracked_dirs,
+                &mount_error)) << "Cannot mount cryptohome for " << name;
       CHECK(chromeos::CryptohomeIsMounted())
           << "Cryptohome was mounted, but is now gone???";
       if (cl->HasSwitch(kDoUnmount)) {

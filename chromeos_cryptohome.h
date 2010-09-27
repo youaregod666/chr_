@@ -28,6 +28,7 @@ const int kCryptohomeMountErrorKeyFailure = 1 << 1;
 const int kCryptohomeMountErrorMountPointBusy = 1 << 2;
 const int kCryptohomeMountErrorTpmCommError = 1 << 3;
 const int kCryptohomeMountErrorTpmDefendLock = 1 << 4;
+const int kCryptohomeMountErrorUserDoesNotExist = 1 << 5;
 const int kCryptohomeMountErrorRecreated = 1 << 31;
 
 extern bool (*CryptohomeCheckKey)(const char* user_email,
@@ -44,16 +45,27 @@ extern bool (*CryptohomeRemove)(const char* user_email);
 extern int (*CryptohomeAsyncRemove)(const char* user_email);
 extern CryptohomeBlob (*CryptohomeGetSystemSalt)();
 extern bool (*CryptohomeIsMounted)();
-extern bool (*CryptohomeMount)(const char* user_email,
-                               const char* key);
+extern bool (*CryptohomeMount)(
+    const char* user_email,
+    const char* key,
+    bool create_if_missing,
+    bool replace_tracked_subdirectories,
+    const std::vector<std::string>& tracked_subdirectories,
+    int* mount_error);
 extern bool (*CryptohomeMountAllowFail)(const char* user_email,
                                         const char* key,
                                         int* mount_error);
-extern int (*CryptohomeAsyncMount)(const char* user_email,
-                                   const char* key);
+extern int (*CryptohomeAsyncMount)(
+    const char* user_email,
+    const char* key,
+    bool create_if_missing,
+    bool replace_tracked_subdirectories,
+    const std::vector<std::string>& tracked_subdirectories);
 extern bool (*CryptohomeMountGuest)(int* mount_error);
 extern int (*CryptohomeAsyncMountGuest)();
 extern bool (*CryptohomeUnmount)();
+extern bool (*CryptohomeRemoveTrackedSubdirectories)();
+extern int (*CryptohomeAsyncRemoveTrackedSubdirectories)();
 extern bool (*CryptohomeTpmIsReady)();
 extern bool (*CryptohomeTpmIsEnabled)();
 extern bool (*CryptohomeTpmIsOwned)();
