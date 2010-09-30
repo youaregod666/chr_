@@ -264,14 +264,25 @@ int main(int argc, const char** argv) {
 
   DumpServices(network_info);
 
-  // Synchronous request of data plan.
+  // Synchronous request of data plans.
 
-  chromeos::CellularDataPlanList data_plan_list;
   LOG(INFO) << "Retrieving Cellular Data Plans:";
-  bool res = chromeos::RetrieveCellularDataPlans("test", &data_plan_list);
-  if (!res)
-    LOG(WARNING) << "RetrieveCellularDataPlan failed.";
-  DumpDataPlans("test", &data_plan_list);
+  for (int i = 0; i < network_info->service_size; ++i) {
+    chromeos::ServiceInfo *sinfo = &network_info->services[i];
+    if (sinfo->type != chromeos::TYPE_CELLULAR) {
+      continue;
+    }
+    LOG(INFO) << "  Retrieving Data Plans for: " << sinfo->service_path;
+    chromeos::CellularDataPlanList data_plan_list;
+    bool res = chromeos::RetrieveCellularDataPlans(sinfo->service_path,
+                                                   &data_plan_list);
+    if (res) {
+      DumpDataPlans(sinfo->service_path, &data_plan_list);
+    } else {
+      LOG(WARNING) << "  RetrieveCellularDataPlans failed for: "
+          << sinfo->service_path;
+    }
+  }
 
   // Asynchronous network monitoring.
 
@@ -292,7 +303,7 @@ int main(int argc, const char** argv) {
   for (int i = 0; i < network_info->service_size; i++) {
     chromeos::ServiceInfo *sinfo = &network_info->services[i];
     if (sinfo->type == chromeos::TYPE_CELLULAR) {
-      LOG(INFO) << " Requesting Data Plan Update for: " << sinfo->service_path;
+      LOG(INFO) << "  Requesting Data Plan Update for: " << sinfo->service_path;
       chromeos::RequestCellularDataPlanUpdate(sinfo->service_path);
     }
   }

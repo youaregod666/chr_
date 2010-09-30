@@ -572,13 +572,17 @@ void ParseCellularDataPlan(const glib::ScopedHashTable& properties,
   plan->data_bytes_used = default_bytes;
 }
 
-void ParseCellularDataPlanList(
-    const glib::ScopedPtrArray<GHashTable*>& properties_array,
-    CellularDataPlanList* data_plan_list) {
+void ParseCellularDataPlanList(const GPtrArray* properties_array,
+                               CellularDataPlanList* data_plan_list) {
+  DCHECK(properties_array);
   DCHECK(data_plan_list);
-  glib::ScopedPtrArray<GHashTable*>::const_iterator iter;
-  for (iter = properties_array.begin(); iter != properties_array.end(); ++iter) {
-    glib::ScopedHashTable scoped_properties(*iter);
+  for (guint i = 0; i < properties_array->len; ++i) {
+    GHashTable* properties =
+        static_cast<GHashTable*>(g_ptr_array_index(properties_array, i));
+    // Convert to ScopedHashTable so that we can use Retrieve utility method.
+    // We need to inc wrapped GHashTable's refcount or else ScopedHashTable's
+    // dtor will dec it and cause premature deletion.
+    glib::ScopedHashTable scoped_properties(g_hash_table_ref(properties));
     CellularDataPlan plan;
     ParseCellularDataPlan(scoped_properties, &plan);
     data_plan_list->push_back(plan);
@@ -1833,12 +1837,14 @@ class DataPlanUpdateHandler {
                   const char* modem_service_path,
                   GPtrArray* properties_array,
                   void* object) {
+    DCHECK(object);
+    if (!modem_service_path || !properties_array) {
+        return;
+    }
     DataPlanUpdateHandler* self =
         static_cast<DataPlanUpdateHandler*>(object);
     CellularDataPlanList data_plan_list;
-    glib::ScopedPtrArray<GHashTable*>
-        scoped_properties_array(properties_array);
-    ParseCellularDataPlanList(scoped_properties_array, &data_plan_list);
+    ParseCellularDataPlanList(properties_array, &data_plan_list);
     // NOTE: callback_ needs to copy 'data_plan_list'.
     self->callback_(self->object_, modem_service_path, &data_plan_list);
   }
@@ -1873,12 +1879,10 @@ void ChromeOSDisconnectDataPlanUpdateMonitor(
 extern "C"
 void ChromeOSRequestCellularDataPlanUpdate(
     const char* modem_service_path) {
-  // TODO(vlaviano): Confirm and test this once dbus command is added.
   dbus::Proxy proxy(dbus::GetSystemBusConnection(),
                     kCashewServiceName,
                     kCashewServicePath,
                     kCashewServiceInterface);
-  glib::ScopedError error;
   dbus_g_proxy_call_no_reply(proxy.gproxy(),
                              kRequestDataPlanFunction,
                              // Inputs:
@@ -1893,30 +1897,18 @@ bool ChromeOSRetrieveCellularDataPlans(
   if (!modem_service_path || !data_plan_list)
     return false;
 
-  // TODO(vlaviano): Remove test code when DBUS path is enabled
-  // and update monitor_network.cc with a useful test service path.
-  if (strcmp(modem_service_path, "test") == 0) {
-    CellularDataPlan data;
-    data.plan_name = "test";
-    data.plan_type = CELLULAR_DATA_PLAN_UNLIMITED;
-    data.update_time = 0;
-    data.plan_start_time = time(NULL) - 12*3600;  // 12 hours ago
-    data.plan_end_time = time(NULL) + 12*3600;  // 12 hours hence
-    data.plan_data_bytes = 100*1024*1024;   // 100 MB
-    data.data_bytes_used = 30*1024*1024;   // 30 MB
-    data_plan_list->push_back(data);
-    return true;
-  }
-
   dbus::Proxy proxy(dbus::GetSystemBusConnection(),
                     kCashewServiceName,
                     kCashewServicePath,
                     kCashewServiceInterface);
 
-  // Fetch the plan data from cashew across dbus.
-  // TODO(vlaviano): Correctly implement and test.
   glib::ScopedError error;
-  glib::ScopedPtrArray<GHashTable*> properties_array;
+  // NOTE: We can't use ScopedPtrArray for GHashTable ptrs because it assumes
+  // that the GPtrArray it wraps doesn't have a custom GDestroyNotify function
+  // and so performs an unwanted g_free call on each ptr before calling
+  // g_ptr_array_free.
+  GPtrArray* properties_array = NULL;
+
   ::GType g_type_map = ::dbus_g_type_get_map("GHashTable",
                                              G_TYPE_STRING,
                                              G_TYPE_VALUE);
@@ -1931,14 +1923,17 @@ bool ChromeOSRetrieveCellularDataPlans(
                            G_TYPE_INVALID,
                            // Outputs:
                            g_type_map_array,
-                           &Resetter(&properties_array).lvalue(),
+                           &properties_array,
                            G_TYPE_INVALID)) {
-    LOG(WARNING) << "GetProperties on path '" << proxy.path() << "' failed: "
+    LOG(WARNING) << "RetrieveDataPlans on path '" << proxy.path() << "' failed: "
                  << (error->message ? error->message : "Unknown Error.");
+    DCHECK(!properties_array);
     return false;
   }
+  DCHECK(properties_array);
 
   ParseCellularDataPlanList(properties_array, data_plan_list);
+  g_ptr_array_unref(properties_array);
   return true;
 }
 
