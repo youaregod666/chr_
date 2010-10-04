@@ -256,6 +256,8 @@ DECL_FUNC_0(CryptohomeTpmIsEnabled, bool);
 DECL_FUNC_0(CryptohomeTpmIsOwned, bool);
 DECL_FUNC_0(CryptohomeTpmIsBeingOwned, bool);
 DECL_FUNC_1(CryptohomeTpmGetPassword, bool, std::string*);
+DECL_FUNC_0(CryptohomeTpmCanAttemptOwnership, void);
+DECL_FUNC_0(CryptohomeTpmClearStoredPassword, void);
 DECL_FUNC_1(CryptohomeGetStatusString, bool, std::string*);
 DECL_FUNC_2(CryptohomeMonitorSession, void*, CryptohomeSignalCallback, void*);
 DECL_FUNC_1(CryptohomeDisconnectSession, void, void*);
@@ -483,6 +485,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(CryptohomeTpmIsOwned);
   INIT_FUNC(CryptohomeTpmIsBeingOwned);
   INIT_FUNC(CryptohomeTpmGetPassword);
+  INIT_FUNC(CryptohomeTpmCanAttemptOwnership);
+  INIT_FUNC(CryptohomeTpmClearStoredPassword);
   INIT_FUNC(CryptohomeGetStatusString);
   INIT_FUNC(CryptohomeMonitorSession);
   INIT_FUNC(CryptohomeDisconnectSession);

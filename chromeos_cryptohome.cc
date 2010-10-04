@@ -627,6 +627,48 @@ bool ChromeOSCryptohomeTpmGetPassword(std::string* password) {
 }
 
 extern "C"
+void ChromeOSCryptohomeTpmCanAttemptOwnership() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeTpmCanAttemptOwnership,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << cryptohome::kCryptohomeTpmCanAttemptOwnership << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+
+  }
+}
+
+extern "C"
+void ChromeOSCryptohomeTpmClearStoredPassword() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeTpmClearStoredPassword,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << cryptohome::kCryptohomeTpmClearStoredPassword << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+
+  }
+}
+
+extern "C"
 bool ChromeOSCryptohomeGetStatusString(std::string* status) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy proxy(bus,

@@ -23,6 +23,8 @@ static const char kMountGuest[] = "mount-guest";
 static const char kRemove[] = "remove";
 static const char kStatus[] = "status";
 static const char kAsync[] = "async";
+static const char kOwnTpm[] = "own-tpm";
+static const char kClearPass[] = "clear-tpmpass";
 
 class ClientLoop {
  public:
@@ -108,6 +110,14 @@ int main(int argc, const char** argv) {
     std::string status;
     chromeos::CryptohomeGetStatusString(&status);
     LOG(INFO) << "Cryptohome Status: \n" << status;
+  }
+
+  if (cl->HasSwitch(kOwnTpm)) {
+    chromeos::CryptohomeTpmCanAttemptOwnership();
+  }
+
+  if (cl->HasSwitch(kClearPass)) {
+    chromeos::CryptohomeTpmClearStoredPassword();
   }
 
   if (cl->HasSwitch(kCheckKey)) {
