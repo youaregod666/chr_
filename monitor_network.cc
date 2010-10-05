@@ -139,7 +139,27 @@ void PrintProperty(const char* path,
       LOG(INFO) << prelude << "<type " << G_VALUE_TYPE_NAME(value) << ">";
 }
 
-// Dumps the contents of a single service to the logs.
+void DumpDeviceInfo(const chromeos::DeviceInfo& device) {
+  LOG(INFO) << "      Carrier:" << device.carrier;
+  LOG(INFO) << "      MEID=" << device.MEID
+            << ", IMEI=" << device.IMEI
+            << ", IMSI=" << device.IMSI
+            << ", ESN=" << device.ESN
+            << ", MDN=" << device.MDN
+            << ", MIN=" << device.MIN;
+  LOG(INFO) << "      ModelID=" << device.model_id
+            << ", Manufacture=" << device.manufacturer;
+  LOG(INFO) << "      Firmware=" << device.firmware_revision
+            << ", Hardware=" << device.hardware_revision;
+  LOG(INFO) << "      Last Update=" << device.last_update;
+}
+
+void DumpCarrierInfo(const chromeos::CarrierInfo& carrier) {
+  LOG(INFO) << "      Operator:" << carrier.operator_name
+            << ", Code=" << carrier.operator_code;
+  LOG(INFO) << "      Payment URL:" << carrier.payment_url;
+}
+
 void DumpService(const chromeos::ServiceInfo& info) {
   const char* passphrase;
   if (info.passphrase != NULL && strlen(info.passphrase) != 0)
@@ -150,18 +170,22 @@ void DumpService(const chromeos::ServiceInfo& info) {
   LOG(INFO) << "  \"" << info.name << "\"";
   LOG(INFO) << "    Service=" << info.service_path;
   LOG(INFO) << "    Device=" << info.device_path;
-  LOG(INFO) << "    Type=" << info.type <<
-               ", Mode=" << info.mode <<
-               ", Security=" << info.security <<
-               ", State=" << info.state <<
-               ", Technology=" << info.network_technology;
-  LOG(INFO) << "    RoamingState=" << info.roaming_state <<
-               ", Error=" << info.error <<
-               ", PassphraseRequired=" << info.passphrase_required <<
-               ", Passphrase=" << passphrase;
-  LOG(INFO) << "    Strength=" << info.strength <<
-               ", Favorite=" << info.favorite <<
-               ", AutoConnect=" << info.auto_connect;
+  if (info.device_info)
+    DumpDeviceInfo(*info.device_info);
+  LOG(INFO) << "    Type=" << info.type;
+  if (info.carrier_info)
+    DumpCarrierInfo(*info.carrier_info);
+  LOG(INFO) << "    Mode=" << info.mode
+            << ", Security=" << info.security
+            << ", State=" << info.state
+            << ", Technology=" << info.network_technology;
+  LOG(INFO) << "    RoamingState=" << info.roaming_state
+            << ", Error=" << info.error
+            << ", PassphraseRequired=" << info.passphrase_required
+            << ", Passphrase=" << passphrase;
+  LOG(INFO) << "    Strength=" << info.strength
+            << ", Favorite=" << info.favorite
+            << ", AutoConnect=" << info.auto_connect;
 }
 
 // Dumps the contents of ServiceStatus to the log.
@@ -246,6 +270,7 @@ int main(int argc, const char** argv) {
 
   // Synchronous request of network info.
 
+  LOG(INFO) << "Calling chromeos::GetSystemInfo()";
   chromeos::SystemInfo* network_info = chromeos::GetSystemInfo();
   DCHECK(network_info) << "Unable to get SystemInfo";
 

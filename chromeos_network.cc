@@ -61,11 +61,14 @@ static const char* kNameProperty = "Name";
 static const char* kStateProperty = "State";
 static const char* kTypeProperty = "Type";
 static const char* kUnknownString = "UNKNOWN";
-static const char* kIPConfigsProperty = "IPConfigs";
 static const char* kDeviceProperty = "Device";
 static const char* kActivationStateProperty = "Cellular.ActivationState";
+static const char* kActivationErrorProperty = "Cellular.ActivationError";
 static const char* kNetworkTechnologyProperty = "Cellular.NetworkTechnology";
 static const char* kRoamingStateProperty = "Cellular.RoamingState";
+static const char* kOperatorNameProperty = "Cellular.OperatorName";
+static const char* kOperatorCodeProperty = "Cellular.OperatorCode";
+static const char* kPaymentURLProperty = "Cellular.OlpUrl";
 static const char* kFavoriteProperty = "Favorite";
 static const char* kAutoConnectProperty = "AutoConnect";
 static const char* kModeProperty = "Mode";
@@ -79,6 +82,22 @@ static const char* kConnectedProperty = "Connected";
 static const char* kWifiChannelProperty = "WiFi.Channel";
 static const char* kScanIntervalProperty = "ScanInterval";
 static const char* kPoweredProperty = "Powered";
+
+// Connman device info property names.
+static const char* kIPConfigsProperty = "IPConfigs";
+static const char* kCarrierProperty = "Cellular.Carrier";
+static const char* kMeidProperty = "Cellular.MEID";
+static const char* kImeiProperty = "Cellular.IMEI";
+static const char* kImsiProperty = "Cellular.IMSI";
+static const char* kEsnProperty = "Cellular.ESN";
+static const char* kMdnProperty = "Cellular.MDN";
+static const char* kMinProperty = "Cellular.MIN";
+static const char* kModelIDProperty = "Cellular.ModelID";
+static const char* kManufacturerProperty = "Cellular.Manufacturer";
+static const char* kFirmwareRevisionProperty = "Cellular.FirmwareRevision";
+static const char* kHardwareRevisionProperty = "Cellular.HardwareRevision";
+static const char* kLastDeviceUpdateProperty = "Cellular.LastDeviceUpdate";
+static const char* kPRLVersionProperty = "Cellular.PRLVersion"; // (INT16)
 
 // Connman monitored properties
 static const char* kMonitorPropertyChanged = "PropertyChanged";
@@ -404,6 +423,81 @@ bool GetEntry(const dbus::Proxy& proxy, gchar* entry,
   return true;
 }
 
+void ParseDeviceProperties(const glib::ScopedHashTable& properties,
+                           DeviceInfo* info) {
+  // Carrier
+  const char* default_string = kUnknownString;
+  properties.Retrieve(kCarrierProperty, &default_string);
+  info->carrier = NewStringCopy(default_string);
+  // MEID
+  default_string = kUnknownString;
+  properties.Retrieve(kMeidProperty, &default_string);
+  info->MEID = NewStringCopy(default_string);
+  // IMEI
+  default_string = kUnknownString;
+  properties.Retrieve(kImeiProperty, &default_string);
+  info->IMEI = NewStringCopy(default_string);
+  // IMSI
+  default_string = kUnknownString;
+  properties.Retrieve(kImsiProperty, &default_string);
+  info->IMSI = NewStringCopy(default_string);
+  // ESN
+  default_string = kUnknownString;
+  properties.Retrieve(kEsnProperty, &default_string);
+  info->ESN = NewStringCopy(default_string);
+  // MDN
+  default_string = kUnknownString;
+  properties.Retrieve(kMdnProperty, &default_string);
+  info->MDN = NewStringCopy(default_string);
+  // MIN
+  default_string = kUnknownString;
+  properties.Retrieve(kMinProperty, &default_string);
+  info->MIN = NewStringCopy(default_string);
+  // ModelID
+  default_string = kUnknownString;
+  properties.Retrieve(kModelIDProperty, &default_string);
+  info->model_id = NewStringCopy(default_string);
+  // Manufacturer
+  default_string = kUnknownString;
+  properties.Retrieve(kManufacturerProperty, &default_string);
+  info->manufacturer = NewStringCopy(default_string);
+  // FirmwareRevision
+  default_string = kUnknownString;
+  properties.Retrieve(kFirmwareRevisionProperty, &default_string);
+  info->firmware_revision = NewStringCopy(default_string);
+  // HardwareRevision
+  default_string = kUnknownString;
+  properties.Retrieve(kHardwareRevisionProperty, &default_string);
+  info->hardware_revision = NewStringCopy(default_string);
+  // LastDeviceUpdate
+  default_string = kUnknownString;
+  properties.Retrieve(kLastDeviceUpdateProperty, &default_string);
+  info->last_update = NewStringCopy(default_string);
+  // PRLVersion
+  int default_int = 0;
+  properties.Retrieve(kPRLVersionProperty, &default_int);
+  info->PRL_version = default_int;
+}
+
+// Returns a DeviceInfo object populated with data from a
+// given DBus object path.
+//
+// returns true on success.
+bool GetDeviceInfo(const char* device_path, DeviceInfo *info) {
+  dbus::Proxy device_proxy(dbus::GetSystemBusConnection(),
+                           kConnmanServiceName,
+                           device_path,
+                           kConnmanDeviceInterface);
+
+  glib::ScopedHashTable device_properties;
+  if (!GetProperties(device_proxy, &device_properties)) {
+    LOG(WARNING) << "Couldn't read device's properties";
+    return false;
+  }
+  ParseDeviceProperties(device_properties, info);
+  return true;
+}
+
 // Populates an instance of a ServiceInfo with the properties
 // from a Connman service.
 void ParseServiceProperties(const glib::ScopedHashTable& properties,
@@ -496,13 +590,41 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   default_string = kUnknownString;
   properties.Retrieve(kActivationStateProperty, &default_string);
   info->activation_state = ParseActivationState(default_string);
+  info->activation_state_dont_use = NULL;
+
+  // ActivationError
+  default_string = kUnknownString;
+  properties.Retrieve(kActivationErrorProperty, &default_string);
+  info->activation_error = NewStringCopy(default_string);
+
+  // CarrierInfo
+  if (info->type == TYPE_CELLULAR) {
+    info->carrier_info = new CarrierInfo;
+    // Operator Name
+    default_string = kUnknownString;
+    properties.Retrieve(kOperatorNameProperty, &default_string);
+    info->carrier_info->operator_name = NewStringCopy(default_string);
+    // Operator Code
+    default_string = kUnknownString;
+    properties.Retrieve(kOperatorCodeProperty, &default_string);
+    info->carrier_info->operator_code = NewStringCopy(default_string);
+    // Payment URL
+    default_string = kUnknownString;
+    properties.Retrieve(kPaymentURLProperty, &default_string);
+    info->carrier_info->payment_url = NewStringCopy(default_string);
+  } else {
+    info->carrier_info = NULL;
+  }
+
+  // Device Info (initialize to NULL)
+  info->device_info = NULL;
 }
 
 // Returns a ServiceInfo object populated with data from a
 // given DBus object path.
 //
 // returns true on success.
-bool ParseServiceInfo(const char* path, ServiceInfo *info) {
+bool GetServiceInfo(const char* path, ServiceInfo *info) {
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
                             kConnmanServiceName,
                             path,
@@ -515,20 +637,35 @@ bool ParseServiceInfo(const char* path, ServiceInfo *info) {
   return true;
 }
 
+void DeleteCarrierInfo(CarrierInfo& carrier_info) {
+  delete carrier_info.operator_name;
+  delete carrier_info.operator_code;
+  delete carrier_info.payment_url;
+}
+
+void DeleteDeviceInfo(DeviceInfo& device_info) {
+  delete device_info.MEID;
+  delete device_info.IMEI;
+  delete device_info.IMSI;
+  delete device_info.ESN;
+  delete device_info.MDN;
+  delete device_info.MIN;
+  delete device_info.model_id;
+  delete device_info.manufacturer;
+  delete device_info.firmware_revision;
+  delete device_info.hardware_revision;
+  delete device_info.last_update;
+}
+
 // Deletes all of the heap allocated members of a given ServiceInfo instance.
-void DeleteServiceInfoProperties(ServiceInfo info) {
-  if (info.service_path)
-    delete info.service_path;
-  if (info.name)
-    delete info.name;
-  if (info.passphrase)
-    delete info.passphrase;
-  if (info.device_path)
-    delete info.device_path;
-  if (info.identity)
-    delete info.identity;
-  if (info.cert_path)
-    delete info.cert_path;
+void DeleteServiceInfoProperties(ServiceInfo& info) {
+  delete info.service_path;
+  delete info.name;
+  delete info.passphrase;
+  delete info.device_path;
+  delete info.identity;
+  delete info.cert_path;
+  delete info.activation_error;
 
   info.service_path = NULL;
   info.name = NULL;
@@ -536,6 +673,19 @@ void DeleteServiceInfoProperties(ServiceInfo info) {
   info.device_path = NULL;
   info.identity = NULL;
   info.cert_path = NULL;
+  info.activation_error = NULL;
+
+  if (info.carrier_info) {
+    DeleteCarrierInfo(*info.carrier_info);
+    delete info.carrier_info;
+    info.carrier_info = NULL;
+  }
+
+  if (info.device_info) {
+    DeleteDeviceInfo(*info.device_info);
+    delete info.device_info;
+    info.device_info = NULL;
+  }
 }
 
 void ParseCellularDataPlan(const glib::ScopedHashTable& properties,
@@ -1150,7 +1300,7 @@ ServiceInfo* ChromeOSGetWifiService(const char* ssid,
   }
 
   ServiceInfo* info = new ServiceInfo();
-  if (!ParseServiceInfo(path, info)) {
+  if (!GetServiceInfo(path, info)) {
     LOG(WARNING) << "ChromeOSGetWifiService failed to parse ServiceInfo.";
     ::g_free(path);
     return NULL;
@@ -1421,31 +1571,40 @@ SystemInfo* ChromeOSGetSystemInfo() {
   // AvailableTechnologies
   system->available_technologies = 0;
   glib::Value available_val;
-  properties.Retrieve(kAvailableTechnologiesProperty, &available_val);
-  gchar** available = static_cast<gchar**>(g_value_get_boxed(&available_val));
-  while (*available) {
-    system->available_technologies |= 1 << ParseType(*available);
-    available++;
+  if (properties.Retrieve(kAvailableTechnologiesProperty, &available_val)) {
+    gchar** available = static_cast<gchar**>(g_value_get_boxed(&available_val));
+    while (*available) {
+      system->available_technologies |= 1 << ParseType(*available);
+      available++;
+    }
+  } else {
+    LOG(WARNING) << "Missing property: " << kAvailableTechnologiesProperty;
   }
 
   // EnabledTechnologies
   system->enabled_technologies = 0;
   glib::Value enabled_val;
-  properties.Retrieve(kEnabledTechnologiesProperty, &enabled_val);
-  gchar** enabled = static_cast<gchar**>(g_value_get_boxed(&enabled_val));
-  while (*enabled) {
-    system->enabled_technologies |= 1 << ParseType(*enabled);
-    enabled++;
+  if (properties.Retrieve(kEnabledTechnologiesProperty, &enabled_val)) {
+    gchar** enabled = static_cast<gchar**>(g_value_get_boxed(&enabled_val));
+    while (*enabled) {
+      system->enabled_technologies |= 1 << ParseType(*enabled);
+      enabled++;
+    }
+  } else {
+    LOG(WARNING) << "Missing property: " << kEnabledTechnologiesProperty;
   }
 
   // ConnectedTechnologies
   system->connected_technologies = 0;
   glib::Value connected_val;
-  properties.Retrieve(kConnectedTechnologiesProperty, &connected_val);
-  gchar** connected = static_cast<gchar**>(g_value_get_boxed(&connected_val));
-  while (*connected) {
-    system->connected_technologies |= 1 << ParseType(*connected);
-    connected++;
+  if (properties.Retrieve(kConnectedTechnologiesProperty, &connected_val)) {
+    gchar** connected = static_cast<gchar**>(g_value_get_boxed(&connected_val));
+    while (*connected) {
+      system->connected_technologies |= 1 << ParseType(*connected);
+      connected++;
+    }
+  } else {
+    LOG(WARNING) << "Missing property: " << kConnectedTechnologiesProperty;
   }
 
   // DefaultTechnology
@@ -1460,64 +1619,90 @@ SystemInfo* ChromeOSGetSystemInfo() {
 
   // Services
   glib::Value services_val;
-  properties.Retrieve(kServicesProperty, &services_val);
-  GPtrArray* services =
-      static_cast<GPtrArray*>(g_value_get_boxed(&services_val));
-  std::vector<ServiceInfo> buffer;
-  const char* path = NULL;
-  for (size_t i = 0; i < services->len; i++) {
-    path = static_cast<const char*>(g_ptr_array_index(services, i));
-    ServiceInfo info = {};
-    if (!ParseServiceInfo(path, &info))
-      continue;
-    buffer.push_back(info);
+  std::vector<ServiceInfo> service_info_list;
+  if (properties.Retrieve(kServicesProperty, &services_val)) {
+    GPtrArray* services =
+        static_cast<GPtrArray*>(g_value_get_boxed(&services_val));
+    for (size_t i = 0; i < services->len; i++) {
+      const char* service_path =
+          static_cast<const char*>(g_ptr_array_index(services, i));
+      ServiceInfo info;
+      if (!GetServiceInfo(service_path, &info))
+        continue;
+      // Get DeviceInfo for CELLULAR services.
+      if (info.type == TYPE_CELLULAR) {
+        DeviceInfo device_info;
+        if (GetDeviceInfo(info.device_path, &device_info)) {
+          // Set ServiceInfo.device_info -> a new copy of DeviceInfo.
+          // ServiceInfo becomes the owner of the new DeviceInfo.
+          info.device_info = new DeviceInfo(device_info);
+        } else {
+          LOG(WARNING) << "No device info for service: " << service_path
+                       << ", device_path: " << info.device_path;
+        }
+      }
+      // Push info onto the list of services
+      service_info_list.push_back(info);
+    }
+  } else {
+    LOG(WARNING) << "Missing property: " << kServicesProperty;
   }
-  system->service_size = buffer.size();
+
+  // Copy service_info_list -> system->services after parsing DeviceInfo.
+  system->service_size = service_info_list.size();
   if (system->service_size == 0) {
     system->services = NULL;
   } else {
     system->services = new ServiceInfo[system->service_size];
+    std::copy(service_info_list.begin(),
+              service_info_list.end(),
+              system->services);
   }
-  std::copy(buffer.begin(), buffer.end(), system->services);
 
   // Profile
   glib::Value profile_val;
-  properties.Retrieve(kActiveProfileProperty, &profile_val);
-  const gchar* profile_path =
-      static_cast<const gchar*>(g_value_get_boxed(&profile_val));
+  std::vector<ServiceInfo> remembered_service_info_list;
+  if (properties.Retrieve(kActiveProfileProperty, &profile_val)) {
+    const gchar* profile_path =
+        static_cast<const gchar*>(g_value_get_boxed(&profile_val));
 
-  dbus::Proxy profile_proxy(bus,
-                            kConnmanServiceName,
-                            profile_path,
-                            kConnmanProfileInterface);
+    dbus::Proxy profile_proxy(bus,
+                              kConnmanServiceName,
+                              profile_path,
+                              kConnmanProfileInterface);
 
-  glib::ScopedHashTable profile_properties;
-  std::vector<ServiceInfo> remembered_buffer;
-  if (GetProperties(profile_proxy, &profile_properties)) {
-    glib::Value entries_val;
-    if (profile_properties.Retrieve(kEntriesProperty, &entries_val)) {
-      gchar** entries = static_cast<gchar**>(g_value_get_boxed(&entries_val));
-      while (*entries) {
-        glib::ScopedHashTable entry_properties;
-        if (GetEntry(profile_proxy, *entries, &entry_properties)) {
-          ServiceInfo info = {};
-          info.service_path = NewStringCopy(*entries);
-          ParseServiceProperties(entry_properties, &info);
-          remembered_buffer.push_back(info);
+    glib::ScopedHashTable profile_properties;
+    if (GetProperties(profile_proxy, &profile_properties)) {
+      glib::Value entries_val;
+      if (profile_properties.Retrieve(kEntriesProperty, &entries_val)) {
+        gchar** entries = static_cast<gchar**>(g_value_get_boxed(&entries_val));
+        while (*entries) {
+          glib::ScopedHashTable entry_properties;
+          if (GetEntry(profile_proxy, *entries, &entry_properties)) {
+            ServiceInfo info = {};
+            info.service_path = NewStringCopy(*entries);
+            ParseServiceProperties(entry_properties, &info);
+            remembered_service_info_list.push_back(info);
+          }
+          entries++;
         }
-        entries++;
       }
     }
+  } else {
+    LOG(WARNING) << "Missing property: " << kActiveProfileProperty;
   }
-  system->remembered_service_size = remembered_buffer.size();
+
+  // Copy remembered_service_info_list -> system->remembered_services.
+  system->remembered_service_size = remembered_service_info_list.size();
   if (system->remembered_service_size == 0) {
     system->remembered_services = NULL;
   } else {
     system->remembered_services =
         new ServiceInfo[system->remembered_service_size];
+    std::copy(remembered_service_info_list.begin(),
+              remembered_service_info_list.end(),
+              system->remembered_services);
   }
-  std::copy(remembered_buffer.begin(), remembered_buffer.end(),
-            system->remembered_services);
 
   // Set the runtime size of the ServiceInfo struct for GetServiceInfo() calls.
   system->service_info_size = sizeof(ServiceInfo);

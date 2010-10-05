@@ -120,6 +120,30 @@ struct CellularDataPlan {
 
 typedef std::vector<CellularDataPlan> CellularDataPlanList;
 
+// Device Info for cellular devices.
+struct DeviceInfo {
+  const char* carrier;
+  const char* MEID;
+  const char* IMEI;
+  const char* IMSI;
+  const char* ESN;
+  const char* MDN;
+  const char* MIN;
+  const char* model_id;
+  const char* manufacturer;
+  const char* firmware_revision;
+  const char* hardware_revision;
+  const char* last_update;
+  int PRL_version;
+};
+
+// Carrier Info for cellular services.
+struct CarrierInfo {
+  const char* operator_name;
+  const char* operator_code;
+  const char* payment_url;
+};
+
 struct ServiceInfo {
   const char* service_path;
   const char* name;
@@ -140,6 +164,9 @@ struct ServiceInfo {
   ActivationState activation_state;
   NetworkTechnology network_technology;
   NetworkRoamingState roaming_state;
+  const char* activation_error;
+  CarrierInfo* carrier_info;  // NULL unless TYPE_CELLULAR
+  DeviceInfo* device_info;  // NULL unless TYPE_CELLULAR
 };
 
 struct SystemInfo {
