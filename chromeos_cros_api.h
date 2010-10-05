@@ -147,12 +147,13 @@
 //  73: Changed cryptohome Mount APIs to support better configuration
 //  74: Added TpmCanAttemptOwnership/TpmClearStoredPassword APIs to cryptohome
 //  75: Added DeviceInfo and CarrierInfo to ServiceInfo
+//  76: Added EnableScreenLock to power library.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 55,
-  kCrosAPIVersion = 75
+  kCrosAPIVersion = 76
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

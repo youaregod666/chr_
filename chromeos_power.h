@@ -86,6 +86,8 @@ extern PowerStatusConnection (*MonitorPowerStatus)(PowerMonitor monitor, void*);
 extern void (*DisconnectPowerStatus)(PowerStatusConnection connection);
 extern bool (*RetrievePowerInformation)(PowerInformation* information);
 
+extern void (*EnableScreenLock)(bool enable);
+
 }  // namespace chromeos
 
 #endif  // CHROMEOS_POWER_H_

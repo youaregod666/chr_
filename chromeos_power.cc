@@ -10,7 +10,9 @@
 #include <string>
 #include <vector>
 
+#include <base/file_util.h>
 #include <base/logging.h>
+#include <base/string_util.h>
 
 #include "chromeos/dbus/dbus.h"
 #include "chromeos/glib/object.h"
@@ -308,6 +310,17 @@ bool ChromeOSRetrievePowerInformation(PowerInformation* info) {
                                        &info->power_status.line_power_on);
 
   return success;
+}
+
+extern "C"
+void ChromeOSEnableScreenLock(bool enable) {
+  static const char kPowerManagerConfig[] =
+      "/var/lib/power_manager/lock_on_idle_suspend";
+
+  std::string config = base::StringPrintf("%d", enable);
+  file_util::WriteFile(FilePath(kPowerManagerConfig),
+                       config.c_str(),
+                       config.size());
 }
 
 }  // namespace chromeos

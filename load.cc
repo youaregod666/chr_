@@ -75,6 +75,7 @@ DECL_FUNC_1(CrosVersionCheck, bool, chromeos::CrosAPIVersion);
 DECL_FUNC_2(MonitorPowerStatus, PowerStatusConnection, PowerMonitor, void*);
 DECL_FUNC_1(DisconnectPowerStatus, void, PowerStatusConnection);
 DECL_FUNC_1(RetrievePowerInformation, bool, PowerInformation*);
+DECL_FUNC_1(EnableScreenLock, void, bool);
 
 // Input methods
 DECL_FUNC_5(MonitorInputMethodStatus,
@@ -357,6 +358,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MonitorPowerStatus);
   INIT_FUNC(DisconnectPowerStatus);
   INIT_FUNC(RetrievePowerInformation);
+  INIT_FUNC(EnableScreenLock)
 
   // Input methods
   INIT_FUNC(MonitorInputMethodStatus);
