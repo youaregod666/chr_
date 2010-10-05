@@ -146,12 +146,13 @@
 //  72: Added cellular data plan (CellularDataPlan) and monitoring.
 //  73: Changed cryptohome Mount APIs to support better configuration
 //  74: Added TpmCanAttemptOwnership/TpmClearStoredPassword APIs to cryptohome
+//  75: Added DeviceInfo and CarrierInfo to ServiceInfo
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 55,
-  kCrosAPIVersion = 74
+  kCrosAPIVersion = 75
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
