@@ -41,14 +41,15 @@ enum ConnectionSecurity {
 };
 
 enum ConnectionState {
-  STATE_UNKNOWN       = 0,
-  STATE_IDLE          = 1,
-  STATE_CARRIER       = 2,
-  STATE_ASSOCIATION   = 3,
-  STATE_CONFIGURATION = 4,
-  STATE_READY         = 5,
-  STATE_DISCONNECT    = 6,
-  STATE_FAILURE       = 7,
+  STATE_UNKNOWN            = 0,
+  STATE_IDLE               = 1,
+  STATE_CARRIER            = 2,
+  STATE_ASSOCIATION        = 3,
+  STATE_CONFIGURATION      = 4,
+  STATE_READY              = 5,
+  STATE_DISCONNECT         = 6,
+  STATE_FAILURE            = 7,
+  STATE_ACTIVATION_FAILURE = 8
 };
 
 // Network enums (see flimflam/include/network.h)
@@ -66,10 +67,11 @@ enum NetworkTechnology {
 };
 
 enum ActivationState {
-  ACTIVATION_STATE_UNKNOWN       = 0,
-  ACTIVATION_STATE_ACTIVATED     = 1,
-  ACTIVATION_STATE_ACTIVATING    = 2,
-  ACTIVATION_STATE_NOT_ACTIVATED = 3,
+  ACTIVATION_STATE_UNKNOWN             = 0,
+  ACTIVATION_STATE_ACTIVATED           = 1,
+  ACTIVATION_STATE_ACTIVATING          = 2,
+  ACTIVATION_STATE_NOT_ACTIVATED       = 3,
+  ACTIVATION_STATE_PARTIALLY_ACTIVATED = 4,
 };
 
 enum NetworkRoamingState {
@@ -80,13 +82,18 @@ enum NetworkRoamingState {
 
 // connection errors (see flimflam/include/service.h)
 enum ConnectionError {
-  ERROR_UNKNOWN        = 0,
-  ERROR_OUT_OF_RANGE   = 1,
-  ERROR_PIN_MISSING    = 2,
-  ERROR_DHCP_FAILED    = 3,
-  ERROR_CONNECT_FAILED = 4,
-  ERROR_BAD_PASSPHRASE = 5,
-  ERROR_BAD_WEPKEY     = 6,
+  ERROR_UNKNOWN           = 0,
+  ERROR_OUT_OF_RANGE      = 1,
+  ERROR_PIN_MISSING       = 2,
+  ERROR_DHCP_FAILED       = 3,
+  ERROR_CONNECT_FAILED    = 4,
+  ERROR_BAD_PASSPHRASE    = 5,
+  ERROR_BAD_WEPKEY        = 6,
+  ERROR_ACTIVATION_FAILED = 7,
+  ERROR_NEED_EVDO         = 8,
+  ERROR_NEED_HOME_NETWORK = 9,
+  ERROR_OTASP_FAILED      = 10,
+  ERROR_AAA_FAILED        = 11,
 };
 
 // ipconfig types (see flimflam/files/doc/ipconfig-api.txt)
@@ -164,7 +171,7 @@ struct ServiceInfo {
   ActivationState activation_state;
   NetworkTechnology network_technology;
   NetworkRoamingState roaming_state;
-  const char* activation_error;
+  bool restricted_pool;
   CarrierInfo* carrier_info;  // NULL unless TYPE_CELLULAR
   DeviceInfo* device_info;  // NULL unless TYPE_CELLULAR
 };

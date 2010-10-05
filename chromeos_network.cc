@@ -63,9 +63,9 @@ static const char* kTypeProperty = "Type";
 static const char* kUnknownString = "UNKNOWN";
 static const char* kDeviceProperty = "Device";
 static const char* kActivationStateProperty = "Cellular.ActivationState";
-static const char* kActivationErrorProperty = "Cellular.ActivationError";
 static const char* kNetworkTechnologyProperty = "Cellular.NetworkTechnology";
 static const char* kRoamingStateProperty = "Cellular.RoamingState";
+static const char* kRestrictedPoolProperty = "Cellular.RestrictedPool";
 static const char* kOperatorNameProperty = "Cellular.OperatorName";
 static const char* kOperatorCodeProperty = "Cellular.OperatorCode";
 static const char* kPaymentURLProperty = "Cellular.OlpUrl";
@@ -132,6 +132,7 @@ static const char* kStateConfiguration = "configuration";
 static const char* kStateReady = "ready";
 static const char* kStateDisconnect = "disconnect";
 static const char* kStateFailure = "failure";
+static const char* kStateActivationFailure = "activation-failure";
 
 // Connman network technology options.
 static const char* kNetworkTechnology1Xrtt = "1xRTT";
@@ -153,6 +154,7 @@ static const char* kRoamingStateUnknown = "unknown";
 static const char* kActivationStateActivated = "activated";
 static const char* kActivationStateActivating = "activating";
 static const char* kActivationStateNotActivated = "not-activated";
+static const char* kActivationStatePartiallyActivated = "partially-activated";
 static const char* kActivationStateUnknown = "unknown";
 
 // Connman error options.
@@ -162,6 +164,11 @@ static const char* kErrorDhcpFailed = "dhcp-failed";
 static const char* kErrorConnectFailed = "connect-failed";
 static const char* kErrorBadPassphrase = "bad-passphrase";
 static const char* kErrorBadWEPKey = "bad-wepkey";
+static const char* kErrorActivationFailed = "activation-failed";
+static const char* kErrorNeedEvdo = "need-evdo";
+static const char* kErrorNeedHomeNetwork = "need-home-network";
+static const char* kErrorOtaspFailed = "otasp-failed";
+static const char* kErrorAaaFailed = "aaa-failed";
 
 // Cashew D-Bus service identifiers.
 static const char* kCashewServiceName = "org.chromium.Cashew";
@@ -308,6 +315,8 @@ static ConnectionState ParseState(const std::string& state) {
     return STATE_DISCONNECT;
   if (state == kStateFailure)
     return STATE_FAILURE;
+  if (state == kStateActivationFailure)
+    return STATE_ACTIVATION_FAILURE;
   return STATE_UNKNOWN;
 }
 
@@ -315,21 +324,21 @@ static NetworkTechnology ParseNetworkTechnology(
     const std::string& technology) {
   if (technology == kNetworkTechnology1Xrtt)
     return NETWORK_TECHNOLOGY_1XRTT;
-  else if (technology == kNetworkTechnologyEvdo)
+  if (technology == kNetworkTechnologyEvdo)
     return NETWORK_TECHNOLOGY_EVDO;
-  else if (technology == kNetworkTechnologyGprs)
+  if (technology == kNetworkTechnologyGprs)
     return NETWORK_TECHNOLOGY_GPRS;
-  else if (technology == kNetworkTechnologyEdge)
+  if (technology == kNetworkTechnologyEdge)
     return NETWORK_TECHNOLOGY_EDGE;
-  else if (technology == kNetworkTechnologyUmts)
+  if (technology == kNetworkTechnologyUmts)
     return NETWORK_TECHNOLOGY_UMTS;
-  else if (technology == kNetworkTechnologyHspa)
+  if (technology == kNetworkTechnologyHspa)
     return NETWORK_TECHNOLOGY_HSPA;
-  else if (technology == kNetworkTechnologyHspaPlus)
+  if (technology == kNetworkTechnologyHspaPlus)
     return NETWORK_TECHNOLOGY_HSPA_PLUS;
-  else if (technology == kNetworkTechnologyLte)
+  if (technology == kNetworkTechnologyLte)
     return NETWORK_TECHNOLOGY_LTE;
-  else if (technology == kNetworkTechnologyLteAdvanced)
+  if (technology == kNetworkTechnologyLteAdvanced)
     return NETWORK_TECHNOLOGY_LTE_ADVANCED;
   return NETWORK_TECHNOLOGY_UNKNOWN;
 }
@@ -338,9 +347,9 @@ static NetworkRoamingState ParseRoamingState(
     const std::string& roaming_state) {
   if (roaming_state == kRoamingStateHome)
     return ROAMING_STATE_HOME;
-  else if (roaming_state == kRoamingStateRoaming)
+  if (roaming_state == kRoamingStateRoaming)
     return ROAMING_STATE_ROAMING;
-  else if (roaming_state == kRoamingStateUnknown)
+  if (roaming_state == kRoamingStateUnknown)
     return ROAMING_STATE_UNKNOWN;
   return ROAMING_STATE_UNKNOWN;
 }
@@ -349,12 +358,14 @@ static ActivationState ParseActivationState(
     const std::string& activation_state) {
   if (activation_state == kActivationStateActivated)
     return ACTIVATION_STATE_ACTIVATED;
-  else if (activation_state == kActivationStateActivating)
+  if (activation_state == kActivationStateActivating)
     return ACTIVATION_STATE_ACTIVATING;
-  else if (activation_state == kActivationStateNotActivated)
+  if (activation_state == kActivationStateNotActivated)
     return ACTIVATION_STATE_NOT_ACTIVATED;
-  else if (activation_state == kActivationStateUnknown)
+  if (activation_state == kActivationStateUnknown)
     return ACTIVATION_STATE_UNKNOWN;
+  if (activation_state == kActivationStatePartiallyActivated)
+    return ACTIVATION_STATE_PARTIALLY_ACTIVATED;
   return ACTIVATION_STATE_UNKNOWN;
 }
 
@@ -371,6 +382,16 @@ static ConnectionError ParseError(const std::string& error) {
     return ERROR_BAD_PASSPHRASE;
   if (error == kErrorBadWEPKey)
     return ERROR_BAD_WEPKEY;
+  if (error == kErrorActivationFailed)
+    return ERROR_ACTIVATION_FAILED;
+  if (error == kErrorNeedEvdo)
+    return ERROR_NEED_EVDO;
+  if (error == kErrorNeedHomeNetwork)
+    return ERROR_NEED_HOME_NETWORK;
+  if (error == kErrorOtaspFailed)
+    return ERROR_OTASP_FAILED;
+  if (error == kErrorAaaFailed)
+    return ERROR_AAA_FAILED;
   return ERROR_UNKNOWN;
 }
 
@@ -527,16 +548,6 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   properties.Retrieve(kStateProperty, &default_string);
   info->state = ParseState(default_string);
 
-  // Network technology
-  default_string = kUnknownString;
-  properties.Retrieve(kNetworkTechnologyProperty, &default_string);
-  info->network_technology = ParseNetworkTechnology(default_string);
-
-  // Roaming state
-  default_string = kUnknownString;
-  properties.Retrieve(kRoamingStateProperty, &default_string);
-  info->roaming_state = ParseRoamingState(default_string);
-
   // Error
   default_string = kUnknownString;
   properties.Retrieve(kErrorProperty, &default_string);
@@ -592,10 +603,20 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   info->activation_state = ParseActivationState(default_string);
   info->activation_state_dont_use = NULL;
 
-  // ActivationError
+  // Network technology
   default_string = kUnknownString;
-  properties.Retrieve(kActivationErrorProperty, &default_string);
-  info->activation_error = NewStringCopy(default_string);
+  properties.Retrieve(kNetworkTechnologyProperty, &default_string);
+  info->network_technology = ParseNetworkTechnology(default_string);
+
+  // Roaming state
+  default_string = kUnknownString;
+  properties.Retrieve(kRoamingStateProperty, &default_string);
+  info->roaming_state = ParseRoamingState(default_string);
+
+  // RestrictedPool
+  default_bool = false;
+  properties.Retrieve(kRestrictedPoolProperty, &default_bool);
+  info->restricted_pool = default_bool;
 
   // CarrierInfo
   if (info->type == TYPE_CELLULAR) {
@@ -665,7 +686,6 @@ void DeleteServiceInfoProperties(ServiceInfo& info) {
   delete info.device_path;
   delete info.identity;
   delete info.cert_path;
-  delete info.activation_error;
 
   info.service_path = NULL;
   info.name = NULL;
@@ -673,7 +693,6 @@ void DeleteServiceInfoProperties(ServiceInfo& info) {
   info.device_path = NULL;
   info.identity = NULL;
   info.cert_path = NULL;
-  info.activation_error = NULL;
 
   if (info.carrier_info) {
     DeleteCarrierInfo(*info.carrier_info);

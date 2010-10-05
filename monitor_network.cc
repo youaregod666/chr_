@@ -151,7 +151,8 @@ void DumpDeviceInfo(const chromeos::DeviceInfo& device) {
             << ", Manufacture=" << device.manufacturer;
   LOG(INFO) << "      Firmware=" << device.firmware_revision
             << ", Hardware=" << device.hardware_revision;
-  LOG(INFO) << "      Last Update=" << device.last_update;
+  LOG(INFO) << "      Last Update=" << device.last_update
+            << ", PRL Version=" << device.PRL_version;
 }
 
 void DumpCarrierInfo(const chromeos::CarrierInfo& carrier) {
@@ -168,24 +169,30 @@ void DumpService(const chromeos::ServiceInfo& info) {
     passphrase = "\"\"";
 
   LOG(INFO) << "  \"" << info.name << "\"";
-  LOG(INFO) << "    Service=" << info.service_path;
-  LOG(INFO) << "    Device=" << info.device_path;
-  if (info.device_info)
-    DumpDeviceInfo(*info.device_info);
+  LOG(INFO) << "    Service=" << info.service_path
+            << ", Name=" << info.name;
   LOG(INFO) << "    Type=" << info.type;
-  if (info.carrier_info)
-    DumpCarrierInfo(*info.carrier_info);
   LOG(INFO) << "    Mode=" << info.mode
             << ", Security=" << info.security
             << ", State=" << info.state
-            << ", Technology=" << info.network_technology;
-  LOG(INFO) << "    RoamingState=" << info.roaming_state
-            << ", Error=" << info.error
-            << ", PassphraseRequired=" << info.passphrase_required
+            << ", Error=" << info.error;
+  LOG(INFO) << "    PassphraseRequired=" << info.passphrase_required
             << ", Passphrase=" << passphrase;
+  LOG(INFO) << "    Identity=" << info.identity
+            << ", CertPath=" << info.cert_path;
   LOG(INFO) << "    Strength=" << info.strength
             << ", Favorite=" << info.favorite
             << ", AutoConnect=" << info.auto_connect;
+  LOG(INFO) << "    Device=" << info.device_path;
+  if (info.device_info)
+    DumpDeviceInfo(*info.device_info);
+  LOG(INFO) << "    Activation State=" << info.activation_state
+            << ", Technology=" << info.network_technology
+            << ", RoamingState=" << info.roaming_state
+            << ", RestrictedPool=" << info.restricted_pool;
+
+  if (info.carrier_info)
+    DumpCarrierInfo(*info.carrier_info);
 }
 
 // Dumps the contents of ServiceStatus to the log.
