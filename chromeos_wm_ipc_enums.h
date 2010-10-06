@@ -248,7 +248,10 @@ enum WmIpcMessageType {
   // lock.
   WM_IPC_MESSAGE_CHROME_NOTIFY_SCREEN_REDRAWN_FOR_LOCK = 19,
 
-  // NEXT VALUE TO USE: 20
+  // Sent from the power manager to the window manager when we're shutting down.
+  WM_IPC_MESSAGE_WM_NOTIFY_SHUTTING_DOWN = 20,
+
+  // NEXT VALUE TO USE: 21
 };
 
 inline const char* WmIpcMessageTypeToString(WmIpcMessageType type) {
