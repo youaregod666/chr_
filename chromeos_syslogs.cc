@@ -20,6 +20,8 @@ namespace chromeos { // NOLINT
 namespace {
 const char kSysLogsScript[] =
     "/usr/share/userfeedback/scripts/sysinfo_script_runner";
+const char kBzip2Command[] =
+    "/bin/bzip2";
 const char kMultilineQuote[] = "\"\"\"";
 const char kNewLineChars[] = "\r\n";
 const char kInvalidLogEntry[] = "<invalid characters in log entry>";
@@ -88,34 +90,35 @@ std::string ReadValue(std::string* data) {
 //                If this parameter is NULL, system logs are not retained on
 //                the filesystem after this call completes.
 extern "C"
-LogDictionaryType* ChromeOSGetSystemLogs(FilePath* temp_filename) {
+LogDictionaryType* ChromeOSGetSystemLogs(FilePath* zip_file_name) {
   // Create the temp file, logs will go here
-  scoped_ptr<FilePath> internal_tmp_file;
-  if (!temp_filename) {
-    internal_tmp_file.reset(new FilePath());
-    temp_filename = internal_tmp_file.get();
-  }
+  FilePath temp_filename;
 
-  if (!file_util::CreateTemporaryFile(temp_filename))
+  if (!file_util::CreateTemporaryFile(&temp_filename))
     return NULL;
 
   std::string cmd = std::string(kSysLogsScript) + " >> " +
-      temp_filename->value();
+      temp_filename.value();
 
   // Ignore the return value - if the script execution didn't work
   // stderr won't go into the output file anyway.
   if (system(cmd.c_str()) == -1)
     LOG(WARNING) << "Command " << cmd << " failed to run";
 
+  // Compress the logs file if requested.
+  if (zip_file_name) {
+    cmd = std::string(kBzip2Command) + " -c " + temp_filename.value() + " > " +
+        zip_file_name->value();
+    if (system(cmd.c_str()) == -1)
+      LOG(WARNING) << "Command " << cmd << " failed to run";
+  }
   // Read logs from the temp file
   std::string data;
-  bool read_success = file_util::ReadFileToString(FilePath(*temp_filename),
+  bool read_success = file_util::ReadFileToString(temp_filename,
                                                   &data);
   // if we were using an internal temp file, the user does not need the
   // logs to stay past the ReadFile call - delete the file
-  if (internal_tmp_file.get()) {
-    file_util::Delete(*internal_tmp_file, false);
-  }
+  file_util::Delete(temp_filename, false);
 
   if (!read_success)
     return NULL;
