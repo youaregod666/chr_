@@ -26,6 +26,13 @@ const char* kDeviceKitDeviceInterface =
     "org.freedesktop.DeviceKit.Disks.Device";
 const char* kDeviceKitPropertiesInterface =
     "org.freedesktop.DBus.Properties";
+const char* kDefaultMountOptions[] = {
+    "rw",
+    "nodev",
+    "noexec",
+    "nosuid",
+    NULL
+};
 
 extern "C"
 MountStatus* ChromeOSRetrieveMountInformation();
@@ -146,7 +153,7 @@ bool MountRemoveableDevice(const dbus::BusConnection& bus, const char* path) {
                            "FilesystemMount",
                            &Resetter(&error).lvalue(),
                            G_TYPE_STRING, NULL,
-                           G_TYPE_STRV, NULL,
+                           G_TYPE_STRV, kDefaultMountOptions,
                            G_TYPE_INVALID,
                            G_TYPE_STRING,
                            &val, G_TYPE_INVALID)) {
