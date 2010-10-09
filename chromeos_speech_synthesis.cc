@@ -17,6 +17,8 @@
 
 namespace chromeos {
 
+const int kDBusTtsTimeoutMs = 50;
+
 class OpaqueTTSInitConnection {
  public:
   explicit OpaqueTTSInitConnection(const InitStatusCallback& callback)
@@ -107,18 +109,11 @@ bool ChromeOSSpeak(const char* text) {
       speech_synthesis::kSpeechSynthesizerServicePath,
       speech_synthesis::kSpeechSynthesizerInterface);
   DCHECK(tts_proxy.gproxy()) << "Failed to acquire proxy";
-  chromeos::glib::ScopedError error;
-  if (!::dbus_g_proxy_call(tts_proxy.gproxy(),
-                           "Speak",
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           text,
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << "Speak" << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-    return false;
-  }
+  ::dbus_g_proxy_call_no_reply(tts_proxy.gproxy(),
+                               "Speak",
+                               G_TYPE_STRING,
+                               text,
+                               G_TYPE_INVALID);
   return true;
 }
 
@@ -131,18 +126,12 @@ bool ChromeOSSetSpeakProperties(const char* props) {
       speech_synthesis::kSpeechSynthesizerServicePath,
       speech_synthesis::kSpeechSynthesizerInterface);
   DCHECK(tts_proxy.gproxy()) << "Failed to acquire proxy";
-  chromeos::glib::ScopedError error;
-  if (!::dbus_g_proxy_call(tts_proxy.gproxy(),
-                           "SetProperties",
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           props,
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << "SetProperties" << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-    return false;
-  }
+  ::dbus_g_proxy_call_no_reply(tts_proxy.gproxy(),
+                               "SetProperties",
+                               G_TYPE_STRING,
+                               props,
+                               G_TYPE_INVALID,
+                               G_TYPE_INVALID);
   return true;
 }
 
@@ -155,16 +144,10 @@ bool ChromeOSStopSpeaking() {
       speech_synthesis::kSpeechSynthesizerServicePath,
       speech_synthesis::kSpeechSynthesizerInterface);
   DCHECK(tts_proxy.gproxy()) << "Failed to acquire proxy";
-  chromeos::glib::ScopedError error;
-  if (!::dbus_g_proxy_call(tts_proxy.gproxy(),
-                           "Stop",
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << "Stop" << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-    return false;
-  }
+  ::dbus_g_proxy_call_no_reply(tts_proxy.gproxy(),
+                               "Stop",
+                               G_TYPE_INVALID,
+                               G_TYPE_INVALID);
   return true;
 }
 
@@ -179,13 +162,14 @@ bool ChromeOSIsSpeaking() {
   DCHECK(tts_proxy.gproxy()) << "Failed to acquire proxy";
   gboolean done = false;
   chromeos::glib::ScopedError error;
-  if (!::dbus_g_proxy_call(tts_proxy.gproxy(),
-                           "IsSpeaking",
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN,
-                           &done,
-                           G_TYPE_INVALID)) {
+  if (!::dbus_g_proxy_call_with_timeout(tts_proxy.gproxy(),
+                                        "IsSpeaking",
+                                        kDBusTtsTimeoutMs,
+                                        &Resetter(&error).lvalue(),
+                                        G_TYPE_INVALID,
+                                        G_TYPE_BOOLEAN,
+                                        &done,
+                                        G_TYPE_INVALID)) {
     LOG(WARNING) << "IsSpeaking" << " failed: "
                  << (error->message ? error->message : "Unknown Error.");
     return false;
