@@ -9,11 +9,10 @@
 #include <vector>
 #include <base/basictypes.h>
 
+class Value;
+
 namespace chromeos { // NOLINT
 
-namespace glib {
-class Value;
-}
 
 // Connection enums (see flimflam/include/service.h)
 enum ConnectionType {
@@ -369,7 +368,7 @@ typedef PropertyChangedHandler* PropertyChangeMonitor;
 typedef void (*MonitorPropertyCallback)(void* object,
                                         const char* path,
                                         const char* key,
-                                        const glib::Value* value);
+                                        const Value* value);
 
 // Sets up monitoring of the PropertyChanged signal on the flimflam manager.
 // The provided MonitorPropertyCallback will be called whenever a manager

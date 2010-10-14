@@ -9,7 +9,9 @@
 #include <cstring>
 
 #include "marshal.glibmarshal.h"  // NOLINT
+#include "base/scoped_ptr.h"
 #include "base/string_util.h"
+#include "base/values.h"
 #include "chromeos/dbus/dbus.h"  // NOLINT
 #include "chromeos/glib/object.h"  // NOLINT
 #include "chromeos/string.h"
@@ -495,9 +497,9 @@ void ParseDeviceProperties(const glib::ScopedHashTable& properties,
   properties.Retrieve(kLastDeviceUpdateProperty, &default_string);
   info->last_update = NewStringCopy(default_string);
   // PRLVersion
-  int default_int = 0;
-  properties.Retrieve(kPRLVersionProperty, &default_int);
-  info->PRL_version = default_int;
+  unsigned int default_uint = 0;
+  properties.Retrieve(kPRLVersionProperty, &default_uint);
+  info->PRL_version = default_uint;
 }
 
 // Returns a DeviceInfo object populated with data from a
@@ -835,6 +837,16 @@ class ManagerPropertyChangedHandler {
   MonitorConnection connection_;
 };
 
+extern "C"
+void AppendElement(const GValue *value, gpointer user_data) {
+  ListValue* list = static_cast<ListValue*>(user_data);
+  if (G_VALUE_HOLDS(value, DBUS_TYPE_G_OBJECT_PATH)) {
+    const char* path = static_cast<const char*>(::g_value_get_boxed(value));
+    list->Append(Value::CreateStringValue(path));
+  } else
+    list->Append(Value::CreateNullValue());
+}
+
 class PropertyChangedHandler {
  public:
   typedef dbus::MonitorConnection<void(const char*, const glib::Value*)>*
@@ -851,10 +863,12 @@ class PropertyChangedHandler {
 
   static void Run(void* object,
                   const char* property,
-                  const glib::Value* value) {
+                  const glib::Value* gvalue) {
     PropertyChangedHandler* self =
         static_cast<PropertyChangedHandler*>(object);
-    self->callback_(self->object_, self->path_.c_str(), property, value);
+    // Convert a glib::Value into a Value as defined in base/values.h
+    scoped_ptr<Value> value(ConvertValue(gvalue));
+    self->callback_(self->object_, self->path_.c_str(), property, value.get());
   }
 
   MonitorConnection& connection() {
@@ -866,6 +880,36 @@ class PropertyChangedHandler {
   std::string path_;
   void* object_;
   MonitorConnection connection_;
+
+  static Value* ConvertValue(const glib::Value* gvalue) {
+    if (G_VALUE_HOLDS_STRING(gvalue))
+      return Value::CreateStringValue(g_value_get_string(gvalue));
+    else if (G_VALUE_HOLDS_BOOLEAN(gvalue))
+      return Value::CreateBooleanValue(
+          static_cast<bool>(g_value_get_boolean(gvalue)));
+    else if (G_VALUE_HOLDS_INT(gvalue))
+      return Value::CreateIntegerValue(g_value_get_int(gvalue));
+    else if (G_VALUE_HOLDS_UINT(gvalue))
+      return Value::CreateIntegerValue(
+          static_cast<int>(g_value_get_uint(gvalue)));
+    else if (G_VALUE_HOLDS_UCHAR(gvalue))
+      return Value::CreateIntegerValue(
+          static_cast<int>(g_value_get_uchar(gvalue)));
+    else if (G_VALUE_HOLDS(gvalue, G_TYPE_STRV)) {
+      ListValue* list = new ListValue();
+      GStrv strv = static_cast<GStrv>(::g_value_get_boxed(gvalue));
+      while (*strv != NULL) {
+        list->Append(Value::CreateStringValue(*strv));
+        ++strv;
+      }
+      return list;
+    } else if (dbus_g_type_is_collection(G_VALUE_TYPE(gvalue))) {
+      ListValue* list = new ListValue();
+      dbus_g_type_collection_value_iterate(gvalue, AppendElement, list);
+      return list;
+    }
+    return Value::CreateNullValue();
+  }
 
   DISALLOW_COPY_AND_ASSIGN(PropertyChangedHandler);
 };

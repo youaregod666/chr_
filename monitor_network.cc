@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <base/logging.h>
+#include <base/values.h>
 
 #include "chromeos_cros_api.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
@@ -21,7 +22,7 @@ void DumpDataPlans(const char* service_path,
                    const chromeos::CellularDataPlanList* data_plan_list);
 void PrintProperty(const char* path,
                    const char* key,
-                   const chromeos::glib::Value* value);
+                   const Value* value);
 
 // Callback is an example of how to use the network monitoring functionality.
 class CallbackMonitorNetwork {
@@ -44,7 +45,7 @@ class CallbackMonitorNetwork {
   static void Run(void* object,
                   const char* path,
                   const char* key,
-                  const chromeos::glib::Value* value) {
+                  const Value* value) {
     PrintProperty(path, key, value);
     if (strcmp(key, "Services") == 0) {
       chromeos::SystemInfo* info = chromeos::GetSystemInfo();
@@ -95,48 +96,46 @@ int ServiceMonitor::scangen;
 typedef std::map<std::string, ServiceMonitor*> MonitorMap;
 MonitorMap monitor_map;
 
-extern "C"
-void PrintCollectionElement(const GValue *value, gpointer user_data) {
-  if (G_VALUE_HOLDS(value, DBUS_TYPE_G_OBJECT_PATH)) {
-    const char* path = static_cast<const char*>(::g_value_get_boxed(value));
-    LOG(INFO) << "  path: " << path;
-  } else
-    LOG(INFO) << "  <type " << G_VALUE_TYPE_NAME(value) << ">";
-}
-
 void PrintProperty(const char* path,
                    const char* key,
-                   const chromeos::glib::Value* value) {
+                   const Value* value) {
     std::string prelude("PropertyChanged [");
     prelude += path;
     prelude += "] ";
     prelude += key;
     prelude += " : ";
-    if (G_VALUE_HOLDS_STRING(value))
-      LOG(INFO) << prelude << "\"" << ::g_value_get_string(value) << "\"";
-    else if (G_VALUE_HOLDS_BOOLEAN(value))
-      LOG(INFO) << prelude << static_cast<bool>(::g_value_get_boolean(value));
-    else if (G_VALUE_HOLDS_UCHAR(value))
-      LOG(INFO) << prelude << static_cast<int>(::g_value_get_uchar(value));
-    else if (G_VALUE_HOLDS_UINT(value))
-      LOG(INFO) << prelude << ::g_value_get_uint(value);
-    else if (G_VALUE_HOLDS_INT(value))
-      LOG(INFO) << prelude << ::g_value_get_int(value);
-    else if (G_VALUE_HOLDS(value, G_TYPE_STRV)) {
-      std::string values;
-      GStrv strv = static_cast<GStrv>(::g_value_get_boxed(value));
-      while (*strv != NULL) {
-        values += *strv;
-        ++strv;
-        if (*strv != NULL)
-          values += ", ";
+    if (value->IsType(Value::TYPE_STRING)) {
+      std::string strval;
+      value->GetAsString(&strval);
+      LOG(INFO) << prelude << "\"" << strval << "\"";
+    } else if (value->IsType(Value::TYPE_BOOLEAN)) {
+      bool boolval;
+      value->GetAsBoolean(&boolval);
+      LOG(INFO) << prelude << boolval;
+    }  else if (value->IsType(Value::TYPE_INTEGER)) {
+      int intval;
+      value->GetAsInteger(&intval);
+      LOG(INFO) << prelude << intval;
+    } else if (value->IsType(Value::TYPE_LIST)) {
+      const ListValue* list = static_cast<const ListValue*>(value);
+      Value *itemval;
+      std::string liststr;
+      size_t index = 0;
+      while (list->Get(index, &itemval)) {
+        if (!itemval->IsType(Value::TYPE_STRING)) {
+          ++index;
+          continue;
+        }
+        std::string itemstr;
+        itemval->GetAsString(&itemstr);
+        liststr += itemstr;
+        ++index;
+        if (index < list->GetSize())
+          liststr += ", ";
       }
-      LOG(INFO) << prelude << "\"" << values << "\"";
-    } else if (dbus_g_type_is_collection(G_VALUE_TYPE(value))) {
-      LOG(INFO) << prelude;
-      dbus_g_type_collection_value_iterate(value, PrintCollectionElement, NULL);
+      LOG(INFO) << prelude << "\"" << liststr << "\"";
     } else
-      LOG(INFO) << prelude << "<type " << G_VALUE_TYPE_NAME(value) << ">";
+      LOG(INFO) << prelude << "<type " << value->GetType() << ">";
 }
 
 void DumpDeviceInfo(const chromeos::DeviceInfo& device) {
@@ -148,7 +147,7 @@ void DumpDeviceInfo(const chromeos::DeviceInfo& device) {
             << ", MDN=" << device.MDN
             << ", MIN=" << device.MIN;
   LOG(INFO) << "      ModelID=" << device.model_id
-            << ", Manufacture=" << device.manufacturer;
+            << ", Manufacturer=" << device.manufacturer;
   LOG(INFO) << "      Firmware=" << device.firmware_revision
             << ", Hardware=" << device.hardware_revision;
   LOG(INFO) << "      Last Update=" << device.last_update
@@ -186,11 +185,11 @@ void DumpService(const chromeos::ServiceInfo& info) {
   LOG(INFO) << "    Device=" << info.device_path;
   if (info.device_info)
     DumpDeviceInfo(*info.device_info);
-  LOG(INFO) << "    Activation State=" << info.activation_state
+  if (info.type == chromeos::TYPE_CELLULAR)
+    LOG(INFO) << "    Activation State=" << info.activation_state
             << ", Technology=" << info.network_technology
             << ", RoamingState=" << info.roaming_state
             << ", RestrictedPool=" << info.restricted_pool;
-
   if (info.carrier_info)
     DumpCarrierInfo(*info.carrier_info);
 }
