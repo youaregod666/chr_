@@ -12,6 +12,7 @@
 #include <string>
 
 #include <gtest/gtest.h>
+#include <X11/Xlib.h>
 
 #include "base/logging.h"
 
@@ -47,6 +48,16 @@ bool CheckMap(const ModifierMap& modifier_map,
     return true;
   }
   return false;
+}
+
+// Returns true if X display is available.
+bool DisplayAvailable() {
+  Display* display = XOpenDisplay(NULL);
+  if (!display) {
+    return false;
+  }
+  XCloseDisplay(display);
+  return true;
 }
 
 }  // namespace
@@ -262,6 +273,39 @@ TEST(ChromeOSKeyboardTest, TestExtractModifierMapFromFullXkbLayoutName) {
       }
     }
   }
+}
+
+TEST(ChromeOSKeyboardTest, TestSetCapsLockIsEnabled) {
+  if (!DisplayAvailable()) {
+    return;
+  }
+  const bool initial_lock_state = CapsLockIsEnabled();
+  SetCapsLockEnabled(true);
+  EXPECT_TRUE(CapsLockIsEnabled());
+  SetCapsLockEnabled(false);
+  EXPECT_FALSE(CapsLockIsEnabled());
+  SetCapsLockEnabled(true);
+  EXPECT_TRUE(CapsLockIsEnabled());
+  SetCapsLockEnabled(false);
+  EXPECT_FALSE(CapsLockIsEnabled());
+  SetCapsLockEnabled(initial_lock_state);
+}
+
+TEST(ChromeOSKeyboardTest, TestContainsModifierKeyAsReplacement) {
+  EXPECT_FALSE(ContainsModifierKeyAsReplacement(
+      GetMap(kVoidKey, kVoidKey, kVoidKey), kCapsLockKey));
+  EXPECT_TRUE(ContainsModifierKeyAsReplacement(
+      GetMap(kCapsLockKey, kVoidKey, kVoidKey), kCapsLockKey));
+  EXPECT_TRUE(ContainsModifierKeyAsReplacement(
+      GetMap(kVoidKey, kCapsLockKey, kVoidKey), kCapsLockKey));
+  EXPECT_TRUE(ContainsModifierKeyAsReplacement(
+      GetMap(kVoidKey, kVoidKey, kCapsLockKey), kCapsLockKey));
+  EXPECT_TRUE(ContainsModifierKeyAsReplacement(
+      GetMap(kCapsLockKey, kCapsLockKey, kVoidKey), kCapsLockKey));
+  EXPECT_TRUE(ContainsModifierKeyAsReplacement(
+      GetMap(kCapsLockKey, kCapsLockKey, kCapsLockKey), kCapsLockKey));
+  EXPECT_TRUE(ContainsModifierKeyAsReplacement(
+      GetMap(kSearchKey, kVoidKey, kVoidKey), kSearchKey));
 }
 
 }  // namespace chromeos

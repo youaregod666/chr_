@@ -139,6 +139,16 @@ bool ExtractModifierMapFromFullXkbLayoutName(
     const StringToModifierMap& string_to_modifier_map,
     ModifierMap* out_modifier_map);
 
+// Returns true if caps lock is enabled.
+bool CapsLockIsEnabled();
+
+// Sets the caps lock status to |enable_caps_lock|.
+void SetCapsLockEnabled(bool enabled);
+
+// Returns true if |key| is in |modifier_map| as replacement.
+bool ContainsModifierKeyAsReplacement(
+    const ModifierMap& modifier_map, ModifierKey key);
+
 }  // namespace chromeos
 
 #endif  // CHROMEOS_KEYBOARD_H_

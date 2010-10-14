@@ -269,6 +269,12 @@ class XKeyboard {
       return true;
     }
 
+    // Turn off caps lock if there is no kCapsLockKey in the remapped keys.
+    if (!ContainsModifierKeyAsReplacement(
+            modifier_map, chromeos::kCapsLockKey)) {
+      chromeos::SetCapsLockEnabled(false);
+    }
+
     gint exit_status = -1;
     const gboolean successful =
         ExecuteSetLayoutCommand(layouts_to_set, &exit_status);
@@ -521,6 +527,35 @@ bool ExtractModifierMapFromFullXkbLayoutName(
 
   *out_modifier_map = iter->second;
   return true;
+}
+
+bool CapsLockIsEnabled() {
+  ScopedDisplay display(XOpenDisplay(NULL));
+  if (!display.get()) {
+    return false;
+  }
+  XkbStateRec status;
+  XkbGetState(display.get(), XkbUseCoreKbd, &status);
+  return status.locked_mods & LockMask;
+}
+
+void SetCapsLockEnabled(bool enable_caps_lock) {
+  ScopedDisplay display(XOpenDisplay(NULL));
+  if (!display.get()) {
+    return;
+  }
+  XkbLockModifiers(
+      display.get(), XkbUseCoreKbd, LockMask, enable_caps_lock ? LockMask : 0);
+}
+
+bool ContainsModifierKeyAsReplacement(
+    const ModifierMap& modifier_map, ModifierKey key) {
+  for (size_t i = 0; i < modifier_map.size(); ++i) {
+    if (modifier_map[i].replacement == key) {
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace chromeos
