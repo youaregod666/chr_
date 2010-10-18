@@ -1336,12 +1336,6 @@ ServiceInfo* ChromeOSGetWifiService(const char* ssid,
   ::g_hash_table_insert(properties, ::g_strdup(kSSIDProperty), &value_ssid);
   ::g_hash_table_insert(properties, ::g_strdup(kSecurityProperty),
                         &value_security);
-  ::g_hash_table_insert(properties, ::g_strdup(kPassphraseProperty),
-                        &value_passphrase);
-  ::g_hash_table_insert(properties, ::g_strdup(kIdentityProperty),
-                        &value_identity);
-  ::g_hash_table_insert(properties, ::g_strdup(kCertPathProperty),
-                        &value_cert_path);
 
 
   glib::ScopedError error;
