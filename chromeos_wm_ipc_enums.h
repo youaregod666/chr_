@@ -251,7 +251,12 @@ enum WmIpcMessageType {
   // Sent from the power manager to the window manager when we're shutting down.
   WM_IPC_MESSAGE_WM_NOTIFY_SHUTTING_DOWN = 20,
 
-  // NEXT VALUE TO USE: 21
+  // Sent from the power manager to the window manager when we change state
+  // as a result of the power button being held down.
+  //   param[0]: New state, from WmIpcPowerButtonState enum.
+  WM_IPC_MESSAGE_WM_NOTIFY_POWER_BUTTON_STATE = 21,
+
+  // NEXT VALUE TO USE: 22
 };
 
 inline const char* WmIpcMessageTypeToString(WmIpcMessageType type) {
@@ -284,12 +289,16 @@ inline const char* WmIpcMessageTypeToString(WmIpcMessageType type) {
       return "WM_SELECT_LOGIN_USER";
     case WM_IPC_MESSAGE_CHROME_NOTIFY_SCREEN_REDRAWN_FOR_LOCK:
       return "CHROME_NOTIFY_SCREEN_REDRAWN_FOR_LOCK";
+    case WM_IPC_MESSAGE_WM_NOTIFY_SHUTTING_DOWN:
+      return "WM_NOTIFY_SHUTTING_DOWN";
+    case WM_IPC_MESSAGE_WM_NOTIFY_POWER_BUTTON_STATE:
+      return "WM_NOTIFY_POWER_BUTTON_STATE";
     default:
       return "INVALID";
   }
 }
 
-// A parameter of WM_IPC_MESSAGE_CHROME_NOTIFY_SYSKEY_PRESSED message
+// A parameter of the WM_IPC_MESSAGE_CHROME_NOTIFY_SYSKEY_PRESSED message
 // denoting which key is pressed.
 enum WmIpcSystemKey {
   WM_IPC_SYSTEM_KEY_VOLUME_MUTE = 0,
@@ -304,6 +313,27 @@ enum WmIpcPanelUserResizeType {
   WM_IPC_PANEL_USER_RESIZE_HORIZONTALLY,
   WM_IPC_PANEL_USER_RESIZE_VERTICALLY,
   WM_IPC_PANEL_USER_RESIZE_NONE,
+};
+
+// A parameter used by WM_IPC_MESSAGE_WM_NOTIFY_POWER_BUTTON_STATE to
+// describe the state to which we've transitioned.
+enum WmIpcPowerButtonState {
+  // The power button has just been pressed while in the unlocked state.
+  WM_IPC_POWER_BUTTON_PRE_LOCK = 0,
+
+  // The power button was released before being held long enough to lock
+  // the screen.
+  WM_IPC_POWER_BUTTON_ABORTED_LOCK,
+
+  // The power button has just been pressed while in the locked or
+  // not-logged-in state, or it's been held throughout the locked state
+  // long enough that we should let the user know that we're about to shut
+  // down.
+  WM_IPC_POWER_BUTTON_PRE_SHUTDOWN,
+
+  // The power button was released before being held long enough to shut
+  // down the machine.
+  WM_IPC_POWER_BUTTON_ABORTED_SHUTDOWN,
 };
 
 }  // namespace chromeos
