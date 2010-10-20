@@ -206,20 +206,15 @@ bool ChromeOSStartSession(const char* user_email,
 extern "C"
 bool ChromeOSStopSession(const char* unique_id /* unused */) {
   chromeos::dbus::Proxy proxy = CreateProxy();
-  gboolean done = false;
-  chromeos::glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           login_manager::kSessionManagerStopSession,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING, unique_id,
-                           G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN, &done,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << login_manager::kSessionManagerStopSession << " failed: "
-                 << SCOPED_SAFE_MESSAGE(error);
-  }
-  return done;
+  // TODO(cmasone): clear up the now-defunct variables here.
+  gboolean unused = false;
+  ::dbus_g_proxy_call_no_reply(proxy.gproxy(),
+                               login_manager::kSessionManagerStopSession,
+                               G_TYPE_STRING, unique_id,
+                               G_TYPE_INVALID,
+                               G_TYPE_BOOLEAN, &unused,
+                               G_TYPE_INVALID);
+  return true;
 }
 
 extern "C"
