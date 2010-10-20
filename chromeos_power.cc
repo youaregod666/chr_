@@ -15,6 +15,7 @@
 #include <base/string_util.h>
 
 #include "chromeos/dbus/dbus.h"
+#include <chromeos/dbus/service_constants.h>
 #include "chromeos/glib/object.h"
 #include "chromeos/string.h"
 
@@ -321,6 +322,14 @@ void ChromeOSEnableScreenLock(bool enable) {
   file_util::WriteFile(FilePath(kPowerManagerConfig),
                        config.c_str(),
                        config.size());
+}
+
+extern "C"
+void ChromeOSRequestShutdown() {
+  chromeos::dbus::SendSignalWithNoArgumentsToSystemBus(
+      "/",
+      power_manager::kPowerManagerInterface,
+      power_manager::kRequestSuspendSignal);
 }
 
 }  // namespace chromeos

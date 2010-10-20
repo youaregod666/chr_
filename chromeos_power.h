@@ -88,6 +88,9 @@ extern bool (*RetrievePowerInformation)(PowerInformation* information);
 
 extern void (*EnableScreenLock)(bool enable);
 
+// Request shutdown of the system.
+extern void (*RequestShutdown)();
+
 }  // namespace chromeos
 
 #endif  // CHROMEOS_POWER_H_

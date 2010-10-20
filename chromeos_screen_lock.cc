@@ -37,16 +37,10 @@ namespace {
 // A utility function to send a signal to PowerManager.
 void SendSignalToPowerManager(const char* signal_name) {
   LOG(INFO) << "Sending signal '" << signal_name << "' to PowerManager:";
-  chromeos::dbus::Proxy proxy(chromeos::dbus::GetSystemBusConnection(),
-                              "/",
-                              power_manager::kPowerManagerInterface);
-  DBusMessage* signal = ::dbus_message_new_signal(
+  chromeos::dbus::SendSignalWithNoArgumentsToSystemBus(
       "/",
       power_manager::kPowerManagerInterface,
       signal_name);
-  CHECK(signal);
-  ::dbus_g_proxy_send(proxy.gproxy(), signal, NULL);
-  ::dbus_message_unref(signal);
 }
 
 // A message filter to receive signals.
