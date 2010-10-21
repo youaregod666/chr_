@@ -214,6 +214,9 @@ struct IPConfig {
 struct IPConfigStatus {
   IPConfig* ips;
   int size;
+  // This is usually a MAC address. If no hardware address is present,
+  // this field will be an empty string.
+  const char *hardware_address;
 };
 
 // Represents a single network object (i.e. access point) from the list

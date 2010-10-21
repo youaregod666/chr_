@@ -149,12 +149,13 @@
 //  75: Added DeviceInfo and CarrierInfo to ServiceInfo
 //  76: Added EnableScreenLock to power library.
 //  77: Added RequestShutdown to power library.
+//  78: Changed ListIPConfigs to return the hardware address as well.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 55,
-  kCrosAPIVersion = 77
+  kCrosAPIVersion = 78
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

@@ -1069,6 +1069,12 @@ IPConfigStatus* ChromeOSListIPConfigs(const char* device_path) {
     result->ips = new IPConfig[result->size];
   }
   std::copy(buffer.begin(), buffer.end(), result->ips);
+
+  // Store the hardware address as well.
+  const char* hardware_address = "";
+  properties.Retrieve(kAddressProperty, &hardware_address);
+  result->hardware_address = NewStringCopy(hardware_address);
+
   return result;
 }
 
@@ -1207,6 +1213,7 @@ void ChromeOSFreeIPConfigStatus(IPConfigStatus* status) {
                 status->ips + status->size,
                 &DeleteIPConfigProperties);
   delete [] status->ips;
+  delete status->hardware_address;
   delete status;
 
 }
