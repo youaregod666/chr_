@@ -25,6 +25,7 @@ const char kBzip2Command[] =
 const char kMultilineQuote[] = "\"\"\"";
 const char kNewLineChars[] = "\r\n";
 const char kInvalidLogEntry[] = "<invalid characters in log entry>";
+const char kEmptyLogEntry[] = "<no value>";
 
 // Reads a key from the input string erasing the read values + delimiters read
 // from the initial string
@@ -132,7 +133,10 @@ LogDictionaryType* ChromeOSGetSystemLogs(FilePath* zip_file_name) {
       std::string value = ReadValue(&data);
       if (IsStringUTF8(value)) {
         TrimWhitespaceASCII(value, TRIM_ALL, &value);
-        (*logs)[key] = value;
+        if (value.empty())
+          (*logs)[key] = kEmptyLogEntry;
+        else
+          (*logs)[key] = value;
       } else {
         LOG(WARNING) << "Invalid characters in system log entry: " << key;
         (*logs)[key] = kInvalidLogEntry;
