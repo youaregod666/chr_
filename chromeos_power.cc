@@ -329,7 +329,7 @@ void ChromeOSRequestShutdown() {
   chromeos::dbus::SendSignalWithNoArgumentsToSystemBus(
       "/",
       power_manager::kPowerManagerInterface,
-      power_manager::kRequestSuspendSignal);
+      power_manager::kRequestShutdownSignal);
 }
 
 }  // namespace chromeos
