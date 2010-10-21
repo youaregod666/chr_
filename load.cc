@@ -76,6 +76,7 @@ DECL_FUNC_2(MonitorPowerStatus, PowerStatusConnection, PowerMonitor, void*);
 DECL_FUNC_1(DisconnectPowerStatus, void, PowerStatusConnection);
 DECL_FUNC_1(RetrievePowerInformation, bool, PowerInformation*);
 DECL_FUNC_1(EnableScreenLock, void, bool);
+DECL_FUNC_0(RequestRestart, void);
 DECL_FUNC_0(RequestShutdown, void);
 
 // Input methods

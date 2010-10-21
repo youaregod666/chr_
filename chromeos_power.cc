@@ -325,6 +325,14 @@ void ChromeOSEnableScreenLock(bool enable) {
 }
 
 extern "C"
+void ChromeOSRequestRestart() {
+  chromeos::dbus::SendSignalWithNoArgumentsToSystemBus(
+      "/",
+      power_manager::kPowerManagerInterface,
+      power_manager::kRequestRestartSignal);
+}
+
+extern "C"
 void ChromeOSRequestShutdown() {
   chromeos::dbus::SendSignalWithNoArgumentsToSystemBus(
       "/",

@@ -88,6 +88,9 @@ extern bool (*RetrievePowerInformation)(PowerInformation* information);
 
 extern void (*EnableScreenLock)(bool enable);
 
+// Request restart of the system.
+extern void (*RequestRestart)();
+
 // Request shutdown of the system.
 extern void (*RequestShutdown)();
 
