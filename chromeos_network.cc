@@ -1333,9 +1333,6 @@ ServiceInfo* ChromeOSGetWifiService(const char* ssid,
   if (security == SECURITY_UNKNOWN)
     security = SECURITY_RSN;
   glib::Value value_security(SecurityToString(security));
-  glib::Value value_passphrase("");
-  glib::Value value_identity("");
-  glib::Value value_cert_path("");
 
   ::GHashTable* properties = scoped_properties.get();
   ::g_hash_table_insert(properties, ::g_strdup(kModeProperty), &value_mode);
