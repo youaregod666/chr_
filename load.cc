@@ -360,9 +360,9 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MonitorPowerStatus);
   INIT_FUNC(DisconnectPowerStatus);
   INIT_FUNC(RetrievePowerInformation);
-  INIT_FUNC(EnableScreenLock)
-  INIT_FUNC(RequestRestart)
-  INIT_FUNC(RequestShutdown)
+  INIT_FUNC(EnableScreenLock);
+  INIT_FUNC(RequestRestart);
+  INIT_FUNC(RequestShutdown);
 
   // Input methods
   INIT_FUNC(MonitorInputMethodStatus);
