@@ -103,7 +103,7 @@ void AddInputMethodNames(
                                                      engine_desc->longname,
                                                      engine_desc->layout,
                                                      engine_desc->language));
-      DLOG(INFO) << engine_desc->name << " (SUPPORTED)";
+      DLOG(INFO) << engine_desc->name << " (preloaded)";
     }
   }
 }
@@ -1019,7 +1019,9 @@ class InputMethodStatusConnection {
             chromeos::ibus_engines[i].longname,
             chromeos::ibus_engines[i].layout,
             chromeos::ibus_engines[i].language));
-        DLOG(INFO) << chromeos::ibus_engines[i].name << " (SUPPORTED)";
+        if (type != kSupportedInputMethods) {
+          DLOG(INFO) << chromeos::ibus_engines[i].name << " (preload later)";
+        }
       }
     }
   }
