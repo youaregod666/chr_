@@ -1390,6 +1390,11 @@ bool ChromeOSActivateCellularModem(const char* service_path,
                            &carrier,
                            G_TYPE_INVALID,
                            G_TYPE_INVALID)) {
+    if (std::string("In progress") == error->message) {
+      LOG(WARNING) <<
+          "ChromeOSActivateCellularModem: already started activation";
+      return true;
+    }
     LOG(WARNING) << "ChromeOSActivateCellularModem failed: "
         << (error->message ? error->message : "Unknown Error.");
     return false;
