@@ -225,4 +225,44 @@ bool ChromeOSRebootIfUpdated() {
   return rc == TRUE;
 }
 
+extern "C"
+bool ChromeOSSetTrack(const std::string& track) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy update_proxy(bus,
+                           kUpdateEngineServiceName,
+                           kUpdateEngineServicePath,
+                           kUpdateEngineServiceInterface);
+  GError* error = NULL;
+  gboolean rc =
+      org_chromium_UpdateEngineInterface_set_track(update_proxy.gproxy(),
+                                                   track.c_str(),
+                                                   &error);
+  LOG_IF(ERROR, rc == FALSE) << "Error setting track: "
+                             << GetGErrorMessage(error);
+  return rc == TRUE;
+}
+
+extern "C"
+std::string ChromeOSGetTrack() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy update_proxy(bus,
+                           kUpdateEngineServiceName,
+                           kUpdateEngineServicePath,
+                           kUpdateEngineServiceInterface);
+  char* track = NULL;
+  GError* error = NULL;
+  gboolean rc =
+      org_chromium_UpdateEngineInterface_get_track(update_proxy.gproxy(),
+                                                   &track,
+                                                   &error);
+  LOG_IF(ERROR, rc == FALSE) << "Error getting track: "
+                             << GetGErrorMessage(error);
+  if (!rc || track == NULL) {
+    return "";
+  }
+  std::string output = track;
+  g_free(track);
+  return output;
+}
+
 }  // namespace chromeos

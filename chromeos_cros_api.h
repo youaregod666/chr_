@@ -152,12 +152,13 @@
 //  78: Changed ListIPConfigs to return the hardware address as well.
 //  79: Added RequestRestart to power library.
 //  80: Added a context parameter to GetSystemLogs
+//  81: Added SetTrack and GetTrack to update engine library.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 55,
-  kCrosAPIVersion = 80
+  kCrosAPIVersion = 81
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

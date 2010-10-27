@@ -280,6 +280,8 @@ DECL_FUNC_1(DisconnectUpdateProgress, void, UpdateStatusConnection);
 DECL_FUNC_1(RetrieveUpdateProgress, bool, UpdateProgress*);
 DECL_FUNC_0(InitiateUpdateCheck, bool);
 DECL_FUNC_0(RebootIfUpdated, bool);
+DECL_FUNC_1(SetTrack, bool, const std::string&);
+DECL_FUNC_0(GetTrack, std::string);
 
 DECL_FUNC_1(Speak, bool, const char*);
 DECL_FUNC_1(SetSpeakProperties, bool, const char*);
@@ -512,7 +514,10 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RetrieveUpdateProgress);
   INIT_FUNC(InitiateUpdateCheck);
   INIT_FUNC(RebootIfUpdated);
+  INIT_FUNC(SetTrack);
+  INIT_FUNC(GetTrack);
 
+  // Speech Synthesis
   INIT_FUNC(Speak);
   INIT_FUNC(SetSpeakProperties);
   INIT_FUNC(StopSpeaking);
