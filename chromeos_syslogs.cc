@@ -90,15 +90,20 @@ std::string ReadValue(std::string* data) {
 //                /tmp that contains the system logs in a KEY=VALUE format.
 //                If this parameter is NULL, system logs are not retained on
 //                the filesystem after this call completes.
+// context:       This is an in parameter specifying what context should be
+//                passed to the syslog collection script; currently valid
+//                values are "sysinfo" or "feedback"; in case of an invalid
+//                value, the script will currently default to "sysinfo"
 extern "C"
-LogDictionaryType* ChromeOSGetSystemLogs(FilePath* zip_file_name) {
+LogDictionaryType* ChromeOSGetSystemLogs(FilePath* zip_file_name,
+                                         const std::string& context) {
   // Create the temp file, logs will go here
   FilePath temp_filename;
 
   if (!file_util::CreateTemporaryFile(&temp_filename))
     return NULL;
 
-  std::string cmd = std::string(kSysLogsScript) + " >> " +
+  std::string cmd = std::string(kSysLogsScript) + " " + context + " >> " +
       temp_filename.value();
 
   // Ignore the return value - if the script execution didn't work

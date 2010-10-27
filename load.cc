@@ -288,7 +288,7 @@ DECL_FUNC_0(IsSpeaking, bool);
 DECL_FUNC_1(InitTts, void, InitStatusCallback);
 
 // Syslogs
-DECL_FUNC_1(GetSystemLogs, LogDictionaryType*, FilePath*);
+DECL_FUNC_2(GetSystemLogs, LogDictionaryType*, FilePath*, const std::string&);
 
 // System
 DECL_FUNC_0(GetTimezoneID, std::string);
