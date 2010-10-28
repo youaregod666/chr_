@@ -1387,7 +1387,7 @@ bool ChromeOSActivateCellularModem(const char* service_path,
                            kActivateCellularModemFunction,
                            &Resetter(&error).lvalue(),
                            G_TYPE_STRING,
-                           &carrier,
+                           carrier,
                            G_TYPE_INVALID,
                            G_TYPE_INVALID)) {
     if (std::string("In progress") == error->message) {
