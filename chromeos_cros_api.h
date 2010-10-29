@@ -153,12 +153,13 @@
 //  79: Added RequestRestart to power library.
 //  80: Added a context parameter to GetSystemLogs
 //  81: Added SetTrack and GetTrack to update engine library.
+//  82: Add *Safe calls for the ownership API, which use memory safely.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 55,
-  kCrosAPIVersion = 81
+  kCrosAPIVersion = 82
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

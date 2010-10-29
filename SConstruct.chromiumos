@@ -78,6 +78,7 @@ SOURCES=['chromeos_cryptohome.cc',
          'chromeos_input_method_ui.cc',
          'chromeos_keyboard.cc',
          'chromeos_login.cc',
+         'chromeos_login_helpers.cc',
          'chromeos_mount.cc',
          'chromeos_network.cc',
          'chromeos_power.cc',
@@ -125,7 +126,7 @@ Default(env.SharedLibrary('cros', SOURCES),
 env_test = base_env.Clone()
 env_test.Append(LIBS=['base', 'dl', 'rt', 'nss3'])
 
-env_test.ParseConfig('%s --cflags --libs gobject-2.0 dbus-1 nss' % (
+env_test.ParseConfig('%s --cflags --libs gobject-2.0 dbus-glib-1 dbus-1 nss' % (
     env_test['ENV']['PKG_CONFIG']))
 env_test.Append(CCFLAGS=['-DOS_CHROMEOS'])
 
@@ -149,6 +150,9 @@ unittests = [
   env_gtest_main.Program('libcros_unittests',
                          ['chromeos_keyboard.cc',
                           'chromeos_keyboard_unittest.cc',
+                          'chromeos_login.cc',
+                          'chromeos_login_helpers.cc',
+                          'chromeos_login_unittest.cc',
                           'chromeos_system.cc',
                           'chromeos_system_unittest.cc']),
 ]

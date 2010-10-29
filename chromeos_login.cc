@@ -13,23 +13,15 @@
 #include <chromeos/dbus/dbus.h>
 #include <chromeos/dbus/service_constants.h>
 #include <chromeos/glib/object.h>
+#include <chromeos/string.h>
 
+#include "chromeos_login_helpers.h"  // NOLINT
 #include "marshal.glibmarshal.h"  // NOLINT
 
 namespace chromeos {  // NOLINT
 
-
+// TODO(cmasone): do a bigger refactor, get rid of this copy-paste macro.
 #define SCOPED_SAFE_MESSAGE(e) (e->message ? e->message : "unknown error")
-
-namespace {
-chromeos::dbus::Proxy CreateProxy() {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  return chromeos::dbus::Proxy(bus,
-                               login_manager::kSessionManagerServiceName,
-                               login_manager::kSessionManagerServicePath,
-                               login_manager::kSessionManagerInterface);
-}
-}  // Anonymous namespace.
 
 class OpaqueSessionConnection {
  public:
@@ -54,23 +46,12 @@ class OpaqueSessionConnection {
 extern "C"
 bool ChromeOSCheckWhitelist(const char* email,
                             std::vector<uint8>* signature) {
+  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
+  // NOTREACHED() << "ChromeOSCheckWhitelist is deprecated";
   DCHECK(signature);
-  chromeos::dbus::Proxy proxy = CreateProxy();
-  chromeos::glib::ScopedError error;
-
   GArray* sig;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           login_manager::kSessionManagerCheckWhitelist,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING, email,
-                           G_TYPE_INVALID,
-                           DBUS_TYPE_G_UCHAR_ARRAY, &sig,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << login_manager::kSessionManagerCheckWhitelist << " failed: "
-                 << SCOPED_SAFE_MESSAGE(error);
+  if (!ChromeOSLoginHelpers::CheckWhitelistHelper(email, &sig))
     return false;
-  }
   bool rv = false;
   signature->resize(sig->len);
   if (signature->size() == sig->len) {
@@ -82,8 +63,20 @@ bool ChromeOSCheckWhitelist(const char* email,
 }
 
 extern "C"
+bool ChromeOSCheckWhitelistSafe(const char* email,
+                                CryptoBlob** OUT_signature) {
+  DCHECK(OUT_signature);
+  GArray* sig;
+  if (!ChromeOSLoginHelpers::CheckWhitelistHelper(email, &sig))
+    return false;
+  *OUT_signature = ChromeOSLoginHelpers::CreateCryptoBlob(sig);
+  g_array_free(sig, true);
+  return true;
+}
+
+extern "C"
 bool ChromeOSEmitLoginPromptReady() {
-  chromeos::dbus::Proxy proxy = CreateProxy();
+  chromeos::dbus::Proxy proxy = ChromeOSLoginHelpers::CreateProxy();
   gboolean done = false;
   chromeos::glib::ScopedError error;
 
@@ -101,52 +94,102 @@ bool ChromeOSEmitLoginPromptReady() {
 }
 
 extern "C"
-bool ChromeOSEnumerateWhitelisted(std::vector<std::string>* out_whitelisted) {
-  chromeos::dbus::Proxy proxy = CreateProxy();
+bool ChromeOSEnumerateWhitelisted(std::vector<std::string>* OUT_whitelisted) {
+  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
+  // NOTREACHED() << "ChromeOSEnumerateWhitelisted is deprecated";
+  DCHECK(OUT_whitelisted);
   gchar** whitelisted = NULL;
-  chromeos::glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           login_manager::kSessionManagerEnumerateWhitelisted,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_INVALID,
-                           G_TYPE_STRV, &whitelisted,
-                           G_TYPE_INVALID)) {
-
-    LOG(WARNING) << login_manager::kSessionManagerEnumerateWhitelisted
-                 << " failed: " << SCOPED_SAFE_MESSAGE(error);
+  if (!ChromeOSLoginHelpers::EnumerateWhitelistedHelper(&whitelisted))
     return false;
-  }
   for (int i = 0; whitelisted[i] != NULL; ++i)
-    out_whitelisted->push_back(std::string(whitelisted[i]));
+    OUT_whitelisted->push_back(std::string(whitelisted[i]));
 
   g_strfreev(whitelisted);
   return true;
 }
 
 extern "C"
+bool ChromeOSEnumerateWhitelistedSafe(UserList** OUT_whitelisted) {
+  DCHECK(OUT_whitelisted);
+  gchar** whitelisted = NULL;
+  if (!ChromeOSLoginHelpers::EnumerateWhitelistedHelper(&whitelisted))
+    return false;
+  *OUT_whitelisted = ChromeOSLoginHelpers::CreateUserList(whitelisted);
+  g_strfreev(whitelisted);
+  return true;
+}
+
+extern "C"
+CryptoBlob* ChromeOSCreateCryptoBlob(const uint8* in, const int in_len) {
+  GArray* ary = ChromeOSLoginHelpers::CreateGArrayFromBytes(in, in_len);
+  CryptoBlob* blob = ChromeOSLoginHelpers::CreateCryptoBlob(ary);
+  g_array_free(ary, TRUE);
+  return blob;
+}
+
+extern "C"
+Property* ChromeOSCreateProperty(const char* name, const char* value,
+                                 const uint8* sig, const int sig_len) {
+  GArray* ary = ChromeOSLoginHelpers::CreateGArrayFromBytes(sig, sig_len);
+  Property* prop = ChromeOSLoginHelpers::CreateProperty(name, value, ary);
+  g_array_free(ary, TRUE);
+  return prop;
+}
+
+extern "C"
+UserList* ChromeOSCreateUserList(char** users) {
+  return ChromeOSLoginHelpers::CreateUserList(users);
+}
+
+// These Free* methods all use delete (as opposed to delete []) on purpose,
+// following the pattern established by code that uses NewStringCopy.
+extern "C"
+void ChromeOSFreeCryptoBlob(CryptoBlob* blob) {
+  ChromeOSLoginHelpers::FreeCryptoBlob(blob);
+}
+
+extern "C"
+void ChromeOSFreeProperty(Property* property) {
+  ChromeOSLoginHelpers::FreeProperty(property);
+}
+
+extern "C"
+void ChromeOSFreeUserList(UserList* userlist) {
+  ChromeOSLoginHelpers::FreeUserList(userlist);
+}
+
+extern "C"
+bool ChromeOSRestartJob(int pid, const char* command_line) {
+  chromeos::dbus::Proxy proxy = ChromeOSLoginHelpers::CreateProxy();
+  gboolean done = false;
+  chromeos::glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           login_manager::kSessionManagerRestartJob,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INT, pid,
+                           G_TYPE_STRING, command_line,
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN, &done,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << login_manager::kSessionManagerRestartJob << " failed: "
+                 << SCOPED_SAFE_MESSAGE(error);
+  }
+  return done;
+}
+
+extern "C"
 bool ChromeOSRetrieveProperty(const char* name,
                               std::string* out_value,
                               std::vector<uint8>* signature) {
+  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
+  // NOTREACHED() << "ChromeOSRetrieveProperty is deprecated";
   DCHECK(signature);
-  chromeos::dbus::Proxy proxy = CreateProxy();
-  chromeos::glib::ScopedError error;
-
+  DCHECK(out_value);
   GArray* sig;
   gchar* value = NULL;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           login_manager::kSessionManagerRetrieveProperty,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING, name,
-                           G_TYPE_INVALID,
-                           G_TYPE_STRING, &value,
-                           DBUS_TYPE_G_UCHAR_ARRAY, &sig,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << login_manager::kSessionManagerRetrieveProperty
-                 << " failed: " << SCOPED_SAFE_MESSAGE(error);
+  if (!ChromeOSLoginHelpers::RetrievePropertyHelper(name, &value, &sig))
     return false;
-  }
   bool rv = false;
   signature->resize(sig->len);
   if (signature->size() == sig->len) {
@@ -160,24 +203,34 @@ bool ChromeOSRetrieveProperty(const char* name,
 }
 
 extern "C"
+bool ChromeOSRetrievePropertySafe(const char* name, Property** OUT_property) {
+  DCHECK(OUT_property);
+  GArray* sig;
+  gchar* value = NULL;
+  if (!ChromeOSLoginHelpers::RetrievePropertyHelper(name, &value, &sig))
+    return false;
+  *OUT_property = ChromeOSLoginHelpers::CreateProperty(name, value, sig);
+  return true;
+}
+
+extern "C"
 bool ChromeOSSetOwnerKey(const std::vector<uint8>& public_key_der) {
-  chromeos::dbus::Proxy proxy = CreateProxy();
-  chromeos::glib::ScopedError error;
+  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
+  // NOTREACHED() << "ChromeOSSetOwnerKey is deprecated";
+  GArray* key_der =
+      ChromeOSLoginHelpers::CreateGArrayFromBytes(&public_key_der[0],
+                                                  public_key_der.size());
+  bool rv = ChromeOSLoginHelpers::SetOwnerKeyHelper(key_der);
+  g_array_free(key_der, TRUE);
+  return rv;
+}
 
-  GArray* key_der = g_array_sized_new(FALSE, FALSE, 1, public_key_der.size());
-  g_array_append_vals(key_der, &public_key_der[0], public_key_der.size());
-
-  bool rv = true;
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           login_manager::kSessionManagerSetOwnerKey,
-                           &Resetter(&error).lvalue(),
-                           DBUS_TYPE_G_UCHAR_ARRAY, key_der,
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << login_manager::kSessionManagerSetOwnerKey << " failed: "
-                 << SCOPED_SAFE_MESSAGE(error);
-    rv = false;
-  }
+extern "C"
+bool ChromeOSSetOwnerKeySafe(const CryptoBlob* public_key_der) {
+  GArray* key_der =
+      ChromeOSLoginHelpers::CreateGArrayFromBytes(public_key_der->data,
+                                                  public_key_der->length);
+  bool rv = ChromeOSLoginHelpers::SetOwnerKeyHelper(key_der);
   g_array_free(key_der, TRUE);
   return rv;
 }
@@ -185,7 +238,7 @@ bool ChromeOSSetOwnerKey(const std::vector<uint8>& public_key_der) {
 extern "C"
 bool ChromeOSStartSession(const char* user_email,
                           const char* unique_id /* unused */) {
-  chromeos::dbus::Proxy proxy = CreateProxy();
+  chromeos::dbus::Proxy proxy = ChromeOSLoginHelpers::CreateProxy();
   gboolean done = false;
   chromeos::glib::ScopedError error;
 
@@ -205,7 +258,7 @@ bool ChromeOSStartSession(const char* user_email,
 
 extern "C"
 bool ChromeOSStopSession(const char* unique_id /* unused */) {
-  chromeos::dbus::Proxy proxy = CreateProxy();
+  chromeos::dbus::Proxy proxy = ChromeOSLoginHelpers::CreateProxy();
   // TODO(cmasone): clear up the now-defunct variables here.
   gboolean unused = false;
   ::dbus_g_proxy_call_no_reply(proxy.gproxy(),
@@ -218,92 +271,68 @@ bool ChromeOSStopSession(const char* unique_id /* unused */) {
 }
 
 extern "C"
-bool ChromeOSRestartJob(int pid, const char* command_line) {
-  chromeos::dbus::Proxy proxy = CreateProxy();
-  gboolean done = false;
-  chromeos::glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           login_manager::kSessionManagerRestartJob,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_INT, pid,
-                           G_TYPE_STRING, command_line,
-                           G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN, &done,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << login_manager::kSessionManagerRestartJob << " failed: "
-                 << SCOPED_SAFE_MESSAGE(error);
-  }
-  return done;
-}
-
-extern "C"
 bool ChromeOSStoreProperty(const char* name,
                            const char* value,
                            const std::vector<uint8>& signature) {
-  chromeos::dbus::Proxy proxy = CreateProxy();
-  chromeos::glib::ScopedError error;
-
-  GArray* sig = g_array_sized_new(FALSE, FALSE, 1, signature.size());
-  g_array_append_vals(sig, &signature[0], signature.size());
-
-  bool rv = true;
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           login_manager::kSessionManagerStoreProperty,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING, name,
-                           G_TYPE_STRING, value,
-                           DBUS_TYPE_G_UCHAR_ARRAY, sig,
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << login_manager::kSessionManagerStoreProperty << " failed: "
-                 << SCOPED_SAFE_MESSAGE(error);
-    rv = false;
-  }
+  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
+  // NOTREACHED() << "ChromeOSStoreProperty is deprecated!";
+  GArray* sig = ChromeOSLoginHelpers::CreateGArrayFromBytes(&signature[0],
+                                                            signature.size());
+  bool rv = ChromeOSLoginHelpers::StorePropertyHelper(name, value, sig);
   g_array_free(sig, TRUE);
   return rv;
 }
 
-namespace {
-bool WhitelistOpHelper(const char* op,
-                       const char* email,
-                       const std::vector<uint8>& signature) {
-  chromeos::dbus::Proxy proxy = CreateProxy();
-  chromeos::glib::ScopedError error;
-
-  GArray* sig = g_array_sized_new(FALSE, FALSE, 1, signature.size());
-  g_array_append_vals(sig, &signature[0], signature.size());
-
-  bool rv = true;
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           op,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING, email,
-                           DBUS_TYPE_G_UCHAR_ARRAY, sig,
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << op << " failed: " << SCOPED_SAFE_MESSAGE(error);
-    rv = false;
-  }
+extern "C"
+bool ChromeOSStorePropertySafe(const Property* prop) {
+  GArray* sig =
+      ChromeOSLoginHelpers::CreateGArrayFromBytes(prop->signature->data,
+                                                  prop->signature->length);
+  bool rv = ChromeOSLoginHelpers::StorePropertyHelper(prop->name,
+                                                      prop->value,
+                                                      sig);
   g_array_free(sig, TRUE);
   return rv;
 }
-}  // anonymous namespace
 
 extern "C"
 bool ChromeOSUnwhitelist(const char* email,
                          const std::vector<uint8>& signature) {
-  return WhitelistOpHelper(login_manager::kSessionManagerUnwhitelist,
-                           email,
-                           signature);
+  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
+  // NOTREACHED() << "ChromeOSUnwhitelist is deprecated!";
+  return ChromeOSLoginHelpers::WhitelistOpHelper(
+      login_manager::kSessionManagerUnwhitelist,
+      email,
+      signature);
+}
+
+extern "C"
+bool ChromeOSUnwhitelistSafe(const char* email, const CryptoBlob* signature) {
+  std::vector<uint8> sig(signature->data, signature->data + signature->length);
+  return ChromeOSLoginHelpers::WhitelistOpHelper(
+      login_manager::kSessionManagerUnwhitelist,
+      email,
+      sig);
 }
 
 extern "C"
 bool ChromeOSWhitelist(const char* email,
                        const std::vector<uint8>& signature) {
-  return WhitelistOpHelper(login_manager::kSessionManagerWhitelist,
-                           email,
-                           signature);
+  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
+  // NOTREACHED() << "ChromeOSWhitelist is deprecated!";
+  return ChromeOSLoginHelpers::WhitelistOpHelper(
+      login_manager::kSessionManagerWhitelist,
+      email,
+      signature);
+}
+
+extern "C"
+bool ChromeOSWhitelistSafe(const char* email, const CryptoBlob* signature) {
+  std::vector<uint8> sig(signature->data, signature->data + signature->length);
+  return ChromeOSLoginHelpers::WhitelistOpHelper(
+      login_manager::kSessionManagerWhitelist,
+      email,
+      sig);
 }
 
 namespace {

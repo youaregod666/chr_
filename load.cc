@@ -201,15 +201,30 @@ DECL_FUNC_1(SetTouchpadTapToClick, void, bool);
 
 // Login
 DECL_FUNC_2(CheckWhitelist, bool, const char*, std::vector<uint8>*);
+DECL_FUNC_2(CheckWhitelistSafe, bool, const char*, CryptoBlob**);
 DECL_FUNC_0(EmitLoginPromptReady, bool);
 DECL_FUNC_1(EnumerateWhitelisted, bool, std::vector<std::string>*);
+DECL_FUNC_1(EnumerateWhitelistedSafe, bool, UserList**);
+DECL_FUNC_2(CreateCryptoBlob, CryptoBlob*, const uint8*, const int);
+DECL_FUNC_4(CreateProperty,
+            Property*,
+            const char*,
+            const char*,
+            const uint8*,
+            const int);
+DECL_FUNC_1(CreateUserList, UserList*, char**);
+DECL_FUNC_1(FreeCryptoBlob, void, CryptoBlob*);
+DECL_FUNC_1(FreeProperty, void, Property*);
+DECL_FUNC_1(FreeUserList, void, UserList*);
 DECL_FUNC_2(RestartJob, bool, int, const char*);
 DECL_FUNC_3(RetrieveProperty,
             bool,
             const char*,
             std::string*,
             std::vector<uint8>*);
+DECL_FUNC_2(RetrievePropertySafe, bool, const char*, Property**);
 DECL_FUNC_1(SetOwnerKey, bool, const std::vector<uint8>&);
+DECL_FUNC_1(SetOwnerKeySafe, bool, const CryptoBlob*);
 DECL_FUNC_2(StartSession, bool, const char*, const char*);
 DECL_FUNC_1(StopSession, bool, const char*);
 DECL_FUNC_3(StoreProperty,
@@ -217,8 +232,11 @@ DECL_FUNC_3(StoreProperty,
             const char*,
             const char*,
             const std::vector<uint8>&);
+DECL_FUNC_1(StorePropertySafe, bool, const Property*);
 DECL_FUNC_2(Unwhitelist, bool, const char*, const std::vector<uint8>&);
+DECL_FUNC_2(UnwhitelistSafe, bool, const char*, const CryptoBlob*);
 DECL_FUNC_2(Whitelist, bool, const char*, const std::vector<uint8>&);
+DECL_FUNC_2(WhitelistSafe, bool, const char*, const CryptoBlob*);
 DECL_FUNC_2(MonitorSession, SessionConnection, SessionMonitor, void*);
 DECL_FUNC_1(DisconnectSession, void, SessionConnection);
 
@@ -450,16 +468,29 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
 
   // Login
   INIT_FUNC(CheckWhitelist);
+  INIT_FUNC(CheckWhitelistSafe);
   INIT_FUNC(EmitLoginPromptReady);
   INIT_FUNC(EnumerateWhitelisted);
+  INIT_FUNC(EnumerateWhitelistedSafe);
+  INIT_FUNC(CreateCryptoBlob);
+  INIT_FUNC(CreateProperty);
+  INIT_FUNC(CreateUserList);
+  INIT_FUNC(FreeCryptoBlob);
+  INIT_FUNC(FreeProperty);
+  INIT_FUNC(FreeUserList);
   INIT_FUNC(RestartJob);
   INIT_FUNC(RetrieveProperty);
+  INIT_FUNC(RetrievePropertySafe);
   INIT_FUNC(SetOwnerKey);
+  INIT_FUNC(SetOwnerKeySafe);
   INIT_FUNC(StartSession);
   INIT_FUNC(StopSession);
   INIT_FUNC(StoreProperty);
+  INIT_FUNC(StorePropertySafe);
   INIT_FUNC(Unwhitelist);
+  INIT_FUNC(UnwhitelistSafe);
   INIT_FUNC(Whitelist);
+  INIT_FUNC(WhitelistSafe);
   INIT_FUNC(MonitorSession);
   INIT_FUNC(DisconnectSession);
 

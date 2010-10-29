@@ -19,6 +19,7 @@
 #include <base/file_util.h>
 #include <base/nss_util.h>
 #include <base/scoped_temp_dir.h>
+#include <base/string_util.h>
 #include <base/stringprintf.h>
 
 #include "chromeos_cros_api.h"  // NOLINT
@@ -34,6 +35,8 @@ static const char kWhitelist[] = "whitelist";
 static const char kUnwhitelist[] = "unwhitelist";
 static const char kCheckWhitelist[] = "check-whitelist";
 static const char kEnumerate[] = "enumerate-whitelisted";
+static const char kStoreProperty[] = "store-property";
+static const char kRetrieveProperty[] = "retrieve-property";
 
 class ClientLoop {
  public:
@@ -209,16 +212,19 @@ int main(int argc, const char** argv) {
     if (!GenerateOwnerKey(&pubkey))
       LOG(FATAL) << "Couldn't generate fakey owner key";
 
+    chromeos::CryptoBlob* blob = chromeos::CreateCryptoBlob(&pubkey[0],
+                                                            pubkey.size());
+
     ClientLoop client_loop;
     client_loop.Initialize();
 
-    if (!chromeos::SetOwnerKey(pubkey)) {
+    if (!chromeos::SetOwnerKeySafe(blob)) {
       LOG(FATAL) << "Could not send SetOwnerKey?";
     }
     client_loop.Run();
     LOG(INFO) << (client_loop.what_happened() == chromeos::SetKeySuccess ?
                   "Successfully set owner key" : "Didn't set owner key");
-    exit(0);
+    chromeos::FreeCryptoBlob(blob);
   }
   if (cl->HasSwitch(kWhitelist)) {
     scoped_ptr<base::RSAPrivateKey> private_key(
@@ -234,13 +240,16 @@ int main(int argc, const char** argv) {
     ClientLoop client_loop;
     client_loop.Initialize();
 
-    if (!chromeos::Whitelist(name.c_str(), sig))
+    chromeos::CryptoBlob* blob = chromeos::CreateCryptoBlob(&sig[0],
+                                                            sig.size());
+
+    if (!chromeos::WhitelistSafe(name.c_str(), blob))
       LOG(FATAL) << "Could not send SetOwnerKey?";
 
     client_loop.Run();
     LOG(INFO) << (client_loop.what_happened() == chromeos::WhitelistOpSuccess ?
                   "Whitelisted " : "Failed to whitelist ") << name;
-    exit(0);
+    chromeos::FreeCryptoBlob(blob);
   }
   if (cl->HasSwitch(kUnwhitelist)) {
     scoped_ptr<base::RSAPrivateKey> private_key(
@@ -254,36 +263,77 @@ int main(int argc, const char** argv) {
     ClientLoop client_loop;
     client_loop.Initialize();
 
-    if (!chromeos::Unwhitelist(name.c_str(), sig))
-      LOG(FATAL) << "Could not send SetOwnerKey?";
+    chromeos::CryptoBlob* blob = chromeos::CreateCryptoBlob(&sig[0],
+                                                            sig.size());
+
+    if (!chromeos::UnwhitelistSafe(name.c_str(), blob))
+      LOG(FATAL) << "Could not send UnwhitelistSafe?";
 
     client_loop.Run();
     LOG(INFO) << (client_loop.what_happened() == chromeos::WhitelistOpSuccess ?
                   "Whitelisted " : "Failed to whitelist ") << name;
-    exit(0);
+    chromeos::FreeCryptoBlob(blob);
   }
   if (cl->HasSwitch(kEnumerate)) {
-    std::vector<std::string> whitelisted;
-    if (!chromeos::EnumerateWhitelisted(&whitelisted)) {
+    chromeos::UserList* whitelisted = NULL;
+    if (!chromeos::EnumerateWhitelistedSafe(&whitelisted)) {
       LOG(FATAL) << "Could not enumerate the whitelisted";
     }
-    std::vector<std::string>::iterator it;
 
-    for (it = whitelisted.begin(); it < whitelisted.end(); ++it)
-      LOG(INFO) << *it << " is whitelisted";
+    for (int i = 0; i < whitelisted->num_users; i++)
+      LOG(INFO) << whitelisted->users[i] << " is whitelisted";
 
-    exit(0);
+    chromeos::FreeUserList(whitelisted);
   }
   if (cl->HasSwitch(kCheckWhitelist)) {
     std::string name = cl->GetSwitchValueASCII(kCheckWhitelist);
-    std::vector<uint8> sig;
+    chromeos::CryptoBlob* sig;
 
-    if (!chromeos::CheckWhitelist(name.c_str(), &sig))
+    if (!chromeos::CheckWhitelistSafe(name.c_str(), &sig))
       LOG(WARNING) << name << " not on whitelist.";
-    else
+    else {
       LOG(INFO) << name << " is on the whitelist.";
+      chromeos::FreeCryptoBlob(sig);
+    }
+  }
+  if (cl->HasSwitch(kStoreProperty)) {
+    scoped_ptr<base::RSAPrivateKey> private_key(
+        GetPrivateKey(FilePath(chromeos::kOwnerKeyFile)));
 
-    exit(0);
+    std::string keyval = cl->GetSwitchValueASCII(kStoreProperty);
+    std::vector<uint8> sig;
+    if (!Sign(keyval, private_key.get(), &sig))
+      LOG(FATAL) << "Can't sign " << keyval;
+    else
+      LOG(INFO) << "Signature is " << sig.size();
+
+    ClientLoop client_loop;
+    client_loop.Initialize();
+
+    std::vector<std::string> pair;
+    SplitString(keyval, '=', &pair);
+    chromeos::Property* prop = chromeos::CreateProperty(pair[0].c_str(),
+                                                        pair[1].c_str(),
+                                                        &sig[0],
+                                                        sig.size());
+    if (!chromeos::StorePropertySafe(prop))
+      LOG(FATAL) << "Could not send StorePropertySafe?";
+
+    client_loop.Run();
+    LOG(INFO) << (client_loop.what_happened() == chromeos::PropertyOpSuccess ?
+                  "Stored " : "Failed to store ") << keyval;
+    chromeos::FreeProperty(prop);
+  }
+  if (cl->HasSwitch(kRetrieveProperty)) {
+    std::string name = cl->GetSwitchValueASCII(kRetrieveProperty);
+    chromeos::Property* prop;
+
+    if (!chromeos::RetrievePropertySafe(name.c_str(), &prop))
+      LOG(WARNING) << name << " not stored.";
+    else {
+      LOG(INFO) << prop->name << "=" << prop->value;
+      chromeos::FreeProperty(prop);
+    }
   }
 
   return 0;

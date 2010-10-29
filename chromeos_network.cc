@@ -804,6 +804,7 @@ void ChromeOSFreeServiceInfo(ServiceInfo* info) {
   if (info == NULL)
     return;
   DeleteServiceInfoProperties(*info);
+  delete info;
 }
 
 // TODO(ers) ManagerPropertyChangedHandler is deprecated
