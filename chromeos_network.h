@@ -141,6 +141,10 @@ struct DeviceInfo {
   const char* hardware_revision;
   const char* last_update;
   int PRL_version;
+  const char* path;
+  const char* name;
+  const char* type;
+  bool scanning;
 };
 
 // Carrier Info for cellular services.
@@ -172,7 +176,8 @@ struct ServiceInfo {
   NetworkRoamingState roaming_state;
   bool restricted_pool;
   CarrierInfo* carrier_info;  // NULL unless TYPE_CELLULAR
-  DeviceInfo* device_info;  // NULL unless TYPE_CELLULAR
+  DeviceInfo* device_info;  // may point to a member of SystemInfo.devices
+  bool is_active;
 };
 
 struct SystemInfo {
@@ -187,6 +192,9 @@ struct SystemInfo {
   int remembered_service_size;
   ServiceInfo *remembered_services; // Use GetRememberedServiceInfo().
   int service_info_size; // Size of the ServiceInfo stuct.
+  int device_size;
+  DeviceInfo* devices;
+  int device_info_size;  // Size of the DeviceInfo struct.
   // Client needs to call this method to get each ServiceInfo object.
   ServiceInfo* GetServiceInfo(int index) {
     size_t ptr = reinterpret_cast<size_t>(services);
@@ -195,6 +203,10 @@ struct SystemInfo {
   ServiceInfo* GetRememberedServiceInfo(int index) {
     size_t ptr = reinterpret_cast<size_t>(remembered_services);
     return reinterpret_cast<ServiceInfo*>(ptr + index * service_info_size);
+  }
+  DeviceInfo* GetDeviceInfo(int index) {
+    size_t ptr = reinterpret_cast<size_t>(devices);
+    return reinterpret_cast<DeviceInfo*>(ptr + index * device_info_size);
   }
 };
 

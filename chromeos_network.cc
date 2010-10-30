@@ -5,8 +5,10 @@
 #include "chromeos_network.h"  // NOLINT
 
 #include <algorithm>
-#include <vector>
 #include <cstring>
+#include <list>
+#include <set>
+#include <vector>
 
 #include "marshal.glibmarshal.h"  // NOLINT
 #include "base/scoped_ptr.h"
@@ -73,6 +75,7 @@ static const char* kOperatorCodeProperty = "Cellular.OperatorCode";
 static const char* kPaymentURLProperty = "Cellular.OlpUrl";
 static const char* kFavoriteProperty = "Favorite";
 static const char* kAutoConnectProperty = "AutoConnect";
+static const char* kIsActiveProperty = "IsActive";
 static const char* kModeProperty = "Mode";
 static const char* kErrorProperty = "Error";
 static const char* kActiveProfileProperty = "ActiveProfile";
@@ -87,6 +90,7 @@ static const char* kPoweredProperty = "Powered";
 
 // Connman device info property names.
 static const char* kIPConfigsProperty = "IPConfigs";
+static const char* kScanningProperty = "Scanning";
 static const char* kCarrierProperty = "Cellular.Carrier";
 static const char* kMeidProperty = "Cellular.MEID";
 static const char* kImeiProperty = "Cellular.IMEI";
@@ -448,6 +452,22 @@ bool GetEntry(const dbus::Proxy& proxy, gchar* entry,
 
 void ParseDeviceProperties(const glib::ScopedHashTable& properties,
                            DeviceInfo* info) {
+  // Name
+  const char* default_string = kUnknownString;
+  properties.Retrieve(kNameProperty, &default_string);
+  info->name = NewStringCopy(default_string);
+  // Type
+  default_string = kUnknownString;
+  properties.Retrieve(kTypeProperty, &default_string);
+  info->type = NewStringCopy(default_string);
+  // Scanning
+  bool default_bool = false;
+  properties.Retrieve(kScanningProperty, &default_bool);
+  info->scanning = default_bool;
+}
+
+void ParseCellularDeviceProperties(const glib::ScopedHashTable& properties,
+                                   DeviceInfo* info) {
   // Carrier
   const char* default_string = kUnknownString;
   properties.Retrieve(kCarrierProperty, &default_string);
@@ -506,7 +526,8 @@ void ParseDeviceProperties(const glib::ScopedHashTable& properties,
 // given DBus object path.
 //
 // returns true on success.
-bool GetDeviceInfo(const char* device_path, DeviceInfo *info) {
+bool GetDeviceInfo(const char* device_path, ConnectionType type,
+                   DeviceInfo *info) {
   dbus::Proxy device_proxy(dbus::GetSystemBusConnection(),
                            kConnmanServiceName,
                            device_path,
@@ -517,7 +538,25 @@ bool GetDeviceInfo(const char* device_path, DeviceInfo *info) {
     LOG(WARNING) << "Couldn't read device's properties";
     return false;
   }
+  info->path = NewStringCopy(device_path);
   ParseDeviceProperties(device_properties, info);
+  if (type == TYPE_CELLULAR) {
+    ParseCellularDeviceProperties(device_properties, info);
+  } else {
+    info->carrier = NULL;
+    info->MEID = NULL;
+    info->IMEI = NULL;
+    info->IMSI = NULL;
+    info->ESN = NULL;
+    info->MDN = NULL;
+    info->MIN = NULL;
+    info->model_id = NULL;
+    info->manufacturer = NULL;
+    info->firmware_revision = NULL;
+    info->hardware_revision = NULL;
+    info->last_update = NULL;
+    info->PRL_version = 0;
+  }
   return true;
 }
 
@@ -589,6 +628,11 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   default_bool = false;
   properties.Retrieve(kAutoConnectProperty, &default_bool);
   info->auto_connect = default_bool;
+
+  // IsActive
+  default_bool = false;
+  properties.Retrieve(kIsActiveProperty, &default_bool);
+  info->is_active = default_bool;
 
   // Device
   glib::Value val;
@@ -667,6 +711,7 @@ void DeleteCarrierInfo(CarrierInfo& carrier_info) {
 }
 
 void DeleteDeviceInfo(DeviceInfo& device_info) {
+  delete device_info.carrier;
   delete device_info.MEID;
   delete device_info.IMEI;
   delete device_info.IMSI;
@@ -678,6 +723,9 @@ void DeleteDeviceInfo(DeviceInfo& device_info) {
   delete device_info.firmware_revision;
   delete device_info.hardware_revision;
   delete device_info.last_update;
+  delete device_info.path;
+  delete device_info.name;
+  delete device_info.type;
 }
 
 // Deletes all of the heap allocated members of a given ServiceInfo instance.
@@ -702,11 +750,7 @@ void DeleteServiceInfoProperties(ServiceInfo& info) {
     info.carrier_info = NULL;
   }
 
-  if (info.device_info) {
-    DeleteDeviceInfo(*info.device_info);
-    delete info.device_info;
-    info.device_info = NULL;
-  }
+  // Note: DeviceInfo is owned by SystemInfo.
 }
 
 void ParseCellularDataPlan(const glib::ScopedHashTable& properties,
@@ -795,6 +839,12 @@ void ChromeOSFreeSystemInfo(SystemInfo* system) {
                   system->remembered_services + system->remembered_service_size,
                   &DeleteServiceInfoProperties);
     delete [] system->remembered_services;
+  }
+  if (system->device_size > 0) {
+    std::for_each(system->devices,
+                  system->devices + system->device_size,
+                  &DeleteDeviceInfo);
+    delete [] system->devices;
   }
   delete system;
 }
@@ -1687,6 +1737,8 @@ SystemInfo* ChromeOSGetSystemInfo() {
   // Services
   glib::Value services_val;
   std::vector<ServiceInfo> service_info_list;
+  typedef std::set<std::pair<std::string, ConnectionType> > DeviceSet;
+  DeviceSet device_set;
   if (properties.Retrieve(kServicesProperty, &services_val)) {
     GPtrArray* services =
         static_cast<GPtrArray*>(g_value_get_boxed(&services_val));
@@ -1696,26 +1748,19 @@ SystemInfo* ChromeOSGetSystemInfo() {
       ServiceInfo info;
       if (!GetServiceInfo(service_path, &info))
         continue;
-      // Get DeviceInfo for CELLULAR services.
-      if (info.type == TYPE_CELLULAR) {
-        DeviceInfo device_info;
-        if (GetDeviceInfo(info.device_path, &device_info)) {
-          // Set ServiceInfo.device_info -> a new copy of DeviceInfo.
-          // ServiceInfo becomes the owner of the new DeviceInfo.
-          info.device_info = new DeviceInfo(device_info);
-        } else {
-          LOG(WARNING) << "No device info for service: " << service_path
-                       << ", device_path: " << info.device_path;
-        }
-      }
-      // Push info onto the list of services
+      // Push info onto the list of services.
       service_info_list.push_back(info);
+      // Add an entry to the list of device paths.
+      if (info.device_path) {
+        device_set.insert(
+            std::make_pair(std::string(info.device_path), info.type));
+      }
     }
   } else {
     LOG(WARNING) << "Missing property: " << kServicesProperty;
   }
 
-  // Copy service_info_list -> system->services after parsing DeviceInfo.
+  // Copy service_info_list -> system->services.
   system->service_size = service_info_list.size();
   if (system->service_size == 0) {
     system->services = NULL;
@@ -1724,6 +1769,41 @@ SystemInfo* ChromeOSGetSystemInfo() {
     std::copy(service_info_list.begin(),
               service_info_list.end(),
               system->services);
+  }
+
+  // Devices
+  typedef std::list<DeviceInfo> DeviceInfoList;
+  DeviceInfoList device_info_list;
+  for(DeviceSet::iterator iter = device_set.begin();
+      iter != device_set.end(); ++iter) {
+    const std::string& path = (*iter).first;
+    ConnectionType type = (*iter).second;
+    DeviceInfo device_info;
+    if (GetDeviceInfo(path.c_str(), type, &device_info)) {
+      device_info_list.push_back(device_info);
+    } else {
+      LOG(WARNING) << "No device info for:" << path;
+    }
+  }
+  system->device_size = device_info_list.size();
+  if (system->device_size == 0) {
+    system->devices = NULL;
+  } else {
+    system->devices = new DeviceInfo[system->device_size];
+    int index = 0;
+    for(DeviceInfoList::iterator iter = device_info_list.begin();
+        iter != device_info_list.end(); ++iter) {
+      DeviceInfo* device = &system->devices[index++];  // pointer into array
+      *device = *iter;  // copy DeviceInfo into array
+      // Now iterate through services and set device_info if the path matches.
+      for (int i=0; i < system->service_size; ++i) {
+        ServiceInfo& service = system->services[i];
+        if (service.device_path &&
+            strcmp(service.device_path, device->path) == 0) {
+          service.device_info = device;
+        }
+      }
+    }
   }
 
   // Profile
@@ -1773,6 +1853,7 @@ SystemInfo* ChromeOSGetSystemInfo() {
 
   // Set the runtime size of the ServiceInfo struct for GetServiceInfo() calls.
   system->service_info_size = sizeof(ServiceInfo);
+  system->device_info_size = sizeof(DeviceInfo);
 
   return system;
 }

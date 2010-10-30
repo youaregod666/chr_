@@ -138,20 +138,26 @@ void PrintProperty(const char* path,
       LOG(INFO) << prelude << "<type " << value->GetType() << ">";
 }
 
-void DumpDeviceInfo(const chromeos::DeviceInfo& device) {
-  LOG(INFO) << "      Carrier:" << device.carrier;
-  LOG(INFO) << "      MEID=" << device.MEID
-            << ", IMEI=" << device.IMEI
-            << ", IMSI=" << device.IMSI
-            << ", ESN=" << device.ESN
-            << ", MDN=" << device.MDN
-            << ", MIN=" << device.MIN;
-  LOG(INFO) << "      ModelID=" << device.model_id
-            << ", Manufacturer=" << device.manufacturer;
-  LOG(INFO) << "      Firmware=" << device.firmware_revision
-            << ", Hardware=" << device.hardware_revision;
-  LOG(INFO) << "      Last Update=" << device.last_update
-            << ", PRL Version=" << device.PRL_version;
+void DumpDeviceInfo(const chromeos::DeviceInfo& device,
+                    chromeos::ConnectionType type) {
+  LOG(INFO) << "      Name:" << device.name
+            << ", Type:" << device.type
+            << ", Scanning: " << device.scanning;
+  if (type == chromeos::TYPE_CELLULAR) {
+    LOG(INFO) << "      Carrier:" << device.carrier;
+    LOG(INFO) << "      MEID=" << device.MEID
+              << ", IMEI=" << device.IMEI
+              << ", IMSI=" << device.IMSI
+              << ", ESN=" << device.ESN
+              << ", MDN=" << device.MDN
+              << ", MIN=" << device.MIN;
+    LOG(INFO) << "      ModelID=" << device.model_id
+              << ", Manufacturer=" << device.manufacturer;
+    LOG(INFO) << "      Firmware=" << device.firmware_revision
+              << ", Hardware=" << device.hardware_revision;
+    LOG(INFO) << "      Last Update=" << device.last_update
+              << ", PRL Version=" << device.PRL_version;
+  }
 }
 
 void DumpCarrierInfo(const chromeos::CarrierInfo& carrier) {
@@ -170,7 +176,8 @@ void DumpService(const chromeos::ServiceInfo& info) {
   LOG(INFO) << "  \"" << info.name << "\"";
   LOG(INFO) << "    Service=" << info.service_path
             << ", Name=" << info.name;
-  LOG(INFO) << "    Type=" << info.type;
+  LOG(INFO) << "    Type=" << info.type
+            << ", Active=" << info.is_active;
   LOG(INFO) << "    Mode=" << info.mode
             << ", Security=" << info.security
             << ", State=" << info.state
@@ -182,9 +189,10 @@ void DumpService(const chromeos::ServiceInfo& info) {
   LOG(INFO) << "    Strength=" << info.strength
             << ", Favorite=" << info.favorite
             << ", AutoConnect=" << info.auto_connect;
-  LOG(INFO) << "    Device=" << info.device_path;
+  if (info.device_path)
+    LOG(INFO) << "    Device=" << info.device_path;
   if (info.device_info)
-    DumpDeviceInfo(*info.device_info);
+    DumpDeviceInfo(*info.device_info, info.type);
   if (info.type == chromeos::TYPE_CELLULAR)
     LOG(INFO) << "    Activation State=" << info.activation_state
             << ", Technology=" << info.network_technology
@@ -234,6 +242,7 @@ void DumpServices(const chromeos::SystemInfo* info) {
   }
   // Go through monitor_map and remove mappings for
   // services that are no longer in the service list.
+  LOG(INFO) << "Removing services.";
   MonitorMap::iterator it;
   for (it = monitor_map.begin(); it != monitor_map.end(); ++it) {
     ServiceMonitor* servmon = it->second;
