@@ -921,12 +921,10 @@ class InputMethodStatusConnection {
     } else {
       DLOG(INFO) << "FocusIn: " << input_context_path;
     }
-
     // Remember the current ic path.
     input_context_path_ = Or(input_context_path, "");
-    // Force update the UI just in case ibus-daemon forget to send state_changed
-    // or global_engine_changed signals to us.
-    UpdateUI();
+
+    // We should not call UpdateUI() here. See http://crosbug.com/8284.
   }
 
   // Handles "FocusOut" signal from the candidate_window process.
@@ -986,7 +984,7 @@ class InputMethodStatusConnection {
 
   // Retrieves input method status and notifies them to the UI.
   // Warning: you can call this function only from ibus callback functions
-  // like FocusIn(). See http://crosbug.com/5217#c9 for details.
+  // like StateChanged(). See http://crosbug.com/5217#c9 for details.
   void UpdateUI() {
     IBusEngineDesc* engine_desc = ibus_bus_get_global_engine(ibus_);
     if (!engine_desc) {
