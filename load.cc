@@ -175,9 +175,8 @@ DECL_FUNC_3(MonitorNetworkService, PropertyChangeMonitor,
 DECL_FUNC_2(MonitorCellularDataPlan, DataPlanUpdateMonitor,
             MonitorDataPlanCallback, void*);
 DECL_FUNC_1(DisconnectDataPlanUpdateMonitor, void, DataPlanUpdateMonitor);
-DECL_FUNC_1(RetrieveCellularDataPlans, CellularDataPlanList*, const char*);
+DECL_FUNC_2(RetrieveCellularDataPlans, bool, const char*, CellularDataPlanList*);
 DECL_FUNC_1(RequestCellularDataPlanUpdate, void, const char*);
-DECL_FUNC_1(FreeCellularDataPlanList, void, CellularDataPlanList*);
 DECL_FUNC_2(EnableNetworkDevice, bool, ConnectionType, bool);
 DECL_FUNC_1(SetOfflineMode, bool, bool);
 DECL_FUNC_2(SetAutoConnect, bool, const char*, bool);
@@ -459,7 +458,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(DisconnectDataPlanUpdateMonitor);
   INIT_FUNC(RetrieveCellularDataPlans);
   INIT_FUNC(RequestCellularDataPlanUpdate);
-  INIT_FUNC(FreeCellularDataPlanList);
 
   // Synaptics
   INIT_FUNC(SetSynapticsParameter);

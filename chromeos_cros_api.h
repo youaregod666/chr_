@@ -154,13 +154,12 @@
 //  80: Added a context parameter to GetSystemLogs
 //  81: Added SetTrack and GetTrack to update engine library.
 //  82: Add *Safe calls for the ownership API, which use memory safely.
-//  83: Changed CellularDataPlan APIs, which use memory safely
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 83,
-  kCrosAPIVersion = 83
+  kCrosAPIMinVersion = 55,
+  kCrosAPIVersion = 82
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
