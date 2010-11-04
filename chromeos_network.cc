@@ -753,14 +753,19 @@ void DeleteServiceInfoProperties(ServiceInfo& info) {
   // Note: DeviceInfo is owned by SystemInfo.
 }
 
-void ParseCellularDataPlan(const glib::ScopedHashTable& properties,
-                           CellularDataPlan* plan) {
+// Deletes all of the heap allocated members of a given
+// CellularDataPlan instance.
+static void DeleteDataPlanProperties(CellularDataPlanInfo &plan) {
+  delete plan.plan_name;
+}
+
+static void ParseCellularDataPlan(const glib::ScopedHashTable& properties,
+                           CellularDataPlanInfo* plan) {
   DCHECK(plan);
   // Plan Name
   const char* default_string = kUnknownString;
   properties.Retrieve(kCellularPlanNameProperty, &default_string);
-  if (default_string)
-    plan->plan_name = std::string(default_string);
+  plan->plan_name = NewStringCopy(default_string);
   // Plan Type
   default_string = kUnknownString;
   properties.Retrieve(kCellularPlanTypeProperty, &default_string);
@@ -787,10 +792,20 @@ void ParseCellularDataPlan(const glib::ScopedHashTable& properties,
   plan->data_bytes_used = default_bytes;
 }
 
-void ParseCellularDataPlanList(const GPtrArray* properties_array,
-                               CellularDataPlanList* data_plan_list) {
+static CellularDataPlanList* ParseCellularDataPlanList(
+    const GPtrArray* properties_array)
+{
   DCHECK(properties_array);
-  DCHECK(data_plan_list);
+
+  CellularDataPlanList* data_plan_list = new CellularDataPlanList;
+  if (data_plan_list == NULL)
+    return NULL;
+
+  data_plan_list->plans = NULL;
+  data_plan_list->data_plan_size = sizeof(CellularDataPlanInfo);
+  data_plan_list->plans_size = properties_array->len;
+  if (properties_array->len > 0)
+    data_plan_list->plans = new CellularDataPlanInfo[properties_array->len];
   for (guint i = 0; i < properties_array->len; ++i) {
     GHashTable* properties =
         static_cast<GHashTable*>(g_ptr_array_index(properties_array, i));
@@ -798,10 +813,9 @@ void ParseCellularDataPlanList(const GPtrArray* properties_array,
     // We need to inc wrapped GHashTable's refcount or else ScopedHashTable's
     // dtor will dec it and cause premature deletion.
     glib::ScopedHashTable scoped_properties(g_hash_table_ref(properties));
-    CellularDataPlan plan;
-    ParseCellularDataPlan(scoped_properties, &plan);
-    data_plan_list->push_back(plan);
+    ParseCellularDataPlan(scoped_properties, &data_plan_list->plans[i]);
   }
+  return data_plan_list;
 }
 
 // Register all dbus marshallers once.
@@ -2125,8 +2139,20 @@ void ChromeOSFreeDeviceNetworkList(DeviceNetworkList* list) {
   delete list;
 }
 
-
 // Cashew services
+
+extern "C"
+void ChromeOSFreeCellularDataPlanList(CellularDataPlanList* data_plan_list) {
+  if (data_plan_list == NULL)
+    return;
+  if (data_plan_list->plans_size > 0) {
+    std::for_each(data_plan_list->plans,
+                  data_plan_list->plans + data_plan_list->plans_size,
+                  &DeleteDataPlanProperties);
+    delete [] data_plan_list->plans;
+  }
+  delete data_plan_list;
+}
 
 // NOTE: We can't use dbus::MonitorConnection here because there is no
 // type_to_gtypeid<GHashTable>, and MonitorConnection only takes
@@ -2176,10 +2202,15 @@ class DataPlanUpdateHandler {
     }
     DataPlanUpdateHandler* self =
         static_cast<DataPlanUpdateHandler*>(object);
-    CellularDataPlanList data_plan_list;
-    ParseCellularDataPlanList(properties_array, &data_plan_list);
-    // NOTE: callback_ needs to copy 'data_plan_list'.
-    self->callback_(self->object_, modem_service_path, &data_plan_list);
+
+    CellularDataPlanList * data_plan_list =
+        ParseCellularDataPlanList(properties_array);
+
+    if (data_plan_list != NULL) {
+      // NOTE: callback_ needs to copy 'data_plan_list'.
+      self->callback_(self->object_, modem_service_path, data_plan_list);
+      ChromeOSFreeCellularDataPlanList(data_plan_list);
+    }
   }
 
  private:
@@ -2225,10 +2256,11 @@ void ChromeOSRequestCellularDataPlanUpdate(
 }
 
 extern "C"
-bool ChromeOSRetrieveCellularDataPlans(
-    const char* modem_service_path, CellularDataPlanList* data_plan_list) {
-  if (!modem_service_path || !data_plan_list)
-    return false;
+CellularDataPlanList* ChromeOSRetrieveCellularDataPlans(
+    const char* modem_service_path) {
+
+  if (!modem_service_path)
+    return NULL;
 
   dbus::Proxy proxy(dbus::GetSystemBusConnection(),
                     kCashewServiceName,
@@ -2261,14 +2293,14 @@ bool ChromeOSRetrieveCellularDataPlans(
     LOG(WARNING) << "RetrieveDataPlans on path '" << proxy.path() << "' failed: "
                  << (error->message ? error->message : "Unknown Error.");
     DCHECK(!properties_array);
-    return false;
+    return NULL;
   }
   DCHECK(properties_array);
 
-  ParseCellularDataPlanList(properties_array, data_plan_list);
+  CellularDataPlanList *data_plan_list =
+      ParseCellularDataPlanList(properties_array);
   g_ptr_array_unref(properties_array);
-  return true;
+  return data_plan_list;
 }
-
 
 }  // namespace chromeos

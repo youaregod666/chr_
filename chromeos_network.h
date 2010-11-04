@@ -5,9 +5,8 @@
 #ifndef CHROMEOS_NETWORK_H_
 #define CHROMEOS_NETWORK_H_
 
-#include <string>
-#include <vector>
 #include <base/basictypes.h>
+#include <base/logging.h>
 
 class Value;
 
@@ -114,8 +113,8 @@ enum CellularDataPlanType {
   CELLULAR_DATA_PLAN_METERED_BASE = 3
 };
 
-struct CellularDataPlan {
-  std::string plan_name;
+struct CellularDataPlanInfo {
+  const char *plan_name;
   CellularDataPlanType plan_type;
   int64 update_time;
   int64 plan_start_time;
@@ -124,7 +123,29 @@ struct CellularDataPlan {
   int64 data_bytes_used;
 };
 
-typedef std::vector<CellularDataPlan> CellularDataPlanList;
+
+struct CellularDataPlanList {
+  struct CellularDataPlanInfo *plans;
+  size_t plans_size;     // number of plans
+
+  size_t data_plan_size; // size of a data plan structure
+
+  // Client needs to call this method to get each CellularDataPlan object.
+  CellularDataPlanInfo* GetCellularDataPlan(size_t index) {
+    DCHECK(index < plans_size);
+    size_t ptr = reinterpret_cast<size_t>(plans);
+    return
+        reinterpret_cast<CellularDataPlanInfo*>(ptr + index * data_plan_size);
+  }
+  const CellularDataPlanInfo* GetCellularDataPlan(size_t index) const {
+    DCHECK(index < plans_size);
+    size_t ptr = reinterpret_cast<size_t>(plans);
+    return reinterpret_cast<const CellularDataPlanInfo*>(
+        ptr + index * data_plan_size);
+  }
+
+};
+
 
 // Device Info for cellular devices.
 struct DeviceInfo {
@@ -339,14 +360,21 @@ extern void (*FreeSystemInfo)(SystemInfo* system);
 extern void (*FreeServiceInfo)(ServiceInfo* info);
 
 // Get the list of data plans for the cellular network corresponding to path.
-// Return true if data is available.
-extern bool (*RetrieveCellularDataPlans)(
-    const char* modem_service_path, CellularDataPlanList* data_plan_list);
+// The CellularDataPlansList instance that is returned by this function MUST be
+// deleted by calling FreeCellularDataPlanList
+//
+// Returns NULL on error or no data available.
+extern CellularDataPlanList* (*RetrieveCellularDataPlans)(
+    const char* modem_service_path);
 
 // Request an update of the data plans. A callback will be received by any
 // object that invoked MonitorCellularDataPlan when up to date data is ready.
 extern void (*RequestCellularDataPlanUpdate)(const char* modem_service_path);
 
+// Deletes a CellularDataPlanList that was allocated in the ChromeOS
+// dll. We need to do this to safely pass data over the dll boundary
+// between our .so and Chrome.
+extern void (*FreeCellularDataPlanList)(CellularDataPlanList* list);
 
 // BEGIN DEPRECATED
 // An internal listener to a d-bus signal. When notifications are received

@@ -259,18 +259,18 @@ void DumpServices(const chromeos::SystemInfo* info) {
 }
 
 void DumpDataPlans(const char* modem_service_path,
-                  const chromeos::CellularDataPlanList* data_plan_list) {
+                   const chromeos::CellularDataPlanList* data_plan_list) {
   LOG(INFO) << "Data Plans for: '" << modem_service_path;
-  chromeos::CellularDataPlanList::const_iterator iter;
-  for (iter = data_plan_list->begin(); iter != data_plan_list->end(); ++iter) {
-    const chromeos::CellularDataPlan& data = *iter;
-    LOG(INFO) << "Plan Name: " << data.plan_name
-              << ", Type=" << data.plan_type
-              << ", Update Time=" << data.update_time
-              << ", Start Time=" << data.plan_start_time
-              << ", End Time=" << data.plan_end_time
-              << ", Data Bytes=" << data.plan_data_bytes
-              << ", Bytes Used=" << data.data_bytes_used;
+  for (unsigned int i = 0; i < data_plan_list->plans_size; i++) {
+    const chromeos::CellularDataPlanInfo* data =
+        data_plan_list->GetCellularDataPlan(i);
+    LOG(INFO) << "Plan Name: " << data->plan_name
+              << ", Type=" << data->plan_type
+              << ", Update Time=" << data->update_time
+              << ", Start Time=" << data->plan_start_time
+              << ", End Time=" << data->plan_end_time
+              << ", Data Bytes=" << data->plan_data_bytes
+              << ", Bytes Used=" << data->data_bytes_used;
   }
 }
 
@@ -313,11 +313,12 @@ int main(int argc, const char** argv) {
       continue;
     }
     LOG(INFO) << "  Retrieving Data Plans for: " << sinfo->service_path;
-    chromeos::CellularDataPlanList data_plan_list;
-    bool res = chromeos::RetrieveCellularDataPlans(sinfo->service_path,
-                                                   &data_plan_list);
-    if (res) {
-      DumpDataPlans(sinfo->service_path, &data_plan_list);
+    chromeos::CellularDataPlanList* data_plan_list;
+    data_plan_list = chromeos::RetrieveCellularDataPlans(sinfo->service_path);
+
+    if (data_plan_list) {
+      DumpDataPlans(sinfo->service_path, data_plan_list);
+      chromeos::FreeCellularDataPlanList(data_plan_list);
     } else {
       LOG(WARNING) << "  RetrieveCellularDataPlans failed for: "
           << sinfo->service_path;
