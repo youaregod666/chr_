@@ -712,7 +712,8 @@ class InputMethodStatusConnection {
         connection_change_handler_(NULL),
         language_library_(NULL),
         ibus_(NULL),
-        ibus_config_(NULL) {
+        ibus_config_(NULL),
+        notify_focus_in_count_(0) {
   }
 
   ~InputMethodStatusConnection() {
@@ -924,9 +925,19 @@ class InputMethodStatusConnection {
 
     // Remember the current ic path.
     input_context_path_ = Or(input_context_path, "");
-    // Force update the UI just in case ibus-daemon forget to send state_changed
-    // or global_engine_changed signals to us.
-    UpdateUI();
+
+    if (notify_focus_in_count_ < kMaxNotifyFocusInCount) {
+      // Usually, we don't have to update the UI on FocusIn since the status of
+      // IBus is not per input context on Chrome OS and the update operation is
+      // not so cheap. However, because the first GlobalEngineChanged signal
+      // from ibus-daemon might not be delivered to libcros due to process start
+      // up race, we updates the UI for the first |kMaxNotifyFocusInCount|
+      // times. See http://crosbug.com/8284#c14 for details of the race.
+      // TODO(yusukes): Get rid of the workaround once the race is solved.
+      // http://crosbug.com/8766
+      ++notify_focus_in_count_;
+      UpdateUI();
+    }
   }
 
   // Handles "FocusOut" signal from the candidate_window process.
@@ -1035,6 +1046,7 @@ class InputMethodStatusConnection {
         = static_cast<InputMethodStatusConnection*>(user_data);
     if (self) {
       self->MaybeRestoreConnections();
+      self->notify_focus_in_count_ = 0;
     }
   }
 
@@ -1047,8 +1059,10 @@ class InputMethodStatusConnection {
         = static_cast<InputMethodStatusConnection*>(user_data);
     if (self) {
       self->MaybeRestoreConnections();
-      if (self->connection_change_handler_)
+      if (self->connection_change_handler_) {
         self->connection_change_handler_(self->language_library_, true);
+      }
+      self->notify_focus_in_count_ = 0;
     }
     // TODO(yusukes): Probably we should send all input method preferences in
     // Chrome to ibus-memconf as soon as |ibus_config_| gets ready again.
@@ -1064,8 +1078,10 @@ class InputMethodStatusConnection {
         = static_cast<InputMethodStatusConnection*>(user_data);
     if (self) {
       self->MaybeRestoreConnections();
-      if (self->connection_change_handler_)
+      if (self->connection_change_handler_) {
         self->connection_change_handler_(self->language_library_, false);
+      }
+      self->notify_focus_in_count_ = 0;
     }
   }
 
@@ -1211,6 +1227,11 @@ class InputMethodStatusConnection {
 
   // Current input context path.
   std::string input_context_path_;
+
+  // Update the UI on FocusIn signal for the first |kMaxNotifyFocusInCount|
+  // times. 1 should be enough for the counter, but we use 5 for safety.
+  int notify_focus_in_count_;
+  static const int kMaxNotifyFocusInCount = 5;
 
   std::set<std::string> active_engines_;
 };
