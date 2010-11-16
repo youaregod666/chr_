@@ -74,6 +74,7 @@ static const char* kOperatorNameProperty = "Cellular.OperatorName";
 static const char* kOperatorCodeProperty = "Cellular.OperatorCode";
 static const char* kPaymentURLProperty = "Cellular.OlpUrl";
 static const char* kFavoriteProperty = "Favorite";
+static const char* kConnectableProperty = "Connectable";
 static const char* kAutoConnectProperty = "AutoConnect";
 static const char* kIsActiveProperty = "IsActive";
 static const char* kModeProperty = "Mode";
@@ -623,6 +624,11 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   default_bool = false;
   properties.Retrieve(kFavoriteProperty, &default_bool);
   info->favorite = default_bool;
+
+  // Connectable
+  default_bool = true;
+  properties.Retrieve(kConnectableProperty, &default_bool);
+  info->connectable = default_bool;
 
   // AutoConnect
   default_bool = false;

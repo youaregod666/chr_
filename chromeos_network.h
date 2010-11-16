@@ -199,6 +199,7 @@ struct ServiceInfo {
   CarrierInfo* carrier_info;  // NULL unless TYPE_CELLULAR
   DeviceInfo* device_info;  // may point to a member of SystemInfo.devices
   bool is_active;
+  bool connectable;
 };
 
 struct SystemInfo {
