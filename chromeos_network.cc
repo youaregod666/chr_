@@ -35,6 +35,7 @@ static const char* kConnmanNetworkInterface = "org.chromium.flimflam.Network";
 // Connman function names.
 static const char* kGetPropertiesFunction = "GetProperties";
 static const char* kSetPropertyFunction = "SetProperty";
+static const char* kClearPropertyFunction = "ClearProperty";
 static const char* kConnectFunction = "Connect";
 static const char* kDisconnectFunction = "Disconnect";
 static const char* kRequestScanFunction = "RequestScan";
@@ -1958,7 +1959,30 @@ bool ChromeOSSetAutoConnect(const char* service_path, bool auto_connect) {
                            G_TYPE_INVALID,
                            G_TYPE_INVALID)) {
     LOG(WARNING) << "SetAutoConnect failed: "
-        << (error->message ? error->message : "Unknown Error.");
+                 << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+
+  return true;
+}
+
+static bool ClearServiceProperty(const char* service_path,
+                                 const char* property) {
+  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
+                            kConnmanServiceName,
+                            service_path,
+                            kConnmanServiceInterface);
+
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_call(service_proxy.gproxy(),
+                           kClearPropertyFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           property,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "Clearing property " << property << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
     return false;
   }
 
@@ -1984,7 +2008,7 @@ static bool SetServiceStringProperty(const char* service_path,
                            G_TYPE_INVALID,
                            G_TYPE_INVALID)) {
     LOG(WARNING) << "Setting property " << property << " failed: "
-        << (error->message ? error->message : "Unknown Error.");
+                 << (error->message ? error->message : "Unknown Error.");
     return false;
   }
 
@@ -1995,8 +2019,12 @@ static bool SetServiceStringProperty(const char* service_path,
 
 extern "C"
 bool ChromeOSSetPassphrase(const char* service_path, const char* passphrase) {
-  return SetServiceStringProperty(service_path, kPassphraseProperty,
-                                  passphrase);
+  if (passphrase && strlen(passphrase) > 0) {
+    return SetServiceStringProperty(service_path, kPassphraseProperty,
+                                    passphrase);
+  } else {
+    return ClearServiceProperty(service_path, kPassphraseProperty);
+  }
 }
 
 extern "C"
