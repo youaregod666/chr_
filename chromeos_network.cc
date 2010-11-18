@@ -461,7 +461,7 @@ void ParseDeviceProperties(const glib::ScopedHashTable& properties,
   // Type
   default_string = kUnknownString;
   properties.Retrieve(kTypeProperty, &default_string);
-  info->type = NewStringCopy(default_string);
+  info->type = ParseType(default_string);
   // Scanning
   bool default_bool = false;
   properties.Retrieve(kScanningProperty, &default_bool);
@@ -732,7 +732,6 @@ void DeleteDeviceInfo(DeviceInfo& device_info) {
   delete device_info.last_update;
   delete device_info.path;
   delete device_info.name;
-  delete device_info.type;
 }
 
 // Deletes all of the heap allocated members of a given ServiceInfo instance.

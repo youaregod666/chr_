@@ -164,7 +164,7 @@ struct DeviceInfo {
   int PRL_version;
   const char* path;
   const char* name;
-  const char* type;
+  ConnectionType type;
   bool scanning;
 };
 
