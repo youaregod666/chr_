@@ -64,13 +64,13 @@ static const char* kOfflineModeProperty = "OfflineMode";
 static const char* kSignalStrengthProperty = "Strength";
 static const char* kNameProperty = "Name";
 static const char* kStateProperty = "State";
-static const char* kConnectivityStateProperty = "ConnectivityState";
 static const char* kTypeProperty = "Type";
 static const char* kUnknownString = "UNKNOWN";
 static const char* kDeviceProperty = "Device";
 static const char* kActivationStateProperty = "Cellular.ActivationState";
 static const char* kNetworkTechnologyProperty = "Cellular.NetworkTechnology";
 static const char* kRoamingStateProperty = "Cellular.RoamingState";
+static const char* kRestrictedPoolProperty = "Cellular.RestrictedPool";
 static const char* kOperatorNameProperty = "Cellular.OperatorName";
 static const char* kOperatorCodeProperty = "Cellular.OperatorCode";
 static const char* kPaymentURLProperty = "Cellular.OlpUrl";
@@ -141,11 +141,6 @@ static const char* kStateReady = "ready";
 static const char* kStateDisconnect = "disconnect";
 static const char* kStateFailure = "failure";
 static const char* kStateActivationFailure = "activation-failure";
-
-// Connman connectivity state options.
-static const char* kConnStateUnrestricted = "unrestricted";
-static const char* kConnStateRestricted = "restricted";
-static const char* kConnStateNone = "none";
 
 // Connman network technology options.
 static const char* kNetworkTechnology1Xrtt = "1xRTT";
@@ -331,16 +326,6 @@ static ConnectionState ParseState(const std::string& state) {
   if (state == kStateActivationFailure)
     return STATE_ACTIVATION_FAILURE;
   return STATE_UNKNOWN;
-}
-
-static ConnectivityState ParseConnectivityState(const std::string& state) {
-  if (state == kConnStateUnrestricted)
-    return CONN_STATE_UNRESTRICTED;
-  if (state == kConnStateRestricted)
-    return CONN_STATE_RESTRICTED;
-  if (state == kConnStateNone)
-    return CONN_STATE_NONE;
-  return CONN_STATE_UNKNOWN;
 }
 
 static NetworkTechnology ParseNetworkTechnology(
@@ -669,6 +654,7 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   default_string = kUnknownString;
   properties.Retrieve(kActivationStateProperty, &default_string);
   info->activation_state = ParseActivationState(default_string);
+  info->activation_state_dont_use = NULL;
 
   // Network technology
   default_string = kUnknownString;
@@ -680,13 +666,10 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   properties.Retrieve(kRoamingStateProperty, &default_string);
   info->roaming_state = ParseRoamingState(default_string);
 
-  // Connectivity state
-  default_string = kUnknownString;
-  properties.Retrieve(kConnectivityStateProperty, &default_string);
-  info->connectivity_state = ParseConnectivityState(default_string);
-
-  // TODO(ers) restricted_pool is deprecated
-  info->restricted_pool = info->connectivity_state == CONN_STATE_RESTRICTED;
+  // RestrictedPool
+  default_bool = false;
+  properties.Retrieve(kRestrictedPoolProperty, &default_bool);
+  info->restricted_pool = default_bool;
 
   // CarrierInfo
   if (info->type == TYPE_CELLULAR) {
@@ -893,6 +876,37 @@ void ChromeOSFreeServiceInfo(ServiceInfo* info) {
   DeleteServiceInfoProperties(*info);
   delete info;
 }
+
+// TODO(ers) ManagerPropertyChangedHandler is deprecated
+class ManagerPropertyChangedHandler {
+ public:
+  typedef dbus::MonitorConnection<void(const char*, const glib::Value*)>*
+      MonitorConnection;
+
+  ManagerPropertyChangedHandler(const MonitorNetworkCallback& callback,
+                                void* object)
+     : callback_(callback),
+       object_(object),
+       connection_(NULL) {
+  }
+
+  static void Run(void* object,
+                  const char* property,
+                  const glib::Value* value) {
+    ManagerPropertyChangedHandler* self =
+        static_cast<ManagerPropertyChangedHandler*>(object);
+    self->callback_(self->object_);
+  }
+
+  MonitorConnection& connection() {
+    return connection_;
+  }
+
+ private:
+  MonitorNetworkCallback callback_;
+  void* object_;
+  MonitorConnection connection_;
+};
 
 extern "C"
 void AppendElement(const GValue *value, gpointer user_data) {
@@ -1274,6 +1288,30 @@ void ChromeOSFreeIPConfigStatus(IPConfigStatus* status) {
   delete status;
 
 }
+
+// BEGIN DEPRECATED
+extern "C"
+MonitorNetworkConnection ChromeOSMonitorNetwork(
+    MonitorNetworkCallback callback, void* object) {
+  RegisterMarshallers();
+  dbus::Proxy proxy(dbus::GetSystemBusConnection(),
+                    kConnmanServiceName,
+                    "/",
+                    kConnmanManagerInterface);
+  MonitorNetworkConnection result =
+      new ManagerPropertyChangedHandler(callback, object);
+  result->connection() = dbus::Monitor(
+      proxy, kMonitorPropertyChanged,
+      &ManagerPropertyChangedHandler::Run, result);
+  return result;
+}
+
+extern "C"
+void ChromeOSDisconnectMonitorNetwork(MonitorNetworkConnection connection) {
+  dbus::Disconnect(connection->connection());
+  delete connection;
+}
+// END DEPRECATED
 
 extern "C"
 PropertyChangeMonitor ChromeOSMonitorNetworkManager(

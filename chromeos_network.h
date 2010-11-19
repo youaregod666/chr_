@@ -50,13 +50,6 @@ enum ConnectionState {
   STATE_ACTIVATION_FAILURE = 8
 };
 
-enum ConnectivityState {
-  CONN_STATE_UNKNOWN      = 0,
-  CONN_STATE_UNRESTRICTED = 1,
-  CONN_STATE_RESTRICTED   = 2,
-  CONN_STATE_NONE         = 3
-};
-
 // Network enums (see flimflam/include/network.h)
 enum NetworkTechnology {
   NETWORK_TECHNOLOGY_UNKNOWN      = 0,
@@ -198,16 +191,15 @@ struct ServiceInfo {
   bool favorite;
   bool auto_connect;
   const char* device_path;
-  const char* xxx_delete_me_act_state;  // DEPRECATED
+  const char* activation_state_dont_use;  // DEPRECATED - use the enum below
   ActivationState activation_state;
   NetworkTechnology network_technology;
   NetworkRoamingState roaming_state;
-  bool restricted_pool; // DEPRECATED - use connectivity_state
+  bool restricted_pool;
   CarrierInfo* carrier_info;  // NULL unless TYPE_CELLULAR
   DeviceInfo* device_info;  // may point to a member of SystemInfo.devices
   bool is_active;
   bool connectable;
-  ConnectivityState connectivity_state;
 };
 
 struct SystemInfo {
@@ -384,6 +376,32 @@ extern void (*RequestCellularDataPlanUpdate)(const char* modem_service_path);
 // dll. We need to do this to safely pass data over the dll boundary
 // between our .so and Chrome.
 extern void (*FreeCellularDataPlanList)(CellularDataPlanList* list);
+
+// BEGIN DEPRECATED
+// An internal listener to a d-bus signal. When notifications are received
+// they are rebroadcasted in non-glib form.
+// MonitorNetworkConnection is deprecated: use PropertyChangeMonitor.
+class ManagerPropertyChangedHandler;
+typedef ManagerPropertyChangedHandler* MonitorNetworkConnection;
+
+// The expected callback signature that will be provided by the client who
+// calls MonitorNetwork. Callbacks are only called with |object| being
+// the caller. The recipient of the callback should call GetSystemInfo to
+// retrieve the current state of things.
+// MonitorNetworkCallback is deprecated: Use MonitorPropertyCallback.
+typedef void(*MonitorNetworkCallback)(void* object);
+
+// Sets up monitoring of the PropertyChanged signal on the flimflam manager.
+// The provided MonitorNetworkCallback will be called whenever that happens.
+// MonitorNetwork is deprecated: use MonitorNetworkManager.
+extern MonitorNetworkConnection (*MonitorNetwork)(
+    MonitorNetworkCallback callback,
+    void* object);
+
+// Disconnects a MonitorNetworkConnection.
+// DisconnectMonitorNetwork is deprecated: use DisconnectPropertyChangeMonitor.
+extern void (*DisconnectMonitorNetwork)(MonitorNetworkConnection connection);
+// END DEPRECATED
 
 // An internal listener to a d-bus signal. When notifications are received
 // they are rebroadcasted in non-glib form.

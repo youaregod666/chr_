@@ -162,6 +162,11 @@ DECL_FUNC_1(DisconnectFromNetwork, bool, const char*);
 DECL_FUNC_1(DeleteRememberedService, bool, const char*);
 DECL_FUNC_1(FreeSystemInfo, void, SystemInfo*);
 DECL_FUNC_1(FreeServiceInfo, void, ServiceInfo*);
+// MonitorNetwork is deprecated: use MonitorNetworkManager
+DECL_FUNC_2(MonitorNetwork,
+            MonitorNetworkConnection, MonitorNetworkCallback, void*);
+// DisconnectMonitorNetwork is deprecated: use DisconnectPropertyChangeMonitor
+DECL_FUNC_1(DisconnectMonitorNetwork, void, MonitorNetworkConnection);
 DECL_FUNC_2(MonitorNetworkManager, PropertyChangeMonitor,
             MonitorPropertyCallback, void*);
 DECL_FUNC_1(DisconnectPropertyChangeMonitor, void, PropertyChangeMonitor);
@@ -428,6 +433,11 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(DeleteRememberedService);
   INIT_FUNC(FreeSystemInfo);
   INIT_FUNC(FreeServiceInfo);
+  // MonitorNetwork is deprecated: use MonitorNetworkManager
+  INIT_FUNC(MonitorNetwork);
+  // DisconnectMonitorNetwork is deprecated:
+  // use DisconnectPropertyChangeMonitor
+  INIT_FUNC(DisconnectMonitorNetwork);
   INIT_FUNC(MonitorNetworkManager);
   INIT_FUNC(DisconnectPropertyChangeMonitor);
   INIT_FUNC(MonitorNetworkService);

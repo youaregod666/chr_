@@ -157,13 +157,12 @@
 //  83: Changed CellularDataPlan APIs, which use memory safely
 //  84: Added Connectable property to network services.
 //  85: Changed DeviceInfo in network library.
-//  86: Deprecated restricted_pool and added connectivity_state in network lib.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 83,
-  kCrosAPIVersion = 86
+  kCrosAPIVersion = 85
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
