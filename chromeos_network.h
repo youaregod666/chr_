@@ -50,6 +50,13 @@ enum ConnectionState {
   STATE_ACTIVATION_FAILURE = 8
 };
 
+enum ConnectivityState {
+  CONN_STATE_UNKNOWN      = 0,
+  CONN_STATE_UNRESTRICTED = 1,
+  CONN_STATE_RESTRICTED   = 2,
+  CONN_STATE_NONE         = 3
+};
+
 // Network enums (see flimflam/include/network.h)
 enum NetworkTechnology {
   NETWORK_TECHNOLOGY_UNKNOWN      = 0,
@@ -195,11 +202,12 @@ struct ServiceInfo {
   ActivationState activation_state;
   NetworkTechnology network_technology;
   NetworkRoamingState roaming_state;
-  bool restricted_pool;
+  bool restricted_pool;  // DEPRECATED - use connectivity_state
   CarrierInfo* carrier_info;  // NULL unless TYPE_CELLULAR
   DeviceInfo* device_info;  // may point to a member of SystemInfo.devices
   bool is_active;
   bool connectable;
+  ConnectivityState connectivity_state;
 };
 
 struct SystemInfo {

@@ -197,7 +197,8 @@ void DumpService(const chromeos::ServiceInfo& info) {
     LOG(INFO) << "    Activation State=" << info.activation_state
             << ", Technology=" << info.network_technology
             << ", RoamingState=" << info.roaming_state
-            << ", RestrictedPool=" << info.restricted_pool;
+            << ", ConnectivityState=" << info.connectivity_state
+            << ", (RestrictedPool=" << info.restricted_pool << ")";
   if (info.carrier_info)
     DumpCarrierInfo(*info.carrier_info);
 }
