@@ -159,12 +159,13 @@
 //  85: Changed DeviceInfo in network library.
 //  86: Deprecated restricted_pool and added connectivity_state in ServiceInfo
 //      struct in network library
+//  87: Added entd restarting ability.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 83,
-  kCrosAPIVersion = 86
+  kCrosAPIVersion = 87
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

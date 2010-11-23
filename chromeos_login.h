@@ -91,6 +91,8 @@ extern void (*FreeUserList)(UserList* userlist);
 
 extern bool (*RestartJob)(int pid, const char* command_line);
 
+extern bool (*RestartEntd)();
+
 // DEPRECATED due to memory unsafety.
 extern bool (*RetrieveProperty)(const char* name,
                                 std::string* OUT_value,

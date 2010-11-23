@@ -179,6 +179,17 @@ bool ChromeOSRestartJob(int pid, const char* command_line) {
 }
 
 extern "C"
+bool ChromeOSRestartEntd() {
+  chromeos::dbus::Proxy proxy = ChromeOSLoginHelpers::CreateProxy();
+
+  ::dbus_g_proxy_call_no_reply(proxy.gproxy(),
+                               login_manager::kSessionManagerRestartEntd,
+                               G_TYPE_INVALID,
+                               G_TYPE_INVALID);
+  return true;
+}
+
+extern "C"
 bool ChromeOSRetrieveProperty(const char* name,
                               std::string* out_value,
                               std::vector<uint8>* signature) {
