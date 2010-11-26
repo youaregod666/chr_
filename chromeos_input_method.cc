@@ -159,8 +159,8 @@ bool ConvertProperty(IBusProperty* ibus_prop,
   }
 
   const bool is_selection_item = (ibus_prop->type == PROP_TYPE_RADIO);
-  selection_item_id
-      = is_selection_item ? selection_item_id : kInvalidSelectionItemId;
+  selection_item_id = is_selection_item ?
+      selection_item_id : chromeos::ImeProperty::kInvalidSelectionItemId;
 
   bool is_selection_item_checked = false;
   if (ibus_prop->state == PROP_STATE_INCONSISTENT) {

@@ -12,12 +12,6 @@
 #include <base/basictypes.h>
 #include <base/logging.h>  // DCHECK
 
-static const char kFallbackInputMethodId[] = "xkb:us::eng";
-static const char kFallbackInputMethodDisplayName[] = "USA";
-static const char kFallbackKeyboardLayoutName[] = "us";
-static const char kFallbackInputMethodLanguageCode[] = "eng";
-static const int kInvalidSelectionItemId = -1;
-
 namespace chromeos {
 
 // DEPRECATED: TODO(yusukes): Remove this enum when it's ready.
@@ -114,8 +108,9 @@ struct ImeProperty {
   bool is_selection_item_checked;  // true if |is_selection_item| is true and
                                    // the selection_item is selected.
   int selection_item_id;  // A group ID (>= 0) of the selection item.
-                          // kInvalidSelectionItemId if |id_selection_item| is
+                          // kInvalidSelectionItemId if |is_selection_item| is
                           // false.
+  static const int kInvalidSelectionItemId = -1;
 };
 typedef std::vector<ImeProperty> ImePropertyList;
 
@@ -179,6 +174,11 @@ struct ImeConfigValue {
 // This function is called by src/chrome/browser/chromeos/language_library.cc
 // when EnsureLoaded() fails.
 inline InputMethodDescriptors* CreateFallbackInputMethodDescriptors() {
+  static const char kFallbackInputMethodId[] = "xkb:us::eng";
+  static const char kFallbackInputMethodDisplayName[] = "USA";
+  static const char kFallbackKeyboardLayoutName[] = "us";
+  static const char kFallbackInputMethodLanguageCode[] = "eng";
+
   InputMethodDescriptors* descriptions = new InputMethodDescriptors;
   descriptions->push_back(
       InputMethodDescriptor(kFallbackInputMethodId,
