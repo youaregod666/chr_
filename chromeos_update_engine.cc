@@ -181,6 +181,8 @@ bool ChromeOSRetrieveUpdateProgress(UpdateProgress* information) {
   UpdateStatusOperation status = UpdateStatusFromString(current_op);
   if (status == -1) {
     LOG(ERROR) << "Error parsing status: " << current_op;
+    g_free(current_op);
+    g_free(new_version);
     return false;
   }
   if (information->destruct_) information->destruct_(*information);
@@ -190,6 +192,8 @@ bool ChromeOSRetrieveUpdateProgress(UpdateProgress* information) {
   information->new_version_ = NewStringCopy(new_version);
   information->new_size_ = new_size;
   information->destruct_ = &Destruct;
+  g_free(current_op);
+  g_free(new_version);
   return true;
 }
 
