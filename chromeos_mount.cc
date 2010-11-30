@@ -39,6 +39,37 @@ MountStatus* ChromeOSRetrieveMountInformation();
 
 namespace {  // NOLINT
 
+bool DeviceIsParent(const dbus::BusConnection& bus,
+                    dbus::Proxy& proxy) {
+  bool parent;
+  if (!dbus::RetrieveProperty(proxy,
+                              kDeviceKitDeviceInterface,
+                              "device-is-drive",
+                              &parent)) {
+    // Since we should always be able to get this property, if we can't,
+    // there is some problem, so we should return false.
+    DLOG(ERROR) << "unable to determine if device is a drive";
+    return false;
+  }
+  return parent;
+}
+
+bool DeviceIsHidden(const dbus::BusConnection& bus,
+                    dbus::Proxy& proxy) {
+  // Assume that all devices which are not on sda are removeable
+  bool hidden;
+  if (!dbus::RetrieveProperty(proxy,
+                              kDeviceKitDeviceInterface,
+                              "device-presentation-hide",
+                              &hidden)) {
+    // We should always be able to get this property.  If we can't, there is
+    // some problem, so we should return true to have Chrome ignore this disk.
+    DLOG(ERROR) << "unable to determine if device is hidden";
+    return true;
+  }
+  return hidden;
+}
+
 // Creates a new MountStatus instance populated with the contents from
 // a vector of DiskStatus.
 MountStatus* CopyFromVector(const std::vector<DiskStatus>& services) {
@@ -51,65 +82,6 @@ MountStatus* CopyFromVector(const std::vector<DiskStatus>& services) {
   result->size = services.size();
   std::copy(services.begin(), services.end(), result->disks);
   return result;
-}
-
-bool DeviceIsParentRemoveable(const dbus::BusConnection& bus,
-                              dbus::Proxy& proxy) {
-  // Assume that all devices which are not on sda are removeable
-  std::string devpath;
-  if (!dbus::RetrieveProperty(proxy,
-                              kDeviceKitDeviceInterface,
-                              "device-file",
-                              &devpath)) {
-    // Since we should always be able to get this property, if we can't,
-    // there is some problem, so we should return null.
-    DLOG(ERROR) << "unable to get the device-file";
-    return false;
-  }
-  // If this device is on sda, then its not removeable, otherwise
-  // make sure that its a drive before returning.
-  if (devpath == "/dev/sda") {
-    return false;
-  }
-  bool val;
-  if (!dbus::RetrieveProperty(proxy,
-                              kDeviceKitDeviceInterface,
-                              "device-is-drive",
-                              &val)) {
-    // Since we should always be able to get this property, if we can't,
-    // there is some problem, so we should return null.
-    DLOG(ERROR) << "unable to determine if device is a drive";
-    return false;
-  }
-  return val;
-}
-
-bool DeviceIsRemoveable(const dbus::BusConnection& bus, dbus::Proxy& proxy) {
-  bool ispartition = false;
-  if (!dbus::RetrieveProperty(proxy,
-                              kDeviceKitDeviceInterface,
-                              "device-is-partition",
-                              &ispartition)) {
-    DLOG(WARNING) << "unable to determine if device is a partition, bailing";
-    return false;
-  }
-  if (ispartition) {
-    glib::Value obj;
-    if (!dbus::RetrieveProperty(proxy,
-                                kDeviceKitDeviceInterface,
-                                "partition-slave",
-                                &obj)) {
-      return false;
-    }
-
-    const char* parent = static_cast<const char*>(::g_value_get_boxed(&obj));
-    dbus::Proxy parentproxy(bus,
-                            kDeviceKitDisksInterface,
-                            parent,
-                            kDeviceKitPropertiesInterface);
-    return DeviceIsParentRemoveable(bus, parentproxy);
-  }
-  return false;
 }
 
 bool DeviceIsMounted(const dbus::BusConnection& bus,
@@ -429,13 +401,12 @@ MountStatus* ChromeOSRetrieveMountInformation() {
                       kDeviceKitDisksInterface,
                       *currentpath,
                       kDeviceKitPropertiesInterface);
-    bool removeable = DeviceIsRemoveable(bus, proxy);
-    bool parent = DeviceIsParentRemoveable(bus, proxy);
-    if (removeable || parent) {
+    const bool hidden = DeviceIsHidden(bus, proxy);
+    if (!hidden) {
       DiskStatus info = {};
       bool ismounted = false;
       std::string path;
-      info.isparent = parent;
+      info.isparent = DeviceIsParent(bus, proxy);
       info.path = NewStringCopy(*currentpath);
       if (DeviceIsMounted(bus, proxy, path, &ismounted)) {
         if (ismounted) {
