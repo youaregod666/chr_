@@ -43,6 +43,7 @@ struct InputMethodLookupTable {
     stream << "visible: " << visible << "\n";
     stream << "cursor_absolute_index: " << cursor_absolute_index << "\n";
     stream << "page_size: " << page_size << "\n";
+    stream << "orientation: " << orientation << "\n";
     stream << "candidates:";
     for (size_t i = 0; i < candidates.size(); ++i) {
       stream << " [" << candidates[i] << "]";
