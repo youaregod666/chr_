@@ -9,6 +9,7 @@
 
 #include <base/basictypes.h>
 
+#include "chromeos_brightness.h" // NOLINT
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_cryptohome.h" // NOLINT
 #include "chromeos_imageburn.h"  //NOLINT
@@ -318,6 +319,13 @@ DECL_FUNC_1(SetTimezoneID, void, const std::string& id);
 DECL_FUNC_0(GetMachineInfo, MachineInfo*);
 DECL_FUNC_1(FreeMachineInfo, void, MachineInfo*);
 
+// Brightness
+DECL_FUNC_2(MonitorBrightness,
+            BrightnessConnection,
+            BrightnessMonitorFunction,
+            void*);
+DECL_FUNC_1(DisconnectBrightness, void, BrightnessConnection);
+
 
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
@@ -567,6 +575,10 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(SetTimezoneID);
   INIT_FUNC(GetMachineInfo);
   INIT_FUNC(FreeMachineInfo);
+
+  // Brightness
+  INIT_FUNC(MonitorBrightness);
+  INIT_FUNC(DisconnectBrightness);
 
   return error_string.empty();
 }

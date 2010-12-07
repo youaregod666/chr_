@@ -160,12 +160,13 @@
 //  86: Deprecated restricted_pool and added connectivity_state in ServiceInfo
 //      struct in network library
 //  87: Added entd restarting ability.
+//  88: Added MonitorBrightness and DisconnectBrightness.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 83,
-  kCrosAPIVersion = 87
+  kCrosAPIVersion = 88
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
