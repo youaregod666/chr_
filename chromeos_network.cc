@@ -1115,7 +1115,7 @@ bool ParseIPConfig(const char* path, IPConfig *ipconfig) {
 
 extern "C"
 IPConfigStatus* ChromeOSListIPConfigs(const char* device_path) {
-  if (!device_path)
+  if (!device_path || strlen(device_path) == 0)
     return NULL;
 
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
