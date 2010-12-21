@@ -49,6 +49,10 @@ enum WmIpcWindowType {
   // A Chrome info bubble (e.g. the bookmark bubble).  These are
   // transient RGBA windows; we skip the usual transient behavior of
   // centering them over their owner and omit drawing a drop shadow.
+  //   param[0]: Should the window manager composite the window even while the
+  //             screen is locked?  Non-zero means "yes".  This is used for e.g.
+  //             the volume bubble and is only honored for override-redirect
+  //             windows.
   WM_IPC_WINDOW_CHROME_INFO_BUBBLE = 7,
 
   // A window showing a view of a tab within a Chrome window.
