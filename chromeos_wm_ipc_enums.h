@@ -300,6 +300,8 @@ inline const char* WmIpcMessageTypeToString(WmIpcMessageType type) {
       return "WM_NOTIFY_SHUTTING_DOWN";
     case WM_IPC_MESSAGE_WM_NOTIFY_POWER_BUTTON_STATE:
       return "WM_NOTIFY_POWER_BUTTON_STATE";
+    case WM_IPC_MESSAGE_WM_NOTIFY_SIGNING_OUT:
+      return "WM_NOTIFY_SIGNING_OUT";
     default:
       return "INVALID";
   }
