@@ -260,7 +260,10 @@ enum WmIpcMessageType {
   //   param[0]: New state, from WmIpcPowerButtonState enum.
   WM_IPC_MESSAGE_WM_NOTIFY_POWER_BUTTON_STATE = 21,
 
-  // NEXT VALUE TO USE: 22
+  // Sent from Chrome to the window manager when the user is signing out.
+  WM_IPC_MESSAGE_WM_NOTIFY_SIGNING_OUT = 22,
+
+  // NEXT VALUE TO USE: 23
 };
 
 inline const char* WmIpcMessageTypeToString(WmIpcMessageType type) {
