@@ -980,7 +980,7 @@ class InputMethodStatusConnection {
           = g_dbus_connection_is_closed(ibus_connection);
 #else
       const gboolean disconnected
-          = !ibus_connection_is_connected(ibus_connection)
+          = !ibus_connection_is_connected(ibus_connection);
 #endif
       if (disconnected) {
         // |ibus_| object is not NULL, but the connection between ibus-daemon
