@@ -99,6 +99,8 @@ DECL_FUNC_2(SetActiveInputMethods,
     const ImeConfigValue&);
 DECL_FUNC_2(ChangeInputMethod,
     bool, InputMethodStatusConnection*, const char*);
+DECL_FUNC_1(GetCurrentInputMethod,
+    InputMethodDescriptor*, InputMethodStatusConnection*);
 DECL_FUNC_3(SetImePropertyActivated,
     void, InputMethodStatusConnection*, const char*, bool);
 DECL_FUNC_4(GetImeConfig,
@@ -401,6 +403,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(GetActiveInputMethods);
   INIT_FUNC(SetActiveInputMethods);
   INIT_FUNC(ChangeInputMethod);
+  INIT_FUNC(GetCurrentInputMethod);
   INIT_FUNC(SetImePropertyActivated);
   INIT_FUNC(GetImeConfig);
   INIT_FUNC(SetImeConfig);

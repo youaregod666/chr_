@@ -281,6 +281,11 @@ extern InputMethodDescriptors* (*GetSupportedInputMethods)(
 extern bool (*ChangeInputMethod)(
     InputMethodStatusConnection* connection, const char* name);
 
+// Get an input method engines that are currently selected. Caller has to delete
+// the returned list. This function might return NULL on error.
+extern InputMethodDescriptor* (*GetCurrentInputMethod)(
+    InputMethodStatusConnection* connection);
+
 // Sets whether the input method specified by |name| is activated.
 // If |activated| is true activates the input method. If |activated| is false,
 // deactivates the input method. Returns true on success.
