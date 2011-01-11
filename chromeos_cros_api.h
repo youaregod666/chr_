@@ -162,12 +162,13 @@
 //  87: Added entd restarting ability.
 //  88: Added MonitorBrightness and DisconnectBrightness.
 //  89: Added GetCurrentInputMethod.
+//  90: Added StopInputMethodProcess.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 83,
-  kCrosAPIVersion = 89
+  kCrosAPIVersion = 90
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

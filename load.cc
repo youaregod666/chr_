@@ -89,6 +89,7 @@ DECL_FUNC_5(MonitorInputMethodStatus,
     chromeos::LanguageUpdateImePropertyFunction,
     chromeos::LanguageConnectionChangeMonitorFunction);
 DECL_FUNC_1(DisconnectInputMethodStatus, void, InputMethodStatusConnection*);
+DECL_FUNC_1(StopInputMethodProcess, bool, InputMethodStatusConnection*);
 DECL_FUNC_1(GetSupportedInputMethods,
     InputMethodDescriptors*, InputMethodStatusConnection*);
 DECL_FUNC_1(GetActiveInputMethods,
@@ -399,6 +400,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   // Input methods
   INIT_FUNC(MonitorInputMethodStatus);
   INIT_FUNC(DisconnectInputMethodStatus);
+  INIT_FUNC(StopInputMethodProcess);
   INIT_FUNC(GetSupportedInputMethods);
   INIT_FUNC(GetActiveInputMethods);
   INIT_FUNC(SetActiveInputMethods);

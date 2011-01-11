@@ -30,6 +30,7 @@
 namespace {
 
 // TODO(yusukes): Remove all code for ibus-1.3 once we finish migrating to 1.4.
+// http://crosbug.com/10838
 #if !IBUS_CHECK_VERSION(1, 3, 99)
 #define ibus_engine_desc_get_name(d) ((d)->name)
 #define ibus_engine_desc_get_longname(d) ((d)->longname)
@@ -457,6 +458,29 @@ class InputMethodStatusConnection {
     MaybeRestoreIBusConfig();
 #if !IBUS_CHECK_VERSION(1, 3, 99)
     MaybeRestoreDBus();
+#endif
+  }
+
+  // Called by cros API ChromeOSStopInputMethodProcess().
+  bool StopInputMethodProcess() {
+#if IBUS_CHECK_VERSION(1, 3, 99)
+    if (!IBusConnectionIsAlive()) {
+      LOG(ERROR) << "StopInputMethodProcess: IBus connection is not alive";
+      return false;
+    }
+    ibus_bus_exit(ibus_, FALSE /* do not restart */);
+    if (ibus_config_) {
+      // Release |ibus_config_| to make sure next IBusConnectionIsAlive() call
+      // will return false.
+      g_object_unref(ibus_config_);
+      ibus_config_ = NULL;
+    }
+    return true;
+#else
+    // For ibus-1.3, we don't implement the API and just return false since
+    // libcros's ibus-1.3 support will be removed soon. Chrome will use the
+    // kill system call to terminate the daemon.
+    return false;
 #endif
   }
 
@@ -1628,6 +1652,12 @@ extern "C"
 void ChromeOSDisconnectInputMethodStatus(
     InputMethodStatusConnection* connection) {
   LOG(INFO) << "DisconnectInputMethodStatus (NOP)";
+}
+
+extern "C"
+bool ChromeOSStopInputMethodProcess(InputMethodStatusConnection* connection) {
+  g_return_val_if_fail(connection, false);
+  return connection->StopInputMethodProcess();
 }
 
 extern "C"

@@ -260,6 +260,9 @@ extern InputMethodStatusConnection* (*MonitorInputMethodStatus)(
 extern void (*DisconnectInputMethodStatus)(
     InputMethodStatusConnection* connection);
 
+// Stops ibus-daemon. Returns true on success.
+extern bool (*StopInputMethodProcess)(InputMethodStatusConnection* connection);
+
 // Updates the list of active input methods.  This will be returned by
 // GetActiveInputMethods() if an ibus connection is not available.
 extern bool (*SetActiveInputMethods)(InputMethodStatusConnection* connection,
