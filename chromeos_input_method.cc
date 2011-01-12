@@ -469,7 +469,10 @@ class InputMethodStatusConnection {
       LOG(ERROR) << "StopInputMethodProcess: IBus connection is not alive";
       return false;
     }
-    ibus_bus_exit(ibus_, FALSE /* do not restart */);
+    if (!ibus_bus_exit(ibus_, FALSE /* do not restart */)) {
+      LOG(ERROR) << "ibus_bus_exit failed";
+      return false;
+    }
     if (ibus_config_) {
       // Release |ibus_config_| to make sure next IBusConnectionIsAlive() call
       // will return false.
