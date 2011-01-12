@@ -4,6 +4,7 @@
 
 #include "chromeos_input_method.h"
 #include "chromeos_input_method_whitelist.h"
+#include "chromeos_keyboard_overlay_map.h"
 
 #include <ibusversion.h>
 
@@ -1736,6 +1737,16 @@ bool ChromeOSSetImeConfig(InputMethodStatusConnection* connection,
   g_return_val_if_fail(connection, FALSE);
   connection->MaybeRestoreConnections();
   return connection->SetImeConfig(section, config_name, value);
+}
+
+extern "C"
+std::string ChromeOSGetKeyboardOverlayId(const std::string& input_method_id) {
+  for (size_t i = 0; i < arraysize(kKeyboardOverlayMap); ++i) {
+    if (kKeyboardOverlayMap[i].input_method_id == input_method_id) {
+      return kKeyboardOverlayMap[i].keyboard_overlay_id;
+    }
+  }
+  return "";
 }
 
 // TODO(yusukes): We can remove the function.

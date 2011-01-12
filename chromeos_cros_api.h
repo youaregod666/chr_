@@ -163,12 +163,13 @@
 //  88: Added MonitorBrightness and DisconnectBrightness.
 //  89: Added GetCurrentInputMethod.
 //  90: Added StopInputMethodProcess.
+//  91: Added GetKeyboardOverlayID to input method library.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 83,
-  kCrosAPIVersion = 90
+  kCrosAPIVersion = 91
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

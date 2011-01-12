@@ -332,6 +332,11 @@ extern bool (*SetImeConfig)(InputMethodStatusConnection* connection,
 extern bool (*InputMethodStatusConnectionIsAlive)(
     InputMethodStatusConnection* connection);
 
+// Returns the keyboard overlay ID corresponding to |input_method_id|.
+// Returns an empty string if there is no corresponding keyboard overlay ID.
+extern std::string (*GetKeyboardOverlayId)(
+    const std::string& input_method_id);
+
 }  // namespace chromeos
 
 #endif  // CHROMEOS_INPUT_METHOD_H_

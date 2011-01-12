@@ -53,9 +53,9 @@ def main():
   print OUTPUT_HEADER
   for line in fileinput.input(sys.argv[1]):
     line = re.sub(r'#.*', '', line)  # Remove comments.
-    line = line.strip()  # Remove surrounding spaces.
-    if line:
-      print '  "%s",' % line
+    line = line.split()
+    if len(line) > 0:
+      print '  "%s",' % line[0]
   print OUTPUT_FOOTER
 
 

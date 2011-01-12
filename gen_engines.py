@@ -125,9 +125,9 @@ def GetWhitelist(list_filename):
   whitelist_file = open(list_filename, 'r')
   for line in whitelist_file:
     lang = re.sub(r'#.*$', '', line)
-    lang = lang.strip()
+    lang = lang.split()
     if not lang: continue
-    whitelist.append(lang)
+    whitelist.append(lang[0])
   whitelist_file.close()
   return whitelist
 

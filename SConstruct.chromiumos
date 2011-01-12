@@ -52,10 +52,15 @@ input_methodwhitelist_builder = Builder(action =
                                         "./gen_input_method_whitelist.py " +
                                         "$SOURCES > $TARGET")
 
+keyboard_overlay_map_builder = Builder(action =
+                                        "./gen_keyboard_overlay_map.py " +
+                                        "$SOURCES > $TARGET")
+
 base_env = Environment()
 base_env['BUILDERS']['GlibMarshal'] = glib_marshal_builder
 base_env['BUILDERS']['IBusEngines'] = ibus_engines_builder
 base_env['BUILDERS']['InputMethodWhitelist'] = input_methodwhitelist_builder
+base_env['BUILDERS']['KeyboardOverlayMap'] = keyboard_overlay_map_builder
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
   value = os.environ.get(key)
   if value != None:
@@ -119,6 +124,9 @@ env.IBusEngines('ibus_input_methods.h',
 
 env.InputMethodWhitelist('chromeos_input_method_whitelist.h',
                          ime_whitelist_file)
+
+env.KeyboardOverlayMap('chromeos_keyboard_overlay_map.h',
+			ime_whitelist_file)
 
 # test_libbase_ndebug is built to catch NDEBUG mismatches between this
 # library and libbase.  It is not installed.
