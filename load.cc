@@ -152,6 +152,7 @@ DECL_FUNC_0(RetrieveMountInformation, MountStatus*);
 DECL_FUNC_1(FreeMountStatus, void, MountStatus*);
 DECL_FUNC_1(MountDevicePath, bool, const char*);
 DECL_FUNC_1(UnmountDevicePath, bool, const char*);
+DECL_FUNC_1(IsBootDevicePath, bool, const char*);
 
 // Networking
 DECL_FUNC_0(GetSystemInfo, SystemInfo*);
@@ -436,6 +437,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(FreeMountStatus);
   INIT_FUNC(MountDevicePath);
   INIT_FUNC(UnmountDevicePath);
+  INIT_FUNC(IsBootDevicePath);
 
   // Networking
   INIT_FUNC(GetSystemInfo);

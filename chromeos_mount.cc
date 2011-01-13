@@ -6,6 +6,7 @@
 
 #include <base/logging.h>
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
@@ -17,6 +18,7 @@
 #include "chromeos/string.h"
 #define G_UDEV_API_IS_SUBJECT_TO_CHANGE
 #include <gudev/gudev.h>
+#include <rootdev/rootdev.h>
 
 namespace chromeos { // NOLINT
 
@@ -209,7 +211,6 @@ class OpaqueMountStatusConnection {
             break;
           }
         }
-
       }
       ChromeOSFreeMountStatus(info);
     }
@@ -241,7 +242,7 @@ class OpaqueMountStatusConnection {
     self->FireEvent(DISK_CHANGED, device);
   }
 
-  static void OnUDevEvent (GUdevClient* client,
+  static void OnUDevEvent(GUdevClient* client,
                            const char* action,
                            GUdevDevice* device,
                            gpointer object) {
@@ -347,11 +348,11 @@ MountStatusConnection ChromeOSMonitorMountStatus(MountMonitor monitor,
 
   // Listen to udev events
 
-  const char *subsystems[] = {"scsi","block", NULL};
+  const char *subsystems[] = {"scsi", "block", NULL};
   result->gudev_client = g_udev_client_new(subsystems);
   g_signal_connect(result->gudev_client,
                    "uevent",
-                   G_CALLBACK (&OpaqueMountStatusConnection::OnUDevEvent),
+                   G_CALLBACK(&OpaqueMountStatusConnection::OnUDevEvent),
                    result);
 
   return result;
@@ -428,6 +429,16 @@ MountStatus* ChromeOSRetrieveMountInformation() {
     }
   }
   return CopyFromVector(buffer);
+}
+
+extern "C"
+bool ChromeOSIsBootDevicePath(const char* device_path) {
+  char boot_path[PATH_MAX];
+  if (rootdev(boot_path, sizeof(boot_path), true, true)) {
+    LOG(ERROR) << "IsBootDevicePath: rootdev failed to find the root device";
+    return true;
+  }
+  return (strncmp(device_path, boot_path, strlen(boot_path)) == 0);
 }
 
 }  // namespace chromeos

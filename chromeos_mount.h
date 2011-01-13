@@ -75,6 +75,9 @@ extern MountStatus* (*RetrieveMountInformation)();
 // Chrome.
 extern void (*FreeMountStatus)(MountStatus* status);
 
+// Returns true if device_path is the boot path.
+extern bool (*IsBootDevicePath)(const char* device_path);
+
 }  // namespace chromeos
 
 #endif  // CHROMEOS_MOUNT_H_
