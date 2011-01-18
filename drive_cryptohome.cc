@@ -15,16 +15,20 @@
 #include "monitor_utils.h" //NOLINT
 
 static const char kDoUnmount[] = "do-unmount";
+static const char kTpmStatusStl[] = "tpm-status-stl";
 static const char kTpmStatus[] = "tpm-status";
 static const char kCheckKey[] = "check-key";
+static const char kTestMountStl[] = "test-mount-stl";
 static const char kTestMount[] = "test-mount";
 static const char kChangeKey[] = "change-key";
 static const char kMountGuest[] = "mount-guest";
 static const char kRemove[] = "remove";
 static const char kStatus[] = "status";
+static const char kStatusStl[] = "status-stl";
 static const char kAsync[] = "async";
 static const char kOwnTpm[] = "own-tpm";
 static const char kClearPass[] = "clear-tpmpass";
+static const char kGetSalt[] = "get-salt";
 
 class ClientLoop {
  public:
@@ -96,17 +100,44 @@ int main(int argc, const char** argv) {
 
   CHECK(LoadCrosLibrary(argv)) << "Failed to load cros .so";
 
-  if (cl->HasSwitch(kTpmStatus)) {
+  if (cl->HasSwitch(kTpmStatus) || cl->HasSwitch(kTpmStatusStl)) {
     LOG(INFO) << "TPM Enabled: " << chromeos::CryptohomeTpmIsEnabled();
     LOG(INFO) << "TPM Ready: " << chromeos::CryptohomeTpmIsReady();
     LOG(INFO) << "TPM Owned: " << chromeos::CryptohomeTpmIsOwned();
     LOG(INFO) << "TPM Being Owned: " << chromeos::CryptohomeTpmIsBeingOwned();
-    std::string tpm_password;
-    chromeos::CryptohomeTpmGetPassword(&tpm_password);
-    LOG(INFO) << "TPM Password: " << tpm_password;
+    if (cl->HasSwitch(kTpmStatus)) {
+      char* tpm_password;
+      chromeos::CryptohomeTpmGetPasswordSafe(&tpm_password);
+      LOG(INFO) << "TPM Password: " << tpm_password;
+      chromeos::CryptohomeFreeString(tpm_password);
+    } else {
+      std::string tpm_password;
+      chromeos::CryptohomeTpmGetPassword(&tpm_password);
+      LOG(INFO) << "TPM Password: " << tpm_password;
+    }
+  }
+
+  if (cl->HasSwitch(kGetSalt)) {
+    char* salt;
+    int length;
+    chromeos::CryptohomeGetSystemSaltSafe(&salt, &length);
+    std::string salt_string;
+    const char digits[] = "0123456789abcdef";
+    for (int i = 0; i < length; i++) {
+      salt_string += digits[(salt[i] >> 4) & 0xf];
+      salt_string += digits[salt[i] & 0xf];
+    }
+    LOG(INFO) << "Salt: " << salt_string;
+    chromeos::CryptohomeFreeBlob(salt);
   }
 
   if (cl->HasSwitch(kStatus)) {
+    char* status;
+    chromeos::CryptohomeGetStatusStringSafe(&status);
+    LOG(INFO) << "Cryptohome Status: \n" << status;
+    chromeos::CryptohomeFreeString(status);
+  }
+  if (cl->HasSwitch(kStatusStl)) {
     std::string status;
     chromeos::CryptohomeGetStatusString(&status);
     LOG(INFO) << "Cryptohome Status: \n" << status;
@@ -144,22 +175,43 @@ int main(int argc, const char** argv) {
           << "Credentials are no good on this device";
     }
   }
-  if (cl->HasSwitch(kTestMount)) {
+  if (cl->HasSwitch(kTestMount) || cl->HasSwitch(kTestMountStl)) {
     std::string name = loose_args[0];
     std::string hash = loose_args[1];
+    // TODO(fes): Differentiate the two calls
     std::vector<std::string> tracked_dirs;
+    const char** tracked_dirs_array = NULL;
     if (loose_args.size() > 2) {
       tracked_dirs.assign(loose_args.begin() + 2, loose_args.end());
+      if (tracked_dirs.size() != 0) {
+        tracked_dirs_array = new const char*[tracked_dirs.size() + 1];
+        unsigned int i;
+        for (i = 0; i < tracked_dirs.size(); i++) {
+          tracked_dirs_array[i] = tracked_dirs[i].c_str();
+        }
+        tracked_dirs_array[i] = NULL;
+      }
     }
     if (cl->HasSwitch(kAsync)) {
       ClientLoop client_loop;
       client_loop.Initialize();
       do {
-        int async_id = chromeos::CryptohomeAsyncMount(name.c_str(),
-                           hash.c_str(),
-                           true,
-                           (tracked_dirs.size() != 0),
-                           tracked_dirs);
+        int async_id;
+        if (cl->HasSwitch(kTestMount)) {
+          async_id = chromeos::CryptohomeAsyncMountSafe(
+              name.c_str(),
+              hash.c_str(),
+              true,
+              (tracked_dirs.size() != 0),
+              tracked_dirs_array);
+        } else {
+          async_id = chromeos::CryptohomeAsyncMount(
+              name.c_str(),
+              hash.c_str(),
+              true,
+              (tracked_dirs.size() != 0),
+              tracked_dirs);
+        }
         if (async_id <= 0) {
           LOG(ERROR) << "Failed to call AsyncMount";
           break;
@@ -177,17 +229,30 @@ int main(int argc, const char** argv) {
       } while(false);
     } else {
       int mount_error;
-      CHECK(chromeos::CryptohomeMount(name.c_str(), hash.c_str(),
-                true,
-                (tracked_dirs.size() != 0),
-                tracked_dirs,
-                &mount_error)) << "Cannot mount cryptohome for " << name;
+      if (cl->HasSwitch(kTestMount)) {
+        CHECK(chromeos::CryptohomeMountSafe(name.c_str(), hash.c_str(),
+                                            true,
+                                            (tracked_dirs.size() != 0),
+                                            tracked_dirs_array,
+                                            &mount_error))
+            << "Cannot mount cryptohome for " << name;
+      } else {
+        CHECK(chromeos::CryptohomeMount(name.c_str(), hash.c_str(),
+                                        true,
+                                        (tracked_dirs.size() != 0),
+                                        tracked_dirs,
+                                        &mount_error))
+            << "Cannot mount cryptohome for " << name;
+      }
       CHECK(chromeos::CryptohomeIsMounted())
           << "Cryptohome was mounted, but is now gone???";
       if (cl->HasSwitch(kDoUnmount)) {
         CHECK(chromeos::CryptohomeUnmount())
             << "Cryptohome cannot be unmounted???";
       }
+    }
+    if (tracked_dirs_array) {
+      delete tracked_dirs_array;
     }
   }
   if (cl->HasSwitch(kChangeKey)) {

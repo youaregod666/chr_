@@ -269,12 +269,17 @@ DECL_FUNC_3(CryptohomeAsyncMigrateKey,
 DECL_FUNC_1(CryptohomeRemove, bool, const char*);
 DECL_FUNC_1(CryptohomeAsyncRemove, int, const char*);
 DECL_FUNC_0(CryptohomeGetSystemSalt, CryptohomeBlob);
+DECL_FUNC_2(CryptohomeGetSystemSaltSafe, bool, char**, int*);
 DECL_FUNC_0(CryptohomeIsMounted, bool);
 DECL_FUNC_3(CryptohomeMountAllowFail, bool, const char*, const char*, int*);
 DECL_FUNC_6(CryptohomeMount, bool, const char*, const char*, bool, bool,
             const std::vector<std::string>&, int*);
+DECL_FUNC_6(CryptohomeMountSafe, bool, const char*, const char*, bool, bool,
+            const char**, int*);
 DECL_FUNC_5(CryptohomeAsyncMount, int, const char*, const char*, bool, bool,
             const std::vector<std::string>&);
+DECL_FUNC_5(CryptohomeAsyncMountSafe, int, const char*, const char*, bool, bool,
+            const char**);
 DECL_FUNC_1(CryptohomeMountGuest, bool, int*);
 DECL_FUNC_0(CryptohomeAsyncMountGuest, int);
 DECL_FUNC_0(CryptohomeUnmount, bool);
@@ -285,9 +290,13 @@ DECL_FUNC_0(CryptohomeTpmIsEnabled, bool);
 DECL_FUNC_0(CryptohomeTpmIsOwned, bool);
 DECL_FUNC_0(CryptohomeTpmIsBeingOwned, bool);
 DECL_FUNC_1(CryptohomeTpmGetPassword, bool, std::string*);
+DECL_FUNC_1(CryptohomeTpmGetPasswordSafe, bool, char**);
 DECL_FUNC_0(CryptohomeTpmCanAttemptOwnership, void);
 DECL_FUNC_0(CryptohomeTpmClearStoredPassword, void);
 DECL_FUNC_1(CryptohomeGetStatusString, bool, std::string*);
+DECL_FUNC_1(CryptohomeGetStatusStringSafe, bool, char**);
+DECL_FUNC_1(CryptohomeFreeString, void, char*);
+DECL_FUNC_1(CryptohomeFreeBlob, void, char*);
 DECL_FUNC_2(CryptohomeMonitorSession, void*, CryptohomeSignalCallback, void*);
 DECL_FUNC_1(CryptohomeDisconnectSession, void, void*);
 
@@ -531,10 +540,13 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(CryptohomeRemove);
   INIT_FUNC(CryptohomeAsyncRemove);
   INIT_FUNC(CryptohomeGetSystemSalt);
+  INIT_FUNC(CryptohomeGetSystemSaltSafe);
   INIT_FUNC(CryptohomeIsMounted);
   INIT_FUNC(CryptohomeMountAllowFail);
   INIT_FUNC(CryptohomeMount);
+  INIT_FUNC(CryptohomeMountSafe);
   INIT_FUNC(CryptohomeAsyncMount);
+  INIT_FUNC(CryptohomeAsyncMountSafe);
   INIT_FUNC(CryptohomeMountGuest);
   INIT_FUNC(CryptohomeAsyncMountGuest);
   INIT_FUNC(CryptohomeUnmount);
@@ -545,9 +557,13 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(CryptohomeTpmIsOwned);
   INIT_FUNC(CryptohomeTpmIsBeingOwned);
   INIT_FUNC(CryptohomeTpmGetPassword);
+  INIT_FUNC(CryptohomeTpmGetPasswordSafe);
   INIT_FUNC(CryptohomeTpmCanAttemptOwnership);
   INIT_FUNC(CryptohomeTpmClearStoredPassword);
   INIT_FUNC(CryptohomeGetStatusString);
+  INIT_FUNC(CryptohomeGetStatusStringSafe);
+  INIT_FUNC(CryptohomeFreeString);
+  INIT_FUNC(CryptohomeFreeBlob);
   INIT_FUNC(CryptohomeMonitorSession);
   INIT_FUNC(CryptohomeDisconnectSession);
 

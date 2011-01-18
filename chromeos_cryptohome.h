@@ -44,6 +44,7 @@ extern int (*CryptohomeAsyncMigrateKey)(const char* user_email,
 extern bool (*CryptohomeRemove)(const char* user_email);
 extern int (*CryptohomeAsyncRemove)(const char* user_email);
 extern CryptohomeBlob (*CryptohomeGetSystemSalt)();
+extern bool (*CryptohomeGetSystemSaltSafe)(char** salt, int* length);
 extern bool (*CryptohomeIsMounted)();
 extern bool (*CryptohomeMount)(
     const char* user_email,
@@ -51,6 +52,13 @@ extern bool (*CryptohomeMount)(
     bool create_if_missing,
     bool replace_tracked_subdirectories,
     const std::vector<std::string>& tracked_subdirectories,
+    int* mount_error);
+extern bool (*CryptohomeMountSafe)(
+    const char* user_email,
+    const char* key,
+    bool create_if_missing,
+    bool replace_tracked_subdirectories,
+    const char** tracked_subdirectories,
     int* mount_error);
 extern bool (*CryptohomeMountAllowFail)(const char* user_email,
                                         const char* key,
@@ -61,6 +69,12 @@ extern int (*CryptohomeAsyncMount)(
     bool create_if_missing,
     bool replace_tracked_subdirectories,
     const std::vector<std::string>& tracked_subdirectories);
+extern int (*CryptohomeAsyncMountSafe)(
+    const char* user_email,
+    const char* key,
+    bool create_if_missing,
+    bool replace_tracked_subdirectories,
+    const char** tracked_subdirectories);
 extern bool (*CryptohomeMountGuest)(int* mount_error);
 extern int (*CryptohomeAsyncMountGuest)();
 extern bool (*CryptohomeUnmount)();
@@ -71,9 +85,14 @@ extern bool (*CryptohomeTpmIsEnabled)();
 extern bool (*CryptohomeTpmIsOwned)();
 extern bool (*CryptohomeTpmIsBeingOwned)();
 extern bool (*CryptohomeTpmGetPassword)(std::string* password);
+extern bool (*CryptohomeTpmGetPasswordSafe)(char** password);
 extern void (*CryptohomeTpmCanAttemptOwnership)();
 extern void (*CryptohomeTpmClearStoredPassword)();
 extern bool (*CryptohomeGetStatusString)(std::string* status);
+extern bool (*CryptohomeGetStatusStringSafe)(char** status);
+
+extern void (*CryptohomeFreeString)(char* value);
+extern void (*CryptohomeFreeBlob)(char* blob);
 
 typedef void(*CryptohomeSignalCallback)(
     const CryptohomeAsyncCallStatus& call_status, void* callback_context);

@@ -213,6 +213,40 @@ CryptohomeBlob ChromeOSCryptohomeGetSystemSalt() {
 }
 
 extern "C"
+bool ChromeOSCryptohomeGetSystemSaltSafe(char** salt, int* length) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  GArray* dbus_salt;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeGetSystemSalt,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_UCHAR_ARRAY,
+                           &dbus_salt,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeGetSystemSalt << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+    return false;
+  }
+  char* local_salt = static_cast<char*>(g_malloc(dbus_salt->len));
+  if (local_salt) {
+    memcpy(local_salt, static_cast<const void*>(dbus_salt->data),
+           dbus_salt->len);
+    *salt = local_salt;
+    *length = dbus_salt->len;
+    g_array_free(dbus_salt, false);
+    return true;
+  }
+  g_array_free(dbus_salt, false);
+  return false;
+}
+
+extern "C"
 bool ChromeOSCryptohomeIsMounted() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy proxy(bus,
@@ -259,12 +293,12 @@ gchar** ChromeOSCryptohomeCopyStringArray(
 }
 
 extern "C"
-bool ChromeOSCryptohomeMount(
+bool ChromeOSCryptohomeMountSafe(
     const char* user_email,
     const char* key,
     bool create_if_missing,
     bool replace_tracked_subdirectories,
-    const std::vector<std::string>& tracked_subdirectories,
+    const char** tracked_subdirectories,
     int* mount_error) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy proxy(bus,
@@ -274,15 +308,6 @@ bool ChromeOSCryptohomeMount(
   gint local_mount_error = 0;
   gboolean done = false;
   glib::ScopedError error;
-
-  // Make a full copy of the string array as we don't own
-  // tracked_subdirectories, and c_str() is only guaranteed to be unchanged as
-  // long as only non-const string functions are called.
-  char** dbus_tracked_subdirectories =
-      ChromeOSCryptohomeCopyStringArray(tracked_subdirectories);
-  if (dbus_tracked_subdirectories == NULL) {
-    return false;
-  }
 
   if (!::dbus_g_proxy_call(proxy.gproxy(),
                            cryptohome::kCryptohomeMount,
@@ -296,7 +321,7 @@ bool ChromeOSCryptohomeMount(
                            G_TYPE_BOOLEAN,
                            replace_tracked_subdirectories,
                            G_TYPE_STRV,
-                           dbus_tracked_subdirectories,
+                           tracked_subdirectories,
                            G_TYPE_INVALID,
                            G_TYPE_INT,
                            &local_mount_error,
@@ -307,6 +332,37 @@ bool ChromeOSCryptohomeMount(
                  << (error->message ? error->message : "Unknown Error.");
   }
 
+  if (mount_error) {
+    *mount_error = local_mount_error;
+  }
+  return done;
+}
+
+extern "C"
+bool ChromeOSCryptohomeMount(
+    const char* user_email,
+    const char* key,
+    bool create_if_missing,
+    bool replace_tracked_subdirectories,
+    const std::vector<std::string>& tracked_subdirectories,
+    int* mount_error) {
+  gint local_mount_error = 0;
+  gboolean done = false;
+
+  // Make a full copy of the string array as we don't own
+  // tracked_subdirectories, and c_str() is only guaranteed to be unchanged as
+  // long as only non-const string functions are called.
+  char** dbus_tracked_subdirectories =
+      ChromeOSCryptohomeCopyStringArray(tracked_subdirectories);
+  if (dbus_tracked_subdirectories == NULL) {
+    return false;
+  }
+
+  done = ChromeOSCryptohomeMountSafe(
+      user_email, key, create_if_missing, replace_tracked_subdirectories,
+      const_cast<const char**>(dbus_tracked_subdirectories),
+      &local_mount_error);
+
   g_strfreev(dbus_tracked_subdirectories);
 
   if (mount_error) {
@@ -316,12 +372,12 @@ bool ChromeOSCryptohomeMount(
 }
 
 extern "C"
-int ChromeOSCryptohomeAsyncMount(
+int ChromeOSCryptohomeAsyncMountSafe(
     const char* user_email,
     const char* key,
     bool create_if_missing,
     bool replace_tracked_subdirectories,
-    const std::vector<std::string>& tracked_subdirectories) {
+    const char** tracked_subdirectories) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy proxy(bus,
                     cryptohome::kCryptohomeServiceName,
@@ -329,12 +385,6 @@ int ChromeOSCryptohomeAsyncMount(
                     cryptohome::kCryptohomeInterface);
   gint async_call_id = 0;
   glib::ScopedError error;
-
-  char** dbus_tracked_subdirectories =
-      ChromeOSCryptohomeCopyStringArray(tracked_subdirectories);
-  if (dbus_tracked_subdirectories == NULL) {
-    return 0;
-  }
 
   if (!::dbus_g_proxy_call(proxy.gproxy(),
                            cryptohome::kCryptohomeAsyncMount,
@@ -348,7 +398,7 @@ int ChromeOSCryptohomeAsyncMount(
                            G_TYPE_BOOLEAN,
                            replace_tracked_subdirectories,
                            G_TYPE_STRV,
-                           dbus_tracked_subdirectories,
+                           tracked_subdirectories,
                            G_TYPE_INVALID,
                            G_TYPE_INT,
                            &async_call_id,
@@ -356,6 +406,28 @@ int ChromeOSCryptohomeAsyncMount(
     LOG(WARNING) << cryptohome::kCryptohomeAsyncMount << " failed: "
                  << (error->message ? error->message : "Unknown Error.");
   }
+
+  return async_call_id;
+}
+
+extern "C"
+int ChromeOSCryptohomeAsyncMount(
+    const char* user_email,
+    const char* key,
+    bool create_if_missing,
+    bool replace_tracked_subdirectories,
+    const std::vector<std::string>& tracked_subdirectories) {
+  gint async_call_id = 0;
+
+  char** dbus_tracked_subdirectories =
+      ChromeOSCryptohomeCopyStringArray(tracked_subdirectories);
+  if (dbus_tracked_subdirectories == NULL) {
+    return 0;
+  }
+
+  async_call_id = ChromeOSCryptohomeAsyncMountSafe(
+      user_email, key, create_if_missing, replace_tracked_subdirectories,
+      const_cast<const char**>(dbus_tracked_subdirectories));
 
   g_strfreev(dbus_tracked_subdirectories);
 
@@ -596,7 +668,7 @@ bool ChromeOSCryptohomeTpmIsBeingOwned() {
 }
 
 extern "C"
-bool ChromeOSCryptohomeTpmGetPassword(std::string* password) {
+bool ChromeOSCryptohomeTpmGetPasswordSafe(char** password) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy proxy(bus,
                     cryptohome::kCryptohomeServiceName,
@@ -619,11 +691,22 @@ bool ChromeOSCryptohomeTpmGetPassword(std::string* password) {
   }
 
   if (local_password) {
-    password->assign(local_password);
-    g_free(local_password);
+    *password = local_password;
     return true;
   }
+  *password = NULL;
   return false;
+}
+
+extern "C"
+bool ChromeOSCryptohomeTpmGetPassword(std::string* password) {
+  char* local_password = NULL;
+  if (!ChromeOSCryptohomeTpmGetPasswordSafe(&local_password)) {
+    return false;
+  }
+  password->assign(local_password);
+  g_free(local_password);
+  return true;
 }
 
 extern "C"
@@ -669,7 +752,7 @@ void ChromeOSCryptohomeTpmClearStoredPassword() {
 }
 
 extern "C"
-bool ChromeOSCryptohomeGetStatusString(std::string* status) {
+bool ChromeOSCryptohomeGetStatusStringSafe(char** status) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy proxy(bus,
                     cryptohome::kCryptohomeServiceName,
@@ -692,11 +775,37 @@ bool ChromeOSCryptohomeGetStatusString(std::string* status) {
   }
 
   if (local_status) {
-    status->assign(local_status);
-    g_free(local_status);
+    *status = local_status;
     return true;
   }
+  *status = NULL;
   return false;
+}
+
+extern "C"
+bool ChromeOSCryptohomeGetStatusString(std::string* status) {
+  gchar* local_status = NULL;
+  if (!ChromeOSCryptohomeGetStatusStringSafe(&local_status)) {
+    return false;
+  }
+
+  status->assign(local_status);
+  g_free(local_status);
+  return true;
+}
+
+extern "C"
+void ChromeOSCryptohomeFreeString(char* value) {
+  if (value) {
+    g_free(value);
+  }
+}
+
+extern "C"
+void ChromeOSCryptohomeFreeBlob(char* value) {
+  if (value) {
+    g_free(value);
+  }
 }
 
 class CryptohomeSessionConnection {
