@@ -9,7 +9,6 @@
 #include <X11/XKBlib.h>
 #include <X11/Xlib.h>
 #include <glib.h>
-#include <libxklavier/xklavier.h>
 #include <stdlib.h>
 #include <string.h>
 #include <xkeyboard_config_version.h>
@@ -116,17 +115,11 @@ class XKeyboard {
   // Gets whehter we have separate keyboard layout per window, or not. The
   // result is stored in |is_per_window|.  Returns true on success.
   bool GetKeyboardLayoutPerWindow(bool* is_per_window) {
+    // TODO(yusukes): Check if the function is really necessary. If not, we
+    // should remove it. If it's necessary, implement the function without using
+    // libxklavier. http://crosbug.com/11063
     DCHECK(is_per_window);
-    ScopedDisplay display(XOpenDisplay(NULL));  // A connection to the X server.
-    if (!display.get()) {
-      return false;
-    }
-    XklEngine* xkl_engine = xkl_engine_get_instance(display.get());
-    if (!xkl_engine) {
-      LOG(ERROR) << "Can't get XklEngine instance";
-      return false;
-    }
-    *is_per_window = xkl_engine_is_group_per_toplevel_window(xkl_engine);
+    *is_per_window = false;
     return true;
   }
 
@@ -134,16 +127,9 @@ class XKeyboard {
   // is given, the same keyboard layout will be shared for all applications.
   // Returns true on success.
   bool SetKeyboardLayoutPerWindow(bool is_per_window) {
-    ScopedDisplay display(XOpenDisplay(NULL));
-    if (!display.get()) {
-      return false;
-    }
-    XklEngine* xkl_engine = xkl_engine_get_instance(display.get());
-    if (!xkl_engine) {
-      LOG(ERROR) << "Can't get XklEngine instance";
-      return false;
-    }
-    xkl_engine_set_group_per_toplevel_window(xkl_engine, is_per_window);
+    // TODO(yusukes): Check if the function is really necessary. If not, we
+    // should remove it. If it's necessary, implement the function without using
+    // libxklavier. http://crosbug.com/11063
     return true;
   }
 
