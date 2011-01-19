@@ -105,7 +105,7 @@ env = base_env.Clone()
 env.Append(LIBS=['base', 'chromeos', 'rt', 'rootdev'])
 
 # glib, dbus, and ibus environment
-env.ParseConfig('%s --cflags --libs dbus-1 glib-2.0 gudev-1.0 dbus-glib-1 ibus-1.0 libpcrecpp' % env['ENV']['PKG_CONFIG'])
+env.ParseConfig('%s --cflags --libs dbus-1 glib-2.0 gudev-1.0 dbus-glib-1 ibus-1.0 libpcrecpp x11' % env['ENV']['PKG_CONFIG'])
 
 env.GlibMarshal('marshal.glibmarshal.c', 'marshal.list')
 ibus_component_dir = "%s%s" % (env['ENV']['SYSROOT'],
@@ -145,7 +145,7 @@ env_gtest.Append(LIBS=['gtest'])
 
 env_gtest_main = env_test.Clone()
 env_gtest_main.Append(LIBS=['gtest', 'gtest_main', 'chromeos'])
-env_gtest_main.ParseConfig('%s --cflags --libs libpcrecpp' % (
+env_gtest_main.ParseConfig('%s --cflags --libs libpcrecpp x11' % (
     env_test['ENV']['PKG_CONFIG']))
 
 env_network_monitor = env_test.Clone()
