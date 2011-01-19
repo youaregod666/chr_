@@ -966,12 +966,20 @@ class InputMethodStatusConnection {
       LOG(ERROR) << "ibus_bus_new() failed";
       return;
     }
+
+#if IBUS_CHECK_VERSION(1, 3, 99)
+    // Ask libibus to watch the GlobalEngineChanged signal.
+    ibus_bus_set_watch_ibus_signal(ibus_, TRUE);
+#endif
+
     if (ibus_bus_is_connected(ibus_)) {
       LOG(INFO) << "ibus_bus_is_connected(). IBus connection is ready!";
 #if IBUS_CHECK_VERSION(1, 3, 99)
       AddMatchRules();
-      // TODO(yusukes): should we call connection_change_handler_() here?
 #endif
+      if (connection_change_handler_) {
+        connection_change_handler_(language_library_, true);
+      }
     } else {
       // We should not reach this line since /etc/init/ibus.conf ensures that
       // Chrome starts after ibus-daemon writes its socket file. In this case,
