@@ -8,9 +8,6 @@
 #include <base/string_util.h>
 #include <base/utf_string_conversions.h>
 #include <ibus.h>
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-#include <ibuspanelservice.h>
-#endif
 
 namespace chromeos {
 
@@ -20,11 +17,6 @@ namespace chromeos {
 // The anonymous namespace contains boilerplate code for creating a sub
 // class with GObject, as well as member functions.
 namespace {
-
-// TODO(yusukes): Remove all code for ibus-1.3 once we finish migrating to 1.4.
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-const char kLanguageBarObjectPath[] = "/org/chromium/Chrome/LanguageBar";
-#endif
 
 // Define IBusChromeOSPanelService class.
 #define IBUS_TYPE_CHROMEOS_PANEL_SERVICE        \
@@ -47,12 +39,6 @@ const char kLanguageBarObjectPath[] = "/org/chromium/Chrome/LanguageBar";
 struct IBusChromeOSPanelService {
   // The parent object.
   IBusPanelService service;
-
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-  // The IBus connection is used for sending signals.
-  // The ownership is not transferred.
-  IBusConnection* ibus_connection;
-#endif
 
   // The object of the client input method library. This will be used as
   // the first argument of monitor functions.
@@ -84,114 +70,6 @@ gboolean IsAnnotation(IBusAttribute *attr) {
   }
   return FALSE;
 }
-
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-// For IBus-1.3. On IBus-1.4, we can ignore these method calls since they are
-// handled by chromeos_input_method.cc.
-
-// Handles IBus's |FocusIn| method call.
-// Just sends a signal to the language bar.
-gboolean ibus_chromeos_panel_service_focus_in(IBusPanelService *panel,
-                                              const gchar* input_context_path,
-                                              IBusError **error) {
-  // TODO(satorux): We should create an IBusError object and return it as
-  // |error| if we return FALSE.  Otherwise, the program will crash in
-  // ibuspanelservice.cc as the caller expects an error object to be
-  // returned.
-  g_return_val_if_fail(panel, FALSE);
-  g_return_val_if_fail(input_context_path, FALSE);
-
-  IBusConnection* ibus_connection =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
-  ibus_connection_send_signal(ibus_connection,
-                              kLanguageBarObjectPath,
-                              IBUS_INTERFACE_PANEL,
-                              "FocusIn",
-                              G_TYPE_STRING, &input_context_path,
-                              G_TYPE_INVALID);
-  return TRUE;
-}
-
-// Handles IBus's |FocusOut| method call.
-// Just sends a signal to the language bar.
-gboolean ibus_chromeos_panel_service_focus_out(IBusPanelService *panel,
-                                               const gchar* input_context_path,
-                                               IBusError **error) {
-  g_return_val_if_fail(panel, FALSE);
-  g_return_val_if_fail(input_context_path, FALSE);
-
-  IBusConnection* ibus_connection =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
-  ibus_connection_send_signal(ibus_connection,
-                              kLanguageBarObjectPath,
-                              IBUS_INTERFACE_PANEL,
-                              "FocusOut",
-                              G_TYPE_STRING, &input_context_path,
-                              G_TYPE_INVALID);
-  return TRUE;
-}
-
-// Handles IBus's |RegisterProperties| method call.
-// Just sends a signal to the language bar.
-gboolean ibus_chromeos_panel_service_register_properties(
-    IBusPanelService* panel, IBusPropList* prop_list, IBusError** error) {
-  g_return_val_if_fail(panel, FALSE);
-  g_return_val_if_fail(prop_list, FALSE);
-
-  IBusConnection* ibus_connection =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
-  ibus_connection_send_signal(ibus_connection,
-                              kLanguageBarObjectPath,
-                              IBUS_INTERFACE_PANEL,
-                              "RegisterProperties",
-                              IBUS_TYPE_PROP_LIST, &prop_list,
-                              G_TYPE_INVALID);
-  return TRUE;
-}
-
-// Handles IBus's |UpdateProperty| method call.
-// Just sends a signal to the language bar.
-gboolean ibus_chromeos_panel_service_update_property(
-    IBusPanelService* panel, IBusProperty* prop, IBusError** error) {
-  g_return_val_if_fail(panel, FALSE);
-  g_return_val_if_fail(prop, FALSE);
-
-  IBusConnection* ibus_connection =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
-  ibus_connection_send_signal(ibus_connection,
-                              kLanguageBarObjectPath,
-                              IBUS_INTERFACE_PANEL,
-                              "UpdateProperty",
-                              IBUS_TYPE_PROPERTY, &prop,
-                              G_TYPE_INVALID);
-  return TRUE;
-}
-
-// Handles IBus's |StateChanged| method call.
-// Just sends a signal to the language bar.
-gboolean ibus_chromeos_panel_service_state_changed(IBusPanelService *panel,
-                                                   IBusError **error) {
-  g_return_val_if_fail(panel, FALSE);
-
-  IBusConnection* ibus_connection =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->ibus_connection;
-  // TODO(yusukes): Get rid of the dummy string. As of writing, the
-  // language bar needs a dummy string parameter for some implementation
-  // reason.
-  static const char kDummy[] = "dummy";
-  const char* dummy = kDummy;
-  ibus_connection_send_signal(ibus_connection,
-                              kLanguageBarObjectPath,
-                              IBUS_INTERFACE_PANEL,
-                              "StateChanged",
-                              G_TYPE_STRING, &dummy,
-                              G_TYPE_INVALID);
-  return TRUE;
-}
-#endif
-
-#if IBUS_CHECK_VERSION(1, 3, 99)
-// For IBus-1.4.
 
 // Handles IBus's |HideAuxiliaryText| method call.
 // Calls |hide_auxiliary_text| in |monitor_functions|.
@@ -262,88 +140,6 @@ void ibus_chromeos_panel_service_set_cursor_location(
   monitor_functions.set_cursor_location(input_method_library,
                                         x, y, width, height);
 }
-#else
-// For IBus-1.3.
-
-// Handles IBus's |HideAuxiliaryText| method call.
-// Calls |hide_auxiliary_text| in |monitor_functions|.
-gboolean ibus_chromeos_panel_service_hide_auxiliary_text(
-    IBusPanelService *panel,
-    IBusError **error) {
-  g_return_val_if_fail(panel, FALSE);
-  const InputMethodUiStatusMonitorFunctions& monitor_functions =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
-  void* input_method_library =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->input_method_library;
-  g_return_val_if_fail(monitor_functions.hide_auxiliary_text, FALSE);
-
-  monitor_functions.hide_auxiliary_text(input_method_library);
-  return TRUE;
-}
-
-// Handles IBus's |HideLookupTable| method call.
-// Calls |hide_lookup_table| in |monitor_functions|.
-gboolean ibus_chromeos_panel_service_hide_lookup_table(IBusPanelService *panel,
-                                                       IBusError **error) {
-  g_return_val_if_fail(panel, FALSE);
-  const InputMethodUiStatusMonitorFunctions& monitor_functions =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
-  void* input_method_library =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->input_method_library;
-  g_return_val_if_fail(monitor_functions.hide_lookup_table, FALSE);
-
-  monitor_functions.hide_lookup_table(input_method_library);
-  return TRUE;
-}
-
-// Handles IBus's |UpdateAuxiliaryText| method call.
-// Converts IBusText to a std::string, and calls |update_auxiliary_text| in
-// |monitor_functions|
-gboolean ibus_chromeos_panel_service_update_auxiliary_text(
-    IBusPanelService *panel,
-    IBusText *text,
-    gboolean visible,
-    IBusError **error) {
-  g_return_val_if_fail(panel, FALSE);
-  g_return_val_if_fail(text, FALSE);
-  g_return_val_if_fail(text->text, FALSE);
-
-  const InputMethodUiStatusMonitorFunctions& monitor_functions =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
-  void* input_method_library =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->input_method_library;
-  g_return_val_if_fail(monitor_functions.update_auxiliary_text, FALSE);
-
-  // Convert IBusText to a std::string. IBusText is an attributed text,
-  const std::string simple_text = text->text;
-  monitor_functions.update_auxiliary_text(input_method_library,
-                                          simple_text,
-                                          visible == TRUE);
-  return TRUE;
-}
-
-// Handles IBus's |SetCursorLocation| method call.
-// Calls |set_cursor_location| in |monitor_functions|.
-gboolean ibus_chromeos_panel_service_set_cursor_location(
-    IBusPanelService *panel,
-    gint x,
-    gint y,
-    gint width,
-    gint height,
-    IBusError **error) {
-  g_return_val_if_fail(panel, FALSE);
-
-  const InputMethodUiStatusMonitorFunctions& monitor_functions =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
-  void* input_method_library =
-      IBUS_CHROMEOS_PANEL_SERVICE(panel)->input_method_library;
-  g_return_val_if_fail(monitor_functions.set_cursor_location, FALSE);
-
-  monitor_functions.set_cursor_location(input_method_library,
-                                        x, y, width, height);
-  return TRUE;
-}
-#endif
 
 // Returns an string representation of |table| for debugging.
 std::string IBusLookupTableToString(IBusLookupTable* table) {
@@ -367,33 +163,19 @@ std::string IBusLookupTableToString(IBusLookupTable* table) {
 // Handles IBus's |UpdateLookupTable| method call.
 // Creates an InputMethodLookupTable object and calls |update_lookup_table| in
 // |monitor_functions|
-#if IBUS_CHECK_VERSION(1, 3, 99)
 void ibus_chromeos_panel_service_update_lookup_table(
     IBusPanelService *panel,
     IBusLookupTable *table,
     gboolean visible) {
   g_return_if_fail(panel);
   g_return_if_fail(table);
-#else
-gboolean ibus_chromeos_panel_service_update_lookup_table(
-    IBusPanelService *panel,
-    IBusLookupTable *table,
-    gboolean visible,
-    IBusError **error) {
-  g_return_val_if_fail(panel, FALSE);
-  g_return_val_if_fail(table, FALSE);
-#endif
 
   const InputMethodUiStatusMonitorFunctions& monitor_functions =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->monitor_functions;
   void* input_method_library =
       IBUS_CHROMEOS_PANEL_SERVICE(panel)->input_method_library;
 
-#if IBUS_CHECK_VERSION(1, 3, 99)
   g_return_if_fail(monitor_functions.update_lookup_table);
-#else
-  g_return_val_if_fail(monitor_functions.update_lookup_table, FALSE);
-#endif
 
   InputMethodLookupTable lookup_table;
   lookup_table.visible = (visible == TRUE);
@@ -467,39 +249,22 @@ gboolean ibus_chromeos_panel_service_update_lookup_table(
   }
 
   monitor_functions.update_lookup_table(input_method_library, lookup_table);
-#if IBUS_CHECK_VERSION(1, 3, 99)
-  return;
-#else
-  return TRUE;
-#endif
 }
 
 // Creates an IBusChromeOSPanelService. Returns as IBusPanelService for
 // convenience (i.e. it can be passed to ibus_panel_service_* functions
 // without cast).
 IBusPanelService* ibus_chromeos_panel_service_new(
-#if IBUS_CHECK_VERSION(1, 3, 99)
     GDBusConnection *ibus_connection,
-#else
-    IBusConnection *ibus_connection,
-#endif
     void* input_method_library,
     const InputMethodUiStatusMonitorFunctions& monitor_functions) {
   IBusPanelService* service = IBUS_PANEL_SERVICE(
       g_object_new(IBUS_TYPE_CHROMEOS_PANEL_SERVICE,
-#if IBUS_CHECK_VERSION(1, 3, 99)
                    "object-path", IBUS_PATH_PANEL,
-#else
-                   "path", IBUS_PATH_PANEL,
-#endif
                    "connection", ibus_connection,
                    NULL));
 
   // Set members specific to IBusChromeOSPanelService.
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-  IBUS_CHROMEOS_PANEL_SERVICE(service)->ibus_connection =
-      ibus_connection;
-#endif
   IBUS_CHROMEOS_PANEL_SERVICE(service)->input_method_library =
       input_method_library;
   IBUS_CHROMEOS_PANEL_SERVICE(service)->monitor_functions =
@@ -521,15 +286,6 @@ void ibus_chromeos_panel_service_class_init(
   IBusPanelServiceClass* panel_class =
       reinterpret_cast<IBusPanelServiceClass*>(klass);
   // Install member functions.
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-  panel_class->focus_in = ibus_chromeos_panel_service_focus_in;
-  panel_class->focus_out = ibus_chromeos_panel_service_focus_out;
-  panel_class->register_properties =
-      ibus_chromeos_panel_service_register_properties;
-  panel_class->state_changed =
-      ibus_chromeos_panel_service_state_changed;
-  panel_class->update_property = ibus_chromeos_panel_service_update_property;
-#endif
   panel_class->hide_auxiliary_text =
       ibus_chromeos_panel_service_hide_auxiliary_text;
   panel_class->hide_lookup_table =
@@ -550,9 +306,6 @@ void ibus_chromeos_panel_service_class_init(
 // Initializes the given IBusChromeOSPanelService object.
 void ibus_chromeos_panel_service_init(IBusChromeOSPanelService* service) {
   service->input_method_library = NULL;
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-  service->ibus_connection = NULL;
-#endif
 }
 
 }  // namespace
@@ -624,11 +377,7 @@ class InputMethodUiStatusConnection {
 
     // Establish the connection to ibus-daemon.  Note that the
     // ibus_connection object is owned by ibus_.
-#if IBUS_CHECK_VERSION(1, 3, 99)
     GDBusConnection* ibus_connection = ibus_bus_get_connection(ibus_);
-#else
-    IBusConnection* ibus_connection = ibus_bus_get_connection(ibus_);
-#endif
     if (!ibus_connection) {
       LOG(ERROR) << "ibus_bus_get_connection() failed";
       return false;

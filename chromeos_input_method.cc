@@ -6,11 +6,6 @@
 #include "chromeos_input_method_whitelist.h"
 #include "chromeos_keyboard_overlay_map.h"
 
-#include <ibusversion.h>
-
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-#include <dbus/dbus-glib-lowlevel.h>  // for dbus_g_connection_get_connection.
-#endif
 #include <ibus.h>
 
 #include <algorithm>  // for std::reverse.
@@ -22,26 +17,9 @@
 #include <utility>
 
 #include "base/singleton.h"
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-#include "chromeos/dbus/dbus.h"
-#include "chromeos/glib/object.h"
-#endif
 #include "ibus_input_methods.h"
 
 namespace {
-
-// TODO(yusukes): Remove all code for ibus-1.3 once we finish migrating to 1.4.
-// http://crosbug.com/10838
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-#define ibus_engine_desc_get_name(d) ((d)->name)
-#define ibus_engine_desc_get_longname(d) ((d)->longname)
-#define ibus_engine_desc_get_layout(d) ((d)->layout)
-#define ibus_engine_desc_get_language(d) ((d)->language)
-
-const char kCandidateWindowService[] = "org.freedesktop.IBus.Panel";
-const char kCandidateWindowObjectPath[] = "/org/chromium/Chrome/LanguageBar";
-const char kCandidateWindowInterface[] = "org.freedesktop.IBus.Panel";
-#endif
 
 // Also defined in chrome/browser/chromeos/language_preferences.h (Chrome tree).
 const char kGeneralSectionName[] = "general";
@@ -132,11 +110,7 @@ void AddInputMethodNames(
 // Returns IBusInputContext for |input_context_path|. NULL on errors.
 IBusInputContext* GetInputContext(
     const std::string& input_context_path, IBusBus* ibus) {
-#if IBUS_CHECK_VERSION(1, 3, 99)
   GDBusConnection* connection = ibus_bus_get_connection(ibus);
-#else
-  IBusConnection* connection = ibus_bus_get_connection(ibus);
-#endif
   if (!connection) {
     LOG(ERROR) << "IBusConnection is null";
     return NULL;
@@ -457,14 +431,10 @@ class InputMethodStatusConnection {
   void MaybeRestoreConnections() {
     MaybeCreateIBus();
     MaybeRestoreIBusConfig();
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-    MaybeRestoreDBus();
-#endif
   }
 
   // Called by cros API ChromeOSStopInputMethodProcess().
   bool StopInputMethodProcess() {
-#if IBUS_CHECK_VERSION(1, 3, 99)
     if (!IBusConnectionIsAlive()) {
       LOG(ERROR) << "StopInputMethodProcess: IBus connection is not alive";
       return false;
@@ -480,12 +450,6 @@ class InputMethodStatusConnection {
       ibus_config_ = NULL;
     }
     return true;
-#else
-    // For ibus-1.3, we don't implement the API and just return false since
-    // libcros's ibus-1.3 support will be removed soon. Chrome will use the
-    // kill system call to terminate the daemon.
-    return false;
-#endif
   }
 
   // InputMethodType is used for GetInputMethods().
@@ -650,8 +614,6 @@ class InputMethodStatusConnection {
       return false;
     }
 
-#if IBUS_CHECK_VERSION(1, 3, 99)
-    // IBus-1.4 uses GVariant.
     GVariant* variant
       = ibus_config_get_value(ibus_config_, section, config_name);
     if (!variant) {
@@ -711,54 +673,6 @@ class InputMethodStatusConnection {
     }
 
     g_variant_unref(variant);
-#else
-    // IBus-1.3 uses GValue.
-    GValue gvalue = { 0 };  // g_value_init() is not necessary.
-    bool success =
-        ibus_config_get_value(ibus_config_, section, config_name, &gvalue);
-    if (!success) {
-      if (G_IS_VALUE(&gvalue)) {
-        g_value_unset(&gvalue);
-      }
-      return false;
-    }
-
-    // Convert the type of the result from GValue to our structure.
-    GType type = G_VALUE_TYPE(&gvalue);
-    if (type == G_TYPE_STRING) {
-      const char* value = g_value_get_string(&gvalue);
-      DCHECK(value);
-      out_value->type = ImeConfigValue::kValueTypeString;
-      out_value->string_value = value;
-    } else if (type == G_TYPE_INT) {
-      out_value->type = ImeConfigValue::kValueTypeInt;
-      out_value->int_value = g_value_get_int(&gvalue);
-    } else if (type == G_TYPE_BOOLEAN) {
-      out_value->type = ImeConfigValue::kValueTypeBool;
-      out_value->bool_value = g_value_get_boolean(&gvalue);
-    } else if (type == G_TYPE_VALUE_ARRAY) {
-      out_value->type = ImeConfigValue::kValueTypeStringList;
-      out_value->string_list_value.clear();
-      GValueArray* array
-          = reinterpret_cast<GValueArray*>(g_value_get_boxed(&gvalue));
-      for (guint i = 0; array && (i < array->n_values); ++i) {
-        const GType element_type = G_VALUE_TYPE(&(array->values[i]));
-        if (element_type != G_TYPE_STRING) {
-          LOG(ERROR) << "Array element type is not STRING: " << element_type;
-          g_value_unset(&gvalue);
-          return false;
-        }
-        const char* value = g_value_get_string(&(array->values[i]));
-        DCHECK(value);
-        out_value->string_list_value.push_back(value);
-      }
-    } else {
-      LOG(ERROR) << "Unsupported config type: " << G_VALUE_TYPE(&gvalue);
-      success = false;
-    }
-
-    g_value_unset(&gvalue);
-#endif
     return success;
   }
 
@@ -792,8 +706,6 @@ class InputMethodStatusConnection {
       string_list = value.string_list_value;
     }
 
-#if IBUS_CHECK_VERSION(1, 3, 99)
-    // IBus-1.4 uses GVariant.
     // Convert the type of |value| from our structure to GVariant.
     GVariant* variant = NULL;
     switch (value.type) {
@@ -826,43 +738,6 @@ class InputMethodStatusConnection {
                                                    config_name,
                                                    variant);
     g_variant_unref(variant);
-#else
-    // IBus-1.3 uses GValue.
-    // Convert the type of |value| from our structure to GValue.
-    GValue gvalue = { 0 };
-    switch (value.type) {
-      case ImeConfigValue::kValueTypeString:
-        g_value_init(&gvalue, G_TYPE_STRING);
-        g_value_set_string(&gvalue, value.string_value.c_str());
-        break;
-      case ImeConfigValue::kValueTypeInt:
-        g_value_init(&gvalue, G_TYPE_INT);
-        g_value_set_int(&gvalue, value.int_value);
-        break;
-      case ImeConfigValue::kValueTypeBool:
-        g_value_init(&gvalue, G_TYPE_BOOLEAN);
-        g_value_set_boolean(&gvalue, value.bool_value);
-        break;
-      case ImeConfigValue::kValueTypeStringList:
-        g_value_init(&gvalue, G_TYPE_VALUE_ARRAY);
-        const size_t size = string_list.size();  // don't use string_list_value.
-        GValueArray* array = g_value_array_new(size);
-        for (size_t i = 0; i < size; ++i) {
-          GValue array_element = {0};
-          g_value_init(&array_element, G_TYPE_STRING);
-          g_value_set_string(&array_element, string_list[i].c_str());
-          g_value_array_append(array, &array_element);
-        }
-        g_value_take_boxed(&gvalue, array);
-        break;
-    }
-
-    const gboolean success = ibus_config_set_value(ibus_config_,
-                                                   section,
-                                                   config_name,
-                                                   &gvalue);
-    g_value_unset(&gvalue);
-#endif
 
     DLOG(INFO) << "SetImeConfig: " << section << "/" << config_name
                << ": result=" << success;
@@ -875,20 +750,6 @@ class InputMethodStatusConnection {
   bool IBusConnectionIsAlive() {
     return ibus_ && ibus_bus_is_connected(ibus_) && ibus_config_;
   }
-
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-  // Checks if the DBus connection (to ibus-daemon) is alive.
-  bool DBusConnectionIsAlive() {
-    if (!dbus_connection_.get()) {
-      return false;
-    }
-    if (!dbus_connection_->g_connection()) {
-      return false;
-    }
-    return dbus_connection_get_is_connected(dbus_g_connection_get_connection(
-        dbus_connection_->g_connection()));
-  }
-#endif
 
  private:
   friend struct DefaultSingletonTraits<InputMethodStatusConnection>;
@@ -904,19 +765,11 @@ class InputMethodStatusConnection {
   }
 
   ~InputMethodStatusConnection() {
-    // TODO(yusukes): rewrite the comment for IBus-1.4.
-
     // Since the class is used as a leaky singleton, this destructor is never
     // called. However, if you would delete an instance of this class, you have
     // to disconnect all signals so the handler functions will not be called
     // with |this| which is already freed.
     //
-    // if (dbus_proxy_) {
-    //  g_signal_handlers_disconnect_by_func(
-    //      dbus_proxy_.gproxy(),
-    //      reinterpret_cast<gpointer>(G_CALLBACK(DBusProxyDestroyCallback)),
-    //      this);
-    // }
     // if (ibus_) {
     //   g_signal_handlers_disconnect_by_func(
     //       ibus_,
@@ -935,18 +788,6 @@ class InputMethodStatusConnection {
     //       this);
     // }
     //
-    // Second, it is not a good idea to close |dbus_connection_| here since it
-    // actually shares the same socket file descriptor with the connection used
-    // in IBusBus. If we close |dbus_connection_| here, the connection used in
-    // the IBus IM module (im-ibus.so) will also be closed, that causes
-    // input methods to malfunction in Chrome.
-    //
-    // Note that not closing |dbus_connection_| produces DBus warnings
-    // like below, but it's ok as warnings are not critical (See also
-    // crosbug.com/3596):
-    //
-    // "The last reference on a connection was dropped without closing the
-    // connection."
   }
 
   // Creates IBusBus object if it's not created yet.
@@ -966,17 +807,12 @@ class InputMethodStatusConnection {
       LOG(ERROR) << "ibus_bus_new() failed";
       return;
     }
-
-#if IBUS_CHECK_VERSION(1, 3, 99)
     // Ask libibus to watch the GlobalEngineChanged signal.
     ibus_bus_set_watch_ibus_signal(ibus_, TRUE);
-#endif
 
     if (ibus_bus_is_connected(ibus_)) {
       LOG(INFO) << "ibus_bus_is_connected(). IBus connection is ready!";
-#if IBUS_CHECK_VERSION(1, 3, 99)
       AddMatchRules();
-#endif
       if (connection_change_handler_) {
         connection_change_handler_(language_library_, true);
       }
@@ -1014,33 +850,19 @@ class InputMethodStatusConnection {
 
     if (ibus_config_ && !ibus_bus_is_connected(ibus_)) {
       // IBusConfig object can't be used when IBusBus connection is dead.
-#if IBUS_CHECK_VERSION(1, 3, 99)
       g_object_unref(ibus_config_);
-#endif
       ibus_config_ = NULL;
-      // TODO(yusukes): On IBus-1.3, currently there's no safe way to unref the
-      // |ibus_config_| object. See http://crosbug.com/3962 and
-      // http://code.google.com/p/ibus/issues/detail?id=959 for details.
     }
 
     if (!ibus_config_) {
-#if IBUS_CHECK_VERSION(1, 3, 99)
       GDBusConnection* ibus_connection = ibus_bus_get_connection(ibus_);
-#else
-      IBusConnection* ibus_connection = ibus_bus_get_connection(ibus_);
-#endif
       if (!ibus_connection) {
         LOG(ERROR) << "ibus_bus_get_connection() failed. ibus-daemon is "
                    << "restarted and |ibus_| connection is not recovered yet?";
         return;
       }
-#if IBUS_CHECK_VERSION(1, 3, 99)
       const gboolean disconnected
           = g_dbus_connection_is_closed(ibus_connection);
-#else
-      const gboolean disconnected
-          = !ibus_connection_is_connected(ibus_connection);
-#endif
       if (disconnected) {
         // |ibus_| object is not NULL, but the connection between ibus-daemon
         // is not yet established. In this case, we don't create |ibus_config_|
@@ -1050,92 +872,22 @@ class InputMethodStatusConnection {
         return;
       }
       // If memconf has not successfully started yet, ibus_config_new() will
-      // return NULL.
-#if IBUS_CHECK_VERSION(1, 3, 99)
+      // return NULL. Otherwise, it returns a transfer-none and non-floating
+      // object.
       ibus_config_ = ibus_config_new(ibus_connection,
                                      NULL /* do not cancel the operation */,
                                      NULL /* do not get error information */);
-#else
-      ibus_config_ = ibus_config_new(ibus_connection);
-#endif
       if (!ibus_config_) {
         LOG(ERROR) << "ibus_config_new() failed";
         return;
       }
-      g_object_ref_sink(ibus_config_);  // ibus_config_ is floating.
+
+      // TODO(yusukes): g_object_weak_ref might be better since it allows
+      // libcros to detect the delivery of the "destroy" glib signal the
+      // |ibus_config_| object.
+      g_object_ref(ibus_config_);
     }
   }
-
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-  // Creates |dbus_connection_| and |dbus_proxy_| objects, that are necessary
-  // to receive signals from candidate_window.
-  void MaybeRestoreDBus() {
-    if (dbus_connection_.get() && !DBusConnectionIsAlive()) {
-      LOG(ERROR) << "DBus connection to ibus-daemon is dead (ibus-daemon "
-                 << "restarted?). Discard dbus_connection_ and dbus_proxy_ "
-                 << "objects.";
-      dbus_proxy_ = dbus::Proxy();
-      dbus_connection_.reset();
-      // The "The last reference on a connection was dropped without closing the
-      // connection" error should not be displayed since the connection is
-      // already closed.
-    }
-
-    if (!dbus_connection_.get()) {
-      // Establish a DBus connection between the candidate_window process for
-      // Chromium OS to handle signals (e.g. "FocusIn") from the process.
-      const char* address = ibus_get_address();
-      if (!address) {
-        LOG(ERROR) << "Can't create DBus connection object since "
-                   << "ibus_get_address() returned NULL. The socket file of "
-                   << "ibus-daemon is not ready?";
-        return;
-      }
-
-      dbus_connection_.reset(
-          new dbus::BusConnection(dbus::GetPrivateBusConnection(address)));
-      if (!dbus_connection_->HasConnection()) {
-        // When a user logs out, ibus-daemon might be terminated by Upstart
-        // before Chrome exits.
-        dbus_connection_.reset();
-        LOG(ERROR) << "Can't create DBus connection object since "
-                   << "dbus_connection_open_private() failed. The socket file "
-                   << "of ibus-daemon exitst, but ibus-daemon is not running?";
-        return;
-      }
-      LOG(INFO) << "Established private DBus connection to: " << address;
-    }
-
-    if (!dbus_proxy_) {  // If not connected.
-      // Connect to the candidate_window. Note that dbus_connection_add_filter()
-      // does not work without calling dbus::Proxy().
-      const bool kConnectToNameOwner = true;
-      dbus_proxy_ = dbus::Proxy(*dbus_connection_,
-                                kCandidateWindowService,
-                                kCandidateWindowObjectPath,
-                                kCandidateWindowInterface,
-                                kConnectToNameOwner);
-      if (!dbus_proxy_) {
-        // candidate_window is not ready yet. We should not delete the
-        // |dbus_connection_| here since we can reuse the object in the next
-        // MaybeRestoreDBus() call.
-        return;
-      }
-
-      // Register the callback function for "destroy".
-      g_signal_connect(dbus_proxy_.gproxy(),
-                       "destroy",
-                       G_CALLBACK(DBusProxyDestroyCallback),
-                       this);
-      // Register DBus signal handler.
-      dbus_connection_add_filter(
-          dbus_g_connection_get_connection(dbus_connection_->g_connection()),
-          &InputMethodStatusConnection::DispatchSignalFromCandidateWindow,
-          this, NULL);
-      LOG(INFO) << "Proxy object for the candidate_window is ready!";
-    }
-  }
-#endif
 
   // Handles "FocusIn" signal from the candidate_window process.
   void FocusIn(const char* input_context_path) {
@@ -1161,17 +913,6 @@ class InputMethodStatusConnection {
       UpdateUI();
     }
   }
-
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-  // Handles "FocusOut" signal from the candidate_window process.
-  void FocusOut(const char* input_context_path) {
-    if (!input_context_path) {
-      LOG(ERROR) << "NULL context passed";
-    } else {
-      DLOG(INFO) << "FocusOut: " << input_context_path;
-    }
-  }
-#endif
 
   // Handles "StateChanged" signal from the candidate_window process.
   void StateChanged() {
@@ -1274,21 +1015,6 @@ class InputMethodStatusConnection {
     }
   }
 
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-  static void DBusProxyDestroyCallback(DBusGProxy* proxy, gpointer user_data) {
-    LOG(ERROR) << "DBus proxy for candidate_window is destroyed!";
-    // candidate_window might be terminated. libdbus automatically recovers
-    // |dbus_proxy_| when the process restarts. Call MaybeRestoreConnections()
-    // just in case.
-    InputMethodStatusConnection* self
-        = static_cast<InputMethodStatusConnection*>(user_data);
-    if (self) {
-      self->MaybeRestoreConnections();
-      self->notify_focus_in_count_ = 0;
-    }
-  }
-#endif
-
   static void IBusBusConnectedCallback(IBusBus* bus, gpointer user_data) {
     LOG(WARNING) << "IBus connection is recovered.";
     // ibus-daemon might be restarted, or the daemon was not running when Chrome
@@ -1298,9 +1024,7 @@ class InputMethodStatusConnection {
         = static_cast<InputMethodStatusConnection*>(user_data);
     if (self) {
       self->MaybeRestoreConnections();
-#if IBUS_CHECK_VERSION(1, 3, 99)
       self->AddMatchRules();
-#endif
       if (self->connection_change_handler_) {
         self->connection_change_handler_(self->language_library_, true);
       }
@@ -1337,7 +1061,6 @@ class InputMethodStatusConnection {
     }
   }
 
-#if IBUS_CHECK_VERSION(1, 3, 99)
   // Ask ibus-daemon to forward messages for the panel process to licros. See
   // http://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-routing
   // for details.
@@ -1491,115 +1214,6 @@ class InputMethodStatusConnection {
 
     return message;
   }
-#else
-  // Dispatches signals from candidate_window. In this function, we use the
-  // IBus's DBus binding (rather than the dbus-glib and its C++ wrapper).
-  // This is because arguments of "RegisterProperties" and "UpdateProperty"
-  // are fairly complex IBus types, and thus it's probably not a good idea
-  // to write a deserializer for these types from scratch using dbus-glib.
-  static DBusHandlerResult DispatchSignalFromCandidateWindow(
-      DBusConnection* connection, DBusMessage* message, void* object) {
-    DCHECK(message);
-    DCHECK(object);
-
-    InputMethodStatusConnection* self
-        = static_cast<InputMethodStatusConnection*>(object);
-    // Checks the connection to ibus-daemon is still alive. Note that the
-    // |connection| object is for candidate_window, not for ibus-daemon!
-    if (!self->IBusConnectionIsAlive()) {
-      LOG(ERROR) << "IBus connection is lost! DBus signal from the candidate "
-                 << "window is ignored.";
-      return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-    }
-
-    IBusError* error = NULL;
-    if (ibus_message_is_signal(message,
-                               kCandidateWindowInterface,
-                               "FocusIn")) {
-      gchar* input_context_path = NULL;
-      const gboolean retval = ibus_message_get_args(message, &error,
-                                                    G_TYPE_STRING,
-                                                    &input_context_path,
-                                                    G_TYPE_INVALID);
-      if (!retval) {
-        LOG(ERROR) << "FocusIn";
-        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-      }
-      self->FocusIn(input_context_path);
-      return DBUS_HANDLER_RESULT_HANDLED;
-    }
-
-    if (ibus_message_is_signal(message,
-                               kCandidateWindowInterface,
-                               "FocusOut")) {
-      gchar* input_context_path = NULL;
-      const gboolean retval = ibus_message_get_args(message, &error,
-                                                    G_TYPE_STRING,
-                                                    &input_context_path,
-                                                    G_TYPE_INVALID);
-      if (!retval) {
-        LOG(ERROR) << "FocusOut";
-        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-      }
-      self->FocusOut(input_context_path);
-      return DBUS_HANDLER_RESULT_HANDLED;
-    }
-
-    if (ibus_message_is_signal(message,
-                               kCandidateWindowInterface,
-                               "StateChanged")) {
-      const gboolean retval = ibus_message_get_args(message, &error,
-                                                    /* no arguments */
-                                                    G_TYPE_INVALID);
-      if (!retval) {
-        LOG(ERROR) << "StateChanged";
-        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-      }
-      self->StateChanged();
-      return DBUS_HANDLER_RESULT_HANDLED;
-    }
-
-    if (ibus_message_is_signal(message,
-                               kCandidateWindowInterface,
-                               "RegisterProperties")) {
-      IBusPropList* prop_list = NULL;
-
-      // The ibus_message_get_args() function automagically deserializes the
-      // complex IBus structure.
-      const gboolean retval = ibus_message_get_args(message, &error,
-                                                    IBUS_TYPE_PROP_LIST,
-                                                    &prop_list,
-                                                    G_TYPE_INVALID);
-
-      if (!retval) {
-        LOG(ERROR) << "RegisterProperties";
-        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-      }
-      self->RegisterProperties(prop_list);
-      g_object_unref(prop_list);
-      return DBUS_HANDLER_RESULT_HANDLED;
-    }
-
-    if (ibus_message_is_signal(message,
-                               kCandidateWindowInterface,
-                               "UpdateProperty")) {
-      IBusProperty* prop = NULL;
-      const gboolean retval = ibus_message_get_args(message, &error,
-                                                    IBUS_TYPE_PROPERTY,
-                                                    &prop,
-                                                    G_TYPE_INVALID);
-      if (!retval) {
-        LOG(ERROR) << "UpdateProperty";
-        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-      }
-      self->UpdateProperty(prop);
-      g_object_unref(prop);
-      return DBUS_HANDLER_RESULT_HANDLED;
-    }
-
-    return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-  }
-#endif
 
   // A function pointers which point LanguageLibrary::XXXHandler functions.
   // The functions are used when libcros receives signals from the
@@ -1617,13 +1231,6 @@ class InputMethodStatusConnection {
   // call ibus-daemon's API (e.g. activate input methods, set config, ...)
   IBusBus* ibus_;
   IBusConfig* ibus_config_;
-
-#if !IBUS_CHECK_VERSION(1, 3, 99)
-  // Connection to the ibus-daemon via DBus API. These objects are used to
-  // receive signals (e.g. focus in) from the candidate_window.
-  scoped_ptr<dbus::BusConnection> dbus_connection_;
-  dbus::Proxy dbus_proxy_;
-#endif
 
   // Current input context path.
   std::string input_context_path_;
