@@ -394,7 +394,7 @@ std::string PrintPropList(IBusPropList *prop_list, int tree_level) {
 
 namespace chromeos {
 
-// A singleton class that holds IBus and DBus connections.
+// A singleton class that holds IBus connections.
 class InputMethodStatusConnection {
  public:
   // Returns a singleton object of the class. If the singleton object is already
@@ -427,7 +427,7 @@ class InputMethodStatusConnection {
     return object;
   }
 
-  // Restores IBus and DBus connections if they are not ready.
+  // Restores connections to ibus-daemon and ibus-memconf if they are not ready.
   void MaybeRestoreConnections() {
     MaybeCreateIBus();
     MaybeRestoreIBusConfig();
@@ -744,9 +744,7 @@ class InputMethodStatusConnection {
     return (success == TRUE);
   }
 
-  // Checks if IBus connection is alive. Returns true even if |dbus_connection_|
-  // and/or |dbus_proxy_| are not ready yet, since we can call ibus-daemon APIs
-  // without the DBus (candidate_window) connection.
+  // Checks if IBus connection is alive.
   bool IBusConnectionIsAlive() {
     return ibus_ && ibus_bus_is_connected(ibus_) && ibus_config_;
   }
@@ -816,14 +814,6 @@ class InputMethodStatusConnection {
       if (connection_change_handler_) {
         connection_change_handler_(language_library_, true);
       }
-    } else {
-      // We should not reach this line since /etc/init/ibus.conf ensures that
-      // Chrome starts after ibus-daemon writes its socket file. In this case,
-      // the IBusBusConnectedCallback will be called later. All IBus API calls
-      // before the "connected" signel would be lost.
-      LOG(ERROR) << "ibus_bus_is_connected() returned false. "
-                 << "IBus connection is NOT ready. Chrome has started before "
-                 << "ibus-daemon starts?";
     }
 
     // Register three callback functions for IBusBus signals.
@@ -889,7 +879,7 @@ class InputMethodStatusConnection {
     }
   }
 
-  // Handles "FocusIn" signal from the candidate_window process.
+  // Handles "FocusIn" signal from ibus-daemon.
   void FocusIn(const char* input_context_path) {
     if (!input_context_path) {
       LOG(ERROR) << "NULL context passed";
@@ -914,13 +904,13 @@ class InputMethodStatusConnection {
     }
   }
 
-  // Handles "StateChanged" signal from the candidate_window process.
+  // Handles "StateChanged" signal from ibus-daemon.
   void StateChanged() {
     DLOG(INFO) << "StateChanged";
     UpdateUI();
   }
 
-  // Handles "RegisterProperties" signal from the candidate_window process.
+  // Handles "RegisterProperties" signal from ibus-daemon.
   void RegisterProperties(IBusPropList* ibus_prop_list) {
     DLOG(INFO) << "RegisterProperties" << (ibus_prop_list ? "" : " (clear)");
 
@@ -939,7 +929,7 @@ class InputMethodStatusConnection {
     register_ime_properties_(language_library_, prop_list);
   }
 
-  // Handles "UpdateProperty" signal from the candidate_window process.
+  // Handles "UpdateProperty" signal from ibus-daemon.
   void UpdateProperty(IBusProperty* ibus_prop) {
     DLOG(INFO) << "UpdateProperty";
     DCHECK(ibus_prop);
@@ -1216,8 +1206,7 @@ class InputMethodStatusConnection {
   }
 
   // A function pointers which point LanguageLibrary::XXXHandler functions.
-  // The functions are used when libcros receives signals from the
-  // candidate_window.
+  // The functions are used when libcros receives signals from ibus-daemon.
   LanguageCurrentInputMethodMonitorFunction current_input_method_changed_;
   LanguageRegisterImePropertiesFunction register_ime_properties_;
   LanguageUpdateImePropertyFunction update_ime_property_;

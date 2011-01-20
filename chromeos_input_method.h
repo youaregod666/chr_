@@ -194,9 +194,9 @@ typedef void(*LanguageCurrentInputMethodMonitorFunction)(
     void* language_library, const InputMethodDescriptor& current_input_method);
 
 // A monitor function which is called when "RegisterProperties" signal is sent
-// from the candidate_window process. The signal contains a list of properties
-// for a specific input method engine. For example, Japanese input method
-// (ibus-anthy) might have the following properties:
+// from ibus-daemon. The signal contains a list of properties for a specific
+// input method engine. For example, Japanese input method might have the
+// following properties:
 //
 // ----------------------------------
 //   key: InputMode.Hiragana
@@ -217,10 +217,10 @@ typedef void(*LanguageRegisterImePropertiesFunction)(
     void* language_library, const ImePropertyList& prop_list);
 
 // A monitor function which is called when "UpdateProperty" signal is sent
-// from the candidate_window process. The signal contains one or more
-// properties which is updated recently. Keys the signal contains are a subset
-// of keys registered by the "RegisterProperties" signal above. For example,
-// Japanese input method (ibus-anthy) might send the following properties:
+// from ibus-daemon. The signal contains one or more properties which is updated
+// recently. Keys the signal contains are a subset of keys registered by the
+// "RegisterProperties" signal above. For example,
+// Japanese input method might send the following properties:
 //
 // ----------------------------------
 //   key: InputMode.Hiragana
@@ -245,9 +245,8 @@ typedef void(*LanguageUpdateImePropertyFunction)(
 typedef void(*LanguageConnectionChangeMonitorFunction)(
     void* language_library, bool connected);
 
-// Establishes IBus connection to the ibus-daemon and DBus connection to the
-// candidate window process. LanguageXXXFunction functions will be called when
-// status of input method engines is changed.
+// Establishes IBus connection to the ibus-daemon. LanguageXXXFunction functions
+// will be called when status of input method engines is changed.
 class InputMethodStatusConnection;
 extern InputMethodStatusConnection* (*MonitorInputMethodStatus)(
     void* language_library,
@@ -256,7 +255,7 @@ extern InputMethodStatusConnection* (*MonitorInputMethodStatus)(
     LanguageUpdateImePropertyFunction update_ime_property,
     LanguageConnectionChangeMonitorFunction connection_changed);
 
-// Terminates IBus and DBus connections.
+// Terminates IBus connection.
 extern void (*DisconnectInputMethodStatus)(
     InputMethodStatusConnection* connection);
 
