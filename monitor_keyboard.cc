@@ -40,23 +40,6 @@ TEST(ChromeOSKeyboardTest, KeyboardLayout) {
   ASSERT_FALSE(chromeos::SetCurrentKeyboardLayoutByName("fakefake"));
 }
 
-TEST(ChromeOSKeyboardTest, KeyboardLayoutPerWindow) {
-  // Remember the original per window setting.
-  bool original_is_per_window = false;
-  ASSERT_TRUE(chromeos::GetKeyboardLayoutPerWindow(&original_is_per_window));
-
-  // Reverse the per window setting.
-  bool is_per_window = false;
-  ASSERT_TRUE(chromeos::SetKeyboardLayoutPerWindow(!original_is_per_window));
-  ASSERT_TRUE(chromeos::GetKeyboardLayoutPerWindow(&is_per_window));
-  ASSERT_NE(original_is_per_window, is_per_window);
-
-  // Restore the original per window setting.
-  ASSERT_TRUE(chromeos::SetKeyboardLayoutPerWindow(original_is_per_window));
-  ASSERT_TRUE(chromeos::GetKeyboardLayoutPerWindow(&is_per_window));
-  ASSERT_EQ(original_is_per_window, is_per_window);
-}
-
 int main(int argc, char** argv) {
   g_type_init();
   CHECK(LoadCrosLibrary(const_cast<const char**>(argv)))

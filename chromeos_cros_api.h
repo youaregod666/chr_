@@ -165,12 +165,13 @@
 //  90: Added StopInputMethodProcess.
 //  91: Added GetKeyboardOverlayID to input method library.
 //  92: Added IsBootDevicePath.
+//  93: Deprecated GetKeyboardLayoutPerWindow and SetKeyboardLayoutPerWindow.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 83,
-  kCrosAPIVersion = 92
+  kCrosAPIVersion = 93
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
