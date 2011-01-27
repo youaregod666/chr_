@@ -166,12 +166,13 @@
 //  91: Added GetKeyboardOverlayID to input method library.
 //  92: Added IsBootDevicePath.
 //  93: Deprecated GetKeyboardLayoutPerWindow and SetKeyboardLayoutPerWindow.
+//  94: Added LibCrosService service for network proxy resolution functionality.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 83,
-  kCrosAPIVersion = 93
+  kCrosAPIVersion = 94
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

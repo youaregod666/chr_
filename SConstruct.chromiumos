@@ -56,11 +56,21 @@ keyboard_overlay_map_builder = Builder(action =
                                         "./gen_keyboard_overlay_map.py " +
                                         "$SOURCES > $TARGET")
 
+dbus_server_builder = Builder(action =
+ "/usr/bin/dbus-binding-tool --mode=glib-server " \
+ "--prefix=libcros_servicer $SOURCES > $TARGET")
+
+dbus_client_builder = Builder(action =
+ "/usr/bin/dbus-binding-tool --mode=glib-client " \
+ "--prefix=libcros_servicer $SOURCES > $TARGET")
+
 base_env = Environment()
 base_env['BUILDERS']['GlibMarshal'] = glib_marshal_builder
 base_env['BUILDERS']['IBusEngines'] = ibus_engines_builder
 base_env['BUILDERS']['InputMethodWhitelist'] = input_methodwhitelist_builder
 base_env['BUILDERS']['KeyboardOverlayMap'] = keyboard_overlay_map_builder
+base_env['BUILDERS']['DBusServer'] = dbus_server_builder
+base_env['BUILDERS']['DBusClient'] = dbus_client_builder
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
   value = os.environ.get(key)
   if value != None:
@@ -84,6 +94,7 @@ SOURCES = Split('''\
   chromeos_input_method.cc
   chromeos_input_method_ui.cc
   chromeos_keyboard.cc
+  chromeos_libcros_service.cc
   chromeos_login.cc
   chromeos_login_helpers.cc
   chromeos_mount.cc
@@ -97,7 +108,10 @@ SOURCES = Split('''\
   chromeos_touchpad.cc
   chromeos_update.cc
   chromeos_update_engine.cc
+  libcros_service.cc
+  libcros_servicer.cc
   marshal.glibmarshal.c
+  network_proxy_resolver_handler.cc
   version_check.cc
 ''')
 
@@ -108,6 +122,7 @@ env.Append(LIBS=['base', 'chromeos', 'rt', 'rootdev'])
 env.ParseConfig('%s --cflags --libs dbus-1 glib-2.0 gudev-1.0 dbus-glib-1 ibus-1.0 libpcrecpp x11' % env['ENV']['PKG_CONFIG'])
 
 env.GlibMarshal('marshal.glibmarshal.c', 'marshal.list')
+
 ibus_component_dir = "%s%s" % (env['ENV']['SYSROOT'],
                                '/usr/share/ibus/component/')
 ime_whitelist_file = env['ENV']['SYSROOT'] + '/usr/share/chromeos-assets/' + \
@@ -127,6 +142,11 @@ env.InputMethodWhitelist('chromeos_input_method_whitelist.h',
 
 env.KeyboardOverlayMap('chromeos_keyboard_overlay_map.h',
 			ime_whitelist_file)
+
+env.DBusServer('bindings_server.h',
+               ['libcros_service.xml'])
+env.DBusClient('bindings_client.h',
+               ['libcros_service.xml'])
 
 # test_libbase_ndebug is built to catch NDEBUG mismatches between this
 # library and libbase.  It is not installed.
@@ -150,6 +170,8 @@ env_gtest_main.ParseConfig('%s --cflags --libs libpcrecpp x11' % (
 
 env_network_monitor = env_test.Clone()
 env_network_monitor.Append(LIBS=['dbus-glib-1'])
+
+env_libcros_service_test = env.Clone()
 
 Load = base_env.Object('load.cc')
 
@@ -186,5 +208,15 @@ tests = [
 ]
 test_alias = Alias('test', tests)
 AlwaysBuild(test_alias)
+
+libcros_service_tests = [
+  env_libcros_service_test.Program(
+      'libcros_service_tester',
+      ['libcros_service_tester.cc',
+       'marshal.glibmarshal.c']),
+]
+libcros_service_test_alias = \
+    Alias('libcros_service_test', libcros_service_tests)
+AlwaysBuild(libcros_service_test_alias)
 
 Alias('crosapi', base_env.StaticLibrary('crosapi', Load), CCFLAGS='-ggdb')
