@@ -262,13 +262,17 @@ extern void (*DisconnectInputMethodStatus)(
 // Stops ibus-daemon. Returns true on success.
 extern bool (*StopInputMethodProcess)(InputMethodStatusConnection* connection);
 
+// DEPRECATED. WILL BE REMOVED SOON.
 // Updates the list of active input methods.  This will be returned by
 // GetActiveInputMethods() if an ibus connection is not available.
+// TODO(satorux): Remove the function.
 extern bool (*SetActiveInputMethods)(InputMethodStatusConnection* connection,
                                      const ImeConfigValue& value);
 
+// DEPRECATED. WILL BE REMOVED SOON.
 // Gets all input method engines that are currently active. Caller has to
 // delete the returned list. This function might return NULL on error.
+// TODO(satorux): Remove the function.
 extern InputMethodDescriptors* (*GetActiveInputMethods)(
     InputMethodStatusConnection* connection);
 

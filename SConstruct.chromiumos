@@ -194,14 +194,8 @@ AlwaysBuild(unittest_alias)
 # Tests that do require libcros.so.
 tests = [
   env_test.Program('monitor_power', ['monitor_power.cc', Load]),
-  # This doesn't compile:
-  # env_gtest.Program('monitor_input_method',
-  #                   ['monitor_input_method.cc', Load]),
-  env_gtest.Program('monitor_keyboard', ['monitor_keyboard.cc', Load]),
   env_network_monitor.Program('monitor_network', ['monitor_network.cc', Load]),
   env_test.Program('monitor_mount', ['monitor_mount.cc', Load]),
-  env_test.Program('monitor_input_method_ui',
-                   ['monitor_input_method_ui.cc', Load]),
   env_test.Program('login_drive', ['drive_login.cc', Load]),
   env_test.Program('monitor_update_engine', ['monitor_update_engine.cc', Load]),
   env_test.Program('cryptohome_drive', ['drive_cryptohome.cc', Load])

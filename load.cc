@@ -93,12 +93,6 @@ DECL_FUNC_1(DisconnectInputMethodStatus, void, InputMethodStatusConnection*);
 DECL_FUNC_1(StopInputMethodProcess, bool, InputMethodStatusConnection*);
 DECL_FUNC_1(GetSupportedInputMethods,
     InputMethodDescriptors*, InputMethodStatusConnection*);
-DECL_FUNC_1(GetActiveInputMethods,
-    InputMethodDescriptors*, InputMethodStatusConnection*);
-DECL_FUNC_2(SetActiveInputMethods,
-    bool,
-    InputMethodStatusConnection*,
-    const ImeConfigValue&);
 DECL_FUNC_2(ChangeInputMethod,
     bool, InputMethodStatusConnection*, const char*);
 DECL_FUNC_1(GetCurrentInputMethod,
@@ -419,8 +413,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(DisconnectInputMethodStatus);
   INIT_FUNC(StopInputMethodProcess);
   INIT_FUNC(GetSupportedInputMethods);
-  INIT_FUNC(GetActiveInputMethods);
-  INIT_FUNC(SetActiveInputMethods);
   INIT_FUNC(ChangeInputMethod);
   INIT_FUNC(GetCurrentInputMethod);
   INIT_FUNC(SetImePropertyActivated);
