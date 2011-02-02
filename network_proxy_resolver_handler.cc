@@ -20,11 +20,13 @@ NetworkProxyResolverHandler::NetworkProxyResolverHandler()
 }
 
 NetworkProxyResolverHandler::~NetworkProxyResolverHandler() {
-  for (size_t i = all_requests_.size() - 1; i >= 0; --i) {
-    LOG(WARNING) << "Pending request for " << all_requests_[i]->source_url;
-    delete all_requests_[i];
+  if (!all_requests_.empty()) {
+    for (size_t i = all_requests_.size() - 1; i >= 0; --i) {
+      LOG(WARNING) << "Pending request for " << all_requests_[i]->source_url;
+      delete all_requests_[i];
+    }
+    all_requests_.clear();
   }
-  all_requests_.clear();
 }
 
 gboolean NetworkProxyResolverHandler::ResolveProxy(gchar* source_url,

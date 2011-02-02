@@ -21,7 +21,7 @@ LibCrosServiceConnection ChromeOSStartLibCrosService() {
     return service;
   }
   delete service;
-  LOG(WARNING) << "Error initializing LibCrosService";
+  LOG(ERROR) << "Error starting LibCrosService as service.";
   return NULL;
 }
 
