@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 #include "chromeos_input_method.h"
+
+#include "chromeos_input_method_ui.h"
 #include "chromeos_input_method_whitelist.h"
 #include "chromeos_keyboard_overlay_map.h"
 
@@ -774,18 +776,11 @@ class InputMethodStatusConnection {
     //       reinterpret_cast<gpointer>(
     //           G_CALLBACK(IBusBusConnectedCallback)),
     //       this);
-    //   g_signal_handlers_disconnect_by_func(
-    //       ibus_,
-    //       reinterpret_cast<gpointer>(
-    //           G_CALLBACK(IBusBusDisconnectedCallback)),
-    //       this);
-    //   g_signal_handlers_disconnect_by_func(
-    //       ibus_,
-    //       reinterpret_cast<gpointer>(
-    //           G_CALLBACK(IBusBusGlobalEngineChangedCallback)),
-    //       this);
+    //   ...
     // }
-    //
+    // if (ibus_panel_service_) {
+    //   g_signal_handlers_disconnect_by_func(
+    //       ...
   }
 
   // Creates IBusBus object if it's not created yet.
@@ -810,25 +805,13 @@ class InputMethodStatusConnection {
 
     if (ibus_bus_is_connected(ibus_)) {
       LOG(INFO) << "ibus_bus_is_connected(). IBus connection is ready!";
-      AddMatchRules();
       if (connection_change_handler_) {
         connection_change_handler_(language_library_, true);
       }
     }
 
     // Register three callback functions for IBusBus signals.
-    g_signal_connect(ibus_,
-                     "connected",
-                     G_CALLBACK(IBusBusConnectedCallback),
-                     this);
-    g_signal_connect(ibus_,
-                     "disconnected",
-                     G_CALLBACK(IBusBusDisconnectedCallback),
-                     this);
-    g_signal_connect(ibus_,
-                     "global-engine-changed",
-                     G_CALLBACK(IBusBusGlobalEngineChangedCallback),
-                     this);
+    ConnectIBusSignals();
   }
 
   // Creates IBusConfig object if it's not created yet AND |ibus_| connection
@@ -879,7 +862,7 @@ class InputMethodStatusConnection {
     }
   }
 
-  // Handles "FocusIn" signal from ibus-daemon.
+  // Handles "FocusIn" signal from chromeos_input_method_ui.
   void FocusIn(const char* input_context_path) {
     if (!input_context_path) {
       LOG(ERROR) << "NULL context passed";
@@ -904,13 +887,13 @@ class InputMethodStatusConnection {
     }
   }
 
-  // Handles "StateChanged" signal from ibus-daemon.
+  // Handles "StateChanged" signal from chromeos_input_method_ui.
   void StateChanged() {
     DLOG(INFO) << "StateChanged";
     UpdateUI();
   }
 
-  // Handles "RegisterProperties" signal from ibus-daemon.
+  // Handles "RegisterProperties" signal from chromeos_input_method_ui.
   void RegisterProperties(IBusPropList* ibus_prop_list) {
     DLOG(INFO) << "RegisterProperties" << (ibus_prop_list ? "" : " (clear)");
 
@@ -929,7 +912,7 @@ class InputMethodStatusConnection {
     register_ime_properties_(language_library_, prop_list);
   }
 
-  // Handles "UpdateProperty" signal from ibus-daemon.
+  // Handles "UpdateProperty" signal from chromeos_input_method_ui.
   void UpdateProperty(IBusProperty* ibus_prop) {
     DLOG(INFO) << "UpdateProperty";
     DCHECK(ibus_prop);
@@ -1005,204 +988,146 @@ class InputMethodStatusConnection {
     }
   }
 
+  // Installs gobject signal handlers to |ibus_|.
+  void ConnectIBusSignals() {
+    if (!ibus_) {
+      return;
+    }
+
+    // We use g_signal_connect_after here since the callback should be called
+    // *after* the IBusBusDisconnectedCallback in chromeos_input_method_ui.cc
+    // is called. chromeos_input_method_ui.cc attaches the panel service object
+    // to |ibus_|, and the callback in this file use the attached object.
+    g_signal_connect_after(ibus_,
+                           "connected",
+                           G_CALLBACK(IBusBusConnectedCallback),
+                           this);
+
+    g_signal_connect(ibus_,
+                     "disconnected",
+                     G_CALLBACK(IBusBusDisconnectedCallback),
+                     this);
+    g_signal_connect(ibus_,
+                     "global-engine-changed",
+                     G_CALLBACK(IBusBusGlobalEngineChangedCallback),
+                     this);
+  }
+
+  // Installs gobject signal handlers to the panel service.
+  void ConnectPanelServiceSignals() {
+    if (!ibus_) {
+      return;
+    }
+
+    IBusPanelService* ibus_panel_service = IBUS_PANEL_SERVICE(
+        g_object_get_data(G_OBJECT(ibus_), kPanelObjectKey));
+    if (!ibus_panel_service) {
+      LOG(ERROR) << "IBusPanelService is NOT available.";
+      return;
+    }
+    // We don't _ref() or _weak_ref() the panel service object, since we're not
+    // interested in the life time of the object.
+
+    g_signal_connect(ibus_panel_service,
+                     "focus-in",
+                     G_CALLBACK(FocusInCallback),
+                     this);
+    g_signal_connect(ibus_panel_service,
+                     "state-changed",
+                     G_CALLBACK(StateChangedCallback),
+                     this);
+    g_signal_connect(ibus_panel_service,
+                     "register-properties",
+                     G_CALLBACK(RegisterPropertiesCallback),
+                     this);
+    g_signal_connect(ibus_panel_service,
+                     "update-property",
+                     G_CALLBACK(UpdatePropertyCallback),
+                     this);
+  }
+
+  // Handles "connected" signal from ibus-daemon.
   static void IBusBusConnectedCallback(IBusBus* bus, gpointer user_data) {
     LOG(WARNING) << "IBus connection is recovered.";
     // ibus-daemon might be restarted, or the daemon was not running when Chrome
     // started. Anyway, since |ibus_| connection is now ready, it's possible to
     // create |ibus_config_| object by calling MaybeRestoreConnections().
+    g_return_if_fail(user_data);
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(user_data);
-    if (self) {
-      self->MaybeRestoreConnections();
-      self->AddMatchRules();
-      if (self->connection_change_handler_) {
-        self->connection_change_handler_(self->language_library_, true);
-      }
-      self->notify_focus_in_count_ = 0;
+    self->MaybeRestoreConnections();
+    self->ConnectPanelServiceSignals();
+    if (self->connection_change_handler_) {
+      self->connection_change_handler_(self->language_library_, true);
     }
+    self->notify_focus_in_count_ = 0;
     // TODO(yusukes): Probably we should send all input method preferences in
     // Chrome to ibus-memconf as soon as |ibus_config_| gets ready again.
   }
 
+  // Handles "disconnected" signal from ibus-daemon.
   static void IBusBusDisconnectedCallback(IBusBus* bus, gpointer user_data) {
-    LOG(ERROR) << "IBus connection to ibus-daemon is terminated!";
+    LOG(WARNING) << "IBus connection is terminated!";
     // ibus-daemon might be terminated. Since |ibus_| object will automatically
     // connect to the daemon if it restarts, we don't have to set NULL on ibus_.
     // Call MaybeRestoreConnections() to set NULL to ibus_config_ temporarily.
-    // The function might delete and recreate |dbus_connection_| object as well.
+    g_return_if_fail(user_data);
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(user_data);
-    if (self) {
-      self->MaybeRestoreConnections();
-      if (self->connection_change_handler_) {
-        self->connection_change_handler_(self->language_library_, false);
-      }
-      self->notify_focus_in_count_ = 0;
+    self->MaybeRestoreConnections();
+    if (self->connection_change_handler_) {
+      self->connection_change_handler_(self->language_library_, false);
     }
+    self->notify_focus_in_count_ = 0;
   }
 
+  // Handles "global-engine-changed" signal from ibus-daemon.
   static void IBusBusGlobalEngineChangedCallback(
       IBusBus* bus, gpointer user_data) {
     DLOG(INFO) << "Global engine is changed";
+    g_return_if_fail(user_data);
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(user_data);
-    if (self) {
-      self->UpdateUI();
-    }
+    self->UpdateUI();
   }
 
-  // Ask ibus-daemon to forward messages for the panel process to licros. See
-  // http://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-routing
-  // for details.
-  void AddMatchRules() {
-    g_return_if_fail(ibus_ != NULL);
-
-    const gchar* kMethodNames[] = {
-      "FocusIn", "StateChanged", "RegisterProperties", "UpdateProperty",
-    };
-    for (size_t i = 0; i < arraysize(kMethodNames); ++i) {
-      gchar method_rule[512] = {0};
-      snprintf(method_rule, sizeof(method_rule) - 1,
-               "type='method_call',path='%s',interface='%s',member='%s'",
-               IBUS_PATH_PANEL, IBUS_INTERFACE_PANEL, kMethodNames[i]);
-      ibus_bus_add_match(ibus_, method_rule);
-    }
-    GDBusConnection* connection = ibus_bus_get_connection(ibus_);
-    g_dbus_connection_add_filter(connection, PanelMessageFilter, this, NULL);
-  }
-
-  // A data passed from PanelMessageFilter to PanelMessageFilterIdle.
-  struct PanelMessageFilterData {
-    explicit PanelMessageFilterData(InputMethodStatusConnection* in_self)
-        : self(in_self), type(kDataUnknown),
-          context_path(NULL), prop_list(NULL), property(NULL) {}
-
-    ~PanelMessageFilterData() {
-      if (context_path) {
-        g_free(context_path);
-      }
-      if (prop_list) {
-        g_object_unref(prop_list);
-      }
-      if (property) {
-        g_object_unref(property);
-      }
-    }
-
-    enum DataType {
-      kDataForFocusIn,
-      kDataForStateChanged,
-      kDataForRegisterProperties,
-      kDataForUpdateProperty,
-      kDataUnknown
-    };
-
-    InputMethodStatusConnection* self;
-    DataType type;
-
-    gchar* context_path;
-    IBusPropList* prop_list;
-    IBusProperty* property;
-  };
-
-  // A idle function called in the main thread context.
-  static gboolean PanelMessageFilterIdle(gpointer user_data) {
-    PanelMessageFilterData* data
-        = static_cast<PanelMessageFilterData*>(user_data);
-    DCHECK(data);
-    DCHECK(data->self);
-
-    switch(data->type) {
-      case PanelMessageFilterData::kDataForFocusIn:
-        DCHECK(data->context_path);
-        data->self->FocusIn(data->context_path);
-        break;
-      case PanelMessageFilterData::kDataForStateChanged:
-        data->self->StateChanged();
-        break;
-      case PanelMessageFilterData::kDataForRegisterProperties:
-        DCHECK(data->prop_list);
-        data->self->RegisterProperties(data->prop_list);
-        break;
-      case PanelMessageFilterData::kDataForUpdateProperty:
-        DCHECK(data->property);
-        data->self->UpdateProperty(data->property);
-        break;
-      default:
-        LOG(ERROR) << "Unknown data type:" << data->type;
-        break;
-    }
-    delete data;
-    return FALSE;  // stop the idle timer.
-  }
-
-  // A filter function that is called for all incoming and outgoing messages.
-  // This function is called by glib (GDBus library) in a dedicated thread for
-  // GDBus. YOU SHOULD BE CAREFUL not to call thread unsafe IBus and libcros
-  // functions!!
-  static GDBusMessage* PanelMessageFilter(GDBusConnection* dbus_connection,
-                                          GDBusMessage* message,
-                                          gboolean incoming,
-                                          gpointer user_data) {
-    if (!incoming) {
-      // We don't inspect outgoing messages.
-      return message;
-    }
-
-    GDBusMessageType type =  g_dbus_message_get_message_type(message);
-    if (type != G_DBUS_MESSAGE_TYPE_SIGNAL &&
-        type != G_DBUS_MESSAGE_TYPE_METHOD_CALL) {
-      // We only inspect signals and method calls. don't for method returns,
-      // etc.
-      return message;
-    }
-
-    const gchar* interface = g_dbus_message_get_interface(message);
-    if (g_strcmp0(interface, IBUS_INTERFACE_PANEL) &&
-        g_strcmp0(interface, "org.freedesktop.DBus")) {
-      // We only inspect panel and dbus messages.
-      return message;
-    }
-
-    const gchar* member = g_dbus_message_get_member(message);
-    GVariant* parameters = g_dbus_message_get_body(message);
-
+  // Handles "FocusIn" signal from chromeos_input_method_ui.
+  static void FocusInCallback(IBusPanelService* panel,
+                              const gchar* path,
+                              gpointer user_data) {
+    g_return_if_fail(user_data);
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(user_data);
-    DCHECK(self);
-    PanelMessageFilterData* data = new PanelMessageFilterData(self);
+    self->FocusIn(path);
+  }
 
-    if (!g_strcmp0(member, "FocusIn")) {
-      gchar* context_path = NULL;
-      g_variant_get(parameters, "(&o)", &context_path);
-      data->type = PanelMessageFilterData::kDataForFocusIn;
-      data->context_path = g_strdup(context_path);
-    } else if (!g_strcmp0(member, "StateChanged")) {
-      data->type = PanelMessageFilterData::kDataForStateChanged;
-    } else if (!g_strcmp0(member, "RegisterProperties")) {
-      GVariant* variant = g_variant_get_child_value(parameters, 0);
-      IBusPropList* prop_list
-          = IBUS_PROP_LIST(ibus_serializable_deserialize(variant));
-      if (prop_list) {
-        g_object_ref_sink(prop_list);
-      }
-      g_variant_unref(variant);
-      data->type = PanelMessageFilterData::kDataForRegisterProperties;
-      data->prop_list = prop_list;
-    } else if (!g_strcmp0(member, "UpdateProperty")) {
-      GVariant* variant = g_variant_get_child_value(parameters, 0);
-      IBusProperty* property
-          = IBUS_PROPERTY(ibus_serializable_deserialize(variant));
-      if (property) {
-        g_object_ref_sink(property);
-      }
-      g_variant_unref(variant);
-      data->type = PanelMessageFilterData::kDataForUpdateProperty;
-      data->property = property;
-    }
-    g_idle_add_full(G_PRIORITY_DEFAULT, PanelMessageFilterIdle, data, NULL);
+  // Handles "StateChanged" signal from chromeos_input_method_ui.
+  static void StateChangedCallback(IBusPanelService* panel,
+                                   gpointer user_data) {
+    g_return_if_fail(user_data);
+    InputMethodStatusConnection* self
+        = static_cast<InputMethodStatusConnection*>(user_data);
+    self->StateChanged();
+  }
 
-    return message;
+  // Handles "RegisterProperties" signal from chromeos_input_method_ui.
+  static void RegisterPropertiesCallback(IBusPanelService* panel,
+                                         IBusPropList* prop_list,
+                                         gpointer user_data) {
+    g_return_if_fail(user_data);
+    InputMethodStatusConnection* self
+        = static_cast<InputMethodStatusConnection*>(user_data);
+    self->RegisterProperties(prop_list);
+  }
+
+  // Handles "UpdateProperty" signal from chromeos_input_method_ui.
+  static void UpdatePropertyCallback(IBusPanelService* panel,
+                                     IBusProperty* ibus_prop,
+                                     gpointer user_data) {
+    g_return_if_fail(user_data);
+    InputMethodStatusConnection* self
+        = static_cast<InputMethodStatusConnection*>(user_data);
+    self->UpdateProperty(ibus_prop);
   }
 
   // A function pointers which point LanguageLibrary::XXXHandler functions.

@@ -110,6 +110,7 @@ class InputMethodUiStatusConnection {
 
     if (ibus_panel_service_) {
       LOG(ERROR) << "IBusPanelService is already available. Remove it first.";
+      g_object_set_data(G_OBJECT(ibus_), kPanelObjectKey, NULL);
       g_object_unref(ibus_panel_service_);
       ibus_panel_service_ = NULL;
     }
@@ -126,6 +127,7 @@ class InputMethodUiStatusConnection {
       return false;
     }
     ConnectPanelServiceSignals();
+    g_object_set_data(G_OBJECT(ibus_), kPanelObjectKey, ibus_panel_service_);
     LOG(INFO) << "IBusPanelService object is successfully (re-)created.";
 
     // Request the well-known name.
@@ -275,6 +277,7 @@ class InputMethodUiStatusConnection {
       // we can't unref the panel service object directly here. Because when the
       // service object is deleted, the connection, which the service also has,
       // will be locked again. To avoid deadlock, we use g_idle_add instead.
+      g_object_set_data(G_OBJECT(self->ibus_), kPanelObjectKey, NULL);
       g_idle_add(ReleasePanelService, self->ibus_panel_service_);
       self->ibus_panel_service_ = NULL;
     }

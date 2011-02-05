@@ -17,6 +17,9 @@
 
 namespace chromeos {
 
+// A key for attaching the |ibus_service_panel_| object to |ibus_|.
+const char kPanelObjectKey[] = "panel-object";
+
 // The struct represents the input method lookup table (list of candidates).
 // Used for InputMethodUpdateLookupTableMonitorFunction.
 struct InputMethodLookupTable {
