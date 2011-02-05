@@ -54,19 +54,6 @@ extern bool (*SetCurrentKeyboardLayoutByName)(const std::string& layout_name);
 // Notice: For now, you can't remap Left Control and Left Alt keys to CapsLock.
 extern bool (*RemapModifierKeys)(const ModifierMap& modifier_map);
 
-// DEPRECATED. WILL BE REMOVED SOON.
-// Gets whehter we have separate keyboard layout per window, or not. The
-// result is stored in |is_per_window|.  Returns true on success.
-// TODO(yusukes): Remove the function.
-extern bool (*GetKeyboardLayoutPerWindow)(bool* is_per_window);
-
-// DEPRECATED. WILL BE REMOVED SOON.
-// Sets whether we have separate keyboard layout per window, or not. If false
-// is given, the same keyboard layout will be shared for all applications.
-// Returns true on success.
-// TODO(yusukes): Remove the function.
-extern bool (*SetKeyboardLayoutPerWindow)(bool is_per_window);
-
 // Gets the current auto-repeat mode of the keyboard. The result is stored in
 // |out_mode|. Returns true on success.
 extern bool (*GetAutoRepeatEnabled)(bool* enabled);

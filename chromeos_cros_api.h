@@ -168,12 +168,13 @@
 //  93: Deprecated GetKeyboardLayoutPerWindow and SetKeyboardLayoutPerWindow.
 //  94: Added LibCrosService service for network proxy resolution functionality.
 //  95: Deprecated GetActiveInputMethods and SetActiveInputMethods.
+//  96: Deleted GetKeyboardLayoutPerWindow and SetKeyboardLayoutPerWindow.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 83,
-  kCrosAPIVersion = 95
+  kCrosAPIMinVersion = 93,
+  kCrosAPIVersion = 96
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

@@ -112,27 +112,6 @@ class XKeyboard {
     return layout_name;
   }
 
-  // Gets whehter we have separate keyboard layout per window, or not. The
-  // result is stored in |is_per_window|.  Returns true on success.
-  bool GetKeyboardLayoutPerWindow(bool* is_per_window) {
-    // TODO(yusukes): Check if the function is really necessary. If not, we
-    // should remove it. If it's necessary, implement the function without using
-    // libxklavier. http://crosbug.com/11063
-    DCHECK(is_per_window);
-    *is_per_window = false;
-    return true;
-  }
-
-  // Sets whether we have separate keyboard layout per window, or not. If false
-  // is given, the same keyboard layout will be shared for all applications.
-  // Returns true on success.
-  bool SetKeyboardLayoutPerWindow(bool is_per_window) {
-    // TODO(yusukes): Check if the function is really necessary. If not, we
-    // should remove it. If it's necessary, implement the function without using
-    // libxklavier. http://crosbug.com/11063
-    return true;
-  }
-
   // Gets the current auto-repeat mode of the keyboard. The result is stored in
   // |mode|. Returns true on success.
   bool GetAutoRepeatEnabled(bool* enabled) {
@@ -267,11 +246,7 @@ class XKeyboard {
 
     // On success, update the cache and return true.
     if (successful && (exit_status == 0)) {
-      bool is_per_window = true;
-      if (GetKeyboardLayoutPerWindow(&is_per_window) && !is_per_window) {
-        // Use caching only when XKB setting is not per-window.
-        last_full_layout_name_ = layouts_to_set;
-      }
+      last_full_layout_name_ = layouts_to_set;
       DLOG(INFO) << "XKB layout is changed to " << layouts_to_set;
       return true;
     }
@@ -550,16 +525,6 @@ bool ContainsModifierKeyAsReplacement(
 //
 // licros APIs.
 //
-extern "C"
-bool ChromeOSSetKeyboardLayoutPerWindow(bool is_per_window) {
-  return XKeyboard::Get()->SetKeyboardLayoutPerWindow(is_per_window);
-}
-
-extern "C"
-bool ChromeOSGetKeyboardLayoutPerWindow(bool* is_per_window) {
-  return XKeyboard::Get()->GetKeyboardLayoutPerWindow(is_per_window);
-}
-
 extern "C"
 bool ChromeOSSetCurrentKeyboardLayoutByName(const std::string& layout_name) {
   return XKeyboard::Get()->SetLayout(layout_name);
