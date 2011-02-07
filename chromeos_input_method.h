@@ -262,6 +262,10 @@ extern void (*DisconnectInputMethodStatus)(
 // Stops ibus-daemon. Returns true on success.
 extern bool (*StopInputMethodProcess)(InputMethodStatusConnection* connection);
 
+// Gets all input method engines that are supported, including ones not active.
+// Caller has to delete the returned list. This function never returns NULL.
+extern InputMethodDescriptors* (*GetSupportedInputMethodDescriptors)();
+
 // DEPRECATED. WILL BE REMOVED SOON.
 // Updates the list of active input methods.  This will be returned by
 // GetActiveInputMethods() if an ibus connection is not available.
@@ -276,6 +280,7 @@ extern bool (*SetActiveInputMethods)(InputMethodStatusConnection* connection,
 extern InputMethodDescriptors* (*GetActiveInputMethods)(
     InputMethodStatusConnection* connection);
 
+// DEPRECATED. WILL BE REMOVED SOON.
 // Gets all input method engines that are supported, including ones not active.
 // Caller has to delete the returned list. This function might return NULL on
 // error.

@@ -1222,6 +1222,21 @@ InputMethodDescriptors* ChromeOSGetSupportedInputMethods(
 }
 
 extern "C"
+InputMethodDescriptors* ChromeOSGetSupportedInputMethodDescriptors() {
+  InputMethodDescriptors* input_methods = new InputMethodDescriptors;
+  for (size_t i = 0; i < arraysize(chromeos::ibus_engines); ++i) {
+    if (InputMethodIdIsWhitelisted(chromeos::ibus_engines[i].name)) {
+      input_methods->push_back(chromeos::InputMethodDescriptor(
+          chromeos::ibus_engines[i].name,
+          chromeos::ibus_engines[i].longname,
+          chromeos::ibus_engines[i].layout,
+          chromeos::ibus_engines[i].language));
+    }
+  }
+  return input_methods;
+}
+
+extern "C"
 void ChromeOSSetImePropertyActivated(
     InputMethodStatusConnection* connection, const char* key, bool activated) {
   DLOG(INFO) << "SetImePropertyeActivated: " << key << ": " << activated;
