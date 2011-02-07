@@ -168,26 +168,6 @@ struct ImeConfigValue {
   std::vector<std::string> string_list_value;
 };
 
-// Creates dummy InputMethodDescriptors object. Usually, this function is
-// called only on development enviromnent where libcros.so does not exist.
-// So, obviously you can not move this function to libcros.so.
-// This function is called by src/chrome/browser/chromeos/language_library.cc
-// when EnsureLoaded() fails.
-inline InputMethodDescriptors* CreateFallbackInputMethodDescriptors() {
-  static const char kFallbackInputMethodId[] = "xkb:us::eng";
-  static const char kFallbackInputMethodDisplayName[] = "USA";
-  static const char kFallbackKeyboardLayoutName[] = "us";
-  static const char kFallbackInputMethodLanguageCode[] = "eng";
-
-  InputMethodDescriptors* descriptions = new InputMethodDescriptors;
-  descriptions->push_back(
-      InputMethodDescriptor(kFallbackInputMethodId,
-                            kFallbackInputMethodDisplayName,
-                            kFallbackKeyboardLayoutName,
-                            kFallbackInputMethodLanguageCode));
-  return descriptions;
-}
-
 // A monitor function which is called when current input method is changed by a
 // user.
 typedef void(*LanguageCurrentInputMethodMonitorFunction)(

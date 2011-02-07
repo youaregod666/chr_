@@ -39,7 +39,9 @@ struct ModifierKeyPair {
 };
 typedef std::vector<ModifierKeyPair> ModifierMap;
 
+// DEPRECATED. WILL BE REMOVED SOON.
 // Returns the hardware layout name.
+// TODO(satorux): Remove the function.
 extern std::string (*GetHardwareKeyboardLayoutName)();
 
 // Returns the current layout name like "us". On error, returns "".

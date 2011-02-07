@@ -170,12 +170,14 @@
 //  95: Deprecated GetActiveInputMethods and SetActiveInputMethods.
 //  96: Deleted GetKeyboardLayoutPerWindow and SetKeyboardLayoutPerWindow.
 //  97: Added GetSupportedInputMethodDescriptors
+//  98: Deprecated GetHardwareKeyboardLayoutName and
+//      CreateFallbackInputMethodDescriptors
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 93,
-  kCrosAPIVersion = 97
+  kCrosAPIVersion = 98
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
