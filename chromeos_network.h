@@ -193,7 +193,7 @@ struct ServiceInfo {
   bool passphrase_required;
   const char* passphrase;
   const char* identity;
-  const char* cert_path;
+  const char* cert_path; // DEPRECATED - use EAP fields below
   int64 strength;
   bool favorite;
   bool auto_connect;
@@ -208,6 +208,19 @@ struct ServiceInfo {
   bool is_active;
   bool connectable;
   ConnectivityState connectivity_state;
+  // EAP fields (plus identity from above)
+  const char *eap;
+  const char *inner_eap;
+  const char *anonymous_identity;
+  const char *client_cert;
+  const char *cert_id;
+  const char *private_key;
+  const char *private_key_passwd;
+  const char *key_id;
+  const char *ca_cert;
+  const char *ca_cert_id;
+  const char *pin;
+  const char *password;
 };
 
 struct SystemInfo {

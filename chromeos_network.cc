@@ -12,6 +12,7 @@
 
 #include "marshal.glibmarshal.h"  // NOLINT
 #include "base/scoped_ptr.h"
+#include "base/scoped_vector.h"
 #include "base/string_util.h"
 #include "base/values.h"
 #include "chromeos/dbus/dbus.h"  // NOLINT
@@ -53,7 +54,7 @@ static const char* kActivateCellularModemFunction = "ActivateCellularModem";
 static const char* kSecurityProperty = "Security";
 static const char* kPassphraseProperty = "Passphrase";
 static const char* kIdentityProperty = "Identity";
-static const char* kCertPathProperty = "CertPath";
+static const char* kCertPathProperty = "CertPath"; // DEPRECATED
 static const char* kPassphraseRequiredProperty = "PassphraseRequired";
 static const char* kServicesProperty = "Services";
 static const char* kAvailableTechnologiesProperty = "AvailableTechnologies";
@@ -106,6 +107,22 @@ static const char* kFirmwareRevisionProperty = "Cellular.FirmwareRevision";
 static const char* kHardwareRevisionProperty = "Cellular.HardwareRevision";
 static const char* kLastDeviceUpdateProperty = "Cellular.LastDeviceUpdate";
 static const char* kPRLVersionProperty = "Cellular.PRLVersion"; // (INT16)
+static const char* kCertpathSettingsPrefix = "SETTINGS:";
+
+// Connman EAP service properties
+static const char* kEAPIdentityProperty = "EAP.Identity";
+static const char* kEAPEAPProperty = "EAP.EAP";
+static const char* kEAPInnerEAPProperty = "EAP.InnerEAP";
+static const char* kEAPAnonymousIdentityProperty = "EAP.AnonymousIdentity";
+static const char* kEAPClientCertProperty = "EAP.ClientCert";
+static const char* kEAPCertIDProperty = "EAP.CertID";
+static const char* kEAPPrivateKeyProperty = "EAP.PrivateKey";
+static const char* kEAPPrivateKeyPasswordProperty = "EAP.PrivateKeyPassword";
+static const char* kEAPKeyIDProperty = "EAP.KeyID";
+static const char* kEAPCACertProperty = "EAP.CACert";
+static const char* kEAPCACertIDProperty = "EAP.CACertID";
+static const char* kEAPPINProperty = "EAP.PIN";
+static const char* kEAPPasswordProperty = "EAP.Password";
 
 // Connman monitored properties
 static const char* kMonitorPropertyChanged = "PropertyChanged";
@@ -623,13 +640,8 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
 
   // Identity
   default_string = "";
-  properties.Retrieve(kIdentityProperty, &default_string);
+  properties.Retrieve(kEAPIdentityProperty, &default_string);
   info->identity = NewStringCopy(default_string);
-
-  // Certificate path
-  default_string = "";
-  properties.Retrieve(kCertPathProperty, &default_string);
-  info->cert_path = NewStringCopy(default_string);
 
   // Strength
   uint8 default_uint8 = 0;
@@ -707,6 +719,77 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   } else {
     info->carrier_info = NULL;
   }
+
+  // EAP type
+  default_string = "";
+  properties.Retrieve(kEAPEAPProperty, &default_string);
+  info->eap = NewStringCopy(default_string);
+  // Inner EAP type
+  default_string = "";
+  properties.Retrieve(kEAPInnerEAPProperty, &default_string);
+  info->inner_eap = NewStringCopy(default_string);
+  // Anonymous identity
+  default_string = "";
+  properties.Retrieve(kEAPAnonymousIdentityProperty, &default_string);
+  info->anonymous_identity = NewStringCopy(default_string);
+  // Client certificate
+  default_string = "";
+  properties.Retrieve(kEAPClientCertProperty, &default_string);
+  info->client_cert = NewStringCopy(default_string);
+  // Certificate ID
+  default_string = "";
+  properties.Retrieve(kEAPCertIDProperty, &default_string);
+  info->cert_id = NewStringCopy(default_string);
+  // Private key
+  default_string = "";
+  properties.Retrieve(kEAPPrivateKeyProperty, &default_string);
+  info->private_key = NewStringCopy(default_string);
+  // Private key password
+  default_string = "";
+  properties.Retrieve(kEAPPrivateKeyPasswordProperty, &default_string);
+  info->private_key_passwd = NewStringCopy(default_string);
+  // Private key ID
+  default_string = "";
+  properties.Retrieve(kEAPKeyIDProperty, &default_string);
+  info->key_id = NewStringCopy(default_string);
+  // CA certificate
+  default_string = "";
+  properties.Retrieve(kEAPCACertProperty, &default_string);
+  info->ca_cert = NewStringCopy(default_string);
+  // CA certificate ID
+  default_string = "";
+  properties.Retrieve(kEAPCACertIDProperty, &default_string);
+  info->ca_cert_id = NewStringCopy(default_string);
+  // PKCS#11 PIN
+  default_string = "";
+  properties.Retrieve(kEAPPINProperty, &default_string);
+  info->pin = NewStringCopy(default_string);
+  // EAP Password
+  default_string = "";
+  properties.Retrieve(kEAPPasswordProperty, &default_string);
+  info->password = NewStringCopy(default_string);
+
+  // DEPRECATED: Certificate path (backwards compat only)
+  default_string = "";
+  if (strcmp(info->eap, "TLS") == 0) {
+    // "SETTINGS:cert_id=x,key_id=x,pin=x"
+    std::string certpath("SETTINGS:");
+    const char *comma = "";
+    if (strlen(info->cert_id) != 0) {
+      certpath += StringPrintf("%scert_id=%s", comma, info->cert_id);
+      comma = ",";
+    }
+    if (strlen(info->key_id) != 0) {
+      certpath += StringPrintf("%skey_id=%s", comma, info->key_id);
+      comma = ",";
+    }
+    if (strlen(info->pin) != 0) {
+      certpath += StringPrintf("%spin=%s", comma, info->pin);
+      comma = ",";
+    }
+    info->cert_path = NewStringCopy(certpath.c_str());
+  } else
+    info->cert_path = NewStringCopy(default_string);
 
   // Device Info (initialize to NULL)
   info->device_info = NULL;
@@ -1491,6 +1574,27 @@ bool ChromeOSActivateCellularModem(const char* service_path,
   return true;
 }
 
+class ScopedPtrGStrFreeV {
+ public:
+  inline void operator()(char** x) const {
+    g_strfreev(x);
+  }
+};
+
+static const char *map_oldprop_to_newprop(const char *oldprop)
+{
+  if (strcmp(oldprop, "key_id") == 0)
+    return kEAPKeyIDProperty;
+  if (strcmp(oldprop, "cert_id") == 0)
+    return kEAPCertIDProperty;
+  if (strcmp(oldprop, "pin") == 0)
+    return kEAPPINProperty;
+
+  return NULL;
+}
+
+
+
 extern "C"
 bool ChromeOSConfigureWifiService(const char* ssid,
                                   ConnectionSecurity security,
@@ -1528,10 +1632,36 @@ bool ChromeOSConfigureWifiService(const char* ssid,
                         &value_security);
   ::g_hash_table_insert(properties, ::g_strdup(kPassphraseProperty),
                         &value_passphrase);
-  ::g_hash_table_insert(properties, ::g_strdup(kIdentityProperty),
+  ::g_hash_table_insert(properties, ::g_strdup(kEAPIdentityProperty),
                         &value_identity);
-  ::g_hash_table_insert(properties, ::g_strdup(kCertPathProperty),
-                        &value_cert_path);
+
+  // DEPRECATED
+  // Backwards-compatibility for "CertPath=SETTINGS:key_id=1,cert_id=2,..."
+  ScopedVector<glib::Value> values;
+  scoped_ptr_malloc<char *, ScopedPtrGStrFreeV> settings;
+  if (::g_str_has_prefix(certpath, kCertpathSettingsPrefix)) {
+      char **settingsp;
+      settings.reset(::g_strsplit_set(
+          certpath + strlen(kCertpathSettingsPrefix), ",=", 0));
+      for (settingsp = settings.get(); *settingsp != NULL; settingsp += 2) {
+        const char *key = map_oldprop_to_newprop(*settingsp);
+        if (key == NULL) {
+          LOG(WARNING) << "ConfigureWifiService, unknown key '" << key
+                       << "' from certpath ";
+          continue;
+        }
+        glib::Value *value = new glib::Value(*(settingsp + 1));
+        values.push_back(value);
+        ::g_hash_table_insert(properties, ::g_strdup(key), value);
+      }
+      // Presume EAP-TLS if we're here
+      glib::Value *value = new glib::Value("TLS");
+      values.push_back(value);
+      ::g_hash_table_insert(properties, ::g_strdup(kEAPEAPProperty), value);
+  } else {
+    ::g_hash_table_insert(properties, ::g_strdup(kEAPClientCertProperty),
+                          &value_cert_path);
+  }
 
 
   glib::ScopedError error;
@@ -1602,20 +1732,69 @@ bool ChromeOSConnectToNetworkWithCertInfo(const char* service_path,
 
   // Set certificate path if non-null.
   if (certpath) {
-    glib::Value value_certpath(certpath);
-    glib::ScopedError error;
-    if (!::dbus_g_proxy_call(service_proxy.gproxy(),
-                             kSetPropertyFunction,
-                             &Resetter(&error).lvalue(),
-                             G_TYPE_STRING,
-                             kCertPathProperty,
-                             G_TYPE_VALUE,
-                             &value_certpath,
-                             G_TYPE_INVALID,
-                             G_TYPE_INVALID)) {
-      LOG(WARNING) << "ConnectToNetwork failed on set certpath: "
-          << (error->message ? error->message : "Unknown Error.");
-      return false;
+    // DEPRECATED
+    // Backwards-compatibility for "CertPath=SETTINGS:key_id=1,cert_id=2,..."
+    if (::g_str_has_prefix(certpath, kCertpathSettingsPrefix)) {
+      glib::ScopedError error;
+      char **settingsp;
+      scoped_ptr_malloc<char *, ScopedPtrGStrFreeV> settings(
+          ::g_strsplit_set(certpath +
+                           strlen(kCertpathSettingsPrefix), ",=", 0));
+      for (settingsp = settings.get(); *settingsp != NULL; settingsp += 2) {
+        const char *key = map_oldprop_to_newprop(*settingsp);
+        if (key == NULL) {
+          LOG(WARNING) << "ConnectToNetwork, unknown key '" << key
+                       << "' from certpath ";
+          continue;
+        }
+        glib::Value value(*(settingsp + 1));
+        if (!::dbus_g_proxy_call(service_proxy.gproxy(),
+                                 kSetPropertyFunction,
+                                 &Resetter(&error).lvalue(),
+                                 G_TYPE_STRING,
+                                 key,
+                                 G_TYPE_VALUE,
+                                 &value,
+                                 G_TYPE_INVALID,
+                                 G_TYPE_INVALID)) {
+          LOG(WARNING) << "ConnectToNetwork failed on set '" << key
+                       << "' (from certpath): "
+                       << (error->message ? error->message : "Unknown Error.");
+          return false;
+        }
+      }
+      // Presume EAP-TLS if we're here
+      glib::Value value("TLS");
+      if (!::dbus_g_proxy_call(service_proxy.gproxy(),
+                               kSetPropertyFunction,
+                               &Resetter(&error).lvalue(),
+                               G_TYPE_STRING,
+                               kEAPEAPProperty,
+                               G_TYPE_VALUE,
+                               &value,
+                               G_TYPE_INVALID,
+                               G_TYPE_INVALID)) {
+        LOG(WARNING) << "ConnectToNetwork failed on set EAP type'"
+                     << "' (from certpath): "
+                     << (error->message ? error->message : "Unknown Error.");
+        return false;
+      }
+    } else {
+      glib::Value value_certpath(certpath);
+      glib::ScopedError error;
+      if (!::dbus_g_proxy_call(service_proxy.gproxy(),
+                               kSetPropertyFunction,
+                               &Resetter(&error).lvalue(),
+                               G_TYPE_STRING,
+                               kEAPClientCertProperty,
+                               G_TYPE_VALUE,
+                               &value_certpath,
+                               G_TYPE_INVALID,
+                               G_TYPE_INVALID)) {
+        LOG(WARNING) << "ConnectToNetwork failed on set certpath: "
+                     << (error->message ? error->message : "Unknown Error.");
+        return false;
+      }
     }
   }
 
