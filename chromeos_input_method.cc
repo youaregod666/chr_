@@ -741,8 +741,13 @@ class InputMethodStatusConnection {
                                                    variant);
     g_variant_unref(variant);
 
-    DLOG(INFO) << "SetImeConfig: " << section << "/" << config_name
-               << ": result=" << success;
+    if (std::string(section).find(kGeneralSectionName) == 0) {
+      // Call DLOG if |section| is "general" or "general/hotkey".
+      DLOG(INFO) << "SetImeConfig: " << section << "/" << config_name
+                 << ": result=" << (success ? "ok" : "fail")
+                 << ": " << value.ToString();
+    }
+
     return (success == TRUE);
   }
 
@@ -961,7 +966,6 @@ class InputMethodStatusConnection {
                                                layout,
                                                language);
     DLOG(INFO) << "Updating the UI. ID:" << current_input_method.id
-               << ", display_name:" << current_input_method.display_name
                << ", keyboard_layout:" << current_input_method.keyboard_layout;
 
     // Notify the change to update UI.
