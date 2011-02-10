@@ -173,12 +173,13 @@
 //  98: Deprecated GetHardwareKeyboardLayoutName and
 //      CreateFallbackInputMethodDescriptors
 //  99: Deprecated GetSupportedInputMethods.
+// 100: Deprecated GetImeConfig.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 93,
-  kCrosAPIVersion = 99
+  kCrosAPIVersion = 100
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

@@ -292,21 +292,23 @@ extern void (*SetImePropertyActivated)(InputMethodStatusConnection* connection,
                                        const char* key,
                                        bool activated);
 
+// DEPRECATED. WILL BE REMOVED SOON.
 // Get a configuration of ibus-daemon or IBus engines and stores it on
 // |out_value|. Returns true if |out_value| is successfully updated.
 //
 // To retrieve 'panel/custom_font', |section| should be "panel", and
 // |config_name| should be "custom_font".
-// TODO(yusukes): "GetInputMethodConfig" might be better?
+// TODO(satorux): Remove the function.
 extern bool (*GetImeConfig)(InputMethodStatusConnection* connection,
                             const char* section,
                             const char* config_name,
                             ImeConfigValue* out_value);
 
-// Updates a configuration of ibus-daemon or IBus engines with |value|.
-// Returns true if the configuration is successfully updated.
-// You can specify |section| and |config_name| arguments in the same way
-// as GetImeConfig() above.
+// Sets a configuration of ibus-daemon or IBus engines to |value|.
+// Returns true if the configuration is successfully set.
+//
+// To set 'panel/custom_font', |section| should be "panel", and
+// |config_name| should be "custom_font".
 // TODO(yusukes): "SetInputMethodConfig" might be better?
 extern bool (*SetImeConfig)(InputMethodStatusConnection* connection,
                             const char* section,

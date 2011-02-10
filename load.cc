@@ -98,12 +98,6 @@ DECL_FUNC_1(GetCurrentInputMethod,
     InputMethodDescriptor*, InputMethodStatusConnection*);
 DECL_FUNC_3(SetImePropertyActivated,
     void, InputMethodStatusConnection*, const char*, bool);
-DECL_FUNC_4(GetImeConfig,
-    bool,
-    InputMethodStatusConnection*,
-    const char*,
-    const char*,
-    chromeos::ImeConfigValue*);
 DECL_FUNC_4(SetImeConfig,
     bool,
     InputMethodStatusConnection*,
@@ -414,7 +408,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(ChangeInputMethod);
   INIT_FUNC(GetCurrentInputMethod);
   INIT_FUNC(SetImePropertyActivated);
-  INIT_FUNC(GetImeConfig);
   INIT_FUNC(SetImeConfig);
   INIT_FUNC(InputMethodStatusConnectionIsAlive);
   INIT_FUNC(GetKeyboardOverlayId);
