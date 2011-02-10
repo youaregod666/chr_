@@ -683,8 +683,8 @@ class InputMethodStatusConnection {
   //
   // For more information, please read a comment for SetImeConfig() function
   // in chromeos_language.h.
-  bool SetImeConfig(const char* section,
-                    const char* config_name,
+  bool SetImeConfig(const std::string& section,
+                    const std::string& config_name,
                     const ImeConfigValue& value) {
     // See comments in GetImeConfig() where ibus_config_get_value() is used.
     if (!IBusConnectionIsAlive()) {
@@ -692,18 +692,15 @@ class InputMethodStatusConnection {
       return false;
     }
 
-    DCHECK(section);
-    DCHECK(config_name);
-    if (!section || !config_name) {
-      return false;
-    }
+    bool is_preload_engines = false;
 
     // Sanity check: do not preload unknown/unsupported input methods.
     std::vector<std::string> string_list;
     if ((value.type == ImeConfigValue::kValueTypeStringList) &&
-        !strcmp(section, kGeneralSectionName) &&
-        !strcmp(config_name, kPreloadEnginesConfigName)) {
+        (section == kGeneralSectionName) &&
+        (config_name == kPreloadEnginesConfigName)) {
       FilterInputMethods(value.string_list_value, &string_list);
+      is_preload_engines = true;
     } else {
       string_list = value.string_list_value;
     }
@@ -735,18 +732,31 @@ class InputMethodStatusConnection {
       LOG(ERROR) << "SetImeConfig: variant is NULL";
       return false;
     }
-    const gboolean success = ibus_config_set_value(ibus_config_,
-                                                   section,
-                                                   config_name,
-                                                   variant);
-    g_variant_unref(variant);
 
-    if (std::string(section).find(kGeneralSectionName) == 0) {
-      // Call DLOG if |section| is "general" or "general/hotkey".
+    gboolean success = TRUE;
+    if (is_preload_engines) {
+      // For preload_engines, we use synchronous IPC to avoid a race condition:
+      //   github.com/ibus/ibus/commit/0f8cc67a33d4c0e1257a016de659f7e7a603bd62
+      // TODO(yusukes): Find a way to make it asynchronous.
+      success = ibus_config_set_value(ibus_config_,
+                                      section.c_str(),
+                                      config_name.c_str(),
+                                      variant);
       DLOG(INFO) << "SetImeConfig: " << section << "/" << config_name
                  << ": result=" << (success ? "ok" : "fail")
                  << ": " << value.ToString();
+    } else {
+      // For less important config values, we set them asynchronously to avoid
+      // blocking Chrome UI.
+      ibus_config_set_value_async(ibus_config_,
+                                  section.c_str(),
+                                  config_name.c_str(),
+                                  variant,
+                                  NULL,  // cancellable
+                                  NULL,  // callback
+                                  NULL);  // user_data
     }
+    g_variant_unref(variant);
 
     return (success == TRUE);
   }
@@ -1285,6 +1295,8 @@ bool ChromeOSSetImeConfig(InputMethodStatusConnection* connection,
                           const char* section,
                           const char* config_name,
                           const ImeConfigValue& value) {
+  DCHECK(section);
+  DCHECK(config_name);
   g_return_val_if_fail(connection, FALSE);
   connection->MaybeRestoreConnections();
   return connection->SetImeConfig(section, config_name, value);
