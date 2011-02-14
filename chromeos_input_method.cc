@@ -719,6 +719,7 @@ class InputMethodStatusConnection {
       LOG(ERROR) << "SetImeConfig: variant is NULL";
       return false;
     }
+    DCHECK(g_variant_is_floating(variant));
 
     gboolean success = TRUE;
     if (is_preload_engines) {
@@ -743,7 +744,8 @@ class InputMethodStatusConnection {
                                   NULL,  // callback
                                   NULL);  // user_data
     }
-    g_variant_unref(variant);
+    // Since |variant| is floating, ibus_config_set_value(_async) consumes
+    // (takes ownership of) the variable.
 
     return (success == TRUE);
   }
