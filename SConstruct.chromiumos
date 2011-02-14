@@ -99,6 +99,7 @@ SOURCES = Split('''\
   chromeos_login_helpers.cc
   chromeos_mount.cc
   chromeos_network.cc
+  chromeos_network_deprecated.cc
   chromeos_power.cc
   chromeos_resume.cc
   chromeos_screen_lock.cc

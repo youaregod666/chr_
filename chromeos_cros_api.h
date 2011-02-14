@@ -175,12 +175,14 @@
 //  99: Deprecated GetSupportedInputMethods.
 // 100: Deprecated GetImeConfig.
 // 101: Added MonitorResume and DisconnectResume.
+// 102: Moved chromeos_network:GetSystemInfo() into chromeos_network_deprecated
+//      and added new asynchronous getters.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 93,
-  kCrosAPIVersion = 101
+  kCrosAPIVersion = 102
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

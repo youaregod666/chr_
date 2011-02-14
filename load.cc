@@ -20,6 +20,7 @@
 #include "chromeos_login.h"  // NOLINT
 #include "chromeos_mount.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
+#include "chromeos_network_deprecated.h"  // NOLINT
 #include "chromeos_power.h"  // NOLINT
 #include "chromeos_resume.h"  // NOLINT
 #include "chromeos_screen_lock.h"  // NOLINT
@@ -172,6 +173,18 @@ DECL_FUNC_1(DisconnectDataPlanUpdateMonitor, void, DataPlanUpdateMonitor);
 DECL_FUNC_1(RetrieveCellularDataPlans, CellularDataPlanList*, const char*);
 DECL_FUNC_1(RequestCellularDataPlanUpdate, void, const char*);
 DECL_FUNC_1(FreeCellularDataPlanList, void, CellularDataPlanList*);
+DECL_FUNC_2(RequestNetworkManagerInfo, void,
+            NetworkPropertiesCallback, void*);
+DECL_FUNC_3(RequestNetworkServiceInfo, void, const char*,
+            NetworkPropertiesCallback, void*);
+DECL_FUNC_3(RequestNetworkDeviceInfo, void, const char*,
+            NetworkPropertiesCallback, void*);
+DECL_FUNC_3(RequestNetworkProfile, void, const char*,
+            NetworkPropertiesCallback, void*);
+DECL_FUNC_4(RequestNetworkProfileEntry, void, const char*, const char*,
+            NetworkPropertiesCallback, void*);
+DECL_FUNC_4(RequestWifiServicePath, void, const char*, ConnectionSecurity,
+            NetworkPropertiesCallback, void*);
 DECL_FUNC_2(EnableNetworkDevice, bool, ConnectionType, bool);
 DECL_FUNC_1(SetOfflineMode, bool, bool);
 DECL_FUNC_2(SetAutoConnect, bool, const char*, bool);
@@ -478,6 +491,12 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RetrieveCellularDataPlans);
   INIT_FUNC(RequestCellularDataPlanUpdate);
   INIT_FUNC(FreeCellularDataPlanList);
+  INIT_FUNC(RequestNetworkManagerInfo);
+  INIT_FUNC(RequestNetworkServiceInfo);
+  INIT_FUNC(RequestNetworkDeviceInfo);
+  INIT_FUNC(RequestNetworkProfile);
+  INIT_FUNC(RequestNetworkProfileEntry);
+  INIT_FUNC(RequestWifiServicePath);
 
   // Synaptics
   INIT_FUNC(SetSynapticsParameter);
