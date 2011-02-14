@@ -889,12 +889,6 @@ class InputMethodStatusConnection {
     }
   }
 
-  // Handles "StateChanged" signal from chromeos_input_method_ui.
-  void StateChanged() {
-    DLOG(INFO) << "StateChanged";
-    UpdateUI();
-  }
-
   // Handles "RegisterProperties" signal from chromeos_input_method_ui.
   void RegisterProperties(IBusPropList* ibus_prop_list) {
     DLOG(INFO) << "RegisterProperties" << (ibus_prop_list ? "" : " (clear)");
@@ -1034,10 +1028,6 @@ class InputMethodStatusConnection {
                      G_CALLBACK(FocusInCallback),
                      this);
     g_signal_connect(ibus_panel_service,
-                     "state-changed",
-                     G_CALLBACK(StateChangedCallback),
-                     this);
-    g_signal_connect(ibus_panel_service,
                      "register-properties",
                      G_CALLBACK(RegisterPropertiesCallback),
                      this);
@@ -1100,15 +1090,6 @@ class InputMethodStatusConnection {
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(user_data);
     self->FocusIn(path);
-  }
-
-  // Handles "StateChanged" signal from chromeos_input_method_ui.
-  static void StateChangedCallback(IBusPanelService* panel,
-                                   gpointer user_data) {
-    g_return_if_fail(user_data);
-    InputMethodStatusConnection* self
-        = static_cast<InputMethodStatusConnection*>(user_data);
-    self->StateChanged();
   }
 
   // Handles "RegisterProperties" signal from chromeos_input_method_ui.
