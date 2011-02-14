@@ -100,6 +100,7 @@ SOURCES = Split('''\
   chromeos_mount.cc
   chromeos_network.cc
   chromeos_power.cc
+  chromeos_resume.cc
   chromeos_screen_lock.cc
   chromeos_speech_synthesis.cc
   chromeos_synaptics.cc

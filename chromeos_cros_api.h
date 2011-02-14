@@ -174,12 +174,13 @@
 //      CreateFallbackInputMethodDescriptors
 //  99: Deprecated GetSupportedInputMethods.
 // 100: Deprecated GetImeConfig.
+// 101: Added MonitorResume and DisconnectResume.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 93,
-  kCrosAPIVersion = 100
+  kCrosAPIVersion = 101
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

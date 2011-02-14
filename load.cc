@@ -21,6 +21,7 @@
 #include "chromeos_mount.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
 #include "chromeos_power.h"  // NOLINT
+#include "chromeos_resume.h"  // NOLINT
 #include "chromeos_screen_lock.h"  // NOLINT
 #include "chromeos_speech_synthesis.h"  // NOLINT
 #include "chromeos_synaptics.h"  // NOLINT
@@ -80,6 +81,8 @@ DECL_FUNC_1(RetrievePowerInformation, bool, PowerInformation*);
 DECL_FUNC_1(EnableScreenLock, void, bool);
 DECL_FUNC_0(RequestRestart, void);
 DECL_FUNC_0(RequestShutdown, void);
+DECL_FUNC_2(MonitorResume, ResumeConnection, ResumeMonitor, void*);
+DECL_FUNC_1(DisconnectResume, void, ResumeConnection);
 
 // Input methods
 DECL_FUNC_5(MonitorInputMethodStatus,
@@ -399,6 +402,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(EnableScreenLock);
   INIT_FUNC(RequestRestart);
   INIT_FUNC(RequestShutdown);
+  INIT_FUNC(MonitorResume);
+  INIT_FUNC(DisconnectResume);
 
   // Input methods
   INIT_FUNC(MonitorInputMethodStatus);
