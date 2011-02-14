@@ -43,7 +43,7 @@ namespace {  // NOLINT
 
 bool DeviceIsParent(const dbus::BusConnection& bus,
                     dbus::Proxy& proxy) {
-  bool parent;
+  bool parent = false;
   if (!dbus::RetrieveProperty(proxy,
                               kDeviceKitDeviceInterface,
                               "device-is-drive",
