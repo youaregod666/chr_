@@ -808,6 +808,8 @@ class InputMethodStatusConnection {
       LOG(ERROR) << "ibus_bus_new() failed";
       return;
     }
+    // Ask libibus to watch the NameOwnerChanged signal *synchronously*.
+    ibus_bus_set_watch_dbus_signal(ibus_, TRUE);
     // Ask libibus to watch the GlobalEngineChanged signal *synchronously*.
     ibus_bus_set_watch_ibus_signal(ibus_, TRUE);
 
@@ -1035,6 +1037,10 @@ class InputMethodStatusConnection {
                      "global-engine-changed",
                      G_CALLBACK(IBusBusGlobalEngineChangedCallback),
                      this);
+    g_signal_connect(ibus_,
+                     "name-owner-changed",
+                     G_CALLBACK(IBusBusNameOwnerChangedCallback),
+                     this);
   }
 
   // Installs gobject signal handlers to the panel service.
@@ -1110,6 +1116,17 @@ class InputMethodStatusConnection {
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(user_data);
     self->UpdateUI(engine_name);
+  }
+
+  // Handles "name-owner-changed" signal from ibus-daemon.
+  static void IBusBusNameOwnerChangedCallback(
+      IBusBus* bus,
+      const gchar* name, const gchar* old_name, const gchar* new_name,
+      gpointer user_data) {
+    DLOG(INFO) << "Name owner is changed: name=" << name
+               << ", old_name=" << old_name << ", new_name=" << new_name;
+    g_return_if_fail(user_data);
+    // TODO(yusukes): recover |ibus_config_| as needed.
   }
 
   // Handles "FocusIn" signal from chromeos_input_method_ui.
