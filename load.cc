@@ -126,7 +126,6 @@ DECL_FUNC_2(MonitorInputMethodConnection,
             InputMethodConnectionChangeMonitorFunction);
 
 // Keyboard
-DECL_FUNC_0(GetCurrentKeyboardLayoutName, std::string);
 DECL_FUNC_1(SetCurrentKeyboardLayoutByName, bool, const std::string&);
 DECL_FUNC_1(RemapModifierKeys, bool, const ModifierMap&);
 DECL_FUNC_1(GetAutoRepeatEnabled, bool, bool*);
@@ -435,7 +434,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MonitorInputMethodConnection);
 
   // Keyboard
-  INIT_FUNC(GetCurrentKeyboardLayoutName);
   INIT_FUNC(SetCurrentKeyboardLayoutByName);
   INIT_FUNC(RemapModifierKeys);
   INIT_FUNC(GetAutoRepeatEnabled);
