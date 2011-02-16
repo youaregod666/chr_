@@ -117,6 +117,7 @@ IBusInputContext* GetInputContext(
     LOG(ERROR) << "IBusConnection is null";
     return NULL;
   }
+  // This function does not issue an IBus IPC.
   IBusInputContext* context = ibus_input_context_get_input_context(
       input_context_path.c_str(), connection);
   if (!context) {
@@ -441,6 +442,7 @@ class InputMethodStatusConnection {
       LOG(ERROR) << "StopInputMethodProcess: IBus connection is not alive";
       return false;
     }
+    // Ask IBus to exit *synchronously*.
     if (!ibus_bus_exit(ibus_, FALSE /* do not restart */)) {
       LOG(ERROR) << "ibus_bus_exit failed";
       return false;
@@ -544,6 +546,7 @@ class InputMethodStatusConnection {
     if (!context) {
       return;
     }
+    // Activate the property *asynchronously*.
     ibus_input_context_property_activate(
         context, key, (activated ? PROP_STATE_CHECKED : PROP_STATE_UNCHECKED));
 
@@ -578,6 +581,7 @@ class InputMethodStatusConnection {
     // consistent.
     RegisterProperties(NULL);
 
+    // Change the global engine *asynchronously*.
     ibus_bus_set_global_engine_async(ibus_, name);
     return true;
   }
@@ -723,7 +727,7 @@ class InputMethodStatusConnection {
 
     gboolean success = TRUE;
     if (is_preload_engines) {
-      // For preload_engines, we use synchronous IPC to avoid a race condition:
+      // For preload_engines we use *synchronous* IPC to avoid a race condition:
       //   github.com/ibus/ibus/commit/0f8cc67a33d4c0e1257a016de659f7e7a603bd62
       // TODO(yusukes): Find a way to make it asynchronous.
       success = ibus_config_set_value(ibus_config_,
@@ -734,7 +738,7 @@ class InputMethodStatusConnection {
                  << ": result=" << (success ? "ok" : "fail")
                  << ": " << value.ToString();
     } else {
-      // For less important config values, we set them asynchronously to avoid
+      // For less important config values, we set them *asynchronously* to avoid
       // blocking Chrome UI.
       ibus_config_set_value_async(ibus_config_,
                                   section.c_str(),
@@ -804,7 +808,7 @@ class InputMethodStatusConnection {
       LOG(ERROR) << "ibus_bus_new() failed";
       return;
     }
-    // Ask libibus to watch the GlobalEngineChanged signal.
+    // Ask libibus to watch the GlobalEngineChanged signal *synchronously*.
     ibus_bus_set_watch_ibus_signal(ibus_, TRUE);
 
     if (ibus_bus_is_connected(ibus_)) {
@@ -850,7 +854,8 @@ class InputMethodStatusConnection {
       }
       // If memconf has not successfully started yet, ibus_config_new() will
       // return NULL. Otherwise, it returns a transfer-none and non-floating
-      // object.
+      // object. ibus_config_new() sometimes issues a D-Bus *synchronous* IPC
+      // to check if the org.freedesktop.IBus.Config service is available.
       ibus_config_ = ibus_config_new(ibus_connection,
                                      NULL /* do not cancel the operation */,
                                      NULL /* do not get error information */);
@@ -867,6 +872,7 @@ class InputMethodStatusConnection {
   }
 
   // Handles "FocusIn" signal from chromeos_input_method_ui.
+  // TODO(yusukes): Remove this function. See the comment below.
   void FocusIn(const char* input_context_path) {
     if (!input_context_path) {
       LOG(ERROR) << "NULL context passed";
@@ -887,7 +893,7 @@ class InputMethodStatusConnection {
       // TODO(yusukes): Get rid of the workaround once the race is solved.
       // http://crosbug.com/8766
       ++notify_focus_in_count_;
-      UpdateUI();
+      UpdateUI("" /* current global engine id is unknown */);
     }
   }
 
@@ -932,38 +938,59 @@ class InputMethodStatusConnection {
   }
 
   // Retrieves input method status and notifies them to the UI.
+  // |current_global_engine_id| is the current global engine id such as "mozc"
+  // and "xkb:us::eng". If the id is unknown, an empty string "" can be passed.
   // Warning: you can call this function only from ibus callback functions
   // like FocusIn(). See http://crosbug.com/5217#c9 for details.
-  void UpdateUI() {
-    if (!IBusConnectionIsAlive()) {
-      // When ibus-daemon is killed right after receiving GlobalEngineChanged
-      // notification for SetImeConfig("preload_engine", "xkb:us::eng") request,
-      // this path might be taken. This is not an error. We can safely skip the
-      // UI update.
-      LOG(INFO) << "UpdateUI: IBus connection is not alive";
+  void UpdateUI(const char* current_global_engine_id) {
+    DCHECK(current_global_engine_id);
+    std::string id_str = current_global_engine_id;
+
+    if (id_str.empty()) {
+      // "FocusIn" signal is sent without a current engine name.
+      // TODO(yusukes): Remove this part when FocusIn handler is removed.
+      DLOG(INFO) << "UpdateUI: current_global_engine_id is unknown. "
+                 << "Asking ibus-daemon.";
+      if (!IBusConnectionIsAlive()) {
+        // When ibus-daemon is killed right after receiving GlobalEngineChanged
+        // notification for SetImeConfig("preload_engine", "xkb:us::eng")
+        // request, this path might be taken. This is not an error. We can
+        // safely skip the UI update.
+        LOG(INFO) << "UpdateUI: IBus connection is not alive";
+        return;
+      }
+      // Get the current engine from the daemon *synchronously*.
+      IBusEngineDesc* engine_desc = ibus_bus_get_global_engine(ibus_);
+      if (!engine_desc) {
+        LOG(ERROR) << "Global engine is not set";
+        return;
+      }
+      id_str = ibus_engine_desc_get_name(engine_desc);
+      g_object_unref(engine_desc);
+    }
+
+    const chromeos::IBusEngineInfo* engine_info = NULL;
+    for (size_t i = 0; i < arraysize(chromeos::ibus_engines); ++i) {
+      if (chromeos::ibus_engines[i].name == id_str) {
+        engine_info = &chromeos::ibus_engines[i];
+        break;
+      }
+    }
+    if (!engine_info) {
+      LOG(ERROR) << id_str << " is not found in the input method white-list.";
       return;
     }
 
-    IBusEngineDesc* engine_desc = ibus_bus_get_global_engine(ibus_);
-    if (!engine_desc) {
-      LOG(ERROR) << "Global engine is not set";
-      return;
-    }
+    InputMethodDescriptor current_input_method(engine_info->name,
+                                               engine_info->longname,
+                                               engine_info->layout,
+                                               engine_info->language);
 
-    const gchar* name = ibus_engine_desc_get_name(engine_desc);
-    const gchar* longname = ibus_engine_desc_get_longname(engine_desc);
-    const gchar* layout = ibus_engine_desc_get_layout(engine_desc);
-    const gchar* language = ibus_engine_desc_get_language(engine_desc);
-    InputMethodDescriptor current_input_method(name,
-                                               longname,
-                                               layout,
-                                               language);
     DLOG(INFO) << "Updating the UI. ID:" << current_input_method.id
                << ", keyboard_layout:" << current_input_method.keyboard_layout;
 
     // Notify the change to update UI.
     current_input_method_changed_(language_library_, current_input_method);
-    g_object_unref(engine_desc);
   }
 
   void AddIBusInputMethodNames(InputMethodType type,
@@ -1076,12 +1103,13 @@ class InputMethodStatusConnection {
 
   // Handles "global-engine-changed" signal from ibus-daemon.
   static void IBusBusGlobalEngineChangedCallback(
-      IBusBus* bus, gpointer user_data) {
-    DLOG(INFO) << "Global engine is changed";
+      IBusBus* bus, const gchar* engine_name, gpointer user_data) {
+    DCHECK(engine_name);
+    DLOG(INFO) << "Global engine is changed to " << engine_name;
     g_return_if_fail(user_data);
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(user_data);
-    self->UpdateUI();
+    self->UpdateUI(engine_name);
   }
 
   // Handles "FocusIn" signal from chromeos_input_method_ui.
@@ -1134,9 +1162,9 @@ class InputMethodStatusConnection {
   std::string input_context_path_;
 
   // Update the UI on FocusIn signal for the first |kMaxNotifyFocusInCount|
-  // times. 1 should be enough for the counter, but we use 5 for safety.
+  // times. 1 should be enough for the counter, but we use 3 for safety.
   int notify_focus_in_count_;
-  static const int kMaxNotifyFocusInCount = 5;
+  static const int kMaxNotifyFocusInCount = 3;
 
   std::set<std::string> active_engines_;
 };
