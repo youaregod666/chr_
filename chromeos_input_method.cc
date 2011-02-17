@@ -762,8 +762,7 @@ class InputMethodStatusConnection {
         connection_change_handler_(NULL),
         language_library_(NULL),
         ibus_(NULL),
-        ibus_config_(NULL),
-        notify_focus_in_count_(0) {
+        ibus_config_(NULL) {
   }
 
   ~InputMethodStatusConnection() {
@@ -794,10 +793,12 @@ class InputMethodStatusConnection {
     }
     MaybeCreateIBus();
     MaybeRestoreIBusConfig();
-    if (IBusConnectionsAreAlive() && connection_change_handler_) {
+    if (IBusConnectionsAreAlive()) {
       ConnectPanelServiceSignals();
-      LOG(INFO) << "Notifying Chrome that IBus is ready.";
-      connection_change_handler_(language_library_, true);
+      if (connection_change_handler_) {
+        LOG(INFO) << "Notifying Chrome that IBus is ready.";
+        connection_change_handler_(language_library_, true);
+      }
     }
   }
 
@@ -894,29 +895,14 @@ class InputMethodStatusConnection {
   }
 
   // Handles "FocusIn" signal from chromeos_input_method_ui.
-  // TODO(yusukes): Remove this function. See the comment below.
   void FocusIn(const char* input_context_path) {
     if (!input_context_path) {
       LOG(ERROR) << "NULL context passed";
     } else {
       DLOG(INFO) << "FocusIn: " << input_context_path;
     }
-
     // Remember the current ic path.
     input_context_path_ = Or(input_context_path, "");
-
-    if (notify_focus_in_count_ < kMaxNotifyFocusInCount) {
-      // Usually, we don't have to update the UI on FocusIn since the status of
-      // IBus is not per input context on Chrome OS and the update operation is
-      // not so cheap. However, because the first GlobalEngineChanged signal
-      // from ibus-daemon might not be delivered to libcros due to process start
-      // up race, we updates the UI for the first |kMaxNotifyFocusInCount|
-      // times. See http://crosbug.com/8284#c14 for details of the race.
-      // TODO(yusukes): Get rid of the workaround once the race is solved.
-      // http://crosbug.com/8766
-      ++notify_focus_in_count_;
-      UpdateUI("" /* current global engine id is unknown */);
-    }
   }
 
   // Handles "RegisterProperties" signal from chromeos_input_method_ui.
@@ -966,40 +952,19 @@ class InputMethodStatusConnection {
   // like FocusIn(). See http://crosbug.com/5217#c9 for details.
   void UpdateUI(const char* current_global_engine_id) {
     DCHECK(current_global_engine_id);
-    std::string id_str = current_global_engine_id;
-
-    if (id_str.empty()) {
-      // "FocusIn" signal is sent without a current engine name.
-      // TODO(yusukes): Remove this part when FocusIn handler is removed.
-      DLOG(INFO) << "UpdateUI: current_global_engine_id is unknown. "
-                 << "Asking ibus-daemon.";
-      if (!IBusConnectionsAreAlive()) {
-        // When ibus-daemon is killed right after receiving GlobalEngineChanged
-        // notification for SetImeConfig("preload_engine", "xkb:us::eng")
-        // request, this path might be taken. This is not an error. We can
-        // safely skip the UI update.
-        LOG(INFO) << "UpdateUI: IBus connection is not alive";
-        return;
-      }
-      // Get the current engine from the daemon *synchronously*.
-      IBusEngineDesc* engine_desc = ibus_bus_get_global_engine(ibus_);
-      if (!engine_desc) {
-        LOG(ERROR) << "Global engine is not set";
-        return;
-      }
-      id_str = ibus_engine_desc_get_name(engine_desc);
-      g_object_unref(engine_desc);
-    }
 
     const chromeos::IBusEngineInfo* engine_info = NULL;
     for (size_t i = 0; i < arraysize(chromeos::ibus_engines); ++i) {
-      if (chromeos::ibus_engines[i].name == id_str) {
+      if (chromeos::ibus_engines[i].name ==
+          std::string(current_global_engine_id)) {
         engine_info = &chromeos::ibus_engines[i];
         break;
       }
     }
+
     if (!engine_info) {
-      LOG(ERROR) << id_str << " is not found in the input method white-list.";
+      LOG(ERROR) << current_global_engine_id
+                 << " is not found in the input method white-list.";
       return;
     }
 
@@ -1102,9 +1067,6 @@ class InputMethodStatusConnection {
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(user_data);
     self->MaybeRestoreConnections();
-    self->notify_focus_in_count_ = 0;
-    // TODO(yusukes): Probably we should send all input method preferences in
-    // Chrome to ibus-memconf as soon as |ibus_config_| gets ready again.
   }
 
   // Handles "disconnected" signal from ibus-daemon.
@@ -1121,7 +1083,6 @@ class InputMethodStatusConnection {
       LOG(INFO) << "Notifying Chrome that IBus is terminated.";
       self->connection_change_handler_(self->language_library_, false);
     }
-    self->notify_focus_in_count_ = 0;
   }
 
   // Handles "global-engine-changed" signal from ibus-daemon.
@@ -1225,11 +1186,6 @@ class InputMethodStatusConnection {
 
   // Current input context path.
   std::string input_context_path_;
-
-  // Update the UI on FocusIn signal for the first |kMaxNotifyFocusInCount|
-  // times. 1 should be enough for the counter, but we use 3 for safety.
-  int notify_focus_in_count_;
-  static const int kMaxNotifyFocusInCount = 3;
 
   std::set<std::string> active_engines_;
 };
