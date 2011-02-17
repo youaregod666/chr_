@@ -430,15 +430,9 @@ class InputMethodStatusConnection {
     return object;
   }
 
-  // Restores connections to ibus-daemon and ibus-memconf if they are not ready.
-  void MaybeRestoreConnections() {
-    MaybeCreateIBus();
-    MaybeRestoreIBusConfig();
-  }
-
   // Called by cros API ChromeOSStopInputMethodProcess().
   bool StopInputMethodProcess() {
-    if (!IBusConnectionIsAlive()) {
+    if (!IBusConnectionsAreAlive()) {
       LOG(ERROR) << "StopInputMethodProcess: IBus connection is not alive";
       return false;
     }
@@ -448,8 +442,8 @@ class InputMethodStatusConnection {
       return false;
     }
     if (ibus_config_) {
-      // Release |ibus_config_| to make sure next IBusConnectionIsAlive() call
-      // will return false.
+      // Release |ibus_config_| unconditionally to make sure next
+      // IBusConnectionsAreAlive() call will return false.
       g_object_unref(ibus_config_);
       ibus_config_ = NULL;
     }
@@ -468,13 +462,13 @@ class InputMethodStatusConnection {
   InputMethodDescriptors* GetInputMethods(InputMethodType type) {
     if (type == kActiveInputMethods &&
         active_engines_.empty() &&
-        !IBusConnectionIsAlive()) {
+        !IBusConnectionsAreAlive()) {
       LOG(ERROR) << "GetInputMethods: IBus connection is not alive";
       return NULL;
     }
 
     InputMethodDescriptors* input_methods = new InputMethodDescriptors;
-    if (type == kActiveInputMethods && IBusConnectionIsAlive()) {
+    if (type == kActiveInputMethods && IBusConnectionsAreAlive()) {
       GList* engines = NULL;
       engines = ibus_bus_list_active_engines(ibus_);
       // Note that it's not an error for |engines| to be NULL.
@@ -497,7 +491,7 @@ class InputMethodStatusConnection {
   // Returns an input methods which is currently used as a global engine in
   // ibus-daemon.
   InputMethodDescriptor* GetCurrentInputMethod() {
-    if (!IBusConnectionIsAlive()) {
+    if (!IBusConnectionsAreAlive()) {
       LOG(ERROR) << "GetCurrentInputMethod: IBus connection is not alive";
       return NULL;
     }
@@ -530,7 +524,7 @@ class InputMethodStatusConnection {
 
   // Called by cros API ChromeOS(Activate|Deactive)ImeProperty().
   void SetImePropertyActivated(const char* key, bool activated) {
-    if (!IBusConnectionIsAlive()) {
+    if (!IBusConnectionsAreAlive()) {
       LOG(ERROR) << "SetImePropertyActivated: IBus connection is not alive";
       return;
     }
@@ -560,7 +554,7 @@ class InputMethodStatusConnection {
 
   // Called by cros API ChromeOSChangeInputMethod().
   bool ChangeInputMethod(const char* name) {
-    if (!IBusConnectionIsAlive()) {
+    if (!IBusConnectionsAreAlive()) {
       LOG(ERROR) << "ChangeInputMethod: IBus connection is not alive";
       return false;
     }
@@ -596,7 +590,7 @@ class InputMethodStatusConnection {
                     ImeConfigValue* out_value) {
     // Check if the connection is alive. The config object is invalidated
     // if the connection has been closed.
-    if (!IBusConnectionIsAlive()) {
+    if (!IBusConnectionsAreAlive()) {
       LOG(ERROR) << "GetImeConfig: IBus connection is not alive";
       return false;
     }
@@ -678,7 +672,7 @@ class InputMethodStatusConnection {
                     const std::string& config_name,
                     const ImeConfigValue& value) {
     // See comments in GetImeConfig() where ibus_config_get_value() is used.
-    if (!IBusConnectionIsAlive()) {
+    if (!IBusConnectionsAreAlive()) {
       LOG(ERROR) << "SetImeConfig: IBus connection is not alive";
       return false;
     }
@@ -754,8 +748,8 @@ class InputMethodStatusConnection {
     return (success == TRUE);
   }
 
-  // Checks if IBus connection is alive.
-  bool IBusConnectionIsAlive() {
+  // Checks if |ibus_| and |ibus_config_| connections are alive.
+  bool IBusConnectionsAreAlive() {
     return ibus_ && ibus_bus_is_connected(ibus_) && ibus_config_;
   }
 
@@ -791,6 +785,22 @@ class InputMethodStatusConnection {
     //       ...
   }
 
+  // Restores connections to ibus-daemon and ibus-memconf if they are not ready.
+  // If both |ibus_| and |ibus_config_| become ready, the function sends a
+  // notification to Chrome.
+  void MaybeRestoreConnections() {
+    if (IBusConnectionsAreAlive()) {
+      return;
+    }
+    MaybeCreateIBus();
+    MaybeRestoreIBusConfig();
+    if (IBusConnectionsAreAlive() && connection_change_handler_) {
+      ConnectPanelServiceSignals();
+      LOG(INFO) << "Notifying Chrome that IBus is ready.";
+      connection_change_handler_(language_library_, true);
+    }
+  }
+
   // Creates IBusBus object if it's not created yet.
   void MaybeCreateIBus() {
     if (ibus_) {
@@ -808,6 +818,9 @@ class InputMethodStatusConnection {
       LOG(ERROR) << "ibus_bus_new() failed";
       return;
     }
+    // Register callback functions for IBusBus signals.
+    ConnectIBusSignals();
+
     // Ask libibus to watch the NameOwnerChanged signal *synchronously*.
     ibus_bus_set_watch_dbus_signal(ibus_, TRUE);
     // Ask libibus to watch the GlobalEngineChanged signal *synchronously*.
@@ -815,13 +828,7 @@ class InputMethodStatusConnection {
 
     if (ibus_bus_is_connected(ibus_)) {
       LOG(INFO) << "ibus_bus_is_connected(). IBus connection is ready!";
-      if (connection_change_handler_) {
-        connection_change_handler_(language_library_, true);
-      }
     }
-
-    // Register three callback functions for IBusBus signals.
-    ConnectIBusSignals();
   }
 
   // Creates IBusConfig object if it's not created yet AND |ibus_| connection
@@ -831,11 +838,8 @@ class InputMethodStatusConnection {
       return;
     }
 
-    if (ibus_config_ && !ibus_bus_is_connected(ibus_)) {
-      // IBusConfig object can't be used when IBusBus connection is dead.
-      g_object_unref(ibus_config_);
-      ibus_config_ = NULL;
-    }
+    // Destroy the current |ibus_config_| object. No-op if it's NULL.
+    MaybeDestroyIBusConfig();
 
     if (!ibus_config_) {
       GDBusConnection* ibus_connection = ibus_bus_get_connection(ibus_);
@@ -854,7 +858,7 @@ class InputMethodStatusConnection {
                      << "ibus_connection_is_connected() returned false.";
         return;
       }
-      // If memconf has not successfully started yet, ibus_config_new() will
+      // If memconf is not successfully started yet, ibus_config_new() will
       // return NULL. Otherwise, it returns a transfer-none and non-floating
       // object. ibus_config_new() sometimes issues a D-Bus *synchronous* IPC
       // to check if the org.freedesktop.IBus.Config service is available.
@@ -862,7 +866,7 @@ class InputMethodStatusConnection {
                                      NULL /* do not cancel the operation */,
                                      NULL /* do not get error information */);
       if (!ibus_config_) {
-        LOG(ERROR) << "ibus_config_new() failed";
+        LOG(ERROR) << "ibus_config_new() failed. ibus-memconf is not ready?";
         return;
       }
 
@@ -870,6 +874,22 @@ class InputMethodStatusConnection {
       // libcros to detect the delivery of the "destroy" glib signal the
       // |ibus_config_| object.
       g_object_ref(ibus_config_);
+      LOG(INFO) << "ibus_config_ is ready!";
+    }
+  }
+
+  // Destroys IBusConfig object if |ibus_| connection is not ready. This
+  // function does nothing if |ibus_config_| is NULL or |ibus_| connection is
+  // still alive. Note that the IBusConfig object can't be used when |ibus_|
+  // connection is not ready.
+  void MaybeDestroyIBusConfig() {
+    if (!ibus_) {
+      LOG(ERROR) << "MaybeDestroyIBusConfig: ibus_ is NULL";
+      return;
+    }
+    if (ibus_config_ && !ibus_bus_is_connected(ibus_)) {
+      g_object_unref(ibus_config_);
+      ibus_config_ = NULL;
     }
   }
 
@@ -953,7 +973,7 @@ class InputMethodStatusConnection {
       // TODO(yusukes): Remove this part when FocusIn handler is removed.
       DLOG(INFO) << "UpdateUI: current_global_engine_id is unknown. "
                  << "Asking ibus-daemon.";
-      if (!IBusConnectionIsAlive()) {
+      if (!IBusConnectionsAreAlive()) {
         // When ibus-daemon is killed right after receiving GlobalEngineChanged
         // notification for SetImeConfig("preload_engine", "xkb:us::eng")
         // request, this path might be taken. This is not an error. We can
@@ -1082,10 +1102,6 @@ class InputMethodStatusConnection {
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(user_data);
     self->MaybeRestoreConnections();
-    self->ConnectPanelServiceSignals();
-    if (self->connection_change_handler_) {
-      self->connection_change_handler_(self->language_library_, true);
-    }
     self->notify_focus_in_count_ = 0;
     // TODO(yusukes): Probably we should send all input method preferences in
     // Chrome to ibus-memconf as soon as |ibus_config_| gets ready again.
@@ -1094,14 +1110,15 @@ class InputMethodStatusConnection {
   // Handles "disconnected" signal from ibus-daemon.
   static void IBusBusDisconnectedCallback(IBusBus* bus, gpointer user_data) {
     LOG(WARNING) << "IBus connection is terminated!";
-    // ibus-daemon might be terminated. Since |ibus_| object will automatically
-    // connect to the daemon if it restarts, we don't have to set NULL on ibus_.
-    // Call MaybeRestoreConnections() to set NULL to ibus_config_ temporarily.
     g_return_if_fail(user_data);
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(user_data);
-    self->MaybeRestoreConnections();
+    // ibus-daemon might be terminated. Since |ibus_| object will automatically
+    // connect to the daemon if it restarts, we don't have to set NULL on ibus_.
+    // Call MaybeDestroyIBusConfig() to set |ibus_config_| to NULL temporarily.
+    self->MaybeDestroyIBusConfig();
     if (self->connection_change_handler_) {
+      LOG(INFO) << "Notifying Chrome that IBus is terminated.";
       self->connection_change_handler_(self->language_library_, false);
     }
     self->notify_focus_in_count_ = 0;
@@ -1118,15 +1135,46 @@ class InputMethodStatusConnection {
     self->UpdateUI(engine_name);
   }
 
-  // Handles "name-owner-changed" signal from ibus-daemon.
+  // Handles "name-owner-changed" signal from ibus-daemon. The signal is sent
+  // to libcros when an IBus component such as ibus-memconf, ibus-engine-*, ..
+  // is started.
   static void IBusBusNameOwnerChangedCallback(
       IBusBus* bus,
       const gchar* name, const gchar* old_name, const gchar* new_name,
       gpointer user_data) {
+    DCHECK(name);
+    DCHECK(old_name);
+    DCHECK(new_name);
     DLOG(INFO) << "Name owner is changed: name=" << name
                << ", old_name=" << old_name << ", new_name=" << new_name;
+
+    if (name != std::string("org.freedesktop.IBus.Config")) {
+      // Not a signal for ibus-memconf.
+      return;
+    }
+
+    const std::string empty_string;
+    if (old_name != empty_string || new_name == empty_string) {
+      // ibus-memconf died?
+      LOG(WARNING) << "Unexpected name owner change: name=" << name
+                   << ", old_name=" << old_name << ", new_name=" << new_name;
+      // TODO(yusukes): it might be nice to set |ibus_config_| to NULL and call
+      // |connection_change_handler_| with false here to allow Chrome to
+      // recover all input method configurations when ibus-memconf is
+      // automatically restarted by ibus-daemon. Though ibus-memconf is pretty
+      // stable and unlikely crashes.
+      return;
+    }
+
+    LOG(INFO) << "IBus config daemon is started. Recovering ibus_config_";
     g_return_if_fail(user_data);
-    // TODO(yusukes): recover |ibus_config_| as needed.
+    InputMethodStatusConnection* self
+        = static_cast<InputMethodStatusConnection*>(user_data);
+
+    // Try to recover |ibus_config_|. If the |ibus_config_| object is
+    // successfully created, |connection_change_handler_| will be called to
+    // notify Chrome that IBus is ready.
+    self->MaybeRestoreConnections();
   }
 
   // Handles "FocusIn" signal from chromeos_input_method_ui.
@@ -1226,7 +1274,6 @@ extern "C"
 InputMethodDescriptors* ChromeOSGetActiveInputMethods(
     InputMethodStatusConnection* connection) {
   g_return_val_if_fail(connection, NULL);
-  connection->MaybeRestoreConnections();
   // Pass ownership to a caller. Note: GetInputMethods() might return NULL.
   return connection->GetInputMethods(
       InputMethodStatusConnection::kActiveInputMethods);
@@ -1271,7 +1318,6 @@ void ChromeOSSetImePropertyActivated(
   DLOG(INFO) << "SetImePropertyeActivated: " << key << ": " << activated;
   DCHECK(key);
   g_return_if_fail(connection);
-  connection->MaybeRestoreConnections();
   connection->SetImePropertyActivated(key, activated);
 }
 
@@ -1281,7 +1327,6 @@ bool ChromeOSChangeInputMethod(
   DCHECK(name);
   DLOG(INFO) << "ChangeInputMethod: " << name;
   g_return_val_if_fail(connection, false);
-  connection->MaybeRestoreConnections();
   return connection->ChangeInputMethod(name);
 }
 
@@ -1289,7 +1334,6 @@ extern "C"
 InputMethodDescriptor* ChromeOSGetCurrentInputMethod(
     InputMethodStatusConnection* connection) {
   g_return_val_if_fail(connection, NULL);
-  connection->MaybeRestoreConnections();
   // Pass ownership to a caller.
   return connection->GetCurrentInputMethod();
 }
@@ -1301,7 +1345,6 @@ bool ChromeOSGetImeConfig(InputMethodStatusConnection* connection,
                           ImeConfigValue* out_value) {
   DCHECK(out_value);
   g_return_val_if_fail(connection, FALSE);
-  connection->MaybeRestoreConnections();
   return connection->GetImeConfig(section, config_name, out_value);
 }
 
@@ -1313,7 +1356,6 @@ bool ChromeOSSetImeConfig(InputMethodStatusConnection* connection,
   DCHECK(section);
   DCHECK(config_name);
   g_return_val_if_fail(connection, FALSE);
-  connection->MaybeRestoreConnections();
   return connection->SetImeConfig(section, config_name, value);
 }
 
@@ -1332,7 +1374,7 @@ extern "C"
 bool ChromeOSInputMethodStatusConnectionIsAlive(
     InputMethodStatusConnection* connection) {
   g_return_val_if_fail(connection, false);
-  const bool is_connected = connection->IBusConnectionIsAlive();
+  const bool is_connected = connection->IBusConnectionsAreAlive();
   if (!is_connected) {
     LOG(WARNING) << "ChromeOSInputMethodStatusConnectionIsAlive: NOT alive";
   }
