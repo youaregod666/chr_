@@ -93,7 +93,6 @@ DECL_FUNC_5(MonitorInputMethodStatus,
     chromeos::LanguageRegisterImePropertiesFunction,
     chromeos::LanguageUpdateImePropertyFunction,
     chromeos::LanguageConnectionChangeMonitorFunction);
-DECL_FUNC_1(DisconnectInputMethodStatus, void, InputMethodStatusConnection*);
 DECL_FUNC_1(StopInputMethodProcess, bool, InputMethodStatusConnection*);
 DECL_FUNC_0(GetSupportedInputMethodDescriptors, InputMethodDescriptors*);
 DECL_FUNC_2(ChangeInputMethod,
@@ -108,8 +107,6 @@ DECL_FUNC_4(SetImeConfig,
     const char*,
     const char*,
     const ImeConfigValue&);
-DECL_FUNC_1(
-    InputMethodStatusConnectionIsAlive, bool, InputMethodStatusConnection*);
 DECL_FUNC_1(GetKeyboardOverlayId, std::string, const std::string&);
 DECL_FUNC_2(MonitorInputMethodUiStatus,
             InputMethodUiStatusConnection*,
@@ -419,14 +416,12 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
 
   // Input methods
   INIT_FUNC(MonitorInputMethodStatus);
-  INIT_FUNC(DisconnectInputMethodStatus);
   INIT_FUNC(StopInputMethodProcess);
   INIT_FUNC(GetSupportedInputMethodDescriptors);
   INIT_FUNC(ChangeInputMethod);
   INIT_FUNC(GetCurrentInputMethod);
   INIT_FUNC(SetImePropertyActivated);
   INIT_FUNC(SetImeConfig);
-  INIT_FUNC(InputMethodStatusConnectionIsAlive);
   INIT_FUNC(GetKeyboardOverlayId);
   INIT_FUNC(MonitorInputMethodUiStatus);
   INIT_FUNC(DisconnectInputMethodUiStatus);

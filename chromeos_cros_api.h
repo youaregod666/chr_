@@ -178,12 +178,14 @@
 // 102: Moved chromeos_network:GetSystemInfo() into chromeos_network_deprecated
 //      and added new asynchronous getters.
 // 103: Deprecated GetCurrentKeyboardLayoutName.
+// 104: Deprecated DisconnectInputMethodStatus and
+//      InputMethodStatusConnectionIsAlive.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 93,
-  kCrosAPIVersion = 103
+  kCrosAPIVersion = 104
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
