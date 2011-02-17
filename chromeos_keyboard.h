@@ -18,12 +18,13 @@ struct AutoRepeatRate {
 };
 
 enum ModifierKey {
-  kSearchKey = 0,
-  kLeftControlKey,
-  kLeftAltKey,
+  kSearchKey = 0,  // Customizable.
+  kLeftControlKey,  // Customizable.
+  kLeftAltKey,  // Customizable.
   kVoidKey,
   kCapsLockKey,
-
+  // IMPORTANT: You should update kCustomizableKeys[] in .cc file, if you
+  // add a customizable key.
   kNumModifierKeys,
 };
 

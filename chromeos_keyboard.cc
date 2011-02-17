@@ -22,6 +22,12 @@ namespace {
 // The command we use to set/get the current XKB layout and modifier key
 // mapping.
 const char kSetxkbmapCommand[] = "/usr/bin/setxkbmap";
+// See the comment at ModifierKey in the .h file.
+chromeos::ModifierKey kCustomizableKeys[] = {
+  chromeos::kSearchKey,
+  chromeos::kLeftControlKey,
+  chromeos::kLeftAltKey
+};
 
 // This is a wrapper class around Display, that opens and closes X display in
 // the constructor and destructor.
@@ -64,6 +70,7 @@ class XKeyboard {
     // TODO(yusukes): write auto tests for the function.
     chromeos::ModifierMap modifier_map;
     if (!GetModifierMapping(&modifier_map)) {
+      LOG(ERROR) << "Failed to get modifier mapping.";
       return false;
     }
     if (SetLayoutInternal(layout_name, modifier_map, true)) {
@@ -77,15 +84,21 @@ class XKeyboard {
   // layout. Returns true on success.
   bool RemapModifierKeys(const chromeos::ModifierMap& modifier_map) {
     // TODO(yusukes): write auto tests for the function.
+    modifier_keys_are_remapped_ = false;
     const std::string layout_name = GetLayout();
     if (layout_name.empty()) {
       return false;
     }
     if (SetLayoutInternal(layout_name, modifier_map, true)) {
+      modifier_keys_are_remapped_ = true;
       return true;
     }
     LOG(ERROR) << "SetLayoutInternal failed. Retrying without +version option";
-    return SetLayoutInternal(layout_name, modifier_map, false);
+    if (SetLayoutInternal(layout_name, modifier_map, false)) {
+      modifier_keys_are_remapped_ = true;
+      return true;
+    }
+    return false;
   }
 
   // Returns the hardware layout name.
@@ -189,7 +202,7 @@ class XKeyboard {
  private:
   friend struct DefaultSingletonTraits<XKeyboard>;
 
-  XKeyboard() {
+  XKeyboard() : modifier_keys_are_remapped_(false) {
     InitializeStringToModifierMap(&string_to_modifier_map_);
   }
   ~XKeyboard() {
@@ -198,6 +211,16 @@ class XKeyboard {
   // Gets the current modifier mapping and stores them on |out_modifier_map|.
   bool GetModifierMapping(chromeos::ModifierMap* out_modifier_map) {
     out_modifier_map->clear();
+
+    // If modifier keys are not remapped, return a map that doesn't change
+    // any key mappings.
+    if (!modifier_keys_are_remapped_) {
+      for (size_t i = 0; i < arraysize(kCustomizableKeys); ++i) {
+        chromeos::ModifierKey key = kCustomizableKeys[i];
+        out_modifier_map->push_back(chromeos::ModifierKeyPair(key, key));
+      }
+      return true;
+    }
 
     std::string command_output = last_full_layout_name_;
     if (command_output.empty()) {
@@ -337,6 +360,9 @@ class XKeyboard {
   // A std::map that holds mappings like: "leftcontrol_disabled_leftalt" ->
   //   { LEFT_CONTROL_KEY, VOID_KEY, LEFT_ALT_KEY }.
   chromeos::StringToModifierMap string_to_modifier_map_;
+
+  // True if modifier keys are remapped.
+  bool modifier_keys_are_remapped_;
 
   DISALLOW_COPY_AND_ASSIGN(XKeyboard);
 };
