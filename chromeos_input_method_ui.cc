@@ -130,7 +130,7 @@ class InputMethodUiStatusConnection {
     g_object_set_data(G_OBJECT(ibus_), kPanelObjectKey, ibus_panel_service_);
     LOG(INFO) << "IBusPanelService object is successfully (re-)created.";
 
-    // Request the well-known name.
+    // Request the well-known name *synchronously*.
     const int status = ibus_bus_request_name(ibus_, IBUS_SERVICE_PANEL, 0);
     if (status == 0) {
       LOG(ERROR) << "ibus_bus_request_name() failed";
@@ -149,6 +149,8 @@ class InputMethodUiStatusConnection {
       LOG(ERROR) << "NotifyCandidateClicked: panel service is not available.";
       return false;
     }
+
+    /* Send a D-Bus signal to ibus-daemon *asynchronously*. */
     ibus_panel_service_candidate_clicked(ibus_panel_service_,
                                          index,
                                          button,
