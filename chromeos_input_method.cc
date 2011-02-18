@@ -576,7 +576,12 @@ class InputMethodStatusConnection {
     RegisterProperties(NULL);
 
     // Change the global engine *asynchronously*.
-    ibus_bus_set_global_engine_async(ibus_, name);
+    ibus_bus_set_global_engine_async(ibus_,
+                                     name,
+                                     -1,  // use the default ibus timeout
+                                     NULL,  // cancellable
+                                     NULL,  // callback
+                                     NULL);  // user_data
     return true;
   }
 
@@ -738,6 +743,7 @@ class InputMethodStatusConnection {
                                   section.c_str(),
                                   config_name.c_str(),
                                   variant,
+                                  -1,  // use the default ibus timeout
                                   NULL,  // cancellable
                                   NULL,  // callback
                                   NULL);  // user_data
