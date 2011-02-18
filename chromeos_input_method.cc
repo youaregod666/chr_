@@ -828,9 +828,9 @@ class InputMethodStatusConnection {
     // Register callback functions for IBusBus signals.
     ConnectIBusSignals();
 
-    // Ask libibus to watch the NameOwnerChanged signal *synchronously*.
+    // Ask libibus to watch the NameOwnerChanged signal *asynchronously*.
     ibus_bus_set_watch_dbus_signal(ibus_, TRUE);
-    // Ask libibus to watch the GlobalEngineChanged signal *synchronously*.
+    // Ask libibus to watch the GlobalEngineChanged signal *asynchronously*.
     ibus_bus_set_watch_ibus_signal(ibus_, TRUE);
 
     if (ibus_bus_is_connected(ibus_)) {
