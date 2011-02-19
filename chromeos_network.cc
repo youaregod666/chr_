@@ -45,6 +45,7 @@ static const char* kEnableTechnologyFunction = "EnableTechnology";
 static const char* kDisableTechnologyFunction = "DisableTechnology";
 static const char* kAddIPConfigFunction = "AddIPConfig";
 static const char* kRemoveConfigFunction = "Remove";
+static const char* kGetEntryFunction = "GetEntry";
 static const char* kDeleteEntryFunction = "DeleteEntry";
 static const char* kActivateCellularModemFunction = "ActivateCellularModem";
 
@@ -1340,19 +1341,20 @@ namespace {
 
 struct GetPropertiesCallbackData {
   GetPropertiesCallbackData(const char* interface,
-                            const char* path,
+                            const char* service_path,
+                            const char* cb_path,
                             NetworkPropertiesCallback cb,
                             void* obj) :
       callback(cb),
       object(obj) {
-    service_path = NewStringCopy(path);
+    callback_path = NewStringCopy(cb_path);
     proxy = new dbus::Proxy(dbus::GetSystemBusConnection(),
                             kConnmanServiceName,
                             service_path,
                             interface);
   }
   ~GetPropertiesCallbackData() {
-    delete service_path;
+    delete callback_path;
     delete proxy;
   }
 
@@ -1360,7 +1362,7 @@ struct GetPropertiesCallbackData {
   NetworkPropertiesCallback callback;
   void* object;
   // Owned by the callback, deleteted in the destructor:
-  const char* service_path;
+  const char* callback_path;
   dbus::Proxy* proxy;
 };
 
@@ -1388,22 +1390,22 @@ void GetPropertiesNotify(DBusGProxy* gproxy,
           &Resetter(&properties).lvalue(),
           G_TYPE_INVALID)) {
     LOG(WARNING) << "GetPropertiesNotify for path: '"
-                 << cb_data->service_path << "' error: "
+                 << cb_data->callback_path << "' error: "
                  << (error->message ? error->message : "Unknown Error.");
-    cb_data->callback(cb_data->object, cb_data->service_path, NULL);
+    cb_data->callback(cb_data->object, cb_data->callback_path, NULL);
   } else {
     scoped_ptr<Value> value(ConvertGHashTable(properties.get()));
-    cb_data->callback(cb_data->object, cb_data->service_path, value.get());
+    cb_data->callback(cb_data->object, cb_data->callback_path, value.get());
   }
 }
 
 void GetPropertiesAsync(const char* interface,
-                        const char* path,
+                        const char* service_path,
                         NetworkPropertiesCallback callback,
                         void* object) {
-  DCHECK(interface && path  && callback);
-  GetPropertiesCallbackData* cb_data =
-      new GetPropertiesCallbackData(interface, path, callback, object);
+  DCHECK(interface && service_path  && callback);
+  GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
+      interface, service_path, service_path, callback, object);
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
       kGetPropertiesFunction,
@@ -1412,33 +1414,33 @@ void GetPropertiesAsync(const char* interface,
       &DeleteGetPropertiesCallbackData,
       G_TYPE_INVALID);
   if (!call_id) {
-    LOG(ERROR) << "NULL call_id for: " << interface << " : " << path;
-    callback(object, path, NULL);
+    LOG(ERROR) << "NULL call_id for: " << interface << " : " << service_path;
+    callback(object, service_path, NULL);
     delete cb_data;
   }
 }
 
 void GetEntryAsync(const char* interface,
-                   const char* path,
-                   const char* entry,
+                   const char* profile_path,
+                   const char* entry_path,
                    NetworkPropertiesCallback callback,
                    void* object) {
-  DCHECK(interface && path  && entry && callback);
-  GetPropertiesCallbackData* cb_data =
-      new GetPropertiesCallbackData(interface, path, callback, object);
+  DCHECK(interface && profile_path  && entry_path && callback);
+  GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
+      interface, profile_path, entry_path, callback, object);
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
-      kGetPropertiesFunction,
+      kGetEntryFunction,
       &GetPropertiesNotify,
       cb_data,
       &DeleteGetPropertiesCallbackData,
       G_TYPE_STRING,
-      entry,
+      entry_path,
       G_TYPE_INVALID);
   if (!call_id) {
     LOG(ERROR) << "NULL call_id for: "
-               << interface << " : " << path << " : " << entry;
-    callback(object, path, NULL);
+               << interface << " : " << profile_path << " : " << entry_path;
+    callback(object, entry_path, NULL);
     delete cb_data;
   }
 }
@@ -1450,22 +1452,22 @@ void GetWifiNotify(DBusGProxy* gproxy,
       static_cast<GetPropertiesCallbackData*>(user_data);
   DCHECK(cb_data);
   glib::ScopedError error;
-  char* path;
+  char* service_path;
   if (!::dbus_g_proxy_end_call(
           gproxy,
           call_id,
           &Resetter(&error).lvalue(),
           DBUS_TYPE_G_OBJECT_PATH,
-          &path,
+          &service_path,
           G_TYPE_INVALID)) {
     LOG(WARNING) << "GetWifiNotify for path: '"
-                 << cb_data->service_path << "' error: "
+                 << cb_data->callback_path << "' error: "
                  << (error->message ? error->message : "Unknown Error.");
-    cb_data->callback(cb_data->object, cb_data->service_path, NULL);
+    cb_data->callback(cb_data->object, cb_data->callback_path, NULL);
   } else {
     // Now request the properties for the service.
     GetPropertiesAsync(kConnmanServiceInterface,
-                       path,
+                       service_path,
                        cb_data->callback,
                        cb_data->object);
   }
@@ -1521,9 +1523,8 @@ void ChromeOSRequestWifiServicePath(
     NetworkPropertiesCallback callback,
     void* object) {
   DCHECK(ssid && callback);
-  GetPropertiesCallbackData* cb_data =
-      new GetPropertiesCallbackData(kConnmanManagerInterface, "/",
-                                    callback, object);
+  GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
+      kConnmanManagerInterface, "/", ssid, callback, object);
 
   glib::ScopedHashTable scoped_properties =
       glib::ScopedHashTable(::g_hash_table_new_full(
