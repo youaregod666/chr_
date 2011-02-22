@@ -6,6 +6,7 @@
 #define CHROMEOS_CROS_API_VERSION_H_
 
 #include <string>
+#include "base/time.h"
 
 // This file defines two version numbers for the CrosAPI.
 //
@@ -180,12 +181,13 @@
 // 103: Deprecated GetCurrentKeyboardLayoutName.
 // 104: Deprecated DisconnectInputMethodStatus and
 //      InputMethodStatusConnectionIsAlive.
+// 105: Introduce SetLibcrosHistogramFunction.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 93,
-  kCrosAPIVersion = 104
+  kCrosAPIVersion = 105
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
@@ -196,6 +198,11 @@ extern char const * const kCrosDefaultPath;
 // If returns false, |load_error| will contain a string describing the
 // problem.
 bool LoadLibcros(const char* path_to_libcros, std::string& load_error);
+
+// Use to provide a function for passing histogram timing values to Chrome.
+typedef void (*LibcrosTimeHistogramFunc)(
+    const char* name, const base::TimeDelta& delta);
+void SetLibcrosTimeHistogramFunction(LibcrosTimeHistogramFunc func);
 
 }  // namespace chromeos
 

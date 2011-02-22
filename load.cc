@@ -7,8 +7,7 @@
 #include <string.h>
 #include <vector>
 
-#include <base/basictypes.h>
-
+#include "base/basictypes.h"
 #include "chromeos_brightness.h" // NOLINT
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_cryptohome.h" // NOLINT
@@ -34,7 +33,32 @@
 
 namespace chromeos {  // NOLINT //
 
-static std::string error_string;
+namespace {
+// If set, points to a function provided by Chrome to add a histogram.
+LibcrosTimeHistogramFunc addHistogram = NULL;
+// Pointer to libcros (from ::dlopen call).
+void* dll_handle = NULL;
+}
+
+class TimerInst {
+ public:
+  TimerInst(const char* name) {
+    if (addHistogram) {
+      name_ = std::string("Cros.") + name;
+      start_ = base::TimeTicks::Now();
+    }
+  }
+  ~TimerInst() {
+    if (addHistogram) {
+      base::TimeDelta delta = base::TimeTicks::Now() - start_;
+      addHistogram(name_.c_str(), delta);
+    }
+  }
+
+ private:
+  std::string name_;
+  base::TimeTicks start_;
+};
 
 // Declare Function. These macros are used to define the imported functions
 // from libcros. They will declare the proper type and define an exported
@@ -44,33 +68,58 @@ static std::string error_string;
 // |arg[1-5]| are the types are the arguments.
 // These are compile time declarations only.
 // INIT_FUNC(name) needs to be called at runtime.
-#define DECL_FUNC_0(name, ret) \
-  typedef ret (*name##Type)(); \
-  name##Type name = 0;
+#define DECL_FUNC_0(name, ret)                                          \
+  typedef ret (*name##Type)();                                          \
+  name##Type name = 0;                                                  \
+  ret WrapChromeOS##name() {                                            \
+    static name##Type func = name##Type(::dlsym(dll_handle, "ChromeOS"#name)); \
+    TimerInst timer(#name); return func(); }
 
-#define DECL_FUNC_1(name, ret, arg1) \
-  typedef ret (*name##Type)(arg1); \
-  name##Type name = 0;
+#define DECL_FUNC_1(name, ret, arg1)                                    \
+  typedef ret (*name##Type)(arg1);                                      \
+  name##Type name = 0;                                                  \
+  ret WrapChromeOS##name(arg1 a1) {                                     \
+    static name##Type func = name##Type(::dlsym(dll_handle, "ChromeOS"#name)); \
+    TimerInst timer(#name); return func(a1); }
 
-#define DECL_FUNC_2(name, ret, arg1, arg2) \
-  typedef ret (*name##Type)(arg1, arg2); \
-  name##Type name = 0;
+#define DECL_FUNC_2(name, ret, arg1, arg2)                              \
+  typedef ret (*name##Type)(arg1, arg2);                                \
+  name##Type name = 0;                                                  \
+  ret WrapChromeOS##name(arg1 a1, arg2 a2) {                            \
+    static name##Type func = name##Type(::dlsym(dll_handle, "ChromeOS"#name)); \
+    TimerInst timer(#name); return func(a1, a2); }
 
-#define DECL_FUNC_3(name, ret, arg1, arg2, arg3) \
-  typedef ret (*name##Type)(arg1, arg2, arg3); \
-  name##Type name = 0;
+#define DECL_FUNC_3(name, ret, arg1, arg2, arg3)                        \
+  typedef ret (*name##Type)(arg1, arg2, arg3);                          \
+  name##Type name = 0;                                                  \
+  ret WrapChromeOS##name(arg1 a1, arg2 a2, arg3 a3) {                   \
+    static name##Type func = name##Type(::dlsym(dll_handle, "ChromeOS"#name)); \
+    TimerInst timer(#name); return func(a1, a2, a3); }
 
-#define DECL_FUNC_4(name, ret, arg1, arg2, arg3, arg4) \
-  typedef ret (*name##Type)(arg1, arg2, arg3, arg4); \
-  name##Type name = 0;
+#define DECL_FUNC_4(name, ret, arg1, arg2, arg3, arg4)                  \
+  typedef ret (*name##Type)(arg1, arg2, arg3, arg4);                    \
+  name##Type name = 0;                                                  \
+  ret WrapChromeOS##name(arg1 a1, arg2 a2, arg3 a3, arg4 a4) {          \
+    static name##Type func = name##Type(::dlsym(dll_handle, "ChromeOS"#name)); \
+    TimerInst timer(#name); return func(a1, a2, a3, a4); }
 
-#define DECL_FUNC_5(name, ret, arg1, arg2, arg3, arg4, arg5) \
-  typedef ret (*name##Type)(arg1, arg2, arg3, arg4, arg5); \
-  name##Type name = 0;
+#define DECL_FUNC_5(name, ret, arg1, arg2, arg3, arg4, arg5)            \
+  typedef ret (*name##Type)(arg1, arg2, arg3, arg4, arg5);              \
+  name##Type name = 0;                                                  \
+  extern "C" ret ChromeOS##name(arg1, arg2, arg3, arg4, arg5);          \
+  ret WrapChromeOS##name(                                               \
+      arg1 a1, arg2 a2, arg3 a3, arg4 a4, arg5 a5) {                    \
+    static name##Type func = name##Type(::dlsym(dll_handle, "ChromeOS"#name)); \
+    TimerInst timer(#name); return func(a1, a2, a3, a4, a5); }
 
-#define DECL_FUNC_6(name, ret, arg1, arg2, arg3, arg4, arg5, arg6) \
-  typedef ret (*name##Type)(arg1, arg2, arg3, arg4, arg5, arg6); \
-  name##Type name = 0;
+#define DECL_FUNC_6(name, ret, arg1, arg2, arg3, arg4, arg5, arg6)      \
+  typedef ret (*name##Type)(arg1, arg2, arg3, arg4, arg5, arg6);        \
+  name##Type name = 0;                                                  \
+  extern "C" ret ChromeOS##name(arg1, arg2, arg3, arg4, arg5, arg6);    \
+  ret WrapChromeOS##name(                                               \
+      arg1 a1, arg2 a2, arg3 a3, arg4 a4, arg5 a5, arg6 a6) {           \
+    static name##Type func = name##Type(::dlsym(dll_handle, "ChromeOS"#name)); \
+    TimerInst timer(#name); return func(a1, a2, a3, a4, a5, a6); }
 
 // Version
 DECL_FUNC_1(CrosVersionCheck, bool, chromeos::CrosAPIVersion);
@@ -326,7 +375,7 @@ DECL_FUNC_2(GetSystemLogs, LogDictionaryType*, FilePath*, const std::string&);
 
 // System
 DECL_FUNC_0(GetTimezoneID, std::string);
-DECL_FUNC_1(SetTimezoneID, void, const std::string& id);
+DECL_FUNC_1(SetTimezoneID, void, const std::string&);
 DECL_FUNC_0(GetMachineInfo, MachineInfo*);
 DECL_FUNC_1(FreeMachineInfo, void, MachineInfo*);
 
@@ -350,21 +399,21 @@ char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 // Initializes the variable by looking up the function by |name|.
 // This macro uses the variable 'handle' and 'error_string'.
 #define INIT_FUNC(name) \
-  name = name##Type(::dlsym(handle, "ChromeOS"#name)); \
-  if (!name) { \
+  name = WrapChromeOS##name; \
+  if (!::dlsym(dll_handle, "ChromeOS"#name)) { \
     error_string += "Couldn't load: "#name","; \
   }
 
 bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
-  error_string = std::string();
+  error_string.clear();
 
   if (!path_to_libcros) {
     error_string = "path_to_libcros can't be NULL";
     return false;
   }
 
-  void* handle = ::dlopen(path_to_libcros, RTLD_NOW);
-  if (handle == NULL) {
+  dll_handle = ::dlopen(path_to_libcros, RTLD_NOW);
+  if (dll_handle == NULL) {
     error_string = "Couldn't load libcros from: ";
     error_string += path_to_libcros;
     error_string += " error: ";
@@ -386,9 +435,9 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
     // These weren't exported from older copies of the library. It's not an
     // error so we don't use INIT_FUNC()
     VersionFuncType GetMinCrosVersion =
-        VersionFuncType(::dlsym(handle, "ChromeOSGetMinCrosVersion"));
+        VersionFuncType(::dlsym(dll_handle, "ChromeOSGetMinCrosVersion"));
     VersionFuncType GetCrosVersion =
-        VersionFuncType(::dlsym(handle, "ChromeOSGetCrosVersion"));
+        VersionFuncType(::dlsym(dll_handle, "ChromeOSGetCrosVersion"));
 
     error_string = "Incompatible libcros version. Client: ";
     snprintf(buf, buf_size, "%d", chromeos::kCrosAPIVersion);
@@ -615,6 +664,10 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(NotifyNetworkProxyResolved);
 
   return error_string.empty();
+}
+
+void SetLibcrosTimeHistogramFunction(LibcrosTimeHistogramFunc func) {
+  addHistogram = func;
 }
 
 }  // namespace chromeos
