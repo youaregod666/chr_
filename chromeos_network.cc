@@ -210,7 +210,7 @@ static void AppendDictionaryElement(const GValue *keyvalue,
   std::string key(g_value_get_string(gvalue));
   glib::Value glibvalue(*gvalue);
   Value* value = ConvertGlibValue(&glibvalue);
-  dict->Set(key, value);
+  dict->SetWithoutPathExpansion(key, value);
 }
 
 static Value* ConvertGlibValue(const glib::Value* gvalue) {
@@ -260,7 +260,7 @@ static Value* ConvertGHashTable(GHashTable* ghash) {
     std::string key(static_cast<char*>(gkey));
     glib::Value glibvalue(*(static_cast<GValue*>(gvalue)));
     Value* value = ConvertGlibValue(&glibvalue);
-    dict->Set(key, value);
+    dict->SetWithoutPathExpansion(key, value);
   }
   return dict;
 }
