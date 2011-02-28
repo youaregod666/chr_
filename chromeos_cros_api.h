@@ -182,12 +182,16 @@
 // 104: Deprecated DisconnectInputMethodStatus and
 //      InputMethodStatusConnectionIsAlive.
 // 105: Introduce SetLibcrosHistogramFunction.
+// 106: Removed GetActiveInputMethods, SetActiveInputMethods,
+//      GetSupportedInputMethods, SetInputMethodActivated, GetImeConfig,
+//      GetHardwareKeyboardLayoutName, GetCurrentKeyboardLayoutName,
+//      DisconnectInputMethodStatus, and InputMethodStatusConnectionIsAlive.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 93,
-  kCrosAPIVersion = 105
+  kCrosAPIMinVersion = 104,
+  kCrosAPIVersion = 106
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

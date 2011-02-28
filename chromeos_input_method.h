@@ -115,7 +115,7 @@ struct ImeProperty {
 typedef std::vector<ImeProperty> ImePropertyList;
 
 // A structure which represents a value of an input method configuration item.
-// This struct is used by GetImeConfig() and SetImeConfig() cros APIs.
+// This struct is used by SetImeConfig().
 // TODO(yusukes): Rename this struct. "InputMethodConfigValue" might be better?
 struct ImeConfigValue {
   ImeConfigValue()
@@ -235,37 +235,12 @@ extern InputMethodStatusConnection* (*MonitorInputMethodStatus)(
     LanguageUpdateImePropertyFunction update_ime_property,
     LanguageConnectionChangeMonitorFunction connection_changed);
 
-// Terminates IBus connection.
-extern void (*DisconnectInputMethodStatus)(
-    InputMethodStatusConnection* connection);
-
 // Stops ibus-daemon. Returns true on success.
 extern bool (*StopInputMethodProcess)(InputMethodStatusConnection* connection);
 
 // Gets all input method engines that are supported, including ones not active.
 // Caller has to delete the returned list. This function never returns NULL.
 extern InputMethodDescriptors* (*GetSupportedInputMethodDescriptors)();
-
-// DEPRECATED. WILL BE REMOVED SOON.
-// Updates the list of active input methods.  This will be returned by
-// GetActiveInputMethods() if an ibus connection is not available.
-// TODO(satorux): Remove the function.
-extern bool (*SetActiveInputMethods)(InputMethodStatusConnection* connection,
-                                     const ImeConfigValue& value);
-
-// DEPRECATED. WILL BE REMOVED SOON.
-// Gets all input method engines that are currently active. Caller has to
-// delete the returned list. This function might return NULL on error.
-// TODO(satorux): Remove the function.
-extern InputMethodDescriptors* (*GetActiveInputMethods)(
-    InputMethodStatusConnection* connection);
-
-// DEPRECATED. WILL BE REMOVED SOON.
-// Gets all input method engines that are supported, including ones not active.
-// Caller has to delete the returned list. This function might return NULL on
-// error.
-extern InputMethodDescriptors* (*GetSupportedInputMethods)(
-    InputMethodStatusConnection* connection);
 
 // Changes the current input method engine to |name|. Returns true on success.
 // Examples of names: "pinyin", "m17n:ar:kbd", "xkb:us:dvorak:eng".
@@ -277,13 +252,6 @@ extern bool (*ChangeInputMethod)(
 extern InputMethodDescriptor* (*GetCurrentInputMethod)(
     InputMethodStatusConnection* connection);
 
-// Sets whether the input method specified by |name| is activated.
-// If |activated| is true activates the input method. If |activated| is false,
-// deactivates the input method. Returns true on success.
-// TODO(yusukes): Probably we can remove this function.
-extern bool (*SetInputMethodActivated)(
-    InputMethodStatusConnection* connection, const char* name, bool activated);
-
 // Sets whether the input method property specified by |key| is activated.
 // If |activated| is true, activates the property. If |activated| is false,
 // deactivates the property.
@@ -291,18 +259,6 @@ extern bool (*SetInputMethodActivated)(
 extern void (*SetImePropertyActivated)(InputMethodStatusConnection* connection,
                                        const char* key,
                                        bool activated);
-
-// DEPRECATED. WILL BE REMOVED SOON.
-// Get a configuration of ibus-daemon or IBus engines and stores it on
-// |out_value|. Returns true if |out_value| is successfully updated.
-//
-// To retrieve 'panel/custom_font', |section| should be "panel", and
-// |config_name| should be "custom_font".
-// TODO(satorux): Remove the function.
-extern bool (*GetImeConfig)(InputMethodStatusConnection* connection,
-                            const char* section,
-                            const char* config_name,
-                            ImeConfigValue* out_value);
 
 // Sets a configuration of ibus-daemon or IBus engines to |value|.
 // Returns true if the configuration is successfully set.
@@ -314,13 +270,6 @@ extern bool (*SetImeConfig)(InputMethodStatusConnection* connection,
                             const char* section,
                             const char* config_name,
                             const ImeConfigValue& value);
-
-// Returns true if IBus connection is still alive.
-// If this function returns false, you might have to discard the current
-// |connection| by calling DisconnectInputMethodStatus() API above, and create
-// a new connection by calling MonitorInputMethodStatus() API.
-extern bool (*InputMethodStatusConnectionIsAlive)(
-    InputMethodStatusConnection* connection);
 
 // Returns the keyboard overlay ID corresponding to |input_method_id|.
 // Returns an empty string if there is no corresponding keyboard overlay ID.

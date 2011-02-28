@@ -40,16 +40,6 @@ struct ModifierKeyPair {
 };
 typedef std::vector<ModifierKeyPair> ModifierMap;
 
-// DEPRECATED. WILL BE REMOVED SOON.
-// Returns the hardware layout name.
-// TODO(satorux): Remove the function.
-extern std::string (*GetHardwareKeyboardLayoutName)();
-
-// DEPRECATED. WILL BE REMOVED SOON.
-// Returns the current layout name like "us". On error, returns "".
-// TODO(satorux): Remove the function.
-extern std::string (*GetCurrentKeyboardLayoutName)();
-
 // Sets the current keyboard layout to |layout_name|. This function does not
 // change the current mapping of the modifier keys. Returns true on success.
 extern bool (*SetCurrentKeyboardLayoutByName)(const std::string& layout_name);

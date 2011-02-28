@@ -101,12 +101,6 @@ class XKeyboard {
     return false;
   }
 
-  // Returns the hardware layout name.
-  std::string GetHardwareLayout() {
-    // TODO(peria): write practical code.
-    return "xkb:us::eng";
-  }
-
   // Returns the current layout name like "us". On error, returns "".
   std::string GetLayout() {
     // TODO(yusukes): write auto tests for the function.
@@ -559,16 +553,6 @@ bool ChromeOSSetCurrentKeyboardLayoutByName(const std::string& layout_name) {
 extern "C"
 bool ChromeOSRemapModifierKeys(const chromeos::ModifierMap& modifier_map) {
   return XKeyboard::Get()->RemapModifierKeys(modifier_map);
-}
-
-extern "C"
-const std::string ChromeOSGetHardwareKeyboardLayoutName() {
-  return XKeyboard::Get()->GetHardwareLayout();
-}
-
-extern "C"
-const std::string ChromeOSGetCurrentKeyboardLayoutName() {
-  return XKeyboard::Get()->GetLayout();
 }
 
 extern "C"

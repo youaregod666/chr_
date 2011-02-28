@@ -450,43 +450,6 @@ class InputMethodStatusConnection {
     return true;
   }
 
-  // InputMethodType is used for GetInputMethods().
-  enum InputMethodType {
-    kActiveInputMethods,  // Get active input methods.
-    kSupportedInputMethods,  // Get supported input methods.
-  };
-
-  // Called by cros API ChromeOSGet(Active|Supported)InputMethods().
-  // Returns a list of input methods that are currently active or supported
-  // depending on |mode|. Returns NULL on error.
-  InputMethodDescriptors* GetInputMethods(InputMethodType type) {
-    if (type == kActiveInputMethods &&
-        active_engines_.empty() &&
-        !IBusConnectionsAreAlive()) {
-      LOG(ERROR) << "GetInputMethods: IBus connection is not alive";
-      return NULL;
-    }
-
-    InputMethodDescriptors* input_methods = new InputMethodDescriptors;
-    if (type == kActiveInputMethods && IBusConnectionsAreAlive()) {
-      GList* engines = NULL;
-      engines = ibus_bus_list_active_engines(ibus_);
-      // Note that it's not an error for |engines| to be NULL.
-      // NULL simply means an empty GList.
-      AddInputMethodNames(engines, input_methods);
-      FreeInputMethodNames(engines);
-      // An empty list is returned if preload engines has not yet been set.
-      // If that happens, we instead use our cached list.
-      if (input_methods->empty()) {
-        AddIBusInputMethodNames(type, input_methods);
-      }
-    } else {
-      AddIBusInputMethodNames(type, input_methods);
-    }
-
-    return input_methods;
-  }
-
   // Called by cros API ChromeOSGetCurrentInputMethod().
   // Returns an input methods which is currently used as a global engine in
   // ibus-daemon.
@@ -508,18 +471,6 @@ class InputMethodStatusConnection {
 
     g_object_unref(engine_desc);
     return descriptor;
-  }
-
-  bool SetActiveInputMethods(const ImeConfigValue& value) {
-    DCHECK(value.type == ImeConfigValue::kValueTypeStringList);
-
-    // Sanity check: do not preload unknown/unsupported input methods.
-    std::vector<std::string> string_list;
-    FilterInputMethods(value.string_list_value, &string_list);
-
-    active_engines_.clear();
-    active_engines_.insert(string_list.begin(), string_list.end());
-    return true;
   }
 
   // Called by cros API ChromeOS(Activate|Deactive)ImeProperty().
@@ -583,89 +534,6 @@ class InputMethodStatusConnection {
                                      NULL,  // callback
                                      NULL);  // user_data
     return true;
-  }
-
-  // Get a configuration of ibus-daemon or IBus engines and stores it on
-  // |out_value|. Returns true if |gvalue| is successfully updated.
-  //
-  // For more information, please read a comment for GetImeConfig() function
-  // in chromeos_language.h.
-  bool GetImeConfig(const char* section,
-                    const char* config_name,
-                    ImeConfigValue* out_value) {
-    // Check if the connection is alive. The config object is invalidated
-    // if the connection has been closed.
-    if (!IBusConnectionsAreAlive()) {
-      LOG(ERROR) << "GetImeConfig: IBus connection is not alive";
-      return false;
-    }
-
-    DCHECK(section);
-    DCHECK(config_name);
-    if (!section || !config_name) {
-      return false;
-    }
-
-    GVariant* variant
-      = ibus_config_get_value(ibus_config_, section, config_name);
-    if (!variant) {
-      LOG(ERROR) << "GetImeConfig: ibus_config_get_value returned NULL";
-      return false;
-    }
-
-    bool success = true;
-    switch(g_variant_classify(variant)) {
-      case G_VARIANT_CLASS_STRING: {
-        const char* value = g_variant_get_string(variant, NULL);
-        DCHECK(value);
-        out_value->type = ImeConfigValue::kValueTypeString;
-        out_value->string_value = value;
-        break;
-      }
-      case G_VARIANT_CLASS_INT32: {
-        out_value->type = ImeConfigValue::kValueTypeInt;
-        out_value->int_value = g_variant_get_int32(variant);
-        break;
-      }
-      case G_VARIANT_CLASS_BOOLEAN: {
-        out_value->type = ImeConfigValue::kValueTypeBool;
-        out_value->bool_value = g_variant_get_boolean(variant);
-        break;
-      }
-      case G_VARIANT_CLASS_ARRAY: {
-        const GVariantType* variant_element_type
-            = g_variant_type_element(g_variant_get_type(variant));
-        if (g_variant_type_equal(variant_element_type, G_VARIANT_TYPE_STRING)) {
-          out_value->type = ImeConfigValue::kValueTypeStringList;
-          out_value->string_list_value.clear();
-
-          GVariantIter iter;
-          g_variant_iter_init(&iter, variant);
-          GVariant* element = g_variant_iter_next_value(&iter);
-          while (element) {
-            const char* value = g_variant_get_string(element, NULL);
-            DCHECK(value);
-            out_value->string_list_value.push_back(value);
-            g_variant_unref(element);
-            element = g_variant_iter_next_value(&iter);
-          }
-        } else {
-          // TODO(yusukes): Support other array types if needed.
-          LOG(ERROR) << "Unsupported array type.";
-          success = false;
-        }
-        break;
-      }
-      default: {
-        // TODO(yusukes): Support other types like DOUBLE if needed.
-        LOG(ERROR) << "Unsupported config type.";
-        success = false;
-        break;
-      }
-    }
-
-    g_variant_unref(variant);
-    return success;
   }
 
   // Updates a configuration of ibus-daemon or IBus engines with |value|.
@@ -754,11 +622,6 @@ class InputMethodStatusConnection {
     return (success == TRUE);
   }
 
-  // Checks if |ibus_| and |ibus_config_| connections are alive.
-  bool IBusConnectionsAreAlive() {
-    return ibus_ && ibus_bus_is_connected(ibus_) && ibus_config_;
-  }
-
  private:
   friend struct DefaultSingletonTraits<InputMethodStatusConnection>;
   InputMethodStatusConnection()
@@ -788,6 +651,11 @@ class InputMethodStatusConnection {
     // if (ibus_panel_service_) {
     //   g_signal_handlers_disconnect_by_func(
     //       ...
+  }
+
+  // Checks if |ibus_| and |ibus_config_| connections are alive.
+  bool IBusConnectionsAreAlive() {
+    return ibus_ && ibus_bus_is_connected(ibus_) && ibus_config_;
   }
 
   // Restores connections to ibus-daemon and ibus-memconf if they are not ready.
@@ -984,25 +852,6 @@ class InputMethodStatusConnection {
 
     // Notify the change to update UI.
     current_input_method_changed_(language_library_, current_input_method);
-  }
-
-  void AddIBusInputMethodNames(InputMethodType type,
-                               chromeos::InputMethodDescriptors* out) {
-    DCHECK(out);
-    for (size_t i = 0; i < arraysize(chromeos::ibus_engines); ++i) {
-      if (InputMethodIdIsWhitelisted(chromeos::ibus_engines[i].name) &&
-          (type == kSupportedInputMethods ||
-           active_engines_.count(chromeos::ibus_engines[i].name) > 0)) {
-        out->push_back(chromeos::InputMethodDescriptor(
-            chromeos::ibus_engines[i].name,
-            chromeos::ibus_engines[i].longname,
-            chromeos::ibus_engines[i].layout,
-            chromeos::ibus_engines[i].language));
-        if (type != kSupportedInputMethods) {
-          DLOG(INFO) << chromeos::ibus_engines[i].name << " (preload later)";
-        }
-      }
-    }
   }
 
   // Installs gobject signal handlers to |ibus_|.
@@ -1219,44 +1068,10 @@ InputMethodStatusConnection* ChromeOSMonitorInputMethodStatus(
       connection_changed);
 }
 
-// TODO(yusukes): remove the function.
-extern "C"
-void ChromeOSDisconnectInputMethodStatus(
-    InputMethodStatusConnection* connection) {
-  LOG(INFO) << "DisconnectInputMethodStatus (NOP)";
-}
-
 extern "C"
 bool ChromeOSStopInputMethodProcess(InputMethodStatusConnection* connection) {
   g_return_val_if_fail(connection, false);
   return connection->StopInputMethodProcess();
-}
-
-extern "C"
-InputMethodDescriptors* ChromeOSGetActiveInputMethods(
-    InputMethodStatusConnection* connection) {
-  g_return_val_if_fail(connection, NULL);
-  // Pass ownership to a caller. Note: GetInputMethods() might return NULL.
-  return connection->GetInputMethods(
-      InputMethodStatusConnection::kActiveInputMethods);
-}
-
-extern "C"
-bool ChromeOSSetActiveInputMethods(InputMethodStatusConnection* connection,
-                                   const ImeConfigValue& value) {
-  g_return_val_if_fail(connection, FALSE);
-  return connection->SetActiveInputMethods(value);
-}
-
-extern "C"
-InputMethodDescriptors* ChromeOSGetSupportedInputMethods(
-    InputMethodStatusConnection* connection) {
-  g_return_val_if_fail(connection, NULL);
-  // We don't need to try to restore the connection here because GetInputMethods
-  // does not communicate with ibus.
-  // Pass ownership to a caller. Note: GetInputMethods() might return NULL.
-  return connection->GetInputMethods(
-      InputMethodStatusConnection::kSupportedInputMethods);
 }
 
 extern "C"
@@ -1301,16 +1116,6 @@ InputMethodDescriptor* ChromeOSGetCurrentInputMethod(
 }
 
 extern "C"
-bool ChromeOSGetImeConfig(InputMethodStatusConnection* connection,
-                          const char* section,
-                          const char* config_name,
-                          ImeConfigValue* out_value) {
-  DCHECK(out_value);
-  g_return_val_if_fail(connection, FALSE);
-  return connection->GetImeConfig(section, config_name, out_value);
-}
-
-extern "C"
 bool ChromeOSSetImeConfig(InputMethodStatusConnection* connection,
                           const char* section,
                           const char* config_name,
@@ -1329,18 +1134,6 @@ std::string ChromeOSGetKeyboardOverlayId(const std::string& input_method_id) {
     }
   }
   return "";
-}
-
-// TODO(yusukes): We can remove the function.
-extern "C"
-bool ChromeOSInputMethodStatusConnectionIsAlive(
-    InputMethodStatusConnection* connection) {
-  g_return_val_if_fail(connection, false);
-  const bool is_connected = connection->IBusConnectionsAreAlive();
-  if (!is_connected) {
-    LOG(WARNING) << "ChromeOSInputMethodStatusConnectionIsAlive: NOT alive";
-  }
-  return is_connected;
 }
 
 }  // namespace chromeos
