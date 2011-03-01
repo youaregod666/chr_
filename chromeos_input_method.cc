@@ -1041,8 +1041,6 @@ class InputMethodStatusConnection {
 
   // Current input context path.
   std::string input_context_path_;
-
-  std::set<std::string> active_engines_;
 };
 
 //
