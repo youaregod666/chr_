@@ -205,14 +205,6 @@ extern void (*RequestScan)(ConnectionType type);
 extern bool (*ActivateCellularModem)(const char* service_path,
                                      const char* carrier);
 
-
-// Set a property of a service to the provided value
-//
-// Success is indicated by the receipt of a matching PropertyChanged signal.
-extern void (*SetNetworkServiceProperty)(const char* service_path,
-                                         const char* property,
-                                         const ::Value* setting);
-
 // Connects to the network with the |service_path|.
 //
 // Set |passphrase| to NULL if the network doesn't require authentication.
@@ -325,33 +317,6 @@ extern void (*DisconnectDataPlanUpdateMonitor)(
 typedef void (*NetworkPropertiesCallback)(void* object,
                                           const char* path,
                                           const Value* properties);
-
-// Describes whether there is an error and whether the error came from
-// the local system or from the server implementing the connect
-// method.
-enum NetworkMethodErrorType {
-  NETWORK_METHOD_ERROR_NONE = 0,
-  NETWORK_METHOD_ERROR_LOCAL = 1,
-  NETWORK_METHOD_ERROR_REMOTE = 2,
-};
-
-// Callback for methods that initiate an action and return no data.
-typedef void (*NetworkActionCallback)(void* object,
-                                      const char* path,
-                                      NetworkMethodErrorType error,
-                                      const char* error_message);
-
-// Connect to the service with the |service_path|.
-//
-// Service parameters such as authentication must already be configured.
-//
-// Note, a successful invocation of the callback only indicates that
-// the connection process has started. You will have to query the
-// connection state to determine if the connection was established
-// successfully.
-extern void (*RequestNetworkServiceConnect)(const char* service_path,
-                                            NetworkActionCallback callback,
-                                            void* object);
 
 extern void (*RequestNetworkManagerInfo)(NetworkPropertiesCallback callback,
                                          void* object);

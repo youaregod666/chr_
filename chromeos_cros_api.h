@@ -186,12 +186,12 @@
 //      GetSupportedInputMethods, SetInputMethodActivated, GetImeConfig,
 //      GetHardwareKeyboardLayoutName, GetCurrentKeyboardLayoutName,
 //      DisconnectInputMethodStatus, and InputMethodStatusConnectionIsAlive.
-// 107: Added RequestNetworkServiceConnect and SetNetworkServiceProperty.
+
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 104,
-  kCrosAPIVersion = 107
+  kCrosAPIVersion = 106
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
