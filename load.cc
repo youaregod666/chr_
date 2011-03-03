@@ -196,6 +196,8 @@ DECL_FUNC_2(ActivateCellularModem, bool, const char*, const char*);
 DECL_FUNC_5(ConfigureWifiService, bool, const char*, ConnectionSecurity,
             const char*, const char*, const char*);
 DECL_FUNC_2(ConnectToNetwork, bool, const char*, const char*);
+DECL_FUNC_3(SetNetworkServiceProperty, void, const char*, const char*,
+            const ::Value *);
 DECL_FUNC_4(ConnectToNetworkWithCertInfo, bool, const char*, const char*,
             const char*, const char*);
 DECL_FUNC_1(DisconnectFromNetwork, bool, const char*);
@@ -218,6 +220,8 @@ DECL_FUNC_1(DisconnectDataPlanUpdateMonitor, void, DataPlanUpdateMonitor);
 DECL_FUNC_1(RetrieveCellularDataPlans, CellularDataPlanList*, const char*);
 DECL_FUNC_1(RequestCellularDataPlanUpdate, void, const char*);
 DECL_FUNC_1(FreeCellularDataPlanList, void, CellularDataPlanList*);
+DECL_FUNC_3(RequestNetworkServiceConnect, void, const char*,
+            NetworkActionCallback, void *);
 DECL_FUNC_2(RequestNetworkManagerInfo, void,
             NetworkPropertiesCallback, void*);
 DECL_FUNC_3(RequestNetworkServiceInfo, void, const char*,
@@ -500,6 +504,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(GetWifiService);
   INIT_FUNC(ActivateCellularModem);
   INIT_FUNC(ConfigureWifiService);
+  INIT_FUNC(SetNetworkServiceProperty);
   INIT_FUNC(ConnectToNetwork);
   INIT_FUNC(ConnectToNetworkWithCertInfo);
   INIT_FUNC(DisconnectFromNetwork);
@@ -533,6 +538,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RetrieveCellularDataPlans);
   INIT_FUNC(RequestCellularDataPlanUpdate);
   INIT_FUNC(FreeCellularDataPlanList);
+  INIT_FUNC(RequestNetworkServiceConnect);
   INIT_FUNC(RequestNetworkManagerInfo);
   INIT_FUNC(RequestNetworkServiceInfo);
   INIT_FUNC(RequestNetworkDeviceInfo);

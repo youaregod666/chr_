@@ -828,8 +828,7 @@ class ScopedPtrGStrFreeV {
   }
 };
 
-static const char *map_oldprop_to_newprop(const char *oldprop)
-{
+static const char *map_oldprop_to_newprop(const char* oldprop) {
   if (strcmp(oldprop, "key_id") == 0)
     return kEAPKeyIDProperty;
   if (strcmp(oldprop, "cert_id") == 0)
@@ -840,7 +839,80 @@ static const char *map_oldprop_to_newprop(const char *oldprop)
   return NULL;
 }
 
+static bool set_certpath_properties(const char* certpath,
+                                    dbus::Proxy* service_proxy) {
+    // DEPRECATED
+    if (::g_str_has_prefix(certpath, kCertpathSettingsPrefix)) {
+    // Backwards-compatibility for "CertPath=SETTINGS:key_id=1,cert_id=2,..."
+      glib::ScopedError error;
+      char **settingsp;
+      scoped_ptr_malloc<char *, ScopedPtrGStrFreeV> settings(
+          ::g_strsplit_set(certpath +
+                           strlen(kCertpathSettingsPrefix), ",=", 0));
+      for (settingsp = settings.get(); *settingsp != NULL; settingsp += 2) {
+        const char *key = map_oldprop_to_newprop(*settingsp);
+        if (key == NULL) {
+          LOG(WARNING) << "ConnectToNetwork, unknown key '" << key
+                       << "' from certpath ";
+          continue;
+        }
+        glib::Value value(*(settingsp + 1));
+        if (!::dbus_g_proxy_call(service_proxy->gproxy(),
+                                 kSetPropertyFunction,
+                                 &Resetter(&error).lvalue(),
+                                 G_TYPE_STRING,
+                                 key,
+                                 G_TYPE_VALUE,
+                                 &value,
+                                 G_TYPE_INVALID,
+                                 G_TYPE_INVALID)) {
+          LOG(WARNING) << "ConnectToNetwork failed on set '" << key
+                       << "' (from certpath): "
+                       << (error->message ? error->message : "Unknown Error.");
+          return false;
+        }
+      }
+      // Presume EAP-TLS if we're here
+      glib::Value value("TLS");
+      if (!::dbus_g_proxy_call(service_proxy->gproxy(),
+                               kSetPropertyFunction,
+                               &Resetter(&error).lvalue(),
+                               G_TYPE_STRING,
+                               kEAPEAPProperty,
+                               G_TYPE_VALUE,
+                               &value,
+                               G_TYPE_INVALID,
+                               G_TYPE_INVALID)) {
+        LOG(WARNING) << "ConnectToNetwork failed on set EAP type'"
+                     << "' (from certpath): "
+                     << (error->message ? error->message : "Unknown Error.");
+        return false;
+      }
+    } else {
+      // Backwards-compatibility for "CertPath=/path/to/cert.pem"
+      glib::Value value_certpath(certpath);
+      glib::ScopedError error;
+      if (!::dbus_g_proxy_call(service_proxy->gproxy(),
+                               kSetPropertyFunction,
+                               &Resetter(&error).lvalue(),
+                               G_TYPE_STRING,
+                               kEAPClientCertProperty,
+                               G_TYPE_VALUE,
+                               &value_certpath,
+                               G_TYPE_INVALID,
+                               G_TYPE_INVALID)) {
+        LOG(WARNING) << "ConnectToNetwork failed on set certpath: "
+                     << (error->message ? error->message : "Unknown Error.");
+        return false;
+      }
+    }
+    return true;
+}
+
+
+
 }  // namespace
+
 
 extern "C"
 bool ChromeOSConnectToNetworkWithCertInfo(const char* service_path,
@@ -892,70 +964,8 @@ bool ChromeOSConnectToNetworkWithCertInfo(const char* service_path,
 
   // Set certificate path if non-null.
   if (certpath) {
-    // DEPRECATED
-    // Backwards-compatibility for "CertPath=SETTINGS:key_id=1,cert_id=2,..."
-    if (::g_str_has_prefix(certpath, kCertpathSettingsPrefix)) {
-      glib::ScopedError error;
-      char **settingsp;
-      scoped_ptr_malloc<char *, ScopedPtrGStrFreeV> settings(
-          ::g_strsplit_set(certpath +
-                           strlen(kCertpathSettingsPrefix), ",=", 0));
-      for (settingsp = settings.get(); *settingsp != NULL; settingsp += 2) {
-        const char *key = map_oldprop_to_newprop(*settingsp);
-        if (key == NULL) {
-          LOG(WARNING) << "ConnectToNetwork, unknown key '" << key
-                       << "' from certpath ";
-          continue;
-        }
-        glib::Value value(*(settingsp + 1));
-        if (!::dbus_g_proxy_call(service_proxy.gproxy(),
-                                 kSetPropertyFunction,
-                                 &Resetter(&error).lvalue(),
-                                 G_TYPE_STRING,
-                                 key,
-                                 G_TYPE_VALUE,
-                                 &value,
-                                 G_TYPE_INVALID,
-                                 G_TYPE_INVALID)) {
-          LOG(WARNING) << "ConnectToNetwork failed on set '" << key
-                       << "' (from certpath): "
-                       << (error->message ? error->message : "Unknown Error.");
-          return false;
-        }
-      }
-      // Presume EAP-TLS if we're here
-      glib::Value value("TLS");
-      if (!::dbus_g_proxy_call(service_proxy.gproxy(),
-                               kSetPropertyFunction,
-                               &Resetter(&error).lvalue(),
-                               G_TYPE_STRING,
-                               kEAPEAPProperty,
-                               G_TYPE_VALUE,
-                               &value,
-                               G_TYPE_INVALID,
-                               G_TYPE_INVALID)) {
-        LOG(WARNING) << "ConnectToNetwork failed on set EAP type'"
-                     << "' (from certpath): "
-                     << (error->message ? error->message : "Unknown Error.");
-        return false;
-      }
-    } else {
-      glib::Value value_certpath(certpath);
-      glib::ScopedError error;
-      if (!::dbus_g_proxy_call(service_proxy.gproxy(),
-                               kSetPropertyFunction,
-                               &Resetter(&error).lvalue(),
-                               G_TYPE_STRING,
-                               kEAPClientCertProperty,
-                               G_TYPE_VALUE,
-                               &value_certpath,
-                               G_TYPE_INVALID,
-                               G_TYPE_INVALID)) {
-        LOG(WARNING) << "ConnectToNetwork failed on set certpath: "
-                     << (error->message ? error->message : "Unknown Error.");
-        return false;
-      }
-    }
+    if (!set_certpath_properties(certpath, &service_proxy))
+      return false;
   }
 
   // Now try connecting.
@@ -1473,7 +1483,108 @@ void GetWifiNotify(DBusGProxy* gproxy,
   }
 }
 
+struct NetworkActionCallbackData {
+  NetworkActionCallbackData(const char* interface,
+                            const char* service_path,
+                            const char* cb_path,
+                            NetworkActionCallback cb,
+                            void* obj) :
+      callback(cb),
+      object(obj) {
+    callback_path = NewStringCopy(cb_path);
+    proxy = new dbus::Proxy(dbus::GetSystemBusConnection(),
+                            kConnmanServiceName,
+                            service_path,
+                            interface);
+  }
+  ~NetworkActionCallbackData() {
+    delete callback_path;
+    delete proxy;
+  }
+
+  // Owned by the caller (i.e. Chrome), do not destroy them:
+  NetworkActionCallback callback;
+  void* object;
+  // Owned by the callback, deleteted in the destructor:
+  const char* callback_path;
+  dbus::Proxy* proxy;
+};
+
+// DBus will always call the Delete function passed to it in
+// dbus_g_proxy_begin_call, whether DBus calls the callback or not.
+void DeleteNetworkActionCallbackData(void* user_data) {
+  NetworkActionCallbackData* cb_data =
+      static_cast<NetworkActionCallbackData*>(user_data);
+  delete cb_data;
+}
+
+void NetworkServiceConnectNotify(DBusGProxy* gproxy,
+                                 DBusGProxyCall* call_id,
+                                 void* user_data) {
+  NetworkActionCallbackData* cb_data =
+      static_cast<NetworkActionCallbackData*>(user_data);
+  DCHECK(cb_data);
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_end_call(
+          gproxy,
+          call_id,
+          &Resetter(&error).lvalue(),
+          G_TYPE_INVALID)) {
+    NetworkMethodErrorType etype;
+    if (error->domain == DBUS_GERROR &&
+        error->code == DBUS_GERROR_REMOTE_EXCEPTION) {
+      etype = NETWORK_METHOD_ERROR_REMOTE;
+    } else {
+      LOG(WARNING) << "NetworkServiceConnectNotify for path: '"
+                   << cb_data->callback_path << "' error: "
+                   << (error->message ? error->message : "Unknown Error.");
+      etype = NETWORK_METHOD_ERROR_LOCAL;
+    }
+    cb_data->callback(cb_data->object, cb_data->callback_path,
+                      etype, error->message);
+  } else {
+    cb_data->callback(cb_data->object, cb_data->callback_path,
+                      NETWORK_METHOD_ERROR_NONE, NULL);
+  }
+}
+
+void NetworkServiceConnectAsync(
+    const char* service_path,
+    NetworkActionCallback callback,
+    void* object) {
+  DCHECK(service_path && callback);
+  NetworkActionCallbackData* cb_data = new NetworkActionCallbackData(
+      kConnmanServiceInterface, service_path, service_path, callback, object);
+
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kConnectFunction,
+      &NetworkServiceConnectNotify,
+      cb_data,
+      &DeleteNetworkActionCallbackData,
+      DBUS_TYPE_G_OBJECT_PATH,
+      &service_path,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kConnmanServiceInterface
+               << " : " << service_path;
+    callback(object, service_path, NETWORK_METHOD_ERROR_LOCAL,
+             "dbus: NULL call_id");
+    delete cb_data;
+  }
+}
+
+
 }  // namespace
+
+extern "C"
+void ChromeOSRequestNetworkServiceConnect(
+    const char* service_path,
+    NetworkActionCallback callback,
+    void* object) {
+  NetworkServiceConnectAsync(service_path, callback, object);
+}
+
 
 extern "C"
 void ChromeOSRequestNetworkManagerInfo(
@@ -1564,6 +1675,76 @@ void ChromeOSRequestWifiServicePath(
 }
 
 //////////////////////////////////////////////////////////////////////////////
+
+static glib::Value *ConvertToGlibValue(const ::Value* value) {
+  switch (value->GetType()) {
+    case ::Value::TYPE_BOOLEAN: {
+      bool out;
+      if (value->GetAsBoolean(&out))
+        return new glib::Value(out);
+      break;
+    }
+    case ::Value::TYPE_INTEGER: {
+      int out;
+      if (value->GetAsInteger(&out)) {
+        // Converting to a 32-bit signed int type in particular, since
+        // that's what flimflam expects in its DBus API
+        return new glib::Value(out);
+      break;
+      }
+    }
+    case ::Value::TYPE_STRING: {
+      std::string out;
+      if (value->GetAsString(&out))
+        return new glib::Value(out);
+      break;
+    }
+    default:
+      // Other Value types - LIST, NULL, REAL, BINARY, and DICTIONARY -
+      // aren't passed through this mechanism, and so we're not going to
+      // bother to try converting them.
+      // If we get here, it's a programming error, so complain.
+      LOG(ERROR) << "Unconverted Value of type: " << value->GetType();
+      return NULL;
+  }
+  LOG(ERROR) << "Value conversion failed, type: " << value->GetType();
+  return NULL;
+}
+
+
+extern "C"
+void ChromeOSSetNetworkServiceProperty(const char* service_path,
+                                       const char* property,
+                                       const ::Value* setting) {
+  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
+                            kConnmanServiceName,
+                            service_path,
+                            kConnmanServiceInterface);
+
+  // DEPRECATED
+  // Backwards-compatibility for "CertPath=SETTINGS:key_id=1,cert_id=2,..."
+  if (strcmp(property, "CertPath") == 0) {
+    std::string str;
+    const char* certpath;
+    setting->GetAsString(&str);
+    certpath = str.c_str();
+    // Synchronous call for backwards compatibility.
+    // TODO(njw): remove once CertPath is deprecated in favor of
+    // explicit EAP.* properties.
+    set_certpath_properties(certpath, &service_proxy);
+    return;
+  }
+
+  scoped_ptr<glib::Value> gsetting(ConvertToGlibValue(setting));
+  ::dbus_g_proxy_call_no_reply(service_proxy.gproxy(),
+                               kSetPropertyFunction,
+                               G_TYPE_STRING,
+                               property,
+                               G_VALUE_TYPE(gsetting.get()),
+                               gsetting.get(),
+                               G_TYPE_INVALID);
+}
+
 // Cashew services
 
 extern "C"
