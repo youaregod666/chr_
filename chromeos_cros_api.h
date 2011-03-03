@@ -187,11 +187,15 @@
 //      GetHardwareKeyboardLayoutName, GetCurrentKeyboardLayoutName,
 //      DisconnectInputMethodStatus, and InputMethodStatusConnectionIsAlive.
 // 107: Added RequestNetworkServiceConnect and SetNetworkServiceProperty.
+// 108: Move types, RequestWifiServicePath, RequestScan, EnableNetworkDevice
+//      to deprecated. Add RequestHiddenWifiNetwork, RequestNetworkScan,
+//      RequestNetworkDeviceEnable.
+
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 104,
-  kCrosAPIVersion = 107
+  kCrosAPIVersion = 108
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

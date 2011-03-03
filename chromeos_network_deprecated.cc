@@ -38,8 +38,11 @@ static const char* kConnmanProfileInterface = "org.chromium.flimflam.Profile";
 
 // Connman function names.
 static const char* kGetPropertiesFunction = "GetProperties";
+static const char* kRequestScanFunction = "RequestScan";
 static const char* kConfigureWifiServiceFunction = "ConfigureWifiService";
 static const char* kGetWifiServiceFunction = "GetWifiService";
+static const char* kEnableTechnologyFunction = "EnableTechnology";
+static const char* kDisableTechnologyFunction = "DisableTechnology";
 static const char* kGetEntryFunction = "GetEntry";
 
 // Connman property names.
@@ -199,6 +202,24 @@ static ConnectionType ParseType(const std::string& type) {
   if (type == kTypeCellular)
     return TYPE_CELLULAR;
   return TYPE_UNKNOWN;
+}
+
+static const char* TypeToString(ConnectionType type) {
+  switch (type) {
+    case TYPE_UNKNOWN:
+      break;
+    case TYPE_ETHERNET:
+      return kTypeEthernet;
+    case TYPE_WIFI:
+      return kTypeWifi;
+    case TYPE_WIMAX:
+      return kTypeWimax;
+    case TYPE_BLUETOOTH:
+      return kTypeBluetooth;
+    case TYPE_CELLULAR:
+      return kTypeCellular;
+  }
+  return kTypeUnknown;
 }
 
 static ConnectionMode ParseMode(const std::string& mode) {
@@ -766,6 +787,27 @@ void DeleteServiceInfoProperties(ServiceInfo& info) {
 }
 
 extern "C"
+void ChromeOSRequestScan(ConnectionType type) {
+  dbus::Proxy manager_proxy(dbus::GetSystemBusConnection(),
+                            kConnmanServiceName,
+                            "/",
+                            kConnmanManagerInterface);
+  gchar* device = ::g_strdup(TypeToString(type));
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
+                           kRequestScanFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           device,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "ChromeOSRequestScan failed: "
+        << (error->message ? error->message : "Unknown Error.");
+  }
+  ::g_free(device);
+}
+
+extern "C"
 ServiceInfo* ChromeOSGetWifiService(const char* ssid,
                                     ConnectionSecurity security) {
   dbus::Proxy manager_proxy(dbus::GetSystemBusConnection(),
@@ -1134,6 +1176,37 @@ SystemInfo* ChromeOSGetSystemInfo() {
 }
 
 extern "C"
+bool ChromeOSEnableNetworkDevice(ConnectionType type, bool enable) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy manager_proxy(bus,
+                            kConnmanServiceName,
+                            "/",
+                            kConnmanManagerInterface);
+  if (type == TYPE_UNKNOWN) {
+    LOG(WARNING) << "EnableNetworkDevice called with an unknown type: " << type;
+    return false;
+  }
+
+  gchar* device = ::g_strdup(TypeToString(type));
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
+                           enable ? kEnableTechnologyFunction :
+                                    kDisableTechnologyFunction,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           device,
+                           G_TYPE_INVALID,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << "EnableNetworkDevice failed: "
+        << (error->message ? error->message : "Unknown Error.");
+    ::g_free(device);
+    return false;
+  }
+  ::g_free(device);
+  return true;
+}
+
+extern "C"
 void ChromeOSFreeSystemInfo(SystemInfo* system) {
   if (system == NULL)
     return;
@@ -1222,6 +1295,22 @@ extern "C"
 void ChromeOSDisconnectMonitorNetwork(MonitorNetworkConnection connection) {
   dbus::Disconnect(connection->connection());
   delete connection;
+}
+
+extern "C"
+void ChromeOSRequestHiddenWifiNetwork(const char* ssid,
+                                      const char* security,
+                                      NetworkPropertiesCallback callback,
+                                      void* object);
+
+extern "C"
+void ChromeOSRequestWifiServicePath(
+    const char* ssid,
+    ConnectionSecurity security,
+    NetworkPropertiesCallback callback,
+    void* object) {
+  ChromeOSRequestHiddenWifiNetwork(
+      ssid, SecurityToString(security), callback, object);
 }
 
 }  // namespace chromeos

@@ -10,6 +10,94 @@
 
 namespace chromeos { // NOLINT
 
+// Connection enums (see flimflam/include/service.h)
+enum ConnectionType {
+  TYPE_UNKNOWN   = 0,
+  TYPE_ETHERNET  = 1,
+  TYPE_WIFI      = 2,
+  TYPE_WIMAX     = 3,
+  TYPE_BLUETOOTH = 4,
+  TYPE_CELLULAR  = 5,
+};
+
+enum ConnectionMode {
+  MODE_UNKNOWN = 0,
+  MODE_MANAGED = 1,
+  MODE_ADHOC   = 2,
+};
+
+enum ConnectionSecurity {
+  SECURITY_UNKNOWN = 0,
+  SECURITY_NONE    = 1,
+  SECURITY_WEP     = 2,
+  SECURITY_WPA     = 3,
+  SECURITY_RSN     = 4,
+  SECURITY_8021X   = 5,
+};
+
+enum ConnectionState {
+  STATE_UNKNOWN            = 0,
+  STATE_IDLE               = 1,
+  STATE_CARRIER            = 2,
+  STATE_ASSOCIATION        = 3,
+  STATE_CONFIGURATION      = 4,
+  STATE_READY              = 5,
+  STATE_DISCONNECT         = 6,
+  STATE_FAILURE            = 7,
+  STATE_ACTIVATION_FAILURE = 8
+};
+
+enum ConnectivityState {
+  CONN_STATE_UNKNOWN      = 0,
+  CONN_STATE_UNRESTRICTED = 1,
+  CONN_STATE_RESTRICTED   = 2,
+  CONN_STATE_NONE         = 3
+};
+
+// Network enums (see flimflam/include/network.h)
+enum NetworkTechnology {
+  NETWORK_TECHNOLOGY_UNKNOWN      = 0,
+  NETWORK_TECHNOLOGY_1XRTT        = 1,
+  NETWORK_TECHNOLOGY_EVDO         = 2,
+  NETWORK_TECHNOLOGY_GPRS         = 3,
+  NETWORK_TECHNOLOGY_EDGE         = 4,
+  NETWORK_TECHNOLOGY_UMTS         = 5,
+  NETWORK_TECHNOLOGY_HSPA         = 6,
+  NETWORK_TECHNOLOGY_HSPA_PLUS    = 7,
+  NETWORK_TECHNOLOGY_LTE          = 8,
+  NETWORK_TECHNOLOGY_LTE_ADVANCED = 9,
+};
+
+enum ActivationState {
+  ACTIVATION_STATE_UNKNOWN             = 0,
+  ACTIVATION_STATE_ACTIVATED           = 1,
+  ACTIVATION_STATE_ACTIVATING          = 2,
+  ACTIVATION_STATE_NOT_ACTIVATED       = 3,
+  ACTIVATION_STATE_PARTIALLY_ACTIVATED = 4,
+};
+
+enum NetworkRoamingState {
+  ROAMING_STATE_UNKNOWN = 0,
+  ROAMING_STATE_HOME    = 1,
+  ROAMING_STATE_ROAMING = 2,
+};
+
+// connection errors (see flimflam/include/service.h)
+enum ConnectionError {
+  ERROR_UNKNOWN           = 0,
+  ERROR_OUT_OF_RANGE      = 1,
+  ERROR_PIN_MISSING       = 2,
+  ERROR_DHCP_FAILED       = 3,
+  ERROR_CONNECT_FAILED    = 4,
+  ERROR_BAD_PASSPHRASE    = 5,
+  ERROR_BAD_WEPKEY        = 6,
+  ERROR_ACTIVATION_FAILED = 7,
+  ERROR_NEED_EVDO         = 8,
+  ERROR_NEED_HOME_NETWORK = 9,
+  ERROR_OTASP_FAILED      = 10,
+  ERROR_AAA_FAILED        = 11,
+};
+
 // Device Info for cellular devices.
 struct DeviceInfo {
   const char* carrier;
@@ -109,6 +197,10 @@ struct SystemInfo {
   }
 };
 
+// Requests a scan of services of |type|.
+// If |type| is TYPE_UNKNOWN (0), it will scan for all types.
+extern void (*RequestScan)(ConnectionType type);
+
 // Gets a ServiceInfo for a wifi service with |ssid| and |security|.
 // If an open network is not found, then it will create a hidden network and
 // return the ServiceInfo for that.
@@ -173,6 +265,16 @@ extern MonitorNetworkConnection (*MonitorNetwork)(
 // Disconnects a MonitorNetworkConnection.
 // DisconnectMonitorNetwork is deprecated: use DisconnectPropertyChangeMonitor.
 extern void (*DisconnectMonitorNetwork)(MonitorNetworkConnection connection);
+
+// Returns false on failure and true on success.
+extern bool (*EnableNetworkDevice)(ConnectionType type, bool enable);
+
+// Request a wifi service not in the network list (i.e. hidden).
+// Get a service path for a wifi service not in the network list (i.e. hidden).
+extern void (*RequestWifiServicePath)(const char* ssid,
+                                      ConnectionSecurity security,
+                                      NetworkPropertiesCallback callback,
+                                      void* object);
 
 }  // namespace chromeos
 

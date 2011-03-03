@@ -24,16 +24,16 @@ namespace chromeos {  // NOLINT
 
 namespace { // NOLINT
 
-// Connman D-Bus service identifiers.
-static const char* kConnmanManagerInterface = "org.chromium.flimflam.Manager";
-static const char* kConnmanServiceInterface = "org.chromium.flimflam.Service";
-static const char* kConnmanServiceName = "org.chromium.flimflam";
-static const char* kConnmanIPConfigInterface = "org.chromium.flimflam.IPConfig";
-static const char* kConnmanDeviceInterface = "org.chromium.flimflam.Device";
-static const char* kConnmanProfileInterface = "org.chromium.flimflam.Profile";
-static const char* kConnmanNetworkInterface = "org.chromium.flimflam.Network";
+// Flimflam D-Bus service identifiers.
+static const char* kFlimflamManagerInterface = "org.chromium.flimflam.Manager";
+static const char* kFlimflamServiceInterface = "org.chromium.flimflam.Service";
+static const char* kFlimflamServiceName = "org.chromium.flimflam";
+static const char* kFlimflamIPConfigInterface = "org.chromium.flimflam.IPConfig";
+static const char* kFlimflamDeviceInterface = "org.chromium.flimflam.Device";
+static const char* kFlimflamProfileInterface = "org.chromium.flimflam.Profile";
+static const char* kFlimflamNetworkInterface = "org.chromium.flimflam.Network";
 
-// Connman function names.
+// Flimflam function names.
 static const char* kGetPropertiesFunction = "GetProperties";
 static const char* kSetPropertyFunction = "SetProperty";
 static const char* kClearPropertyFunction = "ClearProperty";
@@ -49,7 +49,7 @@ static const char* kGetEntryFunction = "GetEntry";
 static const char* kDeleteEntryFunction = "DeleteEntry";
 static const char* kActivateCellularModemFunction = "ActivateCellularModem";
 
-// Connman property names.
+// Flimflam property names.
 static const char* kSecurityProperty = "Security";
 static const char* kPassphraseProperty = "Passphrase";
 static const char* kIdentityProperty = "Identity";
@@ -70,37 +70,25 @@ static const char* kWifiChannelProperty = "WiFi.Channel";
 static const char* kScanIntervalProperty = "ScanInterval";
 static const char* kPoweredProperty = "Powered";
 
-// Connman device info property names.
+// Flimflam device info property names.
 static const char* kIPConfigsProperty = "IPConfigs";
 static const char* kCertpathSettingsPrefix = "SETTINGS:";
 
-// Connman EAP service properties
+// Flimflam EAP service properties
 static const char* kEAPEAPProperty = "EAP.EAP";
 static const char* kEAPClientCertProperty = "EAP.ClientCert";
 static const char* kEAPCertIDProperty = "EAP.CertID";
 static const char* kEAPKeyIDProperty = "EAP.KeyID";
 static const char* kEAPPINProperty = "EAP.PIN";
 
-// Connman monitored properties
+// Flimflam monitored properties
 static const char* kMonitorPropertyChanged = "PropertyChanged";
 
-// Connman type options.
-static const char* kTypeEthernet = "ethernet";
+// Flimflam type options.
 static const char* kTypeWifi = "wifi";
-static const char* kTypeWimax = "wimax";
-static const char* kTypeBluetooth = "bluetooth";
-static const char* kTypeCellular = "cellular";
-static const char* kTypeUnknown = "";
 
-// Connman mode options.
+// Flimflam mode options.
 static const char* kModeManaged = "managed";
-
-// Connman security options.
-static const char* kSecurityWpa = "wpa";
-static const char* kSecurityWep = "wep";
-static const char* kSecurityRsn = "rsn";
-static const char* kSecurity8021x = "802_1x";
-static const char* kSecurityNone = "none";
 
 // Cashew D-Bus service identifiers.
 static const char* kCashewServiceName = "org.chromium.Cashew";
@@ -111,7 +99,7 @@ static const char* kCashewServiceInterface = "org.chromium.Cashew";
 static const char* kRequestDataPlanFunction = "RequestDataPlansUpdate";
 static const char* kRetrieveDataPlanFunction = "GetDataPlans";
 
-// Connman monitored properties
+// Flimflam monitored properties
 static const char* kMonitorDataPlanUpdate = "DataPlansUpdate";
 
 // Cashew data plan properties
@@ -147,42 +135,6 @@ static const char* kTypeBOOTP = "bootp";
 static const char* kTypeZeroConf = "zeroconf";
 static const char* kTypeDHCP6 = "dhcp6";
 static const char* kTypePPP = "ppp";
-
-static const char* TypeToString(ConnectionType type) {
-  switch (type) {
-    case TYPE_UNKNOWN:
-      break;
-    case TYPE_ETHERNET:
-      return kTypeEthernet;
-    case TYPE_WIFI:
-      return kTypeWifi;
-    case TYPE_WIMAX:
-      return kTypeWimax;
-    case TYPE_BLUETOOTH:
-      return kTypeBluetooth;
-    case TYPE_CELLULAR:
-      return kTypeCellular;
-  }
-  return kTypeUnknown;
-}
-
-static const char* SecurityToString(ConnectionSecurity security) {
-  switch (security) {
-    case SECURITY_UNKNOWN:
-      break;
-    case SECURITY_8021X:
-      return kSecurity8021x;
-    case SECURITY_RSN:
-      return kSecurityRsn;
-    case SECURITY_WPA:
-      return kSecurityWpa;
-    case SECURITY_WEP:
-      return kSecurityWep;
-    case SECURITY_NONE:
-      return kSecurityNone;
-  }
-  return kUnknownString;
-}
 
 static CellularDataPlanType ParseCellularDataPlanType(const std::string& type) {
   if (type == kCellularDataPlanUnlimited)
@@ -511,9 +463,9 @@ bool ParseIPConfig(const char* path, IPConfig *ipconfig) {
   ipconfig->path = NewStringCopy(path);
 
   dbus::Proxy config_proxy(dbus::GetSystemBusConnection(),
-                           kConnmanServiceName,
+                           kFlimflamServiceName,
                            path,
-                           kConnmanIPConfigInterface);
+                           kFlimflamIPConfigInterface);
   glib::ScopedHashTable properties;
   if (!GetProperties(config_proxy, &properties))
     return false;
@@ -528,9 +480,9 @@ IPConfigStatus* ChromeOSListIPConfigs(const char* device_path) {
 
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy device_proxy(bus,
-                           kConnmanServiceName,
+                           kFlimflamServiceName,
                            device_path,
-                           kConnmanDeviceInterface);
+                           kFlimflamDeviceInterface);
 
   glib::ScopedHashTable properties;
   if (!GetProperties(device_proxy, &properties)) {
@@ -579,9 +531,9 @@ extern "C"
 bool ChromeOSAddIPConfig(const char* device_path, IPConfigType type) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy device_proxy(bus,
-                           kConnmanServiceName,
+                           kFlimflamServiceName,
                            device_path,
-                           kConnmanDeviceInterface);
+                           kFlimflamDeviceInterface);
 
   glib::ScopedError error;
   ::DBusGProxy obj;
@@ -632,9 +584,9 @@ extern "C"
 bool ChromeOSSaveIPConfig(IPConfig* config) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy device_proxy(bus,
-                           kConnmanServiceName,
+                           kFlimflamServiceName,
                            config->path,
-                           kConnmanIPConfigInterface);
+                           kFlimflamIPConfigInterface);
 /*
   TODO(chocobo): Save all the values
 
@@ -663,9 +615,9 @@ extern "C"
 bool ChromeOSRemoveIPConfig(IPConfig* config) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy config_proxy(bus,
-                           kConnmanServiceName,
+                           kFlimflamServiceName,
                            config->path,
-                           kConnmanIPConfigInterface);
+                           kFlimflamIPConfigInterface);
 
   glib::ScopedError error;
 
@@ -721,9 +673,9 @@ PropertyChangeMonitor ChromeOSMonitorNetworkManager(
     void* object) {
   RegisterNetworkMarshallers();
   dbus::Proxy proxy(dbus::GetSystemBusConnection(),
-                    kConnmanServiceName,
+                    kFlimflamServiceName,
                     "/",
-                    kConnmanManagerInterface);
+                    kFlimflamManagerInterface);
   PropertyChangeMonitor monitor =
       new PropertyChangedHandler(callback, "/", object);
   monitor->set_connection(dbus::Monitor(proxy,
@@ -748,9 +700,9 @@ PropertyChangeMonitor ChromeOSMonitorNetworkService(
     void* object) {
   RegisterNetworkMarshallers();
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
+                            kFlimflamServiceName,
                             service_path,
-                            kConnmanServiceInterface);
+                            kFlimflamServiceInterface);
   PropertyChangeMonitor monitor =
       new PropertyChangedHandler(callback, service_path, object);
   monitor->set_connection(dbus::Monitor(service_proxy,
@@ -767,35 +719,15 @@ void ChromeOSDisconnectMonitorService(PropertyChangeMonitor connection) {
 }
 
 extern "C"
-void ChromeOSRequestScan(ConnectionType type) {
-  dbus::Proxy manager_proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
-                            "/",
-                            kConnmanManagerInterface);
-  gchar* device = ::g_strdup(TypeToString(type));
-  glib::ScopedError error;
-  if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
-                           kRequestScanFunction,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           device,
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << "ChromeOSRequestScan failed: "
-        << (error->message ? error->message : "Unknown Error.");
-  }
-}
-
-extern "C"
 bool ChromeOSActivateCellularModem(const char* service_path,
                                    const char* carrier) {
   if (carrier == NULL)
     carrier = "";
 
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
+                            kFlimflamServiceName,
                             service_path,
-                            kConnmanServiceInterface);
+                            kFlimflamServiceInterface);
 
   // Now try activating.
   glib::ScopedError error;
@@ -920,9 +852,9 @@ bool ChromeOSConnectToNetworkWithCertInfo(const char* service_path,
                                           const char* identity,
                                           const char* certpath) {
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
+                            kFlimflamServiceName,
                             service_path,
-                            kConnmanServiceInterface);
+                            kFlimflamServiceInterface);
 
   // Set passphrase if non-null.
   if (passphrase) {
@@ -994,9 +926,9 @@ bool ChromeOSConnectToNetwork(const char* service_path,
 extern "C"
 bool ChromeOSDisconnectFromNetwork(const char* service_path) {
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
+                            kFlimflamServiceName,
                             service_path,
-                            kConnmanServiceInterface);
+                            kFlimflamServiceInterface);
 
   // Now try disconnecting.
   glib::ScopedError error;
@@ -1016,9 +948,9 @@ extern "C"
 bool ChromeOSDeleteRememberedService(const char* service_path) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy manager_proxy(bus,
-                            kConnmanServiceName,
+                            kFlimflamServiceName,
                             "/",
-                            kConnmanManagerInterface);
+                            kFlimflamManagerInterface);
 
   glib::ScopedHashTable properties;
   if (!GetProperties(manager_proxy, &properties)) {
@@ -1031,9 +963,9 @@ bool ChromeOSDeleteRememberedService(const char* service_path) {
       static_cast<const gchar*>(g_value_get_boxed(&profile_val));
 
   dbus::Proxy profile_proxy(bus,
-                            kConnmanServiceName,
+                            kFlimflamServiceName,
                             profile_path,
-                            kConnmanProfileInterface);
+                            kFlimflamProfileInterface);
 
   glib::ScopedError error;
   if (!::dbus_g_proxy_call(profile_proxy.gproxy(),
@@ -1050,45 +982,14 @@ bool ChromeOSDeleteRememberedService(const char* service_path) {
   return true;
 }
 
-extern "C"
-bool ChromeOSEnableNetworkDevice(ConnectionType type, bool enable) {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy manager_proxy(bus,
-                            kConnmanServiceName,
-                            "/",
-                            kConnmanManagerInterface);
-  if (type == TYPE_UNKNOWN) {
-    LOG(WARNING) << "EnableNetworkDevice called with an unknown type: " << type;
-    return false;
-  }
-
-  gchar* device = ::g_strdup(TypeToString(type));
-  glib::ScopedError error;
-  if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
-                           enable ? kEnableTechnologyFunction :
-                                    kDisableTechnologyFunction,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           device,
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << "EnableNetworkDevice failed: "
-        << (error->message ? error->message : "Unknown Error.");
-    ::g_free(device);
-    return false;
-  }
-
-  ::g_free(device);
-  return true;
-}
 
 extern "C"
 bool ChromeOSSetOfflineMode(bool offline) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy manager_proxy(bus,
-                            kConnmanServiceName,
+                            kFlimflamServiceName,
                             "/",
-                            kConnmanManagerInterface);
+                            kFlimflamManagerInterface);
 
   glib::Value value_offline(offline);
 
@@ -1113,9 +1014,9 @@ bool ChromeOSSetOfflineMode(bool offline) {
 extern "C"
 bool ChromeOSSetAutoConnect(const char* service_path, bool auto_connect) {
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
+                            kFlimflamServiceName,
                             service_path,
-                            kConnmanServiceInterface);
+                            kFlimflamServiceInterface);
 
   glib::Value value_auto_connect(auto_connect);
 
@@ -1140,9 +1041,9 @@ bool ChromeOSSetAutoConnect(const char* service_path, bool auto_connect) {
 static bool ClearServiceProperty(const char* service_path,
                                  const char* property) {
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
+                            kFlimflamServiceName,
                             service_path,
-                            kConnmanServiceInterface);
+                            kFlimflamServiceInterface);
 
   glib::ScopedError error;
   if (!::dbus_g_proxy_call(service_proxy.gproxy(),
@@ -1163,9 +1064,9 @@ static bool ClearServiceProperty(const char* service_path,
 static bool SetServiceStringProperty(const char* service_path,
                                      const char* property, const char* value) {
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
+                            kFlimflamServiceName,
                             service_path,
-                            kConnmanServiceInterface);
+                            kFlimflamServiceInterface);
 
   glib::Value value_string(value);
   glib::ScopedError error;
@@ -1217,9 +1118,9 @@ bool ParseDeviceNetworkInfo(dbus::BusConnection bus,
                             const char* path,
                             DeviceNetworkInfo* info) {
   dbus::Proxy network_proxy(bus,
-                            kConnmanServiceName,
+                            kFlimflamServiceName,
                             path,
-                            kConnmanNetworkInterface);
+                            kFlimflamNetworkInterface);
   glib::ScopedHashTable properties;
   if (!GetProperties(network_proxy, &properties))
     return false;
@@ -1264,9 +1165,9 @@ DeviceNetworkList* ChromeOSGetDeviceNetworkList() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   {
     dbus::Proxy manager_proxy(bus,
-                              kConnmanServiceName,
+                              kFlimflamServiceName,
                               "/",
-                              kConnmanManagerInterface);
+                              kFlimflamManagerInterface);
 
     glib::ScopedHashTable properties;
     if (!GetProperties(manager_proxy, &properties)) {
@@ -1287,9 +1188,9 @@ DeviceNetworkList* ChromeOSGetDeviceNetworkList() {
     const char* device_path =
         static_cast<const char*>(g_ptr_array_index(devices, i));
     dbus::Proxy device_proxy(bus,
-                             kConnmanServiceName,
+                             kFlimflamServiceName,
                              device_path,
-                             kConnmanDeviceInterface);
+                             kFlimflamDeviceInterface);
 
     glib::ScopedHashTable properties;
     if (!GetProperties(device_proxy, &properties)) {
@@ -1349,23 +1250,60 @@ void ChromeOSFreeDeviceNetworkList(DeviceNetworkList* list) {
 
 namespace {
 
-struct GetPropertiesCallbackData {
+struct FlimflamCallbackData {
+  FlimflamCallbackData(const char* interface,
+                       const char* service_path) {
+    DCHECK(interface);
+    interface_name = std::string(interface);
+    proxy = new dbus::Proxy(dbus::GetSystemBusConnection(),
+                            kFlimflamServiceName,
+                            service_path,
+                            interface);
+  }
+  virtual ~FlimflamCallbackData() {
+    delete proxy;
+  }
+  // Owned by the callback, deleteted in the destructor:
+  dbus::Proxy* proxy;
+  std::string interface_name;  // Store for error reporting.
+};
+
+// DBus will always call the Delete function passed to it by
+// dbus_g_proxy_begin_call, whether DBus calls the callback or not.
+void DeleteFlimflamCallbackData(void* user_data) {
+  FlimflamCallbackData* cb_data = static_cast<FlimflamCallbackData*>(user_data);
+  delete cb_data;  // virtual destructor.
+}
+
+// Generic hander for logging errors from messages with no return value.
+void FlimflamNotifyHandleError(DBusGProxy* gproxy,
+                               DBusGProxyCall* call_id,
+                               void* user_data) {
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_end_call(gproxy,
+                               call_id,
+                               &Resetter(&error).lvalue(),
+                               G_TYPE_INVALID)) {
+    FlimflamCallbackData* cb_data =
+        static_cast<FlimflamCallbackData*>(user_data);
+    LOG(WARNING) << "DBus Error: " << cb_data->interface_name << ": "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+}
+
+struct GetPropertiesCallbackData : public FlimflamCallbackData {
   GetPropertiesCallbackData(const char* interface,
                             const char* service_path,
                             const char* cb_path,
                             NetworkPropertiesCallback cb,
                             void* obj) :
+      FlimflamCallbackData(interface, service_path),
       callback(cb),
       object(obj) {
     callback_path = NewStringCopy(cb_path);
-    proxy = new dbus::Proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
-                            service_path,
-                            interface);
   }
-  ~GetPropertiesCallbackData() {
+  virtual ~GetPropertiesCallbackData() {
     delete callback_path;
-    delete proxy;
   }
 
   // Owned by the caller (i.e. Chrome), do not destroy them:
@@ -1373,16 +1311,7 @@ struct GetPropertiesCallbackData {
   void* object;
   // Owned by the callback, deleteted in the destructor:
   const char* callback_path;
-  dbus::Proxy* proxy;
 };
-
-// DBus will always call the Delete function passed to it in
-// dbus_g_proxy_begin_call, whether DBus calls the callback or not.
-void DeleteGetPropertiesCallbackData(void* user_data) {
-  GetPropertiesCallbackData* cb_data =
-      static_cast<GetPropertiesCallbackData*>(user_data);
-  delete cb_data;
-}
 
 void GetPropertiesNotify(DBusGProxy* gproxy,
                          DBusGProxyCall* call_id,
@@ -1421,7 +1350,7 @@ void GetPropertiesAsync(const char* interface,
       kGetPropertiesFunction,
       &GetPropertiesNotify,
       cb_data,
-      &DeleteGetPropertiesCallbackData,
+      &DeleteFlimflamCallbackData,
       G_TYPE_INVALID);
   if (!call_id) {
     LOG(ERROR) << "NULL call_id for: " << interface << " : " << service_path;
@@ -1443,7 +1372,7 @@ void GetEntryAsync(const char* interface,
       kGetEntryFunction,
       &GetPropertiesNotify,
       cb_data,
-      &DeleteGetPropertiesCallbackData,
+      &DeleteFlimflamCallbackData,
       G_TYPE_STRING,
       entry_path,
       G_TYPE_INVALID);
@@ -1476,30 +1405,26 @@ void GetWifiNotify(DBusGProxy* gproxy,
     cb_data->callback(cb_data->object, cb_data->callback_path, NULL);
   } else {
     // Now request the properties for the service.
-    GetPropertiesAsync(kConnmanServiceInterface,
+    GetPropertiesAsync(kFlimflamServiceInterface,
                        service_path,
                        cb_data->callback,
                        cb_data->object);
   }
 }
 
-struct NetworkActionCallbackData {
+struct NetworkActionCallbackData : public FlimflamCallbackData {
   NetworkActionCallbackData(const char* interface,
                             const char* service_path,
                             const char* cb_path,
                             NetworkActionCallback cb,
                             void* obj) :
+      FlimflamCallbackData(interface, service_path),
       callback(cb),
       object(obj) {
     callback_path = NewStringCopy(cb_path);
-    proxy = new dbus::Proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
-                            service_path,
-                            interface);
   }
-  ~NetworkActionCallbackData() {
+  virtual ~NetworkActionCallbackData() {
     delete callback_path;
-    delete proxy;
   }
 
   // Owned by the caller (i.e. Chrome), do not destroy them:
@@ -1507,16 +1432,7 @@ struct NetworkActionCallbackData {
   void* object;
   // Owned by the callback, deleteted in the destructor:
   const char* callback_path;
-  dbus::Proxy* proxy;
 };
-
-// DBus will always call the Delete function passed to it in
-// dbus_g_proxy_begin_call, whether DBus calls the callback or not.
-void DeleteNetworkActionCallbackData(void* user_data) {
-  NetworkActionCallbackData* cb_data =
-      static_cast<NetworkActionCallbackData*>(user_data);
-  delete cb_data;
-}
 
 void NetworkServiceConnectNotify(DBusGProxy* gproxy,
                                  DBusGProxyCall* call_id,
@@ -1554,19 +1470,19 @@ void NetworkServiceConnectAsync(
     void* object) {
   DCHECK(service_path && callback);
   NetworkActionCallbackData* cb_data = new NetworkActionCallbackData(
-      kConnmanServiceInterface, service_path, service_path, callback, object);
+      kFlimflamServiceInterface, service_path, service_path, callback, object);
 
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
       kConnectFunction,
       &NetworkServiceConnectNotify,
       cb_data,
-      &DeleteNetworkActionCallbackData,
+      &DeleteFlimflamCallbackData,
       DBUS_TYPE_G_OBJECT_PATH,
       &service_path,
       G_TYPE_INVALID);
   if (!call_id) {
-    LOG(ERROR) << "NULL call_id for: " << kConnmanServiceInterface
+    LOG(ERROR) << "NULL call_id for: " << kFlimflamServiceInterface
                << " : " << service_path;
     callback(object, service_path, NETWORK_METHOD_ERROR_LOCAL,
              "dbus: NULL call_id");
@@ -1590,7 +1506,7 @@ extern "C"
 void ChromeOSRequestNetworkManagerInfo(
     NetworkPropertiesCallback callback,
     void* object) {
-  GetPropertiesAsync(kConnmanManagerInterface, "/", callback, object);
+  GetPropertiesAsync(kFlimflamManagerInterface, "/", callback, object);
 }
 
 extern "C"
@@ -1598,7 +1514,7 @@ void ChromeOSRequestNetworkServiceInfo(
     const char* service_path,
     NetworkPropertiesCallback callback,
     void* object) {
-  GetPropertiesAsync(kConnmanServiceInterface, service_path, callback, object);
+  GetPropertiesAsync(kFlimflamServiceInterface, service_path, callback, object);
 }
 
 extern "C"
@@ -1606,7 +1522,7 @@ void ChromeOSRequestNetworkDeviceInfo(
     const char* device_path,
     NetworkPropertiesCallback callback,
     void* object) {
-  GetPropertiesAsync(kConnmanDeviceInterface, device_path, callback, object);
+  GetPropertiesAsync(kFlimflamDeviceInterface, device_path, callback, object);
 }
 
 extern "C"
@@ -1614,7 +1530,7 @@ void ChromeOSRequestNetworkProfile(
     const char* profile_path,
     NetworkPropertiesCallback callback,
     void* object) {
-  GetPropertiesAsync(kConnmanProfileInterface, profile_path, callback, object);
+  GetPropertiesAsync(kFlimflamProfileInterface, profile_path, callback, object);
 }
 
 extern "C"
@@ -1623,19 +1539,19 @@ void ChromeOSRequestNetworkProfileEntry(
     const char* entry_service_path,
     NetworkPropertiesCallback callback,
     void* object) {
-  GetEntryAsync(kConnmanProfileInterface, profile_path, entry_service_path,
+  GetEntryAsync(kFlimflamProfileInterface, profile_path, entry_service_path,
                 callback, object);
 }
 
 extern "C"
-void ChromeOSRequestWifiServicePath(
+void ChromeOSRequestHiddenWifiNetwork(
     const char* ssid,
-    ConnectionSecurity security,
+    const char* security,
     NetworkPropertiesCallback callback,
     void* object) {
   DCHECK(ssid && callback);
   GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
-      kConnmanManagerInterface, "/", ssid, callback, object);
+      kFlimflamManagerInterface, "/", ssid, callback, object);
 
   glib::ScopedHashTable scoped_properties =
       glib::ScopedHashTable(::g_hash_table_new_full(
@@ -1644,9 +1560,7 @@ void ChromeOSRequestWifiServicePath(
   glib::Value value_mode(kModeManaged);
   glib::Value value_type(kTypeWifi);
   glib::Value value_ssid(ssid);
-  if (security == SECURITY_UNKNOWN)
-    security = SECURITY_RSN;
-  glib::Value value_security(SecurityToString(security));
+  glib::Value value_security(security);
   ::GHashTable* properties = scoped_properties.get();
   ::g_hash_table_insert(properties, ::g_strdup(kModeProperty), &value_mode);
   ::g_hash_table_insert(properties, ::g_strdup(kTypeProperty), &value_type);
@@ -1663,7 +1577,7 @@ void ChromeOSRequestWifiServicePath(
       kGetWifiServiceFunction,
       &GetWifiNotify,
       cb_data,
-      &DeleteGetPropertiesCallbackData,
+      &DeleteFlimflamCallbackData,
       ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING, G_TYPE_VALUE),
       properties,
       G_TYPE_INVALID);
@@ -1671,6 +1585,44 @@ void ChromeOSRequestWifiServicePath(
     LOG(ERROR) << "NULL call_id for: " << kGetWifiServiceFunction;
     delete cb_data;
     callback(object, ssid, NULL);
+  }
+}
+
+extern "C"
+void ChromeOSRequestNetworkScan(const char* network_type) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamManagerInterface, "/");
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kRequestScanFunction,
+      &FlimflamNotifyHandleError,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_STRING,
+      network_type,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kRequestScanFunction;
+    delete cb_data;
+  }
+}
+
+extern "C"
+void ChromeOSRequestNetworkDeviceEnable(const char* network_type, bool enable) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamManagerInterface, "/");
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      enable ? kEnableTechnologyFunction : kDisableTechnologyFunction,
+      &FlimflamNotifyHandleError,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_STRING,
+      network_type,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kRequestScanFunction;
+    delete cb_data;
   }
 }
 
@@ -1716,33 +1668,41 @@ extern "C"
 void ChromeOSSetNetworkServiceProperty(const char* service_path,
                                        const char* property,
                                        const ::Value* setting) {
-  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
-                            service_path,
-                            kConnmanServiceInterface);
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamServiceInterface, service_path);
 
   // DEPRECATED
   // Backwards-compatibility for "CertPath=SETTINGS:key_id=1,cert_id=2,..."
   if (strcmp(property, "CertPath") == 0) {
-    std::string str;
-    const char* certpath;
-    setting->GetAsString(&str);
-    certpath = str.c_str();
-    // Synchronous call for backwards compatibility.
-    // TODO(njw): remove once CertPath is deprecated in favor of
-    // explicit EAP.* properties.
-    set_certpath_properties(certpath, &service_proxy);
+    std::string certpath;
+    if (setting->GetAsString(&certpath)) {
+      // Synchronous call for backwards compatibility.
+      // TODO(njw): remove once CertPath is deprecated in favor of
+      // explicit EAP.* properties.
+      set_certpath_properties(certpath.c_str(), cb_data->proxy);
+    }
+    delete cb_data;
     return;
   }
 
+  // Start the DBus call. FlimflamNotifyHandleError will get called when
+  // it completes and log any errors.
   scoped_ptr<glib::Value> gsetting(ConvertToGlibValue(setting));
-  ::dbus_g_proxy_call_no_reply(service_proxy.gproxy(),
-                               kSetPropertyFunction,
-                               G_TYPE_STRING,
-                               property,
-                               G_VALUE_TYPE(gsetting.get()),
-                               gsetting.get(),
-                               G_TYPE_INVALID);
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kSetPropertyFunction,
+      &FlimflamNotifyHandleError,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_STRING,
+      property,
+      G_VALUE_TYPE(gsetting.get()),
+      gsetting.get(),
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kRequestScanFunction;
+    delete cb_data;
+  }
 }
 
 // Cashew services
