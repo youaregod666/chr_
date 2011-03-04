@@ -12,6 +12,8 @@
 
 #include "chromeos_cros_api.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
+// TODO(stevenjb): Remove testing of deprecated code; add new tests.
+#include "chromeos_network_deprecahted.h"  // NOLINT
 #include "chromeos/dbus/dbus.h"  // NOLINT
 #include "chromeos/glib/object.h"  // NOLINT
 #include "monitor_utils.h" //NOLINT
