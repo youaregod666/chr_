@@ -80,6 +80,8 @@ extern int (*CryptohomeAsyncMountGuest)();
 extern bool (*CryptohomeUnmount)();
 extern bool (*CryptohomeRemoveTrackedSubdirectories)();
 extern int (*CryptohomeAsyncRemoveTrackedSubdirectories)();
+extern bool (*CryptohomeDoAutomaticFreeDiskSpaceControl)();
+extern int (*CryptohomeAsyncDoAutomaticFreeDiskSpaceControl)();
 extern bool (*CryptohomeTpmIsReady)();
 extern bool (*CryptohomeTpmIsEnabled)();
 extern bool (*CryptohomeTpmIsOwned)();

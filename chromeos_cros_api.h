@@ -190,12 +190,14 @@
 // 108: Move types, RequestWifiServicePath, RequestScan, EnableNetworkDevice
 //      to deprecated. Add RequestHiddenWifiNetwork, RequestNetworkScan,
 //      RequestNetworkDeviceEnable.
+// 109: Added CryptohomeDoAutomaticFreeDiskSpaceControl and
+//      CryptohomeAsyncDoAutomaticFreeDiskSpaceControl
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 104,
-  kCrosAPIVersion = 108
+  kCrosAPIVersion = 109
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

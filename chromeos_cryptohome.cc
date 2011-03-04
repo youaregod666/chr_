@@ -568,6 +568,55 @@ int ChromeOSCryptohomeAsyncRemoveTrackedSubdirectories() {
 }
 
 extern "C"
+bool ChromeOSCryptohomeDoAutomaticFreeDiskSpaceControl() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gboolean done = false;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(
+          proxy.gproxy(),
+          cryptohome::kCryptohomeDoAutomaticFreeDiskSpaceControl,
+          &Resetter(&error).lvalue(),
+          G_TYPE_INVALID,
+          G_TYPE_BOOLEAN,
+          &done,
+          G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeDoAutomaticFreeDiskSpaceControl
+                 << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+  return done;
+}
+
+extern "C"
+int ChromeOSCryptohomeAsyncDoAutomaticFreeDiskSpaceControl() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gint async_call_id = 0;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+           cryptohome::kCryptohomeAsyncDoAutomaticFreeDiskSpaceControl,
+           &Resetter(&error).lvalue(),
+           G_TYPE_INVALID,
+           G_TYPE_INT,
+           &async_call_id,
+           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeAsyncDoAutomaticFreeDiskSpaceControl
+                 << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+  return async_call_id;
+}
+
+extern "C"
 bool ChromeOSCryptohomeTpmIsReady() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy proxy(bus,

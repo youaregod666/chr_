@@ -339,6 +339,8 @@ DECL_FUNC_0(CryptohomeAsyncMountGuest, int);
 DECL_FUNC_0(CryptohomeUnmount, bool);
 DECL_FUNC_0(CryptohomeRemoveTrackedSubdirectories, bool);
 DECL_FUNC_0(CryptohomeAsyncRemoveTrackedSubdirectories, int);
+DECL_FUNC_0(CryptohomeDoAutomaticFreeDiskSpaceControl, bool);
+DECL_FUNC_0(CryptohomeAsyncDoAutomaticFreeDiskSpaceControl, int);
 DECL_FUNC_0(CryptohomeTpmIsReady, bool);
 DECL_FUNC_0(CryptohomeTpmIsEnabled, bool);
 DECL_FUNC_0(CryptohomeTpmIsOwned, bool);
@@ -617,6 +619,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(CryptohomeUnmount);
   INIT_FUNC(CryptohomeRemoveTrackedSubdirectories);
   INIT_FUNC(CryptohomeAsyncRemoveTrackedSubdirectories);
+  INIT_FUNC(CryptohomeDoAutomaticFreeDiskSpaceControl);
+  INIT_FUNC(CryptohomeAsyncDoAutomaticFreeDiskSpaceControl);
   INIT_FUNC(CryptohomeTpmIsReady);
   INIT_FUNC(CryptohomeTpmIsEnabled);
   INIT_FUNC(CryptohomeTpmIsOwned);
