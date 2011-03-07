@@ -1478,8 +1478,6 @@ void NetworkServiceConnectAsync(
       &NetworkServiceConnectNotify,
       cb_data,
       &DeleteFlimflamCallbackData,
-      DBUS_TYPE_G_OBJECT_PATH,
-      &service_path,
       G_TYPE_INVALID);
   if (!call_id) {
     LOG(ERROR) << "NULL call_id for: " << kFlimflamServiceInterface
@@ -1696,7 +1694,7 @@ void ChromeOSSetNetworkServiceProperty(const char* service_path,
       &DeleteFlimflamCallbackData,
       G_TYPE_STRING,
       property,
-      G_VALUE_TYPE(gsetting.get()),
+      G_TYPE_VALUE,
       gsetting.get(),
       G_TYPE_INVALID);
   if (!call_id) {
