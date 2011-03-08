@@ -192,12 +192,13 @@
 //      RequestNetworkDeviceEnable.
 // 109: Added CryptohomeDoAutomaticFreeDiskSpaceControl and
 //      CryptohomeAsyncDoAutomaticFreeDiskSpaceControl
+// 110: Deprecated GetCurrentInputMethod
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 104,
-  kCrosAPIVersion = 109
+  kCrosAPIVersion = 110
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

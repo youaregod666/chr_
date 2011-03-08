@@ -146,8 +146,6 @@ DECL_FUNC_1(StopInputMethodProcess, bool, InputMethodStatusConnection*);
 DECL_FUNC_0(GetSupportedInputMethodDescriptors, InputMethodDescriptors*);
 DECL_FUNC_2(ChangeInputMethod,
     bool, InputMethodStatusConnection*, const char*);
-DECL_FUNC_1(GetCurrentInputMethod,
-    InputMethodDescriptor*, InputMethodStatusConnection*);
 DECL_FUNC_3(SetImePropertyActivated,
     void, InputMethodStatusConnection*, const char*, bool);
 DECL_FUNC_4(SetImeConfig,
@@ -478,7 +476,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(StopInputMethodProcess);
   INIT_FUNC(GetSupportedInputMethodDescriptors);
   INIT_FUNC(ChangeInputMethod);
-  INIT_FUNC(GetCurrentInputMethod);
   INIT_FUNC(SetImePropertyActivated);
   INIT_FUNC(SetImeConfig);
   INIT_FUNC(GetKeyboardOverlayId);
