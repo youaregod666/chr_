@@ -191,14 +191,15 @@
 //      to deprecated. Add RequestHiddenWifiNetwork, RequestNetworkScan,
 //      RequestNetworkDeviceEnable.
 // 109: Added CryptohomeDoAutomaticFreeDiskSpaceControl and
-//      CryptohomeAsyncDoAutomaticFreeDiskSpaceControl
-// 110: Deprecated GetCurrentInputMethod
+//      CryptohomeAsyncDoAutomaticFreeDiskSpaceControl.
+// 110: Deprecated GetCurrentInputMethod.
+// 111: Added async RequestUpdateCheck.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 104,
-  kCrosAPIVersion = 110
+  kCrosAPIVersion = 111
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

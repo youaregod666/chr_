@@ -213,6 +213,55 @@ bool ChromeOSInitiateUpdateCheck() {
   return rc == TRUE;
 }
 
+namespace {
+
+struct UpdateEngineCallbackData {
+  UpdateEngineCallbackData(UpdateCallback cb, void* data)
+      : callback(cb),
+        user_data(data),
+        proxy(new dbus::Proxy(dbus::GetSystemBusConnection(),
+                              kUpdateEngineServiceName,
+                              kUpdateEngineServicePath,
+                              kUpdateEngineServiceInterface)) {}
+  UpdateCallback callback;
+  void* user_data;
+  scoped_ptr<dbus::Proxy> proxy;
+};
+
+// Note: org_chromium_UpdateEngineInterface wraps the DBus calls and provides
+// its own callback and data, which in turn calls this callback.
+void UpdateEngineNotify(DBusGProxy* gproxy, GError* error, void* user_data) {
+  UpdateEngineCallbackData* cb_data =
+      static_cast<UpdateEngineCallbackData*>(user_data);
+  if (error) {
+    const char* msg = GetGErrorMessage(error);
+    LOG(WARNING) << "UpdateEngine DBus Error: " << msg;
+    if (cb_data->callback)
+      cb_data->callback(cb_data->user_data, UPDATE_RESULT_FAILED, msg);
+  } else {
+    if (cb_data->callback)
+      cb_data->callback(cb_data->user_data, UPDATE_RESULT_SUCCESS, NULL);
+  }
+  delete cb_data;
+}
+
+}  // namespace
+
+extern "C"
+void ChromeOSRequestUpdateCheck(UpdateCallback callback, void* user_data) {
+  UpdateEngineCallbackData* cb_data =
+      new UpdateEngineCallbackData(callback, user_data);
+  DBusGProxyCall* call_id =
+      org_chromium_UpdateEngineInterface_attempt_update_async(
+          cb_data->proxy->gproxy(), "", "", &UpdateEngineNotify, cb_data);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id";
+    if (callback)
+      callback(user_data, UPDATE_RESULT_DBUS_FAILED, NULL);
+    delete cb_data;
+  }
+}
+
 extern "C"
 bool ChromeOSRebootIfUpdated() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();

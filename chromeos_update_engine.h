@@ -64,6 +64,17 @@ extern void (*DisconnectUpdateProgress)(UpdateStatusConnection connection);
 extern bool (*RetrieveUpdateProgress)(UpdateProgress* information);
 // Tell UpdateEngine daemon to check for an update. Returns true on success.
 extern bool (*InitiateUpdateCheck)();
+// Asynchronously tell UpdateEngine daemon to check for an update.
+// If |callback| is non NULL, call with the result when the request completes.
+enum UpdateResult {
+  UPDATE_RESULT_SUCCESS,
+  UPDATE_RESULT_FAILED,
+  UPDATE_RESULT_DBUS_FAILED
+};
+typedef void (*UpdateCallback)(void* user_data,
+                               UpdateResult result,
+                               const char* error_msg);
+extern void (*RequestUpdateCheck)(UpdateCallback callback, void* user_data);
 // Tell UpdateEngine daemon to reboot the system if an update has been
 // downloaded and installed. Returns true on success.
 extern bool (*RebootIfUpdated)();

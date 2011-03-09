@@ -1252,19 +1252,13 @@ namespace {
 
 struct FlimflamCallbackData {
   FlimflamCallbackData(const char* interface,
-                       const char* service_path) {
-    DCHECK(interface);
-    interface_name = std::string(interface);
-    proxy = new dbus::Proxy(dbus::GetSystemBusConnection(),
+                       const char* service_path) :
+      proxy(new dbus::Proxy(dbus::GetSystemBusConnection(),
                             kFlimflamServiceName,
                             service_path,
-                            interface);
-  }
-  virtual ~FlimflamCallbackData() {
-    delete proxy;
-  }
-  // Owned by the callback, deleteted in the destructor:
-  dbus::Proxy* proxy;
+                            interface)),
+      interface_name(interface) {}
+  scoped_ptr<dbus::Proxy> proxy;
   std::string interface_name;  // Store for error reporting.
 };
 
@@ -1299,18 +1293,13 @@ struct GetPropertiesCallbackData : public FlimflamCallbackData {
                             void* obj) :
       FlimflamCallbackData(interface, service_path),
       callback(cb),
-      object(obj) {
-    callback_path = NewStringCopy(cb_path);
-  }
-  virtual ~GetPropertiesCallbackData() {
-    delete callback_path;
-  }
-
+      object(obj),
+      callback_path(cb_path) {}
   // Owned by the caller (i.e. Chrome), do not destroy them:
   NetworkPropertiesCallback callback;
   void* object;
   // Owned by the callback, deleteted in the destructor:
-  const char* callback_path;
+  std::string callback_path;
 };
 
 void GetPropertiesNotify(DBusGProxy* gproxy,
@@ -1331,10 +1320,14 @@ void GetPropertiesNotify(DBusGProxy* gproxy,
     LOG(WARNING) << "GetPropertiesNotify for path: '"
                  << cb_data->callback_path << "' error: "
                  << (error->message ? error->message : "Unknown Error.");
-    cb_data->callback(cb_data->object, cb_data->callback_path, NULL);
+    cb_data->callback(cb_data->object,
+                      cb_data->callback_path.c_str(),
+                      NULL);
   } else {
     scoped_ptr<Value> value(ConvertGHashTable(properties.get()));
-    cb_data->callback(cb_data->object, cb_data->callback_path, value.get());
+    cb_data->callback(cb_data->object,
+                      cb_data->callback_path.c_str(),
+                      value.get());
   }
 }
 
@@ -1402,7 +1395,7 @@ void GetWifiNotify(DBusGProxy* gproxy,
     LOG(WARNING) << "GetWifiNotify for path: '"
                  << cb_data->callback_path << "' error: "
                  << (error->message ? error->message : "Unknown Error.");
-    cb_data->callback(cb_data->object, cb_data->callback_path, NULL);
+    cb_data->callback(cb_data->object, cb_data->callback_path.c_str(), NULL);
   } else {
     // Now request the properties for the service.
     GetPropertiesAsync(kFlimflamServiceInterface,
@@ -1420,18 +1413,13 @@ struct NetworkActionCallbackData : public FlimflamCallbackData {
                             void* obj) :
       FlimflamCallbackData(interface, service_path),
       callback(cb),
-      object(obj) {
-    callback_path = NewStringCopy(cb_path);
-  }
-  virtual ~NetworkActionCallbackData() {
-    delete callback_path;
-  }
-
+      object(obj),
+      callback_path(cb_path) {}
   // Owned by the caller (i.e. Chrome), do not destroy them:
   NetworkActionCallback callback;
   void* object;
   // Owned by the callback, deleteted in the destructor:
-  const char* callback_path;
+  std::string callback_path;
 };
 
 void NetworkServiceConnectNotify(DBusGProxy* gproxy,
@@ -1456,10 +1444,10 @@ void NetworkServiceConnectNotify(DBusGProxy* gproxy,
                    << (error->message ? error->message : "Unknown Error.");
       etype = NETWORK_METHOD_ERROR_LOCAL;
     }
-    cb_data->callback(cb_data->object, cb_data->callback_path,
+    cb_data->callback(cb_data->object, cb_data->callback_path.c_str(),
                       etype, error->message);
   } else {
-    cb_data->callback(cb_data->object, cb_data->callback_path,
+    cb_data->callback(cb_data->object, cb_data->callback_path.c_str(),
                       NETWORK_METHOD_ERROR_NONE, NULL);
   }
 }
@@ -1677,7 +1665,7 @@ void ChromeOSSetNetworkServiceProperty(const char* service_path,
       // Synchronous call for backwards compatibility.
       // TODO(njw): remove once CertPath is deprecated in favor of
       // explicit EAP.* properties.
-      set_certpath_properties(certpath.c_str(), cb_data->proxy);
+      set_certpath_properties(certpath.c_str(), cb_data->proxy.get());
     }
     delete cb_data;
     return;
