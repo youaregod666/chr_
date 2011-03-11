@@ -389,6 +389,10 @@ DECL_FUNC_0(GetMachineInfo, MachineInfo*);
 DECL_FUNC_1(FreeMachineInfo, void, MachineInfo*);
 
 // Brightness
+DECL_FUNC_2(MonitorBrightnessV2,
+            BrightnessConnection,
+            BrightnessMonitorFunctionV2,
+            void*);
 DECL_FUNC_2(MonitorBrightness,
             BrightnessConnection,
             BrightnessMonitorFunction,
@@ -670,6 +674,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(FreeMachineInfo);
 
   // Brightness
+  INIT_FUNC(MonitorBrightnessV2);
   INIT_FUNC(MonitorBrightness);
   INIT_FUNC(DisconnectBrightness);
 

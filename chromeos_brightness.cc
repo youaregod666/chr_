@@ -18,10 +18,13 @@ namespace chromeos {
 
 class OpaqueBrightnessConnection : public dbus::SignalWatcher {
  public:
-  OpaqueBrightnessConnection(const BrightnessMonitorFunction& monitor_function,
-                             void* object)
-     : monitor_function_(monitor_function),
-       object_(object) {
+  OpaqueBrightnessConnection(
+      const BrightnessMonitorFunctionV2& monitor_function,
+      const BrightnessMonitorFunction& old_monitor_function,
+      void* object)
+      : monitor_function_(monitor_function),
+        old_monitor_function_(old_monitor_function),
+        object_(object) {
     StartMonitoring(power_manager::kPowerManagerInterface,
                     power_manager::kBrightnessChangedSignal);
   }
@@ -30,19 +33,25 @@ class OpaqueBrightnessConnection : public dbus::SignalWatcher {
     DBusError error;
     dbus_error_init(&error);
     int brightness_level = 0;
+    int user_initiated = 0;
     if (dbus_message_get_args(message, &error,
                               DBUS_TYPE_INT32, &brightness_level,
+                              DBUS_TYPE_BOOLEAN, &user_initiated,
                               DBUS_TYPE_INVALID)) {
-      monitor_function_(object_, brightness_level);
+      if (monitor_function_ != NULL)
+        monitor_function_(object_, brightness_level, user_initiated);
+      if (old_monitor_function_ != NULL && user_initiated)
+        old_monitor_function_(object_, brightness_level);
     } else {
-      LOG(WARNING) << "Unable to read brightness level from "
+      LOG(WARNING) << "Unable to read arguments from "
                    << power_manager::kBrightnessChangedSignal << " signal";
     }
   }
 
  private:
   // Function within Chrome that we invoke when the brightness changes.
-  BrightnessMonitorFunction monitor_function_;
+  BrightnessMonitorFunctionV2 monitor_function_;
+  BrightnessMonitorFunction old_monitor_function_;  // DEPRECATED
 
   // Opaque pointer supplied to ChromeOSMonitorBrightness() that we pass back
   // via |monitor_function_|.
@@ -50,9 +59,16 @@ class OpaqueBrightnessConnection : public dbus::SignalWatcher {
 };
 
 extern "C"
+BrightnessConnection ChromeOSMonitorBrightnessV2(
+    BrightnessMonitorFunctionV2 monitor_function, void* object) {
+  return new OpaqueBrightnessConnection(monitor_function, NULL, object);
+}
+
+// DEPRECATED
+extern "C"
 BrightnessConnection ChromeOSMonitorBrightness(
     BrightnessMonitorFunction monitor_function, void* object) {
-  return new OpaqueBrightnessConnection(monitor_function, object);
+  return new OpaqueBrightnessConnection(NULL, monitor_function, object);
 }
 
 extern "C"
