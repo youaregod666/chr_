@@ -436,11 +436,15 @@ class InputMethodStatusConnection {
       LOG(ERROR) << "StopInputMethodProcess: IBus connection is not alive";
       return false;
     }
-    // Ask IBus to exit *synchronously*.
-    if (!ibus_bus_exit(ibus_, FALSE /* do not restart */)) {
-      LOG(ERROR) << "ibus_bus_exit failed";
-      return false;
-    }
+
+    // Ask IBus to exit *asynchronously*.
+    ibus_bus_exit_async(ibus_,
+                        FALSE  /* do not restart */,
+                        -1  /* timeout */,
+                        NULL  /* cancellable */,
+                        NULL  /* callback */,
+                        NULL  /* user_data */);
+
     if (ibus_config_) {
       // Release |ibus_config_| unconditionally to make sure next
       // IBusConnectionsAreAlive() call will return false.

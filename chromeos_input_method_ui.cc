@@ -130,12 +130,14 @@ class InputMethodUiStatusConnection {
     g_object_set_data(G_OBJECT(ibus_), kPanelObjectKey, ibus_panel_service_);
     LOG(INFO) << "IBusPanelService object is successfully (re-)created.";
 
-    // Request the well-known name *synchronously*.
-    const int status = ibus_bus_request_name(ibus_, IBUS_SERVICE_PANEL, 0);
-    if (status == 0) {
-      LOG(ERROR) << "ibus_bus_request_name() failed";
-      return false;
-    }
+    // Request the well-known name *asynchronously*.
+    ibus_bus_request_name_async(ibus_,
+                                IBUS_SERVICE_PANEL,
+                                0  /* flags */,
+                                -1  /* timeout */,
+                                NULL  /* cancellable */,
+                                RequestNameCallback,
+                                g_object_ref(ibus_));
     return true;
   }
 
@@ -439,6 +441,34 @@ class InputMethodUiStatusConnection {
 
     self->monitor_functions_.update_lookup_table(
         self->input_method_library_, lookup_table);
+  }
+
+  // A callback function that will be called when ibus_bus_request_name_async()
+  // request is finished.
+  static void RequestNameCallback(GObject* source_object,
+                                  GAsyncResult* res,
+                                  gpointer user_data) {
+    IBusBus* bus = IBUS_BUS(user_data);
+    g_return_if_fail(bus);
+
+    GError* error = NULL;
+    const guint service_id =
+        ibus_bus_request_name_async_finish(bus, res, &error);
+
+    if (!service_id) {
+      std::string message = "(unknown error)";
+      if (error && error->message) {
+        message = error->message;
+      }
+      LOG(ERROR) << "Failed to register the panel service: " << message;
+    } else {
+      LOG(INFO) << "The panel service is registered: ID=" << service_id;
+    }
+
+    if (error) {
+      g_error_free(error);
+    }
+    g_object_unref(bus);
   }
 
   InputMethodUiStatusMonitorFunctions monitor_functions_;
