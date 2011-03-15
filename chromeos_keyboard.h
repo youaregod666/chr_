@@ -49,16 +49,8 @@ extern bool (*SetCurrentKeyboardLayoutByName)(const std::string& layout_name);
 // Notice: For now, you can't remap Left Control and Left Alt keys to CapsLock.
 extern bool (*RemapModifierKeys)(const ModifierMap& modifier_map);
 
-// Gets the current auto-repeat mode of the keyboard. The result is stored in
-// |out_mode|. Returns true on success.
-extern bool (*GetAutoRepeatEnabled)(bool* enabled);
-
 // Turns on and off the auto-repeat of the keyboard. Returns true on success.
 extern bool (*SetAutoRepeatEnabled)(bool enabled);
-
-// Gets the current auto-repeat rate of the keyboard. The result is stored in
-// |out_rate|. Returns true on success.
-extern bool (*GetAutoRepeatRate)(AutoRepeatRate* out_rate);
 
 // Sets the auto-repeat rate of the keyboard, initial delay in ms, and repeat
 // interval in ms.  Returns true on success.
@@ -68,7 +60,6 @@ extern bool (*SetAutoRepeatRate)(const AutoRepeatRate& rate);
 // WARNING: DO NOT USE FUNCTIONS/CLASSES/TYPEDEFS BELOW. They are only for
 // unittests. See the definitions in chromeos_keyboard.cc for details.
 //
-typedef std::map<std::string, ModifierMap> StringToModifierMap;
 
 // Converts |key| to a modifier key name which is used in
 // /usr/share/X11/xkb/symbols/chromeos.

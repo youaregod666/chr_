@@ -172,9 +172,7 @@ DECL_FUNC_2(MonitorInputMethodConnection,
 // Keyboard
 DECL_FUNC_1(SetCurrentKeyboardLayoutByName, bool, const std::string&);
 DECL_FUNC_1(RemapModifierKeys, bool, const ModifierMap&);
-DECL_FUNC_1(GetAutoRepeatEnabled, bool, bool*);
 DECL_FUNC_1(SetAutoRepeatEnabled, bool, bool);
-DECL_FUNC_1(GetAutoRepeatRate, bool, chromeos::AutoRepeatRate*);
 DECL_FUNC_1(SetAutoRepeatRate, bool, const chromeos::AutoRepeatRate&);
 
 // Mount
@@ -492,9 +490,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   // Keyboard
   INIT_FUNC(SetCurrentKeyboardLayoutByName);
   INIT_FUNC(RemapModifierKeys);
-  INIT_FUNC(GetAutoRepeatEnabled);
   INIT_FUNC(SetAutoRepeatEnabled);
-  INIT_FUNC(GetAutoRepeatRate);
   INIT_FUNC(SetAutoRepeatRate);
 
   // Mount

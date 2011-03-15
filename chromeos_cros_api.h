@@ -195,12 +195,13 @@
 // 110: Deprecated GetCurrentInputMethod.
 // 111: Added async RequestUpdateCheck.
 // 112: Added MonitorBrightnessV2 and deprecated MonitorBrightness.
+// 113: Deprecated GetAutoRepeatEnabled and GetAutoRepeatRate.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 104,
-  kCrosAPIVersion = 112
+  kCrosAPIVersion = 113
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
