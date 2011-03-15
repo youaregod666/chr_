@@ -596,34 +596,24 @@ class InputMethodStatusConnection {
     }
     DCHECK(g_variant_is_floating(variant));
 
-    gboolean success = TRUE;
-    if (is_preload_engines) {
-      // For preload_engines we use *synchronous* IPC to avoid a race condition:
-      //   github.com/ibus/ibus/commit/0f8cc67a33d4c0e1257a016de659f7e7a603bd62
-      // TODO(yusukes): Find a way to make it asynchronous.
-      success = ibus_config_set_value(ibus_config_,
-                                      section.c_str(),
-                                      config_name.c_str(),
-                                      variant);
-      DLOG(INFO) << "SetImeConfig: " << section << "/" << config_name
-                 << ": result=" << (success ? "ok" : "fail")
-                 << ": " << value.ToString();
-    } else {
-      // For less important config values, we set them *asynchronously* to avoid
-      // blocking Chrome UI.
-      ibus_config_set_value_async(ibus_config_,
-                                  section.c_str(),
-                                  config_name.c_str(),
-                                  variant,
-                                  -1,  // use the default ibus timeout
-                                  NULL,  // cancellable
-                                  NULL,  // callback
-                                  NULL);  // user_data
-    }
-    // Since |variant| is floating, ibus_config_set_value(_async) consumes
+    // Set an ibus configuration value *asynchronously*.
+    ibus_config_set_value_async(ibus_config_,
+                                section.c_str(),
+                                config_name.c_str(),
+                                variant,
+                                -1,  // use the default ibus timeout
+                                NULL,  // cancellable
+                                SetImeConfigCallback,
+                                g_object_ref(ibus_config_));
+
+    // Since |variant| is floating, ibus_config_set_value_async consumes
     // (takes ownership of) the variable.
 
-    return (success == TRUE);
+    if (is_preload_engines) {
+      DLOG(INFO) << "SetImeConfig: " << section << "/" << config_name
+                 << ": " << value.ToString();
+    }
+    return true;
   }
 
  private:
@@ -1025,6 +1015,32 @@ class InputMethodStatusConnection {
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(user_data);
     self->UpdateProperty(ibus_prop);
+  }
+
+  // A callback function that will be called when ibus_config_set_value_async()
+  // request is finished.
+  static void SetImeConfigCallback(GObject* source_object,
+                                   GAsyncResult* res,
+                                   gpointer user_data) {
+    IBusConfig* config = IBUS_CONFIG(user_data);
+    g_return_if_fail(config);
+
+    GError* error = NULL;
+    const gboolean result =
+        ibus_config_set_value_async_finish(config, res, &error);
+
+    if (!result) {
+      std::string message = "(unknown error)";
+      if (error && error->message) {
+        message = error->message;
+      }
+      LOG(ERROR) << "ibus_config_set_value_async failed: " << message;
+    }
+
+    if (error) {
+      g_error_free(error);
+    }
+    g_object_unref(config);
   }
 
   // A function pointers which point LanguageLibrary::XXXHandler functions.
