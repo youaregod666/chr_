@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,17 +9,20 @@
 
 namespace chromeos { //NOLINT
 
-struct DiskStatus {
-  const char* path;
-  const char* mountpath;
-  const char* systempath;
-  bool isparent;
-  bool hasmedia;
-};
-
-struct MountStatus {
-  DiskStatus *disks;
-  int size;
+class DiskInfo {
+ public:
+  // DBus serivice path.
+  virtual const char* path() const = 0;
+  // Disk mount path.
+  virtual const char* mount_path() const = 0;
+  // Disk system path.
+  virtual const char* system_path() const = 0;
+  // Is disk into a drive (i.e. /dev/sdb vs, /dev/sdb1).
+  virtual bool is_drive() const = 0;
+  // Does the disk have media content.
+  virtual bool has_media() const = 0;
+  // Is the disk on deveice we booted the machien from.
+  virtual bool on_boot_device() const = 0;
 };
 
 enum MountEventType {
@@ -31,52 +34,116 @@ enum MountEventType {
   DEVICE_SCANNED
 };
 
+// Describes whether there is an error and whether the error came from
+// the local system or from the server implementing the connect
+// method.
+enum MountMethodErrorType {
+  MOUNT_METHOD_ERROR_NONE = 0,
+  MOUNT_METHOD_ERROR_LOCAL = 1,
+  MOUNT_METHOD_ERROR_REMOTE = 2,
+};
+
 // An internal listener to a d-bus signal. When notifications are received
 // they are rebroadcasted in non-glib form.
-class OpaqueMountStatusConnection;
-typedef OpaqueMountStatusConnection* MountStatusConnection;
+class OpaqueMountEventConnection;
+typedef OpaqueMountEventConnection* MountEventConnection;
 
-// NOTE: The instance of MountStatus that is received by the caller will be
-// freed once your function returns. Copy this object if you intend to cache it.
-//
 // The expected callback signature that will be provided by the client who
-// calls MonitorMountStatus.
-typedef void(*MountMonitor)(void*,
-                            const MountStatus&,
-                            MountEventType,
-                            const char*);
+// calls MonitorMountEvents.
+typedef void(*MountEventMonitor)(void*,
+                                 MountEventType,
+                                 const char*);
 
 // Processes a callback from a d-bus signal by finding the path of the
 // DeviceKit Disks service that changed and sending the details along to the
 // next handler in the chain as an instance of MountStatus.
-extern MountStatusConnection (*MonitorMountStatus)(MountMonitor monitor, void*);
+extern MountEventConnection (*MonitorMountEvents)(MountEventMonitor monitor,
+                                                  void*);
 
 // Disconnects a listener from the mounting events.
-extern void (*DisconnectMountStatus)(MountStatusConnection connection);
+extern void (*DisconnectMountEventMonitor)(MountEventConnection connection);
 
-// Mounts a given device path. If successfull, a DISK_CHANGED event will fire
+// Callback for asynchronous mount/unmount requests.
+typedef void (*MountRequestCallback)(void* object,
+                                     const char* path,
+                                     const char* mount_path,
+                                     MountMethodErrorType error,
+                                     const char* error_message);
+
+// Callback for disk information retreival calls.
+typedef void (*GetDiskPropertiesCallback)(void* object,
+                                          const char* service_path,
+                                          const DiskInfo* disk,
+                                          MountMethodErrorType error,
+                                          const char* error_message);
+
+// Callback for disk information retreival calls.
+typedef void (*RequestMountInfoCallback)(void* object,
+                                         const char** devices,
+                                         size_t devices_len,
+                                         MountMethodErrorType error,
+                                         const char* error_message);
+
+// Initiates mount operation for a given |device_path|. When the operation
+// completes, the callback will be invoked with appropriate |error| parameter
+// indicating operation's outcome.
+extern void (*MountRemovableDevice)(const char* device_path,
+                                    MountRequestCallback callback,
+                                    void* object);
+
+// Initiates unmount operation for a given |device_path|. When the operation
+// completes, the callback will be invoked with appropriate |error| parameter
+// indicating operation's outcome.
+extern void (*UnmountRemovableDevice)(const char* device_path,
+                                     MountRequestCallback callback,
+                                     void* object);
+
+// Initiates retrieval of information about given |service_path| representing
+// disk drive.
+extern void (*GetDiskProperties)(const char* service_path,
+                                 GetDiskPropertiesCallback callback,
+                                 void* object);
+
+// Initiates retrieval of information about all mounted disks. Please note that
+// |callback| will be called once for each disk found on the system.
+// This routine will skip all drives that are mounted form the device that
+// system was booted from.
+extern void (*RequestMountInfo)(RequestMountInfoCallback callback,
+                                void* object);
+
+// Mounts a given device path. If successful, a DISK_CHANGED event will fire
 // after the call. Returns false on failure.
 extern bool (*MountDevicePath)(const char* device_path);
 
-// Unmounts a given device path. If successfull, a DISK_CHANGED event will fire
+// Unmounts a given device path. If successful, a DISK_CHANGED event will fire
 // after the call. Returns false on failure.
 extern bool (*UnmountDevicePath)(const char* device_path);
 
-// Returns a list of all the available removeable devices that are found on
-// the device.  If the device not mounted, it will be mounted, and an event
-// will be sent when the mounting is complete.  The MountStatus returned by
-// this function must be deleted by calling FreeMountStatus.
-//
-// Returns NULL on error.
+// Obsolete methods, kept here just as sacrifice to ChromeOS build gods.
+// This block will be removed in the next iteration.
+struct DiskStatus {
+  const char* path;
+  const char* mountpath;
+  const char* systempath;
+  bool isdrive;
+  bool hasmedia;
+};
+
+struct MountStatus {
+  DiskStatus *disks;
+  int size;
+};
+class OpaqueMountStatusConnection;
+typedef OpaqueMountStatusConnection* MountStatusConnection;
 extern MountStatus* (*RetrieveMountInformation)();
-
-// Deletes a MountStatus type that was allocated in the ChromeOS .so. We need
-// to do this to safely pass data over the .so boundary between our .so and
-// Chrome.
 extern void (*FreeMountStatus)(MountStatus* status);
-
-// Returns true if device_path is the boot path.
 extern bool (*IsBootDevicePath)(const char* device_path);
+typedef void(*MountMonitor)(void*,
+                            const MountStatus&,
+                            MountEventType,
+                            const char*);
+extern MountStatusConnection (*MonitorMountStatus)(MountMonitor monitor, void*);
+extern void (*DisconnectMountStatus)(MountStatusConnection connection);
 
 }  // namespace chromeos
 

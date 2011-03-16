@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <exception>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -22,12 +23,12 @@
 
 namespace chromeos { // NOLINT
 
-const char* kDeviceKitDisksInterface =
-    "org.freedesktop.DeviceKit.Disks";
+const char* kDeviceKitDisksInterface = "org.freedesktop.DeviceKit.Disks";
 const char* kDeviceKitDeviceInterface =
     "org.freedesktop.DeviceKit.Disks.Device";
-const char* kDeviceKitPropertiesInterface =
-    "org.freedesktop.DBus.Properties";
+const char* kDeviceKitPropertiesInterface =  "org.freedesktop.DBus.Properties";
+const char kDBusPropertiesInterface[] = "org.freedesktop.DBus.Properties";
+
 const char* kDefaultMountOptions[] = {
     "rw",
     "nodev",
@@ -35,157 +36,394 @@ const char* kDefaultMountOptions[] = {
     "nosuid",
     NULL
 };
+const char* kDefaultUnmountOptions[] = {
+    "force",
+    NULL
+};
 
-extern "C"
-MountStatus* ChromeOSRetrieveMountInformation();
+// Relevant Device/Disk properties.
+const char kDeviceIsDrive[] = "DeviceIsDrive";
+const char kDevicePresentationHide[] = "DevicePresentationHide";
+const char kDeviceIsMounted[] = "DeviceIsMounted";
+const char kDeviceMountPaths[] = "DeviceMountPaths";
+const char kDeviceIsMediaAvailable[] = "DeviceIsMediaAvailable";
+const char kNativePath[] ="NativePath";
+
+const char kBootDevicePrefix[] = "/org/freedesktop/DeviceKit/Disks/devices/sda";
 
 namespace {  // NOLINT
 
-bool DeviceIsParent(const dbus::BusConnection& bus,
-                    dbus::Proxy& proxy) {
-  bool parent = false;
-  if (!dbus::RetrieveProperty(proxy,
-                              kDeviceKitDeviceInterface,
-                              "device-is-drive",
-                              &parent)) {
-    // Since we should always be able to get this property, if we can't,
-    // there is some problem, so we should return false.
-    DLOG(ERROR) << "unable to determine if device is a drive";
-    return false;
+struct DiskInfoImpl : public DiskInfo {
+ public:
+  DiskInfoImpl(const char* path, const glib::ScopedHashTable& properties) {
+    DCHECK(path);
+    path_ = NewStringCopy(path);
+    mount_path_ = NULL;
+    system_path_ = NULL;
+    is_drive_ = false;
+    has_media_ = false;
+    on_boot_device_ =
+        strncmp(path, kBootDevicePrefix, strlen(kBootDevicePrefix)) == 0;
+    InitializeFromProperties(properties);
   }
-  return parent;
-}
+  virtual ~DiskInfoImpl() {
+    if (path_)
+      delete path_;
+    if (mount_path_)
+      delete mount_path_;
+    if (system_path_)
+      delete system_path_;
+  }
+  // DiskInfo overrides:
+  virtual const char* path() const { return path_; }
+  virtual const char* mount_path() const { return mount_path_; }
+  virtual const char* system_path() const { return system_path_; }
+  virtual bool is_drive() const { return is_drive_; }
+  virtual bool has_media() const { return has_media_; }
+  virtual bool on_boot_device() const { return on_boot_device_; }
 
-bool DeviceIsHidden(const dbus::BusConnection& bus,
-                    dbus::Proxy& proxy) {
-  // Assume that all devices which are not on sda are removeable
-  bool hidden;
-  if (!dbus::RetrieveProperty(proxy,
-                              kDeviceKitDeviceInterface,
-                              "device-presentation-hide",
-                              &hidden)) {
-    // We should always be able to get this property.  If we can't, there is
-    // some problem, so we should return true to have Chrome ignore this disk.
-    DLOG(ERROR) << "unable to determine if device is hidden";
-    return true;
-  }
-  return hidden;
-}
+ private:
+  void InitializeFromProperties(const glib::ScopedHashTable& properties) {
+    properties.Retrieve(kDeviceIsDrive, &is_drive_);
 
-// Creates a new MountStatus instance populated with the contents from
-// a vector of DiskStatus.
-MountStatus* CopyFromVector(const std::vector<DiskStatus>& services) {
-  MountStatus* result = new MountStatus();
-  if (services.size() == 0) {
-    result->disks = NULL;
-  } else {
-    result->disks = new DiskStatus[services.size()];
-  }
-  result->size = services.size();
-  std::copy(services.begin(), services.end(), result->disks);
-  return result;
-}
+    bool hidden;
+    if (properties.Retrieve(kDevicePresentationHide, &hidden) &&
+       !hidden) {
 
-bool DeviceIsMounted(const dbus::BusConnection& bus,
-                     const dbus::Proxy& proxy,
-                     std::string& path,
-                     bool* ismounted) {
-  bool mounted = false;
-  if (!dbus::RetrieveProperty(proxy,
-                              kDeviceKitDeviceInterface,
-                              "device-is-mounted",
-                              &mounted)) {
-    DLOG(WARNING) << "unable to determine if device is mounted, bailing";
-    return false;
-  }
-  *ismounted = mounted;
-  if (mounted) {
-    glib::Value value;
-    if (!dbus::RetrieveProperty(proxy,
-                                kDeviceKitDeviceInterface,
-                                "device-mount-paths",
-                                &value)) {
-      return false;
+      properties.Retrieve(kDeviceIsMediaAvailable, &has_media_);
+
+      std::string path;
+      if (properties.Retrieve(kNativePath, &path))
+        system_path_ = NewStringCopy(path.c_str());
+
+      glib::Value value;
+      if (properties.Retrieve(kDeviceMountPaths, &value)) {
+        char** paths = reinterpret_cast<char**>(g_value_get_boxed(&value));
+        if (paths[0])
+          mount_path_ = NewStringCopy(paths[0]);
+      }
     }
-
-    char** paths = static_cast<char**>(g_value_get_boxed(&value));
-    // TODO(dhg): This is an array for a reason, try to use it.
-    if (paths[0])
-      path = paths[0];
   }
-  return true;
+  const char* path_;
+  const char* mount_path_;
+  const char* system_path_;
+  bool is_drive_;
+  bool has_media_;
+  bool on_boot_device_;
+};
+
+struct MountCallbackData {
+  MountCallbackData(const char* interface,
+                    const char* service_path) :
+      proxy(new dbus::Proxy(dbus::GetSystemBusConnection(),
+                            kDeviceKitDisksInterface,
+                            service_path,
+                            interface)),
+      interface_name(interface),
+      callback_service_path(service_path) {}
+  scoped_ptr<dbus::Proxy> proxy;
+  std::string interface_name;  // Store for error reporting.
+  std::string callback_service_path;
+};
+
+template<class T> struct MountRequestCallbackData : public MountCallbackData {
+  MountRequestCallbackData(const char* interface,
+                           const char* service_path,
+                           T cb,
+                           void* obj)
+      : MountCallbackData(interface, service_path),
+        callback(cb),
+        object(obj) {}
+  // Owned by the caller (i.e. Chrome), do not destroy them:
+  T callback;
+  void* object;
+};
+
+// DBus will always call the Delete function passed to it by
+// dbus_g_proxy_begin_call, whether DBus calls the callback or not.
+template<class T>
+void DeleteMountCallbackData(void* user_data) {
+  MountRequestCallbackData<T>* cb_data =
+      reinterpret_cast<MountRequestCallbackData<T>*>(user_data);
+  delete cb_data;
 }
 
-bool MountRemoveableDevice(const dbus::BusConnection& bus, const char* path) {
-  dbus::Proxy proxy(bus,
-                    kDeviceKitDisksInterface,
-                    path,
-                    kDeviceKitDeviceInterface);
+void MountRequestNotify(DBusGProxy* gproxy,
+                        DBusGProxyCall* call_id,
+                        void* user_data) {
+  MountRequestCallbackData<MountRequestCallback>* cb_data =
+      reinterpret_cast<MountRequestCallbackData<MountRequestCallback>*>(
+          user_data);
+  DCHECK(cb_data);
   glib::ScopedError error;
-  char* val;
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           "FilesystemMount",
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING, NULL,
-                           G_TYPE_STRV, kDefaultMountOptions,
-                           G_TYPE_INVALID,
-                           G_TYPE_STRING,
-                           &val, G_TYPE_INVALID)) {
-    LOG(WARNING) << "Filesystem Mount failed: "
-        << (error->message ? error->message : "Unknown Error.");
-    return false;
+  char* mount_point = NULL;
+  if (!::dbus_g_proxy_end_call(gproxy,
+                               call_id,
+                               &Resetter(&error).lvalue(),
+                               G_TYPE_STRING, &mount_point,
+                               G_TYPE_INVALID)) {
+    MountMethodErrorType etype;
+    if (error->domain == DBUS_GERROR &&
+        error->code == DBUS_GERROR_REMOTE_EXCEPTION) {
+      etype = MOUNT_METHOD_ERROR_REMOTE;
+    } else {
+      LOG(WARNING) << "MountRequestNotify for path: '"
+                   << cb_data->callback_service_path << "' error: "
+                   << (error->message ? error->message : "Unknown Error.");
+      etype = MOUNT_METHOD_ERROR_LOCAL;
+    }
+    cb_data->callback(cb_data->object,
+                      cb_data->callback_service_path.c_str(),
+                      NULL,
+                      etype, error->message);
+  } else {
+    cb_data->callback(cb_data->object,
+                      cb_data->callback_service_path.c_str(),
+                      mount_point,
+                      MOUNT_METHOD_ERROR_NONE, NULL);
   }
-
-  g_free(val);
-  return true;
+  if (mount_point)
+    g_free(mount_point);
 }
 
-bool UnmountRemoveableDevice(const dbus::BusConnection& bus, const char* path) {
-  dbus::Proxy proxy(bus,
-                    kDeviceKitDisksInterface,
-                    path,
-                    kDeviceKitDeviceInterface);
+
+void UnmountRequestNotify(DBusGProxy* gproxy,
+                          DBusGProxyCall* call_id,
+                          void* user_data) {
+  MountRequestCallbackData<MountRequestCallback>* cb_data =
+      reinterpret_cast<MountRequestCallbackData<MountRequestCallback>*>(
+          user_data);
+  DCHECK(cb_data);
   glib::ScopedError error;
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           "FilesystemUnmount",
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRV, NULL,
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << "Filesystem Unmount failed: "
-        << (error->message ? error->message : "Unknown Error.");
-    return false;
+  if (!::dbus_g_proxy_end_call(gproxy,
+                               call_id,
+                               &Resetter(&error).lvalue(),
+                               G_TYPE_INVALID)) {
+    MountMethodErrorType etype;
+    if (error->domain == DBUS_GERROR &&
+        error->code == DBUS_GERROR_REMOTE_EXCEPTION) {
+      etype = MOUNT_METHOD_ERROR_REMOTE;
+    } else {
+      LOG(WARNING) << "UnmountRequestNotify for path: '"
+                   << cb_data->callback_service_path << "' error: "
+                   << (error->message ? error->message : "Unknown Error.");
+      etype = MOUNT_METHOD_ERROR_LOCAL;
+    }
+    cb_data->callback(cb_data->object,
+                      cb_data->callback_service_path.c_str(),
+                      NULL,
+                      etype, error->message);
+  } else {
+    cb_data->callback(cb_data->object,
+                      cb_data->callback_service_path.c_str(),
+                      NULL,
+                      MOUNT_METHOD_ERROR_NONE, NULL);
+  }
+}
+
+void MountRemoveableDeviceAsync(const char* device_path,
+                                MountRequestCallback callback,
+                                void* object) {
+  MountRequestCallbackData<MountRequestCallback>* cb_data =
+      new MountRequestCallbackData<MountRequestCallback>(
+          kDeviceKitDeviceInterface, device_path, callback, object);
+  DBusGProxyCall* call_id =
+      ::dbus_g_proxy_begin_call(cb_data->proxy->gproxy(),
+                                "FilesystemMount",
+                                &MountRequestNotify,
+                                cb_data,
+                                &DeleteMountCallbackData<MountRequestCallback>,
+                                G_TYPE_STRING, NULL,
+                                G_TYPE_STRV, kDefaultMountOptions,
+                                G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "MountRemoveableDeviceAsync call failed";
+    callback(object,
+             device_path,
+             NULL,
+             MOUNT_METHOD_ERROR_LOCAL, NULL);
+    delete cb_data;
+  }
+}
+
+void UnmountRemoveableDeviceAsync(const char* device_path,
+                                  MountRequestCallback callback,
+                                  void* object) {
+  MountRequestCallbackData<MountRequestCallback>* cb_data =
+      new MountRequestCallbackData<MountRequestCallback>(
+          kDeviceKitDeviceInterface, device_path, callback, object);
+  DBusGProxyCall* call_id =
+      ::dbus_g_proxy_begin_call(cb_data->proxy->gproxy(),
+                                "FilesystemUnmount",
+                                &UnmountRequestNotify,
+                                cb_data,
+                                &DeleteMountCallbackData<MountRequestCallback>,
+                                G_TYPE_STRV, kDefaultUnmountOptions,
+                                G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "UnmountRemoveableDeviceAsync call failed";
+    callback(object,
+             device_path,
+             NULL,
+             MOUNT_METHOD_ERROR_LOCAL, NULL);
+    delete cb_data;
+  }
+}
+
+void GetDiskPropertiesNotify(DBusGProxy* gproxy,
+                             DBusGProxyCall* call_id,
+                             void* user_data) {
+  MountRequestCallbackData<GetDiskPropertiesCallback>* cb_data =
+      reinterpret_cast<MountRequestCallbackData<GetDiskPropertiesCallback>*>(
+          user_data);
+  DCHECK(cb_data);
+  glib::ScopedError error;
+  glib::ScopedHashTable properties;
+  if (!::dbus_g_proxy_end_call(gproxy,
+                               call_id,
+                               &Resetter(&error).lvalue(),
+                               ::dbus_g_type_get_map("GHashTable",
+                                                     G_TYPE_STRING,
+                                                     G_TYPE_VALUE),
+                               &Resetter(&properties).lvalue(),
+          G_TYPE_INVALID)) {
+    MountMethodErrorType etype;
+    if (error->domain == DBUS_GERROR &&
+        error->code == DBUS_GERROR_REMOTE_EXCEPTION) {
+      etype = MOUNT_METHOD_ERROR_REMOTE;
+    } else {
+      LOG(WARNING) << "GetDiskPropertiesNotify for path: '"
+                   << cb_data->callback_service_path << "' error: "
+                   << (error->message ? error->message : "Unknown Error.");
+      etype = MOUNT_METHOD_ERROR_LOCAL;
+    }
+    if (cb_data->callback) {
+      cb_data->callback(cb_data->object,
+                        cb_data->callback_service_path.c_str(),
+                        NULL,
+                        etype, error->message);
+    }
+    return;
+  }
+  DiskInfoImpl disk(cb_data->callback_service_path.c_str(), properties);
+  cb_data->callback(cb_data->object,
+                    disk.path(),
+                    &disk,
+                    MOUNT_METHOD_ERROR_NONE, NULL);
+}
+
+void GetDiskPropertiesAsync(const char* device_path,
+                            GetDiskPropertiesCallback callback,
+                            void* object) {
+  MountRequestCallbackData<GetDiskPropertiesCallback>* cb_data =
+      new MountRequestCallbackData<GetDiskPropertiesCallback>(
+          kDBusPropertiesInterface, device_path, callback, object);
+  DBusGProxyCall* call_id =
+      ::dbus_g_proxy_begin_call(cb_data->proxy->gproxy(),
+          "GetAll",
+          GetDiskPropertiesNotify,
+          cb_data,
+          &DeleteMountCallbackData<GetDiskPropertiesCallback>,
+          G_TYPE_STRING, kDeviceKitDeviceInterface,
+          G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "GetDiskPropertiesAsync call failed for device "
+               << device_path;
+    cb_data->callback(cb_data->object,
+                      device_path,
+                      NULL,
+                      MOUNT_METHOD_ERROR_LOCAL, NULL);
+    delete cb_data;
+  }
+}
+
+void RequestMountInfoNotify(DBusGProxy* gproxy,
+                            DBusGProxyCall* call_id,
+                            void* user_data) {
+  MountRequestCallbackData<RequestMountInfoCallback>* cb_data =
+      reinterpret_cast<MountRequestCallbackData<
+      RequestMountInfoCallback>*>(user_data);
+  DCHECK(cb_data);
+  glib::ScopedError error;
+  glib::ScopedPtrArray<const char*> devices;
+  ::GType g_type_array =
+      ::dbus_g_type_get_collection("GPtrArray", DBUS_TYPE_G_OBJECT_PATH);
+  if (!::dbus_g_proxy_end_call(gproxy,
+                               call_id,
+                               &Resetter(&error).lvalue(),
+                               g_type_array, &Resetter(&devices).lvalue(),
+                               G_TYPE_INVALID)) {
+    MountMethodErrorType etype;
+    if (error->domain == DBUS_GERROR &&
+        error->code == DBUS_GERROR_REMOTE_EXCEPTION) {
+      etype = MOUNT_METHOD_ERROR_REMOTE;
+    } else {
+      LOG(WARNING) << "RequestMountInfoNotify failed: '"
+                   << (error->message ? error->message : "Unknown Error.");
+      etype = MOUNT_METHOD_ERROR_LOCAL;
+    }
+    cb_data->callback(cb_data->object,
+                      NULL,   // device paths
+                      0,      // device path count
+                      etype, error->message);
+    return;
   }
 
-  return true;
+  // Pack and send results.
+  scoped_array<char*> device_paths(new char*[devices.size()]);
+  size_t removable_device_count = 0;
+  for (glib::ScopedPtrArray<const char*>::iterator device_iter =
+          devices.begin();
+      device_iter < devices.end();
+      ++device_iter) {
+    // Skip disks from the device where we booted from.
+    if (strncmp(*device_iter, kBootDevicePrefix,
+                strlen(kBootDevicePrefix)) == 0)
+      continue;
+    device_paths[removable_device_count++] = NewStringCopy(*device_iter);
+  }
+  cb_data->callback(cb_data->object,
+                    const_cast<const char**>(device_paths.get()),
+                    removable_device_count,
+                    MOUNT_METHOD_ERROR_NONE, NULL);
+  for (size_t i = 0; i < removable_device_count; i++)
+    delete device_paths[i++];
+}
+
+void RequestMountInfoAsync(RequestMountInfoCallback callback,
+                           void* object) {
+  MountRequestCallbackData<RequestMountInfoCallback>* cb_data =
+      new MountRequestCallbackData<RequestMountInfoCallback>(
+          kDeviceKitDisksInterface, "/org/freedesktop/DeviceKit/Disks",
+          callback, object);
+  DBusGProxyCall* call_id =
+      ::dbus_g_proxy_begin_call(cb_data->proxy->gproxy(),
+            "EnumerateDevices",
+            RequestMountInfoNotify,
+            cb_data,
+            &DeleteMountCallbackData<RequestMountInfoCallback>,
+            G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "RequestMountInfoAsync call failed";
+    if (callback) {
+      cb_data->callback(cb_data->object,
+                        NULL,   // service path
+                        NULL,   // disk
+                        MOUNT_METHOD_ERROR_LOCAL, NULL);
+    }
+    delete cb_data;
+  }
 }
 
 }  // namespace
 
-
-void DeleteDiskStatusProperties(DiskStatus status) {
-  delete status.path;
-  delete status.mountpath;
-}
-
-extern "C"
-void ChromeOSFreeMountStatus(MountStatus* status) {
-  if (status == NULL)
-    return;
-  std::for_each(status->disks,
-                status->disks + status->size,
-                &DeleteDiskStatusProperties);
-  delete [] status->disks;
-  delete status;
-}
-
-class OpaqueMountStatusConnection {
+class OpaqueMountEventConnection {
  public:
   typedef dbus::MonitorConnection<void (const char*)>* ConnectionType;
 
-  OpaqueMountStatusConnection(const MountMonitor& monitor,
-                              const dbus::Proxy& mount,
-                              void* object)
+  OpaqueMountEventConnection(const MountEventMonitor& monitor,
+                             const dbus::Proxy& mount,
+                             void* object)
      : gudev_client(NULL),
        monitor_(monitor),
        object_(object),
@@ -195,59 +433,33 @@ class OpaqueMountStatusConnection {
   }
 
   void FireEvent(MountEventType evt, const char* path) {
-    MountStatus* info;
-    if ((info = ChromeOSRetrieveMountInformation()) != NULL) {
-      if (evt == DEVICE_REMOVED ||
-          evt == DEVICE_ADDED ||
-          evt == DEVICE_SCANNED ||
-          evt == DISK_REMOVED) {
-        monitor_(object_, *info, evt, path);
-      } else {
-        for (int x = 0; x < info->size; x++) {
-          // This ensures we only event on disk adds/changes
-          // for things which are in the disk array
-          if (strcmp(path, info->disks[x].path) == 0) {
-            monitor_(object_, *info, evt, path);
-            break;
-          }
-        }
-      }
-      ChromeOSFreeMountStatus(info);
-    }
-  }
-
-  std::vector<std::string>::iterator FindDevicePath(std::string path) {
-    for (std::vector<std::string>::iterator i = paths_.begin();
-         i != paths_.end();
-         ++i) {
-      if (path.find(*i) != std::string::npos) {
-        return i;
-      }
-    }
-    return paths_.end();
+    monitor_(object_, evt, path);
   }
 
   static void Added(void* object, const char* device) {
-    MountStatusConnection self = static_cast<MountStatusConnection>(object);
+    MountEventConnection self =
+        reinterpret_cast<MountEventConnection>(object);
     self->FireEvent(DISK_ADDED, device);
   }
 
   static void Removed(void* object, const char* device) {
-    MountStatusConnection self = static_cast<MountStatusConnection>(object);
+    MountEventConnection self =
+        reinterpret_cast<MountEventConnection>(object);
     self->FireEvent(DISK_REMOVED, device);
   }
 
   static void Changed(void* object, const char* device) {
-    MountStatusConnection self = static_cast<MountStatusConnection>(object);
+    MountEventConnection self =
+        reinterpret_cast<MountEventConnection>(object);
     self->FireEvent(DISK_CHANGED, device);
   }
 
   static void OnUDevEvent(GUdevClient* client,
-                           const char* action,
-                           GUdevDevice* device,
-                           gpointer object) {
-    MountStatusConnection self = static_cast<MountStatusConnection>(object);
-    std::vector<std::string>::iterator iter;
+                          const char* action,
+                          GUdevDevice* device,
+                          gpointer object) {
+    MountEventConnection self = reinterpret_cast<MountEventConnection>(object);
+    std::set<std::string>::iterator iter;
     // can be scsi or block
     const char* subsystem = g_udev_device_get_subsystem(device);
     if (subsystem == NULL || strcmp(subsystem, "scsi") != 0) {
@@ -255,17 +467,22 @@ class OpaqueMountStatusConnection {
     }
     if (strcmp(action, "add") == 0) {
       const char* device_path = g_udev_device_get_sysfs_path(device);
-      iter = self->FindDevicePath(device_path);
+      if (device_path == NULL)
+        return;
+      std::string device_string(device_path);
+      iter = self->paths_.find(device_string);
       if (iter != self->paths_.end()) {
-        self->FireEvent(DEVICE_SCANNED, iter->c_str());
+        self->FireEvent(DEVICE_SCANNED, device_path);
       } else {
-        std::string path = device_path;
-        self->paths_.push_back(path);
+        self->paths_.insert(device_string);
         self->FireEvent(DEVICE_ADDED, device_path);
       }
     } else if (strcmp(action, "remove") == 0) {
       const char* device_path = g_udev_device_get_sysfs_path(device);
-      iter = self->FindDevicePath(device_path);
+      if (device_path == NULL)
+        return;
+      std::string device_string(device_path);
+      iter = self->paths_.find(device_string);
       if (iter != self->paths_.end()) {
         self->paths_.erase(iter);
         self->FireEvent(DEVICE_REMOVED, device_path);
@@ -287,9 +504,9 @@ class OpaqueMountStatusConnection {
   GUdevClient* gudev_client;
 
  private:
-  MountMonitor monitor_;
+  MountEventMonitor monitor_;
   void* object_;
-  std::vector<std::string> paths_;
+  std::set<std::string> paths_;
   dbus::Proxy mount_;
   ConnectionType addconnection_;
   ConnectionType removeconnection_;
@@ -297,15 +514,15 @@ class OpaqueMountStatusConnection {
 };
 
 extern "C"
-MountStatusConnection ChromeOSMonitorMountStatus(MountMonitor monitor,
-                                                 void* object) {
+MountEventConnection ChromeOSMonitorMountEvents(MountEventMonitor monitor,
+                                                void* object) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy mount(bus,
                     kDeviceKitDisksInterface,
                     "/org/freedesktop/DeviceKit/Disks",
                     kDeviceKitDisksInterface);
-  MountStatusConnection result =
-     new OpaqueMountStatusConnection(monitor, mount, object);
+  MountEventConnection result =
+     new OpaqueMountEventConnection(monitor, mount, object);
   ::dbus_g_proxy_add_signal(mount.gproxy(),
                             "DeviceAdded",
                             DBUS_TYPE_G_OBJECT_PATH,
@@ -321,7 +538,7 @@ MountStatusConnection ChromeOSMonitorMountStatus(MountMonitor monitor,
   typedef dbus::MonitorConnection<void (const char*)> ConnectionType;
 
   ConnectionType* added = new ConnectionType(mount, "DeviceAdded",
-      &OpaqueMountStatusConnection::Added, result);
+      &OpaqueMountEventConnection::Added, result);
 
   ::dbus_g_proxy_connect_signal(mount.gproxy(), "DeviceAdded",
                                 G_CALLBACK(&ConnectionType::Run),
@@ -330,7 +547,7 @@ MountStatusConnection ChromeOSMonitorMountStatus(MountMonitor monitor,
 
 
   ConnectionType* removed = new ConnectionType(mount, "DeviceRemoved",
-      &OpaqueMountStatusConnection::Removed, result);
+      &OpaqueMountEventConnection::Removed, result);
 
   ::dbus_g_proxy_connect_signal(mount.gproxy(), "DeviceRemoved",
                                 G_CALLBACK(&ConnectionType::Run),
@@ -339,7 +556,7 @@ MountStatusConnection ChromeOSMonitorMountStatus(MountMonitor monitor,
 
 
   ConnectionType* changed = new ConnectionType(mount, "DeviceChanged",
-      &OpaqueMountStatusConnection::Changed, result);
+      &OpaqueMountEventConnection::Changed, result);
 
   ::dbus_g_proxy_connect_signal(mount.gproxy(), "DeviceChanged",
                                 G_CALLBACK(&ConnectionType::Run),
@@ -352,93 +569,83 @@ MountStatusConnection ChromeOSMonitorMountStatus(MountMonitor monitor,
   result->gudev_client = g_udev_client_new(subsystems);
   g_signal_connect(result->gudev_client,
                    "uevent",
-                   G_CALLBACK(&OpaqueMountStatusConnection::OnUDevEvent),
+                   G_CALLBACK(&OpaqueMountEventConnection::OnUDevEvent),
                    result);
 
   return result;
 }
 
 extern "C"
-bool ChromeOSMountDevicePath(const char* device_path) {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  return MountRemoveableDevice(bus, device_path);
+void ChromeOSMountRemovableDevice(const char* device_path,
+                                  MountRequestCallback callback,
+                                  void* object) {
+  return MountRemoveableDeviceAsync(device_path, callback, object);
 }
 
 extern "C"
-bool ChromeOSUnmountDevicePath(const char* device_path) {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  return UnmountRemoveableDevice(bus, device_path);
+void ChromeOSUnmountRemovableDevice(const char* device_path,
+                                    MountRequestCallback callback,
+                                    void* object) {
+  return UnmountRemoveableDeviceAsync(device_path, callback, object);
 }
 
 extern "C"
-void ChromeOSDisconnectMountStatus(MountStatusConnection connection) {
+void ChromeOSGetDiskProperties(const char* device_path,
+                               GetDiskPropertiesCallback callback,
+                               void* object) {
+  GetDiskPropertiesAsync(device_path, callback, object);
+}
+
+extern "C"
+void ChromeOSRequestMountInfo(RequestMountInfoCallback callback,
+                              void* object) {
+  RequestMountInfoAsync(callback, object);
+}
+
+extern "C"
+void ChromeOSDisconnectMountEventMonitor(MountEventConnection connection) {
   dbus::Disconnect(connection->addedconnection());
   dbus::Disconnect(connection->removedconnection());
   dbus::Disconnect(connection->changedconnection());
   delete connection;
 }
 
-extern "C"
-MountStatus* ChromeOSRetrieveMountInformation() {
-  typedef glib::ScopedPtrArray<const char*> ScopedPtrArray;
-  typedef ScopedPtrArray::iterator iterator;
 
-  ScopedPtrArray devices;
-
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy mount(bus,
-                    kDeviceKitDisksInterface,
-                    "/org/freedesktop/DeviceKit/Disks",
-                    kDeviceKitDisksInterface);
-  if (!dbus::CallPtrArray(mount, "EnumerateDevices", &devices)) {
-    DLOG(WARNING) << "Could not enumerate disk devices.";
-    return NULL;
-  }
-  std::vector<DiskStatus> buffer;
-  for (iterator currentpath = devices.begin();
-       currentpath < devices.end();
-       ++currentpath) {
-    dbus::Proxy proxy(bus,
-                      kDeviceKitDisksInterface,
-                      *currentpath,
-                      kDeviceKitPropertiesInterface);
-    const bool hidden = DeviceIsHidden(bus, proxy);
-    if (!hidden) {
-      DiskStatus info = {};
-      bool ismounted = false;
-      std::string path;
-      info.isparent = DeviceIsParent(bus, proxy);
-      info.path = NewStringCopy(*currentpath);
-      if (DeviceIsMounted(bus, proxy, path, &ismounted)) {
-        if (ismounted) {
-          info.mountpath = NewStringCopy(path.c_str());
-        }
-      }
-      info.hasmedia = false;
-      dbus::RetrieveProperty(proxy,
-                             kDeviceKitDeviceInterface,
-                             "device-is-media-available",
-                             &info.hasmedia);
-      if (dbus::RetrieveProperty(proxy,
-                                 kDeviceKitDeviceInterface,
-                                 "native-path",
-                                 &path)) {
-        info.systempath = NewStringCopy(path.c_str());
-      }
-      buffer.push_back(info);
-    }
-  }
-  return CopyFromVector(buffer);
+// TODO(zelidrag): Remove everything from here intil the rest of the file.
+class OpaqueMountStatusConnection {
+};
+bool MountRemoveableDevice(const dbus::BusConnection& bus, const char* path) {
+  return false;
 }
-
+bool UnmountRemoveableDevice(const dbus::BusConnection& bus, const char* path) {
+  return false;
+}
 extern "C"
 bool ChromeOSIsBootDevicePath(const char* device_path) {
-  char boot_path[PATH_MAX];
-  if (rootdev(boot_path, sizeof(boot_path), true, true)) {
-    LOG(ERROR) << "IsBootDevicePath: rootdev failed to find the root device";
-    return true;
-  }
-  return (strncmp(device_path, boot_path, strlen(boot_path)) == 0);
+  return false;
+}
+extern "C"
+MountStatus* ChromeOSRetrieveMountInformation() {
+  return new MountStatus();
+}
+extern "C"
+void ChromeOSDisconnectMountStatus(MountStatusConnection connection) {
+}
+extern "C"
+bool ChromeOSMountDevicePath(const char* device_path) {
+  return false;
+}
+extern "C"
+bool ChromeOSUnmountDevicePath(const char* device_path) {
+  return false;
+}
+extern "C"
+MountStatusConnection ChromeOSMonitorMountStatus(MountMonitor monitor,
+                                                 void* object) {
+  return new OpaqueMountStatusConnection();
+}
+extern "C"
+void ChromeOSFreeMountStatus(MountStatus* status) {
 }
 
 }  // namespace chromeos

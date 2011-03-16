@@ -1,4 +1,4 @@
-// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -176,6 +176,18 @@ DECL_FUNC_1(SetAutoRepeatEnabled, bool, bool);
 DECL_FUNC_1(SetAutoRepeatRate, bool, const chromeos::AutoRepeatRate&);
 
 // Mount
+DECL_FUNC_3(MountRemovableDevice, void,
+            const char*, MountRequestCallback, void*);
+DECL_FUNC_3(UnmountRemovableDevice, void,
+            const char*, MountRequestCallback, void*);
+DECL_FUNC_3(GetDiskProperties, void,
+            const char*, GetDiskPropertiesCallback, void*);
+DECL_FUNC_2(RequestMountInfo, void,
+            RequestMountInfoCallback, void*);
+DECL_FUNC_2(MonitorMountEvents, MountEventConnection, MountEventMonitor, void*);
+DECL_FUNC_1(DisconnectMountEventMonitor, void, MountEventConnection);
+
+// TODO(zelidrag): Remove this chunk after libcros package rev up:
 DECL_FUNC_2(MonitorMountStatus, MountStatusConnection, MountMonitor, void*);
 DECL_FUNC_1(DisconnectMountStatus, void, MountStatusConnection);
 DECL_FUNC_0(RetrieveMountInformation, MountStatus*);
@@ -497,6 +509,13 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(SetAutoRepeatRate);
 
   // Mount
+  INIT_FUNC(MountRemovableDevice);
+  INIT_FUNC(UnmountRemovableDevice);
+  INIT_FUNC(GetDiskProperties);
+  INIT_FUNC(RequestMountInfo);
+  INIT_FUNC(MonitorMountEvents);
+  INIT_FUNC(DisconnectMountEventMonitor);
+  // TODO(zelidrag): Remove these once libcro revs up.
   INIT_FUNC(MonitorMountStatus);
   INIT_FUNC(DisconnectMountStatus);
   INIT_FUNC(RetrieveMountInformation);

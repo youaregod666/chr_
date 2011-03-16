@@ -1,4 +1,4 @@
-// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -197,12 +197,13 @@
 // 112: Added MonitorBrightnessV2 and deprecated MonitorBrightness.
 // 113: Deprecated GetAutoRepeatEnabled and GetAutoRepeatRate.
 // 114: Added async RequestUpdateTrack and SetUpdateTrack to update_engine.
+// 115: Added async methods for mount operations.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 104,
-  kCrosAPIVersion = 114
+  kCrosAPIVersion = 115
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
