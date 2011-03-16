@@ -196,12 +196,13 @@
 // 111: Added async RequestUpdateCheck.
 // 112: Added MonitorBrightnessV2 and deprecated MonitorBrightness.
 // 113: Deprecated GetAutoRepeatEnabled and GetAutoRepeatRate.
+// 114: Added async RequestUpdateTrack and SetUpdateTrack to update_engine.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 104,
-  kCrosAPIVersion = 113
+  kCrosAPIVersion = 114
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

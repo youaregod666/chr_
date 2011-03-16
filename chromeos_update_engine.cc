@@ -197,6 +197,7 @@ bool ChromeOSRetrieveUpdateProgress(UpdateProgress* information) {
   return true;
 }
 
+// TODO(stevenjb): Deprecate (use RequestUpdateCheck instead).
 extern "C"
 bool ChromeOSInitiateUpdateCheck() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -211,55 +212,6 @@ bool ChromeOSInitiateUpdateCheck() {
   LOG_IF(ERROR, rc == FALSE) << "Error checking for update: "
                              << GetGErrorMessage(error);
   return rc == TRUE;
-}
-
-namespace {
-
-struct UpdateEngineCallbackData {
-  UpdateEngineCallbackData(UpdateCallback cb, void* data)
-      : callback(cb),
-        user_data(data),
-        proxy(new dbus::Proxy(dbus::GetSystemBusConnection(),
-                              kUpdateEngineServiceName,
-                              kUpdateEngineServicePath,
-                              kUpdateEngineServiceInterface)) {}
-  UpdateCallback callback;
-  void* user_data;
-  scoped_ptr<dbus::Proxy> proxy;
-};
-
-// Note: org_chromium_UpdateEngineInterface wraps the DBus calls and provides
-// its own callback and data, which in turn calls this callback.
-void UpdateEngineNotify(DBusGProxy* gproxy, GError* error, void* user_data) {
-  UpdateEngineCallbackData* cb_data =
-      static_cast<UpdateEngineCallbackData*>(user_data);
-  if (error) {
-    const char* msg = GetGErrorMessage(error);
-    LOG(WARNING) << "UpdateEngine DBus Error: " << msg;
-    if (cb_data->callback)
-      cb_data->callback(cb_data->user_data, UPDATE_RESULT_FAILED, msg);
-  } else {
-    if (cb_data->callback)
-      cb_data->callback(cb_data->user_data, UPDATE_RESULT_SUCCESS, NULL);
-  }
-  delete cb_data;
-}
-
-}  // namespace
-
-extern "C"
-void ChromeOSRequestUpdateCheck(UpdateCallback callback, void* user_data) {
-  UpdateEngineCallbackData* cb_data =
-      new UpdateEngineCallbackData(callback, user_data);
-  DBusGProxyCall* call_id =
-      org_chromium_UpdateEngineInterface_attempt_update_async(
-          cb_data->proxy->gproxy(), "", "", &UpdateEngineNotify, cb_data);
-  if (!call_id) {
-    LOG(ERROR) << "NULL call_id";
-    if (callback)
-      callback(user_data, UPDATE_RESULT_DBUS_FAILED, NULL);
-    delete cb_data;
-  }
 }
 
 extern "C"
@@ -278,6 +230,7 @@ bool ChromeOSRebootIfUpdated() {
   return rc == TRUE;
 }
 
+// TODO(stevenjb): Deprecate (use SetUpdateTrack instead).
 extern "C"
 bool ChromeOSSetTrack(const std::string& track) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -295,6 +248,7 @@ bool ChromeOSSetTrack(const std::string& track) {
   return rc == TRUE;
 }
 
+// TODO(stevenjb): Deprecate (use RequestUpdateTrack instead).
 extern "C"
 std::string ChromeOSGetTrack() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -317,5 +271,131 @@ std::string ChromeOSGetTrack() {
   g_free(track);
   return output;
 }
+
+// Asynchronous API.
+
+namespace {
+
+struct UpdateEngineCallbackData {
+  UpdateEngineCallbackData()
+      : proxy(new dbus::Proxy(dbus::GetSystemBusConnection(),
+                              kUpdateEngineServiceName,
+                              kUpdateEngineServicePath,
+                              kUpdateEngineServiceInterface)) {}
+  scoped_ptr<dbus::Proxy> proxy;
+};
+
+struct AttemptUpdateCallbackData : public UpdateEngineCallbackData {
+  AttemptUpdateCallbackData(UpdateCallback cb, void* data)
+      : UpdateEngineCallbackData(),
+        callback(cb),
+        user_data(data) {}
+  UpdateCallback callback;
+  void* user_data;
+};
+
+struct SetTrackCallbackData : public UpdateEngineCallbackData {
+};
+
+struct GetTrackCallbackData : public UpdateEngineCallbackData {
+  GetTrackCallbackData(UpdateTrackCallback cb, void* data)
+      : UpdateEngineCallbackData(),
+        callback(cb),
+        user_data(data) {}
+  UpdateTrackCallback callback;
+  void* user_data;
+};
+
+// Note: org_chromium_*Interface functions wrap the DBus calls and provide
+// their own callback and data, which in turn calls these callbacks.
+
+void AttemptUpdateNotify(DBusGProxy* gproxy,
+                         GError* error,
+                         void* user_data) {
+  AttemptUpdateCallbackData* cb_data =
+      static_cast<AttemptUpdateCallbackData*>(user_data);
+  if (error) {
+    const char* msg = GetGErrorMessage(error);
+    LOG(WARNING) << "AttemptUpdate DBus Error: " << msg;
+    if (cb_data->callback)
+      cb_data->callback(cb_data->user_data, UPDATE_RESULT_FAILED, msg);
+  } else {
+    if (cb_data->callback)
+      cb_data->callback(cb_data->user_data, UPDATE_RESULT_SUCCESS, NULL);
+  }
+  delete cb_data;
+}
+
+void SetTrackNotify(DBusGProxy* gproxy, GError* error, void* user_data) {
+  SetTrackCallbackData* cb_data =
+      static_cast<SetTrackCallbackData*>(user_data);
+  if (error) {
+    const char* msg = GetGErrorMessage(error);
+    LOG(WARNING) << "SetTrack DBus Error: " << msg;
+  }
+  delete cb_data;
+}
+
+void GetTrackNotify(DBusGProxy* gproxy,
+                    char* track,
+                    GError* error,
+                    void* user_data) {
+  GetTrackCallbackData* cb_data =
+      static_cast<GetTrackCallbackData*>(user_data);
+  if (error) {
+    const char* msg = GetGErrorMessage(error);
+    LOG(WARNING) << "GetTrack DBus Error: " << msg;
+    if (cb_data->callback)
+      cb_data->callback(cb_data->user_data, NULL);
+  } else {
+    if (cb_data->callback)
+      cb_data->callback(cb_data->user_data, track);
+  }
+  delete cb_data;
+}
+
+}  // namespace
+
+extern "C"
+void ChromeOSRequestUpdateCheck(UpdateCallback callback, void* user_data) {
+  AttemptUpdateCallbackData* cb_data =
+      new AttemptUpdateCallbackData(callback, user_data);
+  DBusGProxyCall* call_id =
+      org_chromium_UpdateEngineInterface_attempt_update_async(
+          cb_data->proxy->gproxy(), "", "", &AttemptUpdateNotify, cb_data);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id";
+    if (callback)
+      callback(user_data, UPDATE_RESULT_DBUS_FAILED, NULL);
+    delete cb_data;
+  }
+}
+
+extern "C"
+void ChromeOSSetUpdateTrack(const std::string& track) {
+  SetTrackCallbackData* cb_data = new SetTrackCallbackData();
+  DBusGProxyCall* call_id =
+      org_chromium_UpdateEngineInterface_set_track_async(
+          cb_data->proxy->gproxy(), track.c_str(), &SetTrackNotify, cb_data);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id";
+    delete cb_data;
+  }
+}
+
+extern "C"
+void ChromeOSRequestUpdateTrack(UpdateTrackCallback callback, void* user_data) {
+  GetTrackCallbackData* cb_data = new GetTrackCallbackData(callback, user_data);
+  DBusGProxyCall* call_id =
+      org_chromium_UpdateEngineInterface_get_track_async(
+          cb_data->proxy->gproxy(), &GetTrackNotify, cb_data);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id";
+    if (callback)
+      callback(user_data, NULL);
+    delete cb_data;
+  }
+}
+
 
 }  // namespace chromeos
