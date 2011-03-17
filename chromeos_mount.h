@@ -125,7 +125,7 @@ struct DiskStatus {
   const char* path;
   const char* mountpath;
   const char* systempath;
-  bool isdrive;
+  bool isparent;
   bool hasmedia;
 };
 
