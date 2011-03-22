@@ -159,7 +159,7 @@ static void AppendDictionaryElement(const GValue *keyvalue,
                                     const GValue *gvalue,
                                     gpointer user_data) {
   DictionaryValue* dict = static_cast<DictionaryValue*>(user_data);
-  std::string key(g_value_get_string(gvalue));
+  std::string key(g_value_get_string(keyvalue));
   glib::Value glibvalue(*gvalue);
   Value* value = ConvertGlibValue(&glibvalue);
   dict->SetWithoutPathExpansion(key, value);

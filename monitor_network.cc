@@ -136,6 +136,25 @@ void PrintProperty(const char* path,
           liststr += ", ";
       }
       LOG(INFO) << prelude << "\"" << liststr << "\"";
+    } else if (value->IsType(Value::TYPE_DICTIONARY)) {
+      const DictionaryValue* dict = static_cast<const DictionaryValue*>(value);
+      std::string items;
+      std::string itemval;
+      size_t n = 0;
+      DictionaryValue::key_iterator iter = dict->begin_keys();
+      while (iter != dict->end_keys()) {
+        std::string key = *iter;
+        items += "{'" + key + "': '";
+        if (dict->GetStringWithoutPathExpansion(key, &itemval))
+          items += itemval + "'}";
+        else
+          items += "<not-a-string>'}";
+        if (n < dict->size())
+          items += ", ";
+        ++iter;
+        ++n;
+      }
+      LOG(INFO) << prelude << items;
     } else
       LOG(INFO) << prelude << "<type " << value->GetType() << ">";
 }
