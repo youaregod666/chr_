@@ -16,6 +16,7 @@
 #include "base/logging.h"
 #include "base/singleton.h"
 #include "base/string_util.h"
+#include "chromeos/process.h"
 
 namespace {
 
@@ -219,32 +220,23 @@ class XKeyboard {
   // Executes 'setxkbmap -layout ...' command asynchronously.
   // TODO(yusukes): Use libxkbfile.so instead of the command (crosbug.com/13105)
   void ExecuteSetLayoutCommand(const std::string& layouts_to_set) {
-    gchar* argv[] = {
-      g_strdup(kSetxkbmapCommand), g_strdup("-layout"),
-      g_strdup(layouts_to_set.c_str()), NULL
-    };
-
-    const GSpawnFlags flags = static_cast<GSpawnFlags>(
-        G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL);
-    GError* error = NULL;
-    g_spawn_async(NULL,  // working_directory
-                  argv,
-                  NULL,  // envp
-                  flags,
-                  NULL,  // child_setup
-                  NULL,  // user_data
-                  NULL,  // child_pid
-                  &error);
-
-    for (size_t i = 0; argv[i] != NULL; ++i) {
-      g_free(argv[i]);
+    chromeos::ProcessImpl process;
+    process.AddArg(kSetxkbmapCommand);
+    process.AddStringOption("-layout", layouts_to_set);
+    if (!process.Start()) {
+      LOG(ERROR) << "Failed to execute setxkbmap: " << layouts_to_set;
+      return;
     }
-    if (error) {
-      if (error->message) {
-        LOG(ERROR) << "Failed to execute setxkbmap: " << error->message;
-      }
-      g_error_free(error);
-    }
+    // g_child_watch_add is necessary to prevent the process from becoming a
+    // zombie.
+    g_child_watch_add(process.pid(),
+                      reinterpret_cast<GChildWatchFunc>(OnSetLayoutFinish),
+                      this);
+    process.Release();  // do not kill the setxkbmap process on function exit.
+  }
+
+  static void OnSetLayoutFinish(GPid pid, gint status, XKeyboard* self) {
+    DLOG(INFO) << "OnSetLayoutFinish: pid=" << pid;
   }
 
   // The XKB layout name which we set last time like "us" and "us(dvorak)".
