@@ -46,8 +46,8 @@ class OpaqueSessionConnection {
 extern "C"
 bool ChromeOSCheckWhitelist(const char* email,
                             std::vector<uint8>* signature) {
-  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
-  // NOTREACHED() << "ChromeOSCheckWhitelist is deprecated";
+  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
+  NOTREACHED() << "ChromeOSCheckWhitelist is deprecated";
   DCHECK(signature);
   GArray* sig;
   if (!ChromeOSLoginHelpers::CheckWhitelistHelper(email, &sig))
@@ -95,8 +95,8 @@ bool ChromeOSEmitLoginPromptReady() {
 
 extern "C"
 bool ChromeOSEnumerateWhitelisted(std::vector<std::string>* OUT_whitelisted) {
-  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
-  // NOTREACHED() << "ChromeOSEnumerateWhitelisted is deprecated";
+  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
+  NOTREACHED() << "ChromeOSEnumerateWhitelisted is deprecated";
   DCHECK(OUT_whitelisted);
   gchar** whitelisted = NULL;
   if (!ChromeOSLoginHelpers::EnumerateWhitelistedHelper(&whitelisted))
@@ -193,8 +193,8 @@ extern "C"
 bool ChromeOSRetrieveProperty(const char* name,
                               std::string* out_value,
                               std::vector<uint8>* signature) {
-  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
-  // NOTREACHED() << "ChromeOSRetrieveProperty is deprecated";
+  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
+  NOTREACHED() << "ChromeOSRetrieveProperty is deprecated";
   DCHECK(signature);
   DCHECK(out_value);
   GArray* sig;
@@ -226,8 +226,8 @@ bool ChromeOSRetrievePropertySafe(const char* name, Property** OUT_property) {
 
 extern "C"
 bool ChromeOSSetOwnerKey(const std::vector<uint8>& public_key_der) {
-  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
-  // NOTREACHED() << "ChromeOSSetOwnerKey is deprecated";
+  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
+  NOTREACHED() << "ChromeOSSetOwnerKey is deprecated";
   GArray* key_der =
       ChromeOSLoginHelpers::CreateGArrayFromBytes(&public_key_der[0],
                                                   public_key_der.size());
@@ -285,8 +285,8 @@ extern "C"
 bool ChromeOSStoreProperty(const char* name,
                            const char* value,
                            const std::vector<uint8>& signature) {
-  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
-  // NOTREACHED() << "ChromeOSStoreProperty is deprecated!";
+  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
+  NOTREACHED() << "ChromeOSStoreProperty is deprecated!";
   GArray* sig = ChromeOSLoginHelpers::CreateGArrayFromBytes(&signature[0],
                                                             signature.size());
   bool rv = ChromeOSLoginHelpers::StorePropertyHelper(name, value, sig);
@@ -309,8 +309,8 @@ bool ChromeOSStorePropertySafe(const Property* prop) {
 extern "C"
 bool ChromeOSUnwhitelist(const char* email,
                          const std::vector<uint8>& signature) {
-  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
-  // NOTREACHED() << "ChromeOSUnwhitelist is deprecated!";
+  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
+  NOTREACHED() << "ChromeOSUnwhitelist is deprecated!";
   return ChromeOSLoginHelpers::WhitelistOpHelper(
       login_manager::kSessionManagerUnwhitelist,
       email,
@@ -329,8 +329,8 @@ bool ChromeOSUnwhitelistSafe(const char* email, const CryptoBlob* signature) {
 extern "C"
 bool ChromeOSWhitelist(const char* email,
                        const std::vector<uint8>& signature) {
-  // TODO(cmasone): Enable NOTREACHED once Chrome is migrated.
-  // NOTREACHED() << "ChromeOSWhitelist is deprecated!";
+  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
+  NOTREACHED() << "ChromeOSWhitelist is deprecated!";
   return ChromeOSLoginHelpers::WhitelistOpHelper(
       login_manager::kSessionManagerWhitelist,
       email,
@@ -425,6 +425,108 @@ void ChromeOSDisconnectSession(SessionConnection connection) {
   ::dbus_connection_remove_filter(bus, &Filter, connection);
   delete connection;
   LOG(INFO) << "Disconnected from session manager";
+}
+
+// Asynchronous call infrastructure
+template<class T> struct CallbackData {
+  CallbackData(T cb, void* obj)
+      : proxy(ChromeOSLoginHelpers::CreateProxy()),
+        callback(cb),
+        object(obj) {
+  }
+  dbus::Proxy proxy;
+  // Owned by the caller (i.e. Chrome), do not destroy them:
+  T callback;
+  void* object;
+};
+
+// DBus will always call the Delete function passed to it by
+// dbus_g_proxy_begin_call, whether DBus calls the callback or not.
+template<class T>
+void DeleteCallbackData(void* user_data) {
+  CallbackData<T>* cb_data = reinterpret_cast<CallbackData<T>*>(user_data);
+  delete cb_data;
+}
+
+void RetrievePolicyNotify(DBusGProxy* gproxy,
+                          DBusGProxyCall* call_id,
+                          void* user_data) {
+  CallbackData<RetrievePolicyCallback>* cb_data =
+      reinterpret_cast<CallbackData<RetrievePolicyCallback>*>(user_data);
+  DCHECK(cb_data);
+  glib::ScopedError error;
+  gchar* policy_blob = NULL;
+  if (!::dbus_g_proxy_end_call(gproxy,
+                               call_id,
+                               &Resetter(&error).lvalue(),
+                               G_TYPE_STRING, &policy_blob,
+                               G_TYPE_INVALID)) {
+    LOG(ERROR) << login_manager::kSessionManagerRetrievePolicy
+               << " failed: " << SCOPED_SAFE_MESSAGE(error);
+  }
+  cb_data->callback(cb_data->object, policy_blob);
+  if (policy_blob)
+    g_free(policy_blob);
+}
+
+extern "C"
+void ChromeOSRetrievePolicy(RetrievePolicyCallback callback, void* delegate) {
+  DCHECK(delegate);
+  CallbackData<RetrievePolicyCallback>* cb_data =
+      new CallbackData<RetrievePolicyCallback>(callback, delegate);
+  DBusGProxyCall* call_id =
+      ::dbus_g_proxy_begin_call(cb_data->proxy.gproxy(),
+                                login_manager::kSessionManagerRetrievePolicy,
+                                &RetrievePolicyNotify,
+                                cb_data,
+                                &DeleteCallbackData<RetrievePolicyCallback>,
+                                G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "RetrievePolicy async call failed";
+    delete cb_data;
+    callback(delegate, NULL);
+  }
+}
+
+void StorePolicyNotify(DBusGProxy* gproxy,
+                       DBusGProxyCall* call_id,
+                       void* user_data) {
+  CallbackData<StorePolicyCallback>* cb_data =
+      reinterpret_cast<CallbackData<StorePolicyCallback>*>(user_data);
+  DCHECK(cb_data);
+  glib::ScopedError error;
+  gboolean success = FALSE;
+  if (!::dbus_g_proxy_end_call(gproxy,
+                               call_id,
+                               &Resetter(&error).lvalue(),
+                               G_TYPE_BOOLEAN, &success,
+                               G_TYPE_INVALID)) {
+    LOG(ERROR) << login_manager::kSessionManagerStorePolicy
+               << " failed: " << SCOPED_SAFE_MESSAGE(error);
+  }
+  cb_data->callback(cb_data->object, success);
+}
+
+extern "C"
+void ChromeOSStorePolicy(const char* prop,
+                         StorePolicyCallback callback,
+                         void* delegate) {
+  DCHECK(delegate);
+  CallbackData<StorePolicyCallback>* cb_data =
+      new CallbackData<StorePolicyCallback>(callback, delegate);
+  DBusGProxyCall* call_id =
+      ::dbus_g_proxy_begin_call(cb_data->proxy.gproxy(),
+                                login_manager::kSessionManagerStorePolicy,
+                                &StorePolicyNotify,
+                                cb_data,
+                                &DeleteCallbackData<StorePolicyCallback>,
+                                G_TYPE_STRING, prop,
+                                G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "StorePolicy async call failed";
+    delete cb_data;
+    callback(delegate, false);
+  }
 }
 
 }  // namespace chromeos

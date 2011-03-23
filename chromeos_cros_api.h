@@ -198,12 +198,13 @@
 // 113: Deprecated GetAutoRepeatEnabled and GetAutoRepeatRate.
 // 114: Added async RequestUpdateTrack and SetUpdateTrack to update_engine.
 // 115: Added async methods for mount operations.
+// 116: Added Store/RetrievePolicy.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 104,
-  kCrosAPIVersion = 115
+  kCrosAPIVersion = 116
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

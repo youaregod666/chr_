@@ -287,6 +287,7 @@ DECL_FUNC_1(FreeProperty, void, Property*);
 DECL_FUNC_1(FreeUserList, void, UserList*);
 DECL_FUNC_2(RestartJob, bool, int, const char*);
 DECL_FUNC_0(RestartEntd, bool);
+DECL_FUNC_2(RetrievePolicy, void, RetrievePolicyCallback, void*);
 DECL_FUNC_3(RetrieveProperty,
             bool,
             const char*,
@@ -297,6 +298,7 @@ DECL_FUNC_1(SetOwnerKey, bool, const std::vector<uint8>&);
 DECL_FUNC_1(SetOwnerKeySafe, bool, const CryptoBlob*);
 DECL_FUNC_2(StartSession, bool, const char*, const char*);
 DECL_FUNC_1(StopSession, bool, const char*);
+DECL_FUNC_3(StorePolicy, void, const char*, StorePolicyCallback, void*);
 DECL_FUNC_3(StoreProperty,
             bool,
             const char*,
@@ -596,12 +598,14 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(FreeUserList);
   INIT_FUNC(RestartJob);
   INIT_FUNC(RestartEntd);
+  INIT_FUNC(RetrievePolicy);
   INIT_FUNC(RetrieveProperty);
   INIT_FUNC(RetrievePropertySafe);
   INIT_FUNC(SetOwnerKey);
   INIT_FUNC(SetOwnerKeySafe);
   INIT_FUNC(StartSession);
   INIT_FUNC(StopSession);
+  INIT_FUNC(StorePolicy);
   INIT_FUNC(StoreProperty);
   INIT_FUNC(StorePropertySafe);
   INIT_FUNC(Unwhitelist);

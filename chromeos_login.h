@@ -47,6 +47,10 @@ class OpaqueSessionConnection;
 typedef OpaqueSessionConnection* SessionConnection;
 typedef void(*SessionMonitor)(void*, const OwnershipEvent&);
 
+// Async callback functions
+typedef void(*RetrievePolicyCallback)(void*, const char*);
+typedef void(*StorePolicyCallback)(void*, bool);
+
 extern SessionConnection (*MonitorSession)(SessionMonitor monitor, void*);
 extern void (*DisconnectSession)(SessionConnection connection);
 
@@ -93,6 +97,12 @@ extern bool (*RestartJob)(int pid, const char* command_line);
 
 extern bool (*RestartEntd)();
 
+// Fetches the policy blob stored by the session manager.
+// Upon completion of the retrieve attempt, we will call the provided callback.
+// Policies are serialized protocol buffers.  Upon success, we will pass a
+// protobuf to the callback.  On failure, we will pass NULL.
+extern void (*RetrievePolicy)(RetrievePolicyCallback callback, void* delegate);
+
 // DEPRECATED due to memory unsafety.
 extern bool (*RetrieveProperty)(const char* name,
                                 std::string* OUT_value,
@@ -115,6 +125,12 @@ extern bool (*StartSession)(const char* user_email,
                             const char* unique_id /* unused */);
 
 extern bool (*StopSession)(const char* unique_id /* unused */);
+
+// Attempts to store the policy blob |prop| asynchronously.
+// Upon completion of the store attempt, we will call callback(delegate, ...)
+extern void (*StorePolicy)(const char* prop,
+                           StorePolicyCallback callback,
+                           void* delegate);
 
 // DEPRECATED due to memory unsafety.
 extern bool (*StoreProperty)(const char* name,

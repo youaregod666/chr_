@@ -37,6 +37,8 @@ static const char kCheckWhitelist[] = "check-whitelist";
 static const char kEnumerate[] = "enumerate-whitelisted";
 static const char kStoreProperty[] = "store-property";
 static const char kRetrieveProperty[] = "retrieve-property";
+static const char kStorePolicy[] = "store-policy";
+static const char kRetrievePolicy[] = "retrieve-policy";
 
 class ClientLoop {
  public:
@@ -65,6 +67,19 @@ class ClientLoop {
   }
 
   chromeos::OwnershipEvent what_happened() { return what_happened_; }
+
+  static void PolicyCallback(ClientLoop* client_loop, bool success) {
+    chromeos::OwnershipEvent call_status =
+        (success ? chromeos::PropertyOpSuccess : chromeos::PropertyOpFailure);
+    client_loop->Callback(call_status);
+  }
+
+  static void RetPolicyCallback(void* client_loop, const char* policy) {
+    chromeos::OwnershipEvent call_status =
+        (policy ? chromeos::PropertyOpSuccess : chromeos::PropertyOpFailure);
+    LOG(INFO) << "policy is " << policy;
+    (static_cast<ClientLoop*>(client_loop))->Callback(call_status);
+  }
 
  private:
   void Callback(const chromeos::OwnershipEvent& what_happened) {
@@ -334,6 +349,41 @@ int main(int argc, const char** argv) {
       LOG(INFO) << prop->name << "=" << prop->value;
       chromeos::FreeProperty(prop);
     }
+  }
+  if (cl->HasSwitch(kStorePolicy)) {
+    scoped_ptr<base::RSAPrivateKey> private_key(
+        GetPrivateKey(FilePath(chromeos::kOwnerKeyFile)));
+
+    std::string val = cl->GetSwitchValueASCII(kStorePolicy);
+    // The signature is currently unused, but will be used by this tool once
+    // signature validation is added to StorePolicy on the session manager side.
+    std::vector<uint8> sig;
+    if (!Sign(val, private_key.get(), &sig))
+      LOG(FATAL) << "Can't sign " << val;
+    else
+      LOG(INFO) << "Signature over " << val << " is " << sig.size();
+
+    ClientLoop client_loop;
+    client_loop.Initialize();
+
+    chromeos::StorePolicy(val.c_str(),
+                          reinterpret_cast<chromeos::StorePolicyCallback>(
+                              &ClientLoop::PolicyCallback),
+                          &client_loop);
+    client_loop.Run();
+    LOG(INFO) << (client_loop.what_happened() == chromeos::PropertyOpSuccess ?
+                  "Stored " : "Failed to store ") << val;
+  }
+  if (cl->HasSwitch(kRetrievePolicy)) {
+
+    ClientLoop client_loop;
+    client_loop.Initialize();
+
+    chromeos::RetrievePolicy(&ClientLoop::RetPolicyCallback, &client_loop);
+    client_loop.Run();
+    LOG(INFO) << (client_loop.what_happened() == chromeos::PropertyOpSuccess ?
+                  "Retrieved " : "Failed to retrieve ");
+
   }
 
   return 0;
