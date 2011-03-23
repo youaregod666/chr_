@@ -199,12 +199,13 @@
 // 114: Added async RequestUpdateTrack and SetUpdateTrack to update_engine.
 // 115: Added async methods for mount operations.
 // 116: Added Store/RetrievePolicy.
+// 117: Added async RequestRetrieveProperty.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 104,
-  kCrosAPIVersion = 116
+  kCrosAPIVersion = 117
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

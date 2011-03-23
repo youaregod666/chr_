@@ -50,6 +50,9 @@ typedef void(*SessionMonitor)(void*, const OwnershipEvent&);
 // Async callback functions
 typedef void(*RetrievePolicyCallback)(void*, const char*);
 typedef void(*StorePolicyCallback)(void*, bool);
+typedef void(*RetrievePropertyCallback)(void* user_data,
+                                        bool success,
+                                        const Property* property);
 
 extern SessionConnection (*MonitorSession)(SessionMonitor monitor, void*);
 extern void (*DisconnectSession)(SessionConnection connection);
@@ -97,6 +100,12 @@ extern bool (*RestartJob)(int pid, const char* command_line);
 
 extern bool (*RestartEntd)();
 
+// Attempts fetch the property of |name| asynchronously. Returns true if the
+// attempts starts successfully. Otherwise, returns false.
+extern void (*RequestRetrieveProperty)(const char* name,
+                                       RetrievePropertyCallback callback,
+                                       void* user_data);
+
 // Fetches the policy blob stored by the session manager.
 // Upon completion of the retrieve attempt, we will call the provided callback.
 // Policies are serialized protocol buffers.  Upon success, we will pass a
@@ -108,6 +117,7 @@ extern bool (*RetrieveProperty)(const char* name,
                                 std::string* OUT_value,
                                 std::vector<uint8>* OUT_signature);
 
+// DEPRECATED as we switch to async dbus calls.
 // Fetches the property called |name|.
 // Returns true if it can be fetched, allocates a Property to pass back.
 // If not, returns false and |OUT_property| is untouched

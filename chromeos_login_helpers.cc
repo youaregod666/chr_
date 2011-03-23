@@ -15,11 +15,70 @@
 #include <vector>
 
 #include "marshal.glibmarshal.h"  // NOLINT
-#include "chromeos_login.h"  // NOLINT
 
-namespace chromeos {  // NOLINT
+namespace {
 
 #define SCOPED_SAFE_MESSAGE(e) (e->message ? e->message : "unknown error")
+
+struct RetrievePropertyContext {
+  RetrievePropertyContext(const char* name,
+                          chromeos::RetrievePropertyCallback cb,
+                          void* data)
+      : property_name(name),
+        callback(cb),
+        user_data(data),
+        proxy(chromeos::ChromeOSLoginHelpers::CreateProxy()) {
+  }
+
+  std::string property_name;
+  chromeos::RetrievePropertyCallback callback;
+  void* user_data;
+  chromeos::dbus::Proxy proxy;
+};
+
+void RetrievePropertyNotify(DBusGProxy* proxy,
+                            DBusGProxyCall* call_id,
+                            void* user_data) {
+  RetrievePropertyContext* context =
+      static_cast<RetrievePropertyContext*>(user_data);
+  DCHECK(context);
+
+  chromeos::glib::ScopedError error;
+  gchar* value;
+  GArray* sig;
+  if (!::dbus_g_proxy_end_call(proxy,
+                               call_id,
+                               &chromeos::Resetter(&error).lvalue(),
+                               G_TYPE_STRING, &value,
+                               DBUS_TYPE_G_UCHAR_ARRAY, &sig,
+                               G_TYPE_INVALID)) {
+    LOG(WARNING) << login_manager::kSessionManagerRetrieveProperty
+                 << " failed: " << SCOPED_SAFE_MESSAGE(error);
+    context->callback(context->user_data, false, NULL);
+  } else {
+    chromeos::CryptoBlob sig_blob = {
+        reinterpret_cast<const uint8*>(sig->data),
+        sig->len
+    };
+    chromeos::Property property = {
+        context->property_name.c_str(),
+        value,
+        &sig_blob
+    };
+    context->callback(context->user_data, true, &property);
+
+    g_array_free(sig, true);
+    g_free(value);
+  }
+}
+
+void FreeRetrievePropertyContext(gpointer data) {
+  delete static_cast<RetrievePropertyContext*>(data);
+}
+
+}  // namespace
+
+namespace chromeos {  // NOLINT
 
 ChromeOSLoginHelpers::ChromeOSLoginHelpers() {}
 
@@ -84,6 +143,27 @@ bool ChromeOSLoginHelpers::EnumerateWhitelistedHelper(gchar*** whitelisted) {
     return false;
   }
   return true;
+}
+
+// static
+void ChromeOSLoginHelpers::RequestRetrievePropertyHelper(const char* name,
+    RetrievePropertyCallback callback, void* user_data) {
+  RetrievePropertyContext* context = new RetrievePropertyContext(name,
+      callback, user_data);
+
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(context->proxy.gproxy(),
+      login_manager::kSessionManagerRetrieveProperty,
+      &RetrievePropertyNotify,
+      context,
+      &FreeRetrievePropertyContext,
+      G_TYPE_STRING, name,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(WARNING) << login_manager::kSessionManagerRetrieveProperty
+                 << " dbus_g_proxy_begin_call failed";
+    delete context;
+    callback(user_data, false, NULL);
+  }
 }
 
 // static

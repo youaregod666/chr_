@@ -190,6 +190,14 @@ bool ChromeOSRestartEntd() {
 }
 
 extern "C"
+void ChromeOSRequestRetrieveProperty(const char* name,
+                                     RetrievePropertyCallback callback,
+                                     void* user_data) {
+  ChromeOSLoginHelpers::RequestRetrievePropertyHelper(name, callback,
+      user_data);
+}
+
+extern "C"
 bool ChromeOSRetrieveProperty(const char* name,
                               std::string* out_value,
                               std::vector<uint8>* signature) {

@@ -293,6 +293,11 @@ DECL_FUNC_3(RetrieveProperty,
             const char*,
             std::string*,
             std::vector<uint8>*);
+DECL_FUNC_3(RequestRetrieveProperty,
+            void,
+            const char*,
+            RetrievePropertyCallback,
+            void*);
 DECL_FUNC_2(RetrievePropertySafe, bool, const char*, Property**);
 DECL_FUNC_1(SetOwnerKey, bool, const std::vector<uint8>&);
 DECL_FUNC_1(SetOwnerKeySafe, bool, const CryptoBlob*);
@@ -598,6 +603,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(FreeUserList);
   INIT_FUNC(RestartJob);
   INIT_FUNC(RestartEntd);
+  INIT_FUNC(RequestRetrieveProperty);
   INIT_FUNC(RetrievePolicy);
   INIT_FUNC(RetrieveProperty);
   INIT_FUNC(RetrievePropertySafe);

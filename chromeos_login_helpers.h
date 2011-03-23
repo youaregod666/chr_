@@ -8,6 +8,8 @@
 #include <chromeos/dbus/dbus.h>
 #include <glib.h>
 
+#include "chromeos_login.h"  // NOLINT
+
 namespace chromeos {  // NOLINT
 
 struct CryptoBlob;
@@ -21,6 +23,9 @@ class ChromeOSLoginHelpers {
   static GArray* CreateGArrayFromBytes(const uint8* in, const int in_len);
   static bool CheckWhitelistHelper(const char* email, GArray** sig);
   static bool EnumerateWhitelistedHelper(gchar*** whitelisted);
+  static void RequestRetrievePropertyHelper(const char* name,
+                                            RetrievePropertyCallback callback,
+                                            void* user_data);
   static bool RetrievePropertyHelper(const char* name,
                                      gchar** value,
                                      GArray** sig);
