@@ -263,7 +263,14 @@ enum WmIpcMessageType {
   // Sent from Chrome to the window manager when the user is signing out.
   WM_IPC_MESSAGE_WM_NOTIFY_SIGNING_OUT = 22,
 
-  // NEXT VALUE TO USE: 23
+  // Sent from Chrome to the window manager to tell it to switch to
+  // the next or previous window.  Wraps around if already on "last"
+  // window.
+  //   param[0]: true (1) if switching to the next window, false (0)
+  //             if switching to the previous window.
+  WM_IPC_MESSAGE_WM_CYCLE_WINDOWS = 23,
+
+  // NEXT VALUE TO USE: 24
 };
 
 inline const char* WmIpcMessageTypeToString(WmIpcMessageType type) {
@@ -302,6 +309,8 @@ inline const char* WmIpcMessageTypeToString(WmIpcMessageType type) {
       return "WM_NOTIFY_POWER_BUTTON_STATE";
     case WM_IPC_MESSAGE_WM_NOTIFY_SIGNING_OUT:
       return "WM_NOTIFY_SIGNING_OUT";
+    case WM_IPC_MESSAGE_WM_CYCLE_WINDOWS:
+      return "WM_CYCLE_WINDOWS";
     default:
       return "INVALID";
   }
