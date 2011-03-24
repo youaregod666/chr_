@@ -200,12 +200,13 @@
 // 115: Added async methods for mount operations.
 // 116: Added Store/RetrievePolicy.
 // 117: Added async RequestRetrieveProperty.
+// 118: Add async ClearNetworkServiceProperty
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 104,
-  kCrosAPIVersion = 117
+  kCrosAPIVersion = 118
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

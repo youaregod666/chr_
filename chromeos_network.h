@@ -121,6 +121,10 @@ extern void (*SetNetworkServiceProperty)(const char* service_path,
                                          const char* property,
                                          const ::Value* setting);
 
+// Clear a property of a service
+extern void (*ClearNetworkServiceProperty)(const char* service_path,
+                                           const char* property);
+
 // Connects to the network with the |service_path|.
 //
 // Set |passphrase| to NULL if the network doesn't require authentication.

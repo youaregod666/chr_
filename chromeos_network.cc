@@ -1607,7 +1607,9 @@ void ChromeOSRequestNetworkDeviceEnable(const char* network_type, bool enable) {
       network_type,
       G_TYPE_INVALID);
   if (!call_id) {
-    LOG(ERROR) << "NULL call_id for: " << kRequestScanFunction;
+    LOG(ERROR) << "NULL call_id for: "
+               << (enable ? kEnableTechnologyFunction :
+                   kDisableTechnologyFunction);
     delete cb_data;
   }
 }
@@ -1686,7 +1688,30 @@ void ChromeOSSetNetworkServiceProperty(const char* service_path,
       gsetting.get(),
       G_TYPE_INVALID);
   if (!call_id) {
-    LOG(ERROR) << "NULL call_id for: " << kRequestScanFunction;
+    LOG(ERROR) << "NULL call_id for: " << kSetPropertyFunction;
+    delete cb_data;
+  }
+}
+
+extern "C"
+void ChromeOSClearNetworkServiceProperty(const char* service_path,
+                                         const char* property) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamServiceInterface, service_path);
+
+  // Start the DBus call. FlimflamNotifyHandleError will get called when
+  // it completes and log any errors.
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kClearPropertyFunction,
+      &FlimflamNotifyHandleError,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_STRING,
+      property,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kClearPropertyFunction;
     delete cb_data;
   }
 }
