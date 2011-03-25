@@ -100,32 +100,8 @@ std::string CreateFullXkbLayoutName(const std::string& layout_name,
                                     const ModifierMap& modifire_map,
                                     bool use_version);
 
-// Returns a layout name which is used in libcros from a full XKB layout name.
-// On error, it returns an empty string.
-// Example: "gb(extd)+chromeos(leftcontrol_disabled_leftalt),us" -> "gb(extd)"
-std::string ExtractLayoutNameFromFullXkbLayoutName(
-    const std::string& full_xkb_layout_name);
-
-// Initializes a std::map that holds mappings like:
-//   "leftcontrol_disabled_leftalt" ->
-//     {{ kSearchKey -> kLeftControlKey },
-//      { kLeftControlKey -> kVoidKey },
-//      { kLeftAltKey -> kLeftAltKey }}
-void InitializeStringToModifierMap(
-    StringToModifierMap* out_string_to_modifier_map);
-
-// Returns a mapping of modifier keys from a full XKB layout name. Returns true
-// on success.
-// Example: "gb(extd)+chromeos(leftcontrol_disabled_leftalt),us" ->
-//     {{ kSearchKey -> kLeftControlKey },
-//      { kLeftControlKey -> kVoidKey },
-//      { kLeftAltKey -> kLeftAltKey }}
-bool ExtractModifierMapFromFullXkbLayoutName(
-    const std::string& full_xkb_layout_name,
-    const StringToModifierMap& string_to_modifier_map,
-    ModifierMap* out_modifier_map);
-
 // Returns true if caps lock is enabled.
+// ONLY FOR UNIT TEST. DO NOT USE THIS FUNCTION.
 bool CapsLockIsEnabled();
 
 // Sets the caps lock status to |enable_caps_lock|.
