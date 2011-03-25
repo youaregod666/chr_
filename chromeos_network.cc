@@ -71,6 +71,8 @@ static const char* kWifiChannelProperty = "WiFi.Channel";
 static const char* kScanIntervalProperty = "ScanInterval";
 static const char* kPoweredProperty = "Powered";
 static const char* kHostProperty = "Host";
+static const char* kDBusConnectionProperty = "DBus.Connection";
+static const char* kDBusObjectProperty = "DBus.Object";
 
 // Flimflam device info property names.
 static const char* kIPConfigsProperty = "IPConfigs";
@@ -140,6 +142,18 @@ static const char* kTypeBOOTP = "bootp";
 static const char* kTypeZeroConf = "zeroconf";
 static const char* kTypeDHCP6 = "dhcp6";
 static const char* kTypePPP = "ppp";
+
+// ModemManager D-Bus service identifiers
+static const char* kModemManagerSMSInterface =
+    "org.freedesktop.ModemManager.Modem.Gsm.SMS";
+
+// ModemManager function names.
+static const char* kSMSGetFunction = "Get";
+static const char* kSMSDeleteFunction = "Delete";
+
+// ModemManager monitored signals
+static const char* kSMSReceivedSignal = "SmsReceived";
+
 
 static CellularDataPlanType ParseCellularDataPlanType(const std::string& type) {
   if (type == kCellularDataPlanUnlimited)
@@ -321,9 +335,14 @@ void RegisterNetworkMarshallers() {
                                         G_TYPE_VALUE,
                                         G_TYPE_INVALID);
     // NOTE: We have a second marshaller type that is also VOID__STRING_BOXED,
-    // except it takes a GPtrArray BOXED type instead of G_TYPE_VALYE.
+    // except it takes a GPtrArray BOXED type instead of G_TYPE_VALUE.
     // Because both map to marshal_VOID__STRING_BOXED, I am assuming that
     // we don't need to register both. -stevenjb
+    ::dbus_g_object_register_marshaller(marshal_VOID__UINT_BOOLEAN,
+                                        G_TYPE_NONE,
+                                        G_TYPE_UINT,
+                                        G_TYPE_BOOLEAN,
+                                        G_TYPE_INVALID);
     registered = true;
   }
 }
@@ -1960,6 +1979,275 @@ CellularDataPlanList* ChromeOSRetrieveCellularDataPlans(
       ParseCellularDataPlanList(properties_array);
   g_ptr_array_unref(properties_array);
   return data_plan_list;
+}
+
+class SMSHandler {
+ public:
+  typedef dbus::MonitorConnection<void(uint32, bool)>* MonitorConnection;
+
+  SMSHandler(const MonitorSMSCallback& callback,
+             const char* path,
+             void* object)
+      : callback_(callback),
+        path_(path),
+        object_(object),
+        connection_(NULL) {
+  }
+
+  // matches NetworkPropertiesCallback type
+  static void DevicePropertiesCallback(void* object,
+                                       const char* path,
+                                       const Value* properties) {
+    DCHECK(object);
+    SMSHandler* self = static_cast<SMSHandler*>(object);
+    DCHECK_EQ(properties->GetType(), Value::TYPE_DICTIONARY);
+    const DictionaryValue* dict =
+        static_cast<const DictionaryValue*>(properties);
+
+    std::string dbus_connection, dbus_object_path;
+    if (!dict->GetStringWithoutPathExpansion(kDBusConnectionProperty,
+                                             &dbus_connection)) {
+      LOG(WARNING) << "Modem device properties do not include DBus connection.";
+      return;
+    }
+    if (!dict->GetStringWithoutPathExpansion(kDBusObjectProperty,
+                                             &dbus_object_path)) {
+      LOG(WARNING) << "Modem device properties do not include DBus object.";
+      return;
+    }
+
+    dbus::Proxy modemmanager_proxy(dbus::GetSystemBusConnection(),
+                                   dbus_connection.c_str(),
+                                   dbus_object_path.c_str(),
+                                   kModemManagerSMSInterface);
+
+    // TODO(njw): We should listen for the "Completed" signal instead,
+    // but right now the existing implementation only sends
+    // SmsReceived (and doesn't handle multipart messages).
+    self->set_connection(dbus::Monitor(modemmanager_proxy,
+                                       kSMSReceivedSignal,
+                                       &SMSHandler::CompletedSignalCallback,
+                                       self));
+
+    // We're properly registered for SMS signals now, and the
+    // SMSMonitor handle has been returned to the caller. Search for
+    // existing SMS messages and invoke the user's callback as if they
+    // had just arrived.
+    // TODO(njw): Implement when ModemManager implementations actually
+    // support List.
+  }
+
+  struct SMSIndex {
+    SMSIndex(int index, SMSHandler *handler) :
+        index_(index),
+        handler_(handler) {
+    }
+
+    int index_;
+    SMSHandler *handler_;
+  };
+
+  static void DeleteSMSIndexCallback(void* user_data) {
+    SMSIndex* smsindex = static_cast<SMSIndex*>(user_data);
+    delete smsindex;
+  }
+
+  static void CompletedSignalCallback(void *object,
+                                      uint32 index,
+                                      bool completed) {
+    DCHECK(object);
+    SMSHandler* self = static_cast<SMSHandler*>(object);
+
+    // Only handle complete messages.
+    if (completed == false)
+      return;
+
+    SMSIndex* smsindex = new SMSIndex(index, self);
+
+    DBusGProxyCall* get_call_id = ::dbus_g_proxy_begin_call(
+        self->connection_->proxy().gproxy(),
+        kSMSGetFunction,
+        &SMSHandler::GetSMSCallback,
+        smsindex,
+        DeleteSMSIndexCallback,
+        G_TYPE_UINT,
+        index,
+        G_TYPE_INVALID);
+    if (!get_call_id) {
+      LOG(ERROR) << "NULL call_id for: " << kModemManagerSMSInterface
+                 << " : " << kSMSGetFunction << " index " << index;
+      delete smsindex;
+    }
+  }
+
+  static int decode_bcd(const char *s) {
+    return (s[0] - '0') * 10 + s[1] - '0';
+  }
+
+  static void GetSMSCallback(DBusGProxy* gproxy,
+                             DBusGProxyCall* call_id,
+                             void* user_data) {
+    DCHECK(user_data);
+    SMSIndex* smsindex = static_cast<SMSIndex*>(user_data);
+    SMSHandler* self = smsindex->handler_;
+    glib::ScopedError error;
+    glib::ScopedHashTable smshash;
+
+    if (!::dbus_g_proxy_end_call(
+           gproxy,
+           call_id,
+           &Resetter(&error).lvalue(),
+           ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING, G_TYPE_VALUE),
+           &Resetter(&smshash).lvalue(),
+           G_TYPE_INVALID)) {
+      LOG(WARNING) << "Get SMS failed with error:"
+                   << (error->message ? error->message : "Unknown Error.");
+      return;
+    }
+
+    SMS sms;
+    if (!smshash.Retrieve("number", &sms.number)) {
+      LOG(WARNING) << "SMS did not contain a number";
+      sms.number = "";
+    }
+    if (!smshash.Retrieve("text", &sms.text)) {
+      LOG(WARNING) << "SMS did not contain message text";
+      sms.text = "";
+    }
+    const char *sms_timestamp;
+    if (smshash.Retrieve("timestamp", &sms_timestamp)) {
+      base::Time::Exploded exp;
+      exp.year = decode_bcd(&sms_timestamp[0]);
+      if (exp.year > 95)
+        exp.year += 1900;
+      else
+        exp.year += 2000;
+      exp.month = decode_bcd(&sms_timestamp[2]);
+      exp.day_of_month = decode_bcd(&sms_timestamp[4]);
+      exp.hour = decode_bcd(&sms_timestamp[6]);
+      exp.minute = decode_bcd(&sms_timestamp[8]);
+      exp.second = decode_bcd(&sms_timestamp[10]);
+      exp.millisecond = 0;
+      sms.timestamp = base::Time::FromUTCExploded(exp);
+      int hours = decode_bcd(&sms_timestamp[13]);
+      if (sms_timestamp[12] == '-')
+        hours = -hours;
+      sms.timestamp -= base::TimeDelta::FromHours(hours);
+    } else {
+      LOG(WARNING) << "SMS did not contain a timestamp";
+      sms.timestamp = base::Time::Time();
+    }
+   if (!smshash.Retrieve("smsc", &sms.smsc))
+      sms.smsc = NULL;
+    if (!smshash.Retrieve("validity", &sms.validity))
+      sms.validity = -1;
+    if (!smshash.Retrieve("class", &sms.msgclass))
+      sms.msgclass = -1;
+
+    self->callback_(self->object_, self->path_.c_str(), &sms);
+
+    DBusGProxyCall* delete_call_id = ::dbus_g_proxy_begin_call(
+        gproxy,
+        kSMSDeleteFunction,
+        &SMSHandler::DeleteSMSCallback,
+        self,
+        NULL,
+        G_TYPE_UINT,
+        smsindex->index_,
+        G_TYPE_INVALID);
+    if (!delete_call_id) {
+      LOG(ERROR) << "NULL call_id for: " << kModemManagerSMSInterface
+                 << " : " << kSMSDeleteFunction
+                 << " index " << smsindex->index_;
+      return;
+    }
+  }
+
+  static void DeleteSMSCallback(DBusGProxy* gproxy,
+                                DBusGProxyCall* call_id,
+                                void* user_data) {
+    DCHECK(user_data);
+    glib::ScopedError error;
+    if(!::dbus_g_proxy_end_call(
+           gproxy,
+           call_id,
+           &Resetter(&error).lvalue(),
+           G_TYPE_INVALID)) {
+      LOG(WARNING) << "Delete SMS failed with error:"
+                   << (error->message ? error->message : "Unknown Error.");
+      return;
+    }
+  }
+
+  const MonitorConnection& connection() const {
+    return connection_;
+  }
+
+  void set_connection(const MonitorConnection& c) {
+    connection_ = c;
+  }
+
+ private:
+  MonitorSMSCallback callback_;
+  std::string path_;
+  void* object_;
+  MonitorConnection connection_;
+
+  DISALLOW_COPY_AND_ASSIGN(SMSHandler);
+};
+
+extern "C"
+SMSMonitor ChromeOSMonitorSMS(
+    const char* modem_device_path,
+    MonitorSMSCallback callback,
+    void* object) {
+  DCHECK(modem_device_path && callback);
+  RegisterNetworkMarshallers();
+
+  // Overall strategy, implemented as a series of callbacks to avoid
+  // blocking the caller for dbus/flimflam timescales:
+  //
+  // (1) figure out where to listen from the
+  // DBus.Object and DBus.Connection properties on the given modem's
+  // device (get device properties).
+  //
+  // (2) listen for
+  // org.freedesktop.ModemManager.Modem.Gsm.SMS.Completed signals
+  // (ignore SmsReceived signals; we don't need to do anything with
+  // partial messages, and all messages will generate a Completed
+  // signal when all parts are present).
+  //
+  // (3) Upon receipt of a Completed signal, issue a Get request
+  // message.
+  //
+  // (4) In the callback for the Get request, call the user's callback with
+  // the message contents
+  //
+  // (5) When the user's callback returns, call Delete (no-reply here,
+  // or just to log an error).  Avoids deleting messages if the user's
+  // app crashes in the callback. (Maybe the callback should return a
+  // boolean of whether to delete that message?)
+  //
+  // To handle SMSs already on the device when this is called, this
+  // should call the List method and then call the user's callback for
+  // each message that's currently present.
+
+  SMSMonitor monitor =
+      new SMSHandler(callback, modem_device_path, object);
+
+  // Fire off the first GetProperties call, then return the
+  // as-yet-unfinished monitor object.
+  GetPropertiesAsync(kFlimflamDeviceInterface, modem_device_path,
+                     &SMSHandler::DevicePropertiesCallback, monitor);
+
+  return monitor;
+}
+
+extern "C"
+void ChromeOSDisconnectSMSMonitor(SMSMonitor monitor) {
+  if (monitor->connection())
+    dbus::Disconnect(monitor->connection());
+  delete monitor;
 }
 
 }  // namespace chromeos

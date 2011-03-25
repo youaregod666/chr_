@@ -197,6 +197,7 @@ AlwaysBuild(unittest_alias)
 tests = [
   env_test.Program('monitor_power', ['monitor_power.cc', Load]),
   env_network_monitor.Program('monitor_network', ['monitor_network.cc', Load]),
+  env_network_monitor.Program('monitor_sms', ['monitor_sms.cc', Load]),
   env_test.Program('monitor_mount', ['monitor_mount.cc', Load]),
   env_test.Program('login_drive', ['drive_login.cc', Load]),
   env_test.Program('monitor_update_engine', ['monitor_update_engine.cc', Load]),

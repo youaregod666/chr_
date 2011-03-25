@@ -203,12 +203,13 @@
 // 118: Add async ClearNetworkServiceProperty
 // 119: Added support for passing dict for SetNetworkServiceProperty.
 // 120: Added RequestVirtualNetwork to chromeos_network.
+// 121: Added MonitorSMS and DisconnectSMSMonitor
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 104,
-  kCrosAPIVersion = 120
+  kCrosAPIVersion = 121
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

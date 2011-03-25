@@ -229,6 +229,8 @@ DECL_FUNC_1(DisconnectDataPlanUpdateMonitor, void, DataPlanUpdateMonitor);
 DECL_FUNC_1(RetrieveCellularDataPlans, CellularDataPlanList*, const char*);
 DECL_FUNC_1(RequestCellularDataPlanUpdate, void, const char*);
 DECL_FUNC_1(FreeCellularDataPlanList, void, CellularDataPlanList*);
+DECL_FUNC_3(MonitorSMS, SMSMonitor, const char*, MonitorSMSCallback, void*);
+DECL_FUNC_1(DisconnectSMSMonitor, void, SMSMonitor);
 DECL_FUNC_3(RequestNetworkServiceConnect, void, const char*,
             NetworkActionCallback, void *);
 DECL_FUNC_2(RequestNetworkManagerInfo, void,
@@ -575,6 +577,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RetrieveCellularDataPlans);
   INIT_FUNC(RequestCellularDataPlanUpdate);
   INIT_FUNC(FreeCellularDataPlanList);
+  INIT_FUNC(MonitorSMS);
+  INIT_FUNC(DisconnectSMSMonitor);
   INIT_FUNC(RequestNetworkServiceConnect);
   INIT_FUNC(RequestNetworkManagerInfo);
   INIT_FUNC(RequestNetworkServiceInfo);

@@ -7,6 +7,7 @@
 
 #include <base/basictypes.h>
 #include <base/logging.h>
+#include <base/time.h>
 
 class Value;
 
@@ -63,6 +64,15 @@ struct CellularDataPlanList {
         ptr + index * data_plan_size);
   }
 
+};
+
+struct SMS {
+  base::Time timestamp;
+  const char *number;
+  const char *text;
+  const char *smsc;  // optional; NULL if not present in message
+  int32 validity;  // optional; -1 if not present in message
+  int32 msgclass;  // optional; -1 if not present in message
 };
 
 struct IPConfig {
@@ -229,6 +239,19 @@ extern DataPlanUpdateMonitor (*MonitorCellularDataPlan)(
 extern void (*DisconnectDataPlanUpdateMonitor)(
     DataPlanUpdateMonitor monitor);
 
+
+class SMSHandler;
+typedef SMSHandler* SMSMonitor;
+
+typedef void (*MonitorSMSCallback)(void* object,
+                                   const char* modem_device_path,
+                                   const SMS* message);
+
+extern SMSMonitor (*MonitorSMS)(const char* modem_device_path,
+                                MonitorSMSCallback callback,
+                                void* object);
+
+extern void (*DisconnectSMSMonitor)(SMSMonitor monitor);
 
 //////////////////////////////////////////////////////////////////////////////
 // Asynchronous flimflam interfaces.
