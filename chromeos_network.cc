@@ -41,6 +41,7 @@ static const char* kConnectFunction = "Connect";
 static const char* kDisconnectFunction = "Disconnect";
 static const char* kRequestScanFunction = "RequestScan";
 static const char* kGetWifiServiceFunction = "GetWifiService";
+static const char* kGetVPNServiceFunction = "GetVPNService";
 static const char* kEnableTechnologyFunction = "EnableTechnology";
 static const char* kDisableTechnologyFunction = "DisableTechnology";
 static const char* kAddIPConfigFunction = "AddIPConfig";
@@ -69,6 +70,7 @@ static const char* kConnectedProperty = "Connected";
 static const char* kWifiChannelProperty = "WiFi.Channel";
 static const char* kScanIntervalProperty = "ScanInterval";
 static const char* kPoweredProperty = "Powered";
+static const char* kHostProperty = "Host";
 
 // Flimflam device info property names.
 static const char* kIPConfigsProperty = "IPConfigs";
@@ -80,6 +82,9 @@ static const char* kEAPClientCertProperty = "EAP.ClientCert";
 static const char* kEAPCertIDProperty = "EAP.CertID";
 static const char* kEAPKeyIDProperty = "EAP.KeyID";
 static const char* kEAPPINProperty = "EAP.PIN";
+
+// Flimflam VPN service properties
+static const char* kVPNDomainProperty = "VPN.Domain";
 
 // Flimflam monitored properties
 static const char* kMonitorPropertyChanged = "PropertyChanged";
@@ -1377,9 +1382,9 @@ void GetEntryAsync(const char* interface,
   }
 }
 
-void GetWifiNotify(DBusGProxy* gproxy,
-                   DBusGProxyCall* call_id,
-                   void* user_data) {
+void GetServiceNotify(DBusGProxy* gproxy,
+                      DBusGProxyCall* call_id,
+                      void* user_data) {
   GetPropertiesCallbackData* cb_data =
       static_cast<GetPropertiesCallbackData*>(user_data);
   DCHECK(cb_data);
@@ -1392,7 +1397,7 @@ void GetWifiNotify(DBusGProxy* gproxy,
           DBUS_TYPE_G_OBJECT_PATH,
           &service_path,
           G_TYPE_INVALID)) {
-    LOG(WARNING) << "GetWifiNotify for path: '"
+    LOG(WARNING) << "GetServiceNotify for path: '"
                  << cb_data->callback_path << "' error: "
                  << (error->message ? error->message : "Unknown Error.");
     cb_data->callback(cb_data->object, cb_data->callback_path.c_str(), NULL);
@@ -1535,7 +1540,9 @@ void ChromeOSRequestHiddenWifiNetwork(
     const char* security,
     NetworkPropertiesCallback callback,
     void* object) {
-  DCHECK(ssid && callback);
+  DCHECK(ssid);
+  DCHECK(security);
+  DCHECK(callback);
   GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
       kFlimflamManagerInterface, "/", ssid, callback, object);
 
@@ -1561,7 +1568,7 @@ void ChromeOSRequestHiddenWifiNetwork(
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
       kGetWifiServiceFunction,
-      &GetWifiNotify,
+      &GetServiceNotify,
       cb_data,
       &DeleteFlimflamCallbackData,
       ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING, G_TYPE_VALUE),
@@ -1571,6 +1578,56 @@ void ChromeOSRequestHiddenWifiNetwork(
     LOG(ERROR) << "NULL call_id for: " << kGetWifiServiceFunction;
     delete cb_data;
     callback(object, ssid, NULL);
+  }
+}
+
+extern "C"
+void ChromeOSRequestVirtualNetwork(
+    const char* service_name,
+    const char* server_hostname,
+    const char* provider_type,
+    NetworkPropertiesCallback callback,
+    void* object) {
+  DCHECK(service_name);
+  DCHECK(server_hostname);
+  DCHECK(provider_type);
+  DCHECK(callback);
+  GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
+      kFlimflamManagerInterface, "/", service_name, callback, object);
+
+  glib::ScopedHashTable scoped_properties =
+      glib::ScopedHashTable(::g_hash_table_new_full(
+          ::g_str_hash, ::g_str_equal, ::g_free, NULL));
+
+  glib::Value value_name(service_name);
+  glib::Value value_host(server_hostname);
+  glib::Value value_type(provider_type);
+  // The actual value of Domain does not matter, so just use service_name.
+  glib::Value value_vpn_domain(service_name);
+  ::GHashTable* properties = scoped_properties.get();
+  ::g_hash_table_insert(properties, ::g_strdup(kNameProperty), &value_name);
+  ::g_hash_table_insert(properties, ::g_strdup(kHostProperty), &value_host);
+  ::g_hash_table_insert(properties, ::g_strdup(kTypeProperty), &value_type);
+  ::g_hash_table_insert(properties, ::g_strdup(kVPNDomainProperty),
+                        &value_vpn_domain);
+
+  // flimflam.Manger.GetVPNService() will apply the property changes in
+  // |properties| and pass a new or existing service to GetVPNNotify.
+  // GetVPNNotify will then call GetPropertiesAsync, triggering a second
+  // asynchronous call to GetPropertiesNotify which will then call |callback|.
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kGetVPNServiceFunction,
+      &GetServiceNotify,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING, G_TYPE_VALUE),
+      properties,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kGetVPNServiceFunction;
+    delete cb_data;
+    callback(object, service_name, NULL);
   }
 }
 

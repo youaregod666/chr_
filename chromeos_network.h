@@ -294,6 +294,12 @@ extern void (*RequestHiddenWifiNetwork)(const char* ssid,
                                         const char* security,
                                         NetworkPropertiesCallback callback,
                                         void* object);
+// Request a new VPN service.
+extern void (*RequestVirtualNetwork)(const char* service_name,
+                                     const char* server_hostname,
+                                     const char* provider_type,
+                                     NetworkPropertiesCallback callback,
+                                     void* object);
 
 // Requests a scan of services of |type|.
 // |type| should be is a string recognized by flimflam's Manager API.
