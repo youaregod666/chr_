@@ -201,12 +201,13 @@
 // 116: Added Store/RetrievePolicy.
 // 117: Added async RequestRetrieveProperty.
 // 118: Add async ClearNetworkServiceProperty
+// 119: Added support for passing dict for SetNetworkServiceProperty.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 104,
-  kCrosAPIVersion = 118
+  kCrosAPIVersion = 119
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

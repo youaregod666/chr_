@@ -1639,8 +1639,33 @@ static glib::Value *ConvertToGlibValue(const ::Value* value) {
         return new glib::Value(out);
       break;
     }
+    case ::Value::TYPE_DICTIONARY: {
+      glib::ScopedHashTable scoped_table =
+          glib::ScopedHashTable(::g_hash_table_new_full(
+              ::g_str_hash, ::g_str_equal, ::g_free, ::g_free));
+      ::GHashTable* table = scoped_table.get();
+      const DictionaryValue* dict = static_cast<const DictionaryValue*>(value);
+      for (DictionaryValue::key_iterator it = dict->begin_keys();
+           it != dict->end_keys(); ++it) {
+        std::string key = *it;
+        std::string val;
+        if (!dict->GetString(key, &val)) {
+          LOG(ERROR) << "Invalid type in hash table, key: " << key
+                     << " value type: " << value->GetType();
+          return NULL;
+        }
+        ::g_hash_table_insert(table,
+            ::g_strdup(const_cast<char*>(key.c_str())),
+            ::g_strdup(const_cast<char*>(val.c_str())));
+      }
+      // glib::Value doesn't support boxed types so do it manually.
+      glib::Value* out = new glib::Value();
+      ::g_value_init(out, DBUS_TYPE_G_STRING_STRING_HASHTABLE);
+      ::g_value_set_boxed(out, table);
+      return out;
+    }
     default:
-      // Other Value types - LIST, NULL, REAL, BINARY, and DICTIONARY -
+      // Other Value types - LIST, NULL, REAL, BINARY -
       // aren't passed through this mechanism, and so we're not going to
       // bother to try converting them.
       // If we get here, it's a programming error, so complain.
