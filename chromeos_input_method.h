@@ -247,13 +247,6 @@ extern InputMethodDescriptors* (*GetSupportedInputMethodDescriptors)();
 extern bool (*ChangeInputMethod)(
     InputMethodStatusConnection* connection, const char* name);
 
-// DEPRECATED. WILL BE REMOVED SOON.
-// TODO(satorux): Remove the function.
-// Get an input method engines that are currently selected. Caller has to delete
-// the returned list. This function might return NULL on error.
-extern InputMethodDescriptor* (*GetCurrentInputMethod)(
-    InputMethodStatusConnection* connection);
-
 // Sets whether the input method property specified by |key| is activated.
 // If |activated| is true, activates the property. If |activated| is false,
 // deactivates the property.

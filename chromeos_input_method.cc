@@ -454,29 +454,6 @@ class InputMethodStatusConnection {
     return true;
   }
 
-  // Called by cros API ChromeOSGetCurrentInputMethod().
-  // Returns an input methods which is currently used as a global engine in
-  // ibus-daemon.
-  InputMethodDescriptor* GetCurrentInputMethod() {
-    if (!IBusConnectionsAreAlive()) {
-      LOG(ERROR) << "GetCurrentInputMethod: IBus connection is not alive";
-      return NULL;
-    }
-    IBusEngineDesc* engine_desc = ibus_bus_get_global_engine(ibus_);
-    if (!engine_desc) {
-      return NULL;
-    }
-    const gchar* name = ibus_engine_desc_get_name(engine_desc);
-    const gchar* longname = ibus_engine_desc_get_longname(engine_desc);
-    const gchar* layout = ibus_engine_desc_get_layout(engine_desc);
-    const gchar* language = ibus_engine_desc_get_language(engine_desc);
-    InputMethodDescriptor* descriptor =
-        new InputMethodDescriptor(name, longname, layout, language);
-
-    g_object_unref(engine_desc);
-    return descriptor;
-  }
-
   // Called by cros API ChromeOS(Activate|Deactive)ImeProperty().
   void SetImePropertyActivated(const char* key, bool activated) {
     if (!IBusConnectionsAreAlive()) {
@@ -1123,14 +1100,6 @@ bool ChromeOSChangeInputMethod(
   DLOG(INFO) << "ChangeInputMethod: " << name;
   g_return_val_if_fail(connection, false);
   return connection->ChangeInputMethod(name);
-}
-
-extern "C"
-InputMethodDescriptor* ChromeOSGetCurrentInputMethod(
-    InputMethodStatusConnection* connection) {
-  g_return_val_if_fail(connection, NULL);
-  // Pass ownership to a caller.
-  return connection->GetCurrentInputMethod();
 }
 
 extern "C"
