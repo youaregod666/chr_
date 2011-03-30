@@ -11,7 +11,6 @@
 #include <glib.h>
 #include <stdlib.h>
 #include <string.h>
-#include <xkeyboard_config_version.h>
 
 #include "base/logging.h"
 #include "base/singleton.h"
@@ -70,13 +69,7 @@ class XKeyboard {
   // Sets the current keyboard layout to |layout_name|. This function does not
   // change the current mapping of the modifier keys. Returns true on success.
   bool SetLayout(const std::string& layout_name) {
-    if (SetLayoutInternal(layout_name, current_modifier_map_, true)) {
-      current_layout_name_ = layout_name;
-      return true;
-    }
-    // TODO(satorux,yusukes): Remove +version hack.
-    LOG(ERROR) << "SetLayoutInternal failed. Retrying without +version option";
-    if (SetLayoutInternal(layout_name, current_modifier_map_, false)) {
+    if (SetLayoutInternal(layout_name, current_modifier_map_)) {
       current_layout_name_ = layout_name;
       return true;
     }
@@ -86,14 +79,7 @@ class XKeyboard {
   // Remaps modifier keys. This function does not change the current keyboard
   // layout. Returns true on success.
   bool RemapModifierKeys(const chromeos::ModifierMap& modifier_map) {
-    // TODO(yusukes): write auto tests for the function.
-    if (SetLayoutInternal(current_layout_name_, modifier_map, true)) {
-      current_modifier_map_ = modifier_map;
-      return true;
-    }
-    // TODO(satorux,yusukes): Remove +version hack.
-    LOG(ERROR) << "SetLayoutInternal failed. Retrying without +version option";
-    if (SetLayoutInternal(current_layout_name_, modifier_map, false)) {
+    if (SetLayoutInternal(current_layout_name_, modifier_map)) {
       current_modifier_map_ = modifier_map;
       return true;
     }
@@ -189,19 +175,16 @@ class XKeyboard {
 
   // This function is used by SetLayout() and RemapModifierKeys(). Calls
   // setxkbmap command if needed, and updates the last_full_layout_name_ cache.
-  // If |use_version| is false, the function does not add "+version(...)" to the
-  // layout name. See http://crosbug.com/6261 for details.
   bool SetLayoutInternal(const std::string& layout_name,
-                         const chromeos::ModifierMap& modifier_map,
-                         bool use_version) {
+                         const chromeos::ModifierMap& modifier_map) {
     const std::string layouts_to_set = chromeos::CreateFullXkbLayoutName(
-        layout_name, modifier_map, use_version);
+        layout_name, modifier_map);
     if (layouts_to_set.empty()) {
       return false;
     }
 
     const std::string current_layout = chromeos::CreateFullXkbLayoutName(
-        current_layout_name_, current_modifier_map_, use_version);
+        current_layout_name_, current_modifier_map_);
     if (current_layout == layouts_to_set) {
       DLOG(INFO) << "The requested layout is already set: " << layouts_to_set;
       return true;
@@ -252,8 +235,7 @@ class XKeyboard {
 namespace chromeos {
 
 std::string CreateFullXkbLayoutName(const std::string& layout_name,
-                                    const ModifierMap& modifier_map,
-                                    bool use_version) {
+                                    const ModifierMap& modifier_map) {
   static const char kValidLayoutNameCharacters[] =
       "abcdefghijklmnopqrstuvwxyz0123456789()-_";
 
@@ -307,16 +289,11 @@ std::string CreateFullXkbLayoutName(const std::string& layout_name,
     return "";
   }
 
-  std::string version;
-  if (use_version) {
-    version = std::string("+version(") + kXkeyboardConfigPackageVersion + ")";
-  }
   std::string full_xkb_layout_name =
-      StringPrintf("%s+chromeos(%s_%s_%s)%s", layout_name.c_str(),
+      StringPrintf("%s+chromeos(%s_%s_%s)", layout_name.c_str(),
                    use_search_key_as_str.c_str(),
                    use_left_control_key_as_str.c_str(),
-                   use_left_alt_key_as_str.c_str(),
-                   version.c_str());
+                   use_left_alt_key_as_str.c_str());
 
   if ((full_xkb_layout_name.substr(0, 3) != "us+") &&
       (full_xkb_layout_name.substr(0, 3) != "us(")) {

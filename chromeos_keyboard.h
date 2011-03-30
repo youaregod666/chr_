@@ -82,14 +82,11 @@ inline std::string ModifierKeyToString(ModifierKey key) {
 }
 
 // Creates a full XKB layout name like
-//   "gb(extd)+chromeos(leftcontrol_disabled_leftalt)+version(v1_7_r7),us"
+//   "gb(extd)+chromeos(leftcontrol_disabled_leftalt),us"
 // from modifier key mapping and |layout_name|, such as "us", "us(dvorak)", and
 // "gb(extd)". Returns an empty string on error.
-// If |use_version| is false, the function does not add "+version(...)" to the
-// layout name. See http://crosbug.com/6261 for details.
 std::string CreateFullXkbLayoutName(const std::string& layout_name,
-                                    const ModifierMap& modifire_map,
-                                    bool use_version);
+                                    const ModifierMap& modifire_map);
 
 // Returns true if caps lock is enabled.
 // ONLY FOR UNIT TEST. DO NOT USE THIS FUNCTION.
