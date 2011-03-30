@@ -229,6 +229,8 @@ bool ChromeOSRetrievePropertySafe(const char* name, Property** OUT_property) {
   if (!ChromeOSLoginHelpers::RetrievePropertyHelper(name, &value, &sig))
     return false;
   *OUT_property = ChromeOSLoginHelpers::CreateProperty(name, value, sig);
+  g_array_free(sig, false);
+  g_free(value);
   return true;
 }
 
@@ -463,18 +465,22 @@ void RetrievePolicyNotify(DBusGProxy* gproxy,
       reinterpret_cast<CallbackData<RetrievePolicyCallback>*>(user_data);
   DCHECK(cb_data);
   glib::ScopedError error;
-  gchar* policy_blob = NULL;
+  GArray* policy_blob = NULL;
   if (!::dbus_g_proxy_end_call(gproxy,
                                call_id,
                                &Resetter(&error).lvalue(),
-                               G_TYPE_STRING, &policy_blob,
+                               DBUS_TYPE_G_UCHAR_ARRAY, &policy_blob,
                                G_TYPE_INVALID)) {
     LOG(ERROR) << login_manager::kSessionManagerRetrievePolicy
                << " failed: " << SCOPED_SAFE_MESSAGE(error);
   }
-  cb_data->callback(cb_data->object, policy_blob);
-  if (policy_blob)
-    g_free(policy_blob);
+  if (policy_blob) {
+    std::string policy(policy_blob->data, policy_blob->len);
+    cb_data->callback(cb_data->object, policy.c_str());
+    g_array_free(policy_blob, TRUE);
+  } else {
+    cb_data->callback(cb_data->object, NULL);
+  }
 }
 
 extern "C"
@@ -519,22 +525,27 @@ extern "C"
 void ChromeOSStorePolicy(const char* prop,
                          StorePolicyCallback callback,
                          void* delegate) {
+  DCHECK(prop);
   DCHECK(delegate);
   CallbackData<StorePolicyCallback>* cb_data =
       new CallbackData<StorePolicyCallback>(callback, delegate);
+  GArray* policy = g_array_new(FALSE, FALSE, 1);
+  policy->data = const_cast<gchar*>(prop);  // This just gets copied below.
+  policy->len = strlen(prop);
   DBusGProxyCall* call_id =
       ::dbus_g_proxy_begin_call(cb_data->proxy.gproxy(),
                                 login_manager::kSessionManagerStorePolicy,
                                 &StorePolicyNotify,
                                 cb_data,
                                 &DeleteCallbackData<StorePolicyCallback>,
-                                G_TYPE_STRING, prop,
+                                DBUS_TYPE_G_UCHAR_ARRAY, policy,
                                 G_TYPE_INVALID);
   if (!call_id) {
     LOG(ERROR) << "StorePolicy async call failed";
     delete cb_data;
     callback(delegate, false);
   }
+  g_array_free(policy, FALSE);
 }
 
 }  // namespace chromeos

@@ -205,12 +205,13 @@
 // 120: Added RequestVirtualNetwork to chromeos_network.
 // 121: Added MonitorSMS and DisconnectSMSMonitor
 // 122: Removed GetCurrentInputMethod.
+// 123: Change Store/RetrievePolicy to use byte arrays underneath the hood.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 110,
-  kCrosAPIVersion = 122
+  kCrosAPIVersion = 123
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
