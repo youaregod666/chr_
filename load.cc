@@ -14,7 +14,6 @@
 #include "chromeos_imageburn.h"  //NOLINT
 #include "chromeos_input_method.h"  // NOLINT
 #include "chromeos_input_method_ui.h"  // NOLINT
-#include "chromeos_keyboard.h"  // NOLINT
 #include "chromeos_libcros_service.h"  // NOLINT
 #include "chromeos_login.h"  // NOLINT
 #include "chromeos_mount.h"  // NOLINT
@@ -168,12 +167,6 @@ DECL_FUNC_2(MonitorInputMethodConnection,
             void,
             InputMethodUiStatusConnection*,
             InputMethodConnectionChangeMonitorFunction);
-
-// Keyboard
-DECL_FUNC_1(SetCurrentKeyboardLayoutByName, bool, const std::string&);
-DECL_FUNC_1(RemapModifierKeys, bool, const ModifierMap&);
-DECL_FUNC_1(SetAutoRepeatEnabled, bool, bool);
-DECL_FUNC_1(SetAutoRepeatRate, bool, const chromeos::AutoRepeatRate&);
 
 // Mount
 DECL_FUNC_3(MountRemovableDevice, void,
@@ -513,12 +506,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(DisconnectInputMethodUiStatus);
   INIT_FUNC(NotifyCandidateClicked);
   INIT_FUNC(MonitorInputMethodConnection);
-
-  // Keyboard
-  INIT_FUNC(SetCurrentKeyboardLayoutByName);
-  INIT_FUNC(RemapModifierKeys);
-  INIT_FUNC(SetAutoRepeatEnabled);
-  INIT_FUNC(SetAutoRepeatRate);
 
   // Mount
   INIT_FUNC(MountRemovableDevice);

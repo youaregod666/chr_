@@ -206,6 +206,9 @@
 // 121: Added MonitorSMS and DisconnectSMSMonitor
 // 122: Removed GetCurrentInputMethod.
 // 123: Change Store/RetrievePolicy to use byte arrays underneath the hood.
+// 124: Deprecated SetCurrentKeyboardLayoutByName, RemapModifierKeys,
+//      SetAutoRepeatEnabled, SetAutoRepeatRate
+//      (all functions in chromeos_keyboard.h)
 
 namespace chromeos {  // NOLINT
 
