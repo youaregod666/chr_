@@ -74,10 +74,12 @@ class ClientLoop {
     client_loop->Callback(call_status);
   }
 
-  static void RetPolicyCallback(void* client_loop, const char* policy) {
+  static void RetPolicyCallback(void* client_loop,
+                                const char* policy,
+                                const unsigned int len) {
     chromeos::OwnershipEvent call_status =
         (policy ? chromeos::PropertyOpSuccess : chromeos::PropertyOpFailure);
-    LOG(INFO) << "policy is " << policy;
+    LOG(INFO) << "policy is " << std::string(policy, len);
     (static_cast<ClientLoop*>(client_loop))->Callback(call_status);
   }
 
@@ -367,6 +369,7 @@ int main(int argc, const char** argv) {
     client_loop.Initialize();
 
     chromeos::StorePolicy(val.c_str(),
+                          val.length(),
                           reinterpret_cast<chromeos::StorePolicyCallback>(
                               &ClientLoop::PolicyCallback),
                           &client_loop);

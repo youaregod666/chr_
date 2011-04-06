@@ -209,12 +209,13 @@
 // 124: Deprecated SetCurrentKeyboardLayoutByName, RemapModifierKeys,
 //      SetAutoRepeatEnabled, SetAutoRepeatRate
 //      (all functions in chromeos_keyboard.h)
+// 125: Fix Store/RetrievePolicy.  No one's using these yet, so change is ok.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 110,
-  kCrosAPIVersion = 124
+  kCrosAPIVersion = 125
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

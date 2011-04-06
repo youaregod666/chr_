@@ -301,7 +301,12 @@ DECL_FUNC_1(SetOwnerKey, bool, const std::vector<uint8>&);
 DECL_FUNC_1(SetOwnerKeySafe, bool, const CryptoBlob*);
 DECL_FUNC_2(StartSession, bool, const char*, const char*);
 DECL_FUNC_1(StopSession, bool, const char*);
-DECL_FUNC_3(StorePolicy, void, const char*, StorePolicyCallback, void*);
+DECL_FUNC_4(StorePolicy,
+            void,
+            const char*,
+            const unsigned int,
+            StorePolicyCallback,
+            void*);
 DECL_FUNC_3(StoreProperty,
             bool,
             const char*,

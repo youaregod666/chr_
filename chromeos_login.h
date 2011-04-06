@@ -48,7 +48,7 @@ typedef OpaqueSessionConnection* SessionConnection;
 typedef void(*SessionMonitor)(void*, const OwnershipEvent&);
 
 // Async callback functions
-typedef void(*RetrievePolicyCallback)(void*, const char*);
+typedef void(*RetrievePolicyCallback)(void*, const char*, const unsigned int);
 typedef void(*StorePolicyCallback)(void*, bool);
 typedef void(*RetrievePropertyCallback)(void* user_data,
                                         bool success,
@@ -137,8 +137,10 @@ extern bool (*StartSession)(const char* user_email,
 extern bool (*StopSession)(const char* unique_id /* unused */);
 
 // Attempts to store the policy blob |prop| asynchronously.
+// Takes |len| because |prop| may have embedded NULL characters.
 // Upon completion of the store attempt, we will call callback(delegate, ...)
 extern void (*StorePolicy)(const char* prop,
+                           const unsigned int len,
                            StorePolicyCallback callback,
                            void* delegate);
 

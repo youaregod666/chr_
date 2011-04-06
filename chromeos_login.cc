@@ -475,11 +475,10 @@ void RetrievePolicyNotify(DBusGProxy* gproxy,
                << " failed: " << SCOPED_SAFE_MESSAGE(error);
   }
   if (policy_blob) {
-    std::string policy(policy_blob->data, policy_blob->len);
-    cb_data->callback(cb_data->object, policy.c_str());
+    cb_data->callback(cb_data->object, policy_blob->data, policy_blob->len);
     g_array_free(policy_blob, TRUE);
   } else {
-    cb_data->callback(cb_data->object, NULL);
+    cb_data->callback(cb_data->object, NULL, 0);
   }
 }
 
@@ -498,7 +497,7 @@ void ChromeOSRetrievePolicy(RetrievePolicyCallback callback, void* delegate) {
   if (!call_id) {
     LOG(ERROR) << "RetrievePolicy async call failed";
     delete cb_data;
-    callback(delegate, NULL);
+    callback(delegate, NULL, 0);
   }
 }
 
@@ -523,6 +522,7 @@ void StorePolicyNotify(DBusGProxy* gproxy,
 
 extern "C"
 void ChromeOSStorePolicy(const char* prop,
+                         const unsigned int len,
                          StorePolicyCallback callback,
                          void* delegate) {
   DCHECK(prop);
@@ -531,7 +531,7 @@ void ChromeOSStorePolicy(const char* prop,
       new CallbackData<StorePolicyCallback>(callback, delegate);
   GArray* policy = g_array_new(FALSE, FALSE, 1);
   policy->data = const_cast<gchar*>(prop);  // This just gets copied below.
-  policy->len = strlen(prop);
+  policy->len = len;
   DBusGProxyCall* call_id =
       ::dbus_g_proxy_begin_call(cb_data->proxy.gproxy(),
                                 login_manager::kSessionManagerStorePolicy,
