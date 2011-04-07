@@ -19,7 +19,6 @@
 #include "chromeos/glib/object.h"  // NOLINT
 #include "chromeos/string.h"
 
-// TODO(rtc): Unittest this code as soon as the tree is refactored.
 namespace chromeos {  // NOLINT
 
 namespace { // NOLINT
@@ -49,6 +48,10 @@ static const char* kRemoveConfigFunction = "Remove";
 static const char* kGetEntryFunction = "GetEntry";
 static const char* kDeleteEntryFunction = "DeleteEntry";
 static const char* kActivateCellularModemFunction = "ActivateCellularModem";
+static const char* kRequirePinFunction = "RequirePin";
+static const char* kEnterPinFunction = "EnterPin";
+static const char* kUnblockPinFunction = "UnblockPin";
+static const char* kChangePinFunction = "ChangePin";
 
 // Flimflam property names.
 static const char* kSecurityProperty = "Security";
@@ -216,6 +219,10 @@ static Value* ConvertGlibValue(const glib::Value* gvalue) {
     DictionaryValue* dict = new DictionaryValue();
     ::dbus_g_type_map_value_iterate(gvalue, AppendDictionaryElement, dict);
     return dict;
+  } else if (G_VALUE_HOLDS(gvalue, G_TYPE_VALUE)) {
+    const GValue* bvalue = static_cast<GValue*>(::g_value_get_boxed(gvalue));
+    glib::Value glibvalue(*bvalue);
+    return ConvertGlibValue(&glibvalue);
   } else {
     LOG(ERROR) << "Unrecognized Glib value type: " << G_VALUE_TYPE(gvalue);
     return Value::CreateNullValue();
@@ -691,44 +698,18 @@ void ChromeOSFreeIPConfigStatus(IPConfigStatus* status) {
 
 }
 
-extern "C"
-PropertyChangeMonitor ChromeOSMonitorNetworkManager(
+static PropertyChangeMonitor CreatePropertyChangeMonitor(
     MonitorPropertyCallback callback,
-    void* object) {
-  RegisterNetworkMarshallers();
-  dbus::Proxy proxy(dbus::GetSystemBusConnection(),
-                    kFlimflamServiceName,
-                    "/",
-                    kFlimflamManagerInterface);
-  PropertyChangeMonitor monitor =
-      new PropertyChangedHandler(callback, "/", object);
-  monitor->set_connection(dbus::Monitor(proxy,
-                                        kMonitorPropertyChanged,
-                                        &PropertyChangedHandler::Run,
-                                        monitor));
-
-  return monitor;
-}
-
-extern "C"
-void ChromeOSDisconnectPropertyChangeMonitor(
-    PropertyChangeMonitor connection) {
-  dbus::Disconnect(connection->connection());
-  delete connection;
-}
-
-extern "C"
-PropertyChangeMonitor ChromeOSMonitorNetworkService(
-    MonitorPropertyCallback callback,
-    const char* service_path,
+    const char* interface,
+    const char* dbus_path,
     void* object) {
   RegisterNetworkMarshallers();
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
                             kFlimflamServiceName,
-                            service_path,
-                            kFlimflamServiceInterface);
+                            dbus_path,
+                            interface);
   PropertyChangeMonitor monitor =
-      new PropertyChangedHandler(callback, service_path, object);
+      new PropertyChangedHandler(callback, dbus_path, object);
   monitor->set_connection(dbus::Monitor(service_proxy,
                                         kMonitorPropertyChanged,
                                         &PropertyChangedHandler::Run,
@@ -737,7 +718,33 @@ PropertyChangeMonitor ChromeOSMonitorNetworkService(
 }
 
 extern "C"
-void ChromeOSDisconnectMonitorService(PropertyChangeMonitor connection) {
+PropertyChangeMonitor ChromeOSMonitorNetworkManager(
+    MonitorPropertyCallback callback,
+    void* object) {
+  return CreatePropertyChangeMonitor(callback, kFlimflamManagerInterface,
+                                     "/", object);
+}
+
+extern "C"
+PropertyChangeMonitor ChromeOSMonitorNetworkService(
+    MonitorPropertyCallback callback,
+    const char* service_path,
+    void* object) {
+  return CreatePropertyChangeMonitor(callback, kFlimflamServiceInterface,
+                                     service_path, object);
+}
+
+extern "C"
+PropertyChangeMonitor ChromeOSMonitorNetworkDevice(
+    MonitorPropertyCallback callback,
+    const char* device_path,
+    void* object) {
+  return CreatePropertyChangeMonitor(callback, kFlimflamDeviceInterface,
+                                     device_path, object);
+}
+
+extern "C"
+void ChromeOSDisconnectPropertyChangeMonitor(PropertyChangeMonitor connection) {
   dbus::Disconnect(connection->connection());
   delete connection;
 }
@@ -1370,7 +1377,8 @@ void GetPropertiesAsync(const char* interface,
       &DeleteFlimflamCallbackData,
       G_TYPE_INVALID);
   if (!call_id) {
-    LOG(ERROR) << "NULL call_id for: " << interface << " : " << service_path;
+    LOG(ERROR) << "NULL call_id for: " << interface
+               << "." << kGetPropertiesFunction << " : " << service_path;
     callback(object, service_path, NULL);
     delete cb_data;
   }
@@ -1394,8 +1402,9 @@ void GetEntryAsync(const char* interface,
       entry_path,
       G_TYPE_INVALID);
   if (!call_id) {
-    LOG(ERROR) << "NULL call_id for: "
-               << interface << " : " << profile_path << " : " << entry_path;
+    LOG(ERROR) << "NULL call_id for: " << interface
+               << "." << kGetEntryFunction << " : " << profile_path
+               << " : " << entry_path;
     callback(object, entry_path, NULL);
     delete cb_data;
   }
@@ -1446,9 +1455,9 @@ struct NetworkActionCallbackData : public FlimflamCallbackData {
   std::string callback_path;
 };
 
-void NetworkServiceConnectNotify(DBusGProxy* gproxy,
-                                 DBusGProxyCall* call_id,
-                                 void* user_data) {
+void NetworkOperationNotify(DBusGProxy* gproxy,
+                            DBusGProxyCall* call_id,
+                            void* user_data) {
   NetworkActionCallbackData* cb_data =
       static_cast<NetworkActionCallbackData*>(user_data);
   DCHECK(cb_data);
@@ -1463,7 +1472,7 @@ void NetworkServiceConnectNotify(DBusGProxy* gproxy,
         error->code == DBUS_GERROR_REMOTE_EXCEPTION) {
       etype = NETWORK_METHOD_ERROR_REMOTE;
     } else {
-      LOG(WARNING) << "NetworkServiceConnectNotify for path: '"
+      LOG(WARNING) << "NetworkOperationNotify for path: '"
                    << cb_data->callback_path << "' error: "
                    << (error->message ? error->message : "Unknown Error.");
       etype = NETWORK_METHOD_ERROR_LOCAL;
@@ -1487,13 +1496,13 @@ void NetworkServiceConnectAsync(
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
       kConnectFunction,
-      &NetworkServiceConnectNotify,
+      &NetworkOperationNotify,
       cb_data,
       &DeleteFlimflamCallbackData,
       G_TYPE_INVALID);
   if (!call_id) {
     LOG(ERROR) << "NULL call_id for: " << kFlimflamServiceInterface
-               << " : " << service_path;
+               << "." << kConnectFunction << " : " << service_path;
     callback(object, service_path, NETWORK_METHOD_ERROR_LOCAL,
              "dbus: NULL call_id");
     delete cb_data;
@@ -1686,6 +1695,116 @@ void ChromeOSRequestNetworkDeviceEnable(const char* network_type, bool enable) {
     LOG(ERROR) << "NULL call_id for: "
                << (enable ? kEnableTechnologyFunction :
                    kDisableTechnologyFunction);
+    delete cb_data;
+  }
+}
+
+extern "C"
+void ChromeOSRequestRequirePin(const char* device_path,
+                               const char* pin,
+                               bool enable,
+                               NetworkActionCallback callback,
+                               void* object) {
+  DCHECK(device_path && callback);
+  NetworkActionCallbackData* cb_data = new NetworkActionCallbackData(
+      kFlimflamDeviceInterface, device_path, device_path, callback, object);
+
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kRequirePinFunction,
+      &NetworkOperationNotify,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_STRING, pin,
+      G_TYPE_BOOLEAN, enable,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kRequirePinFunction
+               << " : " << device_path;
+    callback(object, device_path, NETWORK_METHOD_ERROR_LOCAL,
+             "dbus: NULL call_id");
+    delete cb_data;
+  }
+}
+
+extern "C"
+void ChromeOSRequestEnterPin(const char* device_path,
+                             const char* pin,
+                             NetworkActionCallback callback,
+                             void* object) {
+  DCHECK(device_path && callback);
+  NetworkActionCallbackData* cb_data = new NetworkActionCallbackData(
+      kFlimflamDeviceInterface, device_path, device_path, callback, object);
+
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kEnterPinFunction,
+      &NetworkOperationNotify,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_STRING, pin,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kEnterPinFunction
+               << " : " << device_path;
+    callback(object, device_path, NETWORK_METHOD_ERROR_LOCAL,
+             "dbus: NULL call_id");
+    delete cb_data;
+  }
+}
+
+extern "C"
+void ChromeOSRequestUnblockPin(const char* device_path,
+                               const char* unblock_code,
+                               const char* pin,
+                               NetworkActionCallback callback,
+                               void* object) {
+  DCHECK(device_path && callback);
+  NetworkActionCallbackData* cb_data = new NetworkActionCallbackData(
+      kFlimflamDeviceInterface, device_path, device_path, callback, object);
+
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kUnblockPinFunction,
+      &NetworkOperationNotify,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_STRING, unblock_code,
+      G_TYPE_STRING, pin,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kUnblockPinFunction
+               << " : " << device_path;
+    callback(object, device_path, NETWORK_METHOD_ERROR_LOCAL,
+             "dbus: NULL call_id");
+    delete cb_data;
+  }
+}
+
+extern "C"
+void ChromeOSRequestChangePin(const char* device_path,
+                              const char* old_pin,
+                              const char* new_pin,
+                              NetworkActionCallback callback,
+                              void* object) {
+  DCHECK(device_path && callback);
+  NetworkActionCallbackData* cb_data = new NetworkActionCallbackData(
+      kFlimflamDeviceInterface, device_path, device_path, callback, object);
+
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kChangePinFunction,
+      &NetworkOperationNotify,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_STRING, old_pin,
+      G_TYPE_STRING, new_pin,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kChangePinFunction
+               << " : " << device_path;
+    callback(object, device_path, NETWORK_METHOD_ERROR_LOCAL,
+             "dbus: NULL call_id");
     delete cb_data;
   }
 }

@@ -216,6 +216,8 @@ DECL_FUNC_2(MonitorNetworkManager, PropertyChangeMonitor,
 DECL_FUNC_1(DisconnectPropertyChangeMonitor, void, PropertyChangeMonitor);
 DECL_FUNC_3(MonitorNetworkService, PropertyChangeMonitor,
             MonitorPropertyCallback, const char*, void*);
+DECL_FUNC_3(MonitorNetworkDevice, PropertyChangeMonitor,
+            MonitorPropertyCallback, const char*, void*);
 DECL_FUNC_2(MonitorCellularDataPlan, DataPlanUpdateMonitor,
             MonitorDataPlanCallback, void*);
 DECL_FUNC_1(DisconnectDataPlanUpdateMonitor, void, DataPlanUpdateMonitor);
@@ -244,6 +246,14 @@ DECL_FUNC_5(RequestVirtualNetwork, void, const char*, const char*, const char*,
             NetworkPropertiesCallback, void*);
 DECL_FUNC_1(RequestNetworkScan, void, const char*);
 DECL_FUNC_2(RequestNetworkDeviceEnable, void, const char*, bool);
+DECL_FUNC_5(RequestRequirePin, void, const char*, const char*, bool,
+            NetworkActionCallback, void*);
+DECL_FUNC_4(RequestEnterPin, void, const char*, const char*,
+            NetworkActionCallback, void*);
+DECL_FUNC_5(RequestUnblockPin, void, const char*, const char*, const char*,
+            NetworkActionCallback, void*);
+DECL_FUNC_5(RequestChangePin, void, const char*, const char*, const char*,
+            NetworkActionCallback, void*);
 DECL_FUNC_2(EnableNetworkDevice, bool, ConnectionType, bool);
 DECL_FUNC_1(SetOfflineMode, bool, bool);
 DECL_FUNC_2(SetAutoConnect, bool, const char*, bool);
@@ -550,6 +560,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MonitorNetworkManager);
   INIT_FUNC(DisconnectPropertyChangeMonitor);
   INIT_FUNC(MonitorNetworkService);
+  INIT_FUNC(MonitorNetworkDevice);
   INIT_FUNC(EnableNetworkDevice);
   INIT_FUNC(SetOfflineMode);
   INIT_FUNC(SetAutoConnect);
@@ -582,6 +593,10 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RequestVirtualNetwork);
   INIT_FUNC(RequestNetworkScan);
   INIT_FUNC(RequestNetworkDeviceEnable);
+  INIT_FUNC(RequestRequirePin);
+  INIT_FUNC(RequestEnterPin);
+  INIT_FUNC(RequestUnblockPin);
+  INIT_FUNC(RequestChangePin);
 
   // Synaptics
   INIT_FUNC(SetSynapticsParameter);

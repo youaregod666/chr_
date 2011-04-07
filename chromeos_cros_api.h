@@ -210,12 +210,13 @@
 //      SetAutoRepeatEnabled, SetAutoRepeatRate
 //      (all functions in chromeos_keyboard.h)
 // 125: Fix Store/RetrievePolicy.  No one's using these yet, so change is ok.
+// 126: Added RequestPin, EnterPin, UnblockPin, ChangePin, MonitorNetworkDevice
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 110,
-  kCrosAPIVersion = 125
+  kCrosAPIVersion = 126
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

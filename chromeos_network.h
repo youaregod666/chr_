@@ -219,6 +219,14 @@ extern PropertyChangeMonitor (*MonitorNetworkService)(
     const char* service_path,
     void* object);
 
+// Sets up monitoring of the PropertyChanged signal on the specified device.
+// The provided MonitorPropertyCallback will be called whenever a device
+// property changes. |object| will be supplied as the first argument to the
+// callback.
+extern PropertyChangeMonitor (*MonitorNetworkDevice)(
+    MonitorPropertyCallback callback,
+    const char* device_path,
+    void* object);
 
 // An internal listener to a d-bus signal for plan data.
 class DataPlanUpdateHandler;
@@ -331,6 +339,35 @@ extern void (*RequestNetworkScan)(const char* network_type);
 // Request enabling or disabling a device.
 extern void (*RequestNetworkDeviceEnable)(const char* network_type,
                                           bool enable);
+
+// Enable or disable PIN protection for a SIM card.
+extern void (*RequestRequirePin)(const char* device_path,
+                                 const char* pin,
+                                 bool enable,
+                                 NetworkActionCallback callback,
+                                 void* object);
+
+// Enter a PIN to unlock a SIM card.
+extern void (*RequestEnterPin)(const char* device_path,
+                               const char* pin,
+                               NetworkActionCallback callback,
+                               void* object);
+
+// Enter a PUK to unlock a SIM card whose PIN has been entered
+// incorrectly too many times. A new |pin| must be supplied
+// along with the |unblock_code| (PUK).
+extern void (*RequestUnblockPin)(const char* device_path,
+                                 const char* unblock_code,
+                                 const char* pin,
+                                 NetworkActionCallback callback,
+                                 void* object);
+
+// Change the PIN used to unlock a SIM card.
+extern void (*RequestChangePin)(const char* device_path,
+                                const char* old_pin,
+                                const char* new_pin,
+                                NetworkActionCallback callback,
+                                void* object);
 
 //////////////////////////////////////////////////////////////////////////////
 // Enable or disable the specific network device for connection.

@@ -201,7 +201,8 @@ tests = [
   env_test.Program('monitor_mount', ['monitor_mount.cc', Load]),
   env_test.Program('login_drive', ['drive_login.cc', Load]),
   env_test.Program('monitor_update_engine', ['monitor_update_engine.cc', Load]),
-  env_test.Program('cryptohome_drive', ['drive_cryptohome.cc', Load])
+  env_test.Program('cryptohome_drive', ['drive_cryptohome.cc', Load]),
+  env_test.Program('simlock_test', ['simlock_test.cc', Load]),
 ]
 test_alias = Alias('test', tests)
 AlwaysBuild(test_alias)
