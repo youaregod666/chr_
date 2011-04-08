@@ -153,6 +153,7 @@ static const char* kModemManagerSMSInterface =
 // ModemManager function names.
 static const char* kSMSGetFunction = "Get";
 static const char* kSMSDeleteFunction = "Delete";
+static const char* kSMSListFunction = "List";
 
 // ModemManager monitored signals
 static const char* kSMSReceivedSignal = "SmsReceived";
@@ -2152,8 +2153,16 @@ class SMSHandler {
     // SMSMonitor handle has been returned to the caller. Search for
     // existing SMS messages and invoke the user's callback as if they
     // had just arrived.
-    // TODO(njw): Implement when ModemManager implementations actually
-    // support List.
+    DBusGProxyCall* get_call_id = ::dbus_g_proxy_begin_call(
+        self->connection_->proxy().gproxy(),
+        kSMSListFunction,
+        &SMSHandler::ListSMSCallback,
+        self,
+        NULL,
+        G_TYPE_INVALID);
+    if (!get_call_id)
+      LOG(ERROR) << "NULL call_id for: " << kModemManagerSMSInterface
+                 << " : " << kSMSListFunction;
   }
 
   struct SMSIndex {
@@ -2203,6 +2212,52 @@ class SMSHandler {
     return (s[0] - '0') * 10 + s[1] - '0';
   }
 
+  static void ParseSMS(SMS *sms, glib::ScopedHashTable *smshash) {
+    if (!smshash->Retrieve("number", &sms->number)) {
+      LOG(WARNING) << "SMS did not contain a number";
+      sms->number = "";
+    }
+    if (!smshash->Retrieve("text", &sms->text)) {
+      LOG(WARNING) << "SMS did not contain message text";
+      sms->text = "";
+    }
+    const char *sms_timestamp;
+    if (smshash->Retrieve("timestamp", &sms_timestamp)) {
+      base::Time::Exploded exp;
+      exp.year = decode_bcd(&sms_timestamp[0]);
+      if (exp.year > 95)
+        exp.year += 1900;
+      else
+        exp.year += 2000;
+      exp.month = decode_bcd(&sms_timestamp[2]);
+      exp.day_of_month = decode_bcd(&sms_timestamp[4]);
+      exp.hour = decode_bcd(&sms_timestamp[6]);
+      exp.minute = decode_bcd(&sms_timestamp[8]);
+      exp.second = decode_bcd(&sms_timestamp[10]);
+      exp.millisecond = 0;
+      sms->timestamp = base::Time::FromUTCExploded(exp);
+      int hours = decode_bcd(&sms_timestamp[13]);
+      if (sms_timestamp[12] == '-')
+        hours = -hours;
+      sms->timestamp -= base::TimeDelta::FromHours(hours);
+    } else {
+      LOG(WARNING) << "SMS did not contain a timestamp";
+      sms->timestamp = base::Time::Time();
+    }
+    if (!smshash->Retrieve("smsc", &sms->smsc))
+      sms->smsc = NULL;
+    guint validity;
+    if (smshash->Retrieve("validity", &validity))
+      sms->validity = validity;
+    else
+      sms->validity = -1;
+    guint msgclass;
+    if (smshash->Retrieve("class", &msgclass))
+      sms->msgclass = msgclass;
+    else
+      sms->msgclass = -1;
+  }
+
   static void GetSMSCallback(DBusGProxy* gproxy,
                              DBusGProxyCall* call_id,
                              void* user_data) {
@@ -2225,44 +2280,7 @@ class SMSHandler {
     }
 
     SMS sms;
-    if (!smshash.Retrieve("number", &sms.number)) {
-      LOG(WARNING) << "SMS did not contain a number";
-      sms.number = "";
-    }
-    if (!smshash.Retrieve("text", &sms.text)) {
-      LOG(WARNING) << "SMS did not contain message text";
-      sms.text = "";
-    }
-    const char *sms_timestamp;
-    if (smshash.Retrieve("timestamp", &sms_timestamp)) {
-      base::Time::Exploded exp;
-      exp.year = decode_bcd(&sms_timestamp[0]);
-      if (exp.year > 95)
-        exp.year += 1900;
-      else
-        exp.year += 2000;
-      exp.month = decode_bcd(&sms_timestamp[2]);
-      exp.day_of_month = decode_bcd(&sms_timestamp[4]);
-      exp.hour = decode_bcd(&sms_timestamp[6]);
-      exp.minute = decode_bcd(&sms_timestamp[8]);
-      exp.second = decode_bcd(&sms_timestamp[10]);
-      exp.millisecond = 0;
-      sms.timestamp = base::Time::FromUTCExploded(exp);
-      int hours = decode_bcd(&sms_timestamp[13]);
-      if (sms_timestamp[12] == '-')
-        hours = -hours;
-      sms.timestamp -= base::TimeDelta::FromHours(hours);
-    } else {
-      LOG(WARNING) << "SMS did not contain a timestamp";
-      sms.timestamp = base::Time::Time();
-    }
-   if (!smshash.Retrieve("smsc", &sms.smsc))
-      sms.smsc = NULL;
-    if (!smshash.Retrieve("validity", &sms.validity))
-      sms.validity = -1;
-    if (!smshash.Retrieve("class", &sms.msgclass))
-      sms.msgclass = -1;
-
+    ParseSMS(&sms, &smshash);
     self->callback_(self->object_, self->path_.c_str(), &sms);
 
     DBusGProxyCall* delete_call_id = ::dbus_g_proxy_begin_call(
@@ -2296,6 +2314,109 @@ class SMSHandler {
                    << (error->message ? error->message : "Unknown Error.");
       return;
     }
+  }
+
+  static void DeleteChainSMSCallback(DBusGProxy* gproxy,
+                                DBusGProxyCall* call_id,
+                                void* user_data) {
+    DCHECK(user_data);
+    std::vector<guint> *delete_queue =
+        static_cast<std::vector<guint> *>(user_data);
+    glib::ScopedError error;
+    if(!::dbus_g_proxy_end_call(
+           gproxy,
+           call_id,
+           &Resetter(&error).lvalue(),
+           G_TYPE_INVALID)) {
+      LOG(WARNING) << "Delete SMS failed with error:"
+                   << (error->message ? error->message : "Unknown Error.");
+    }
+
+    delete_queue->pop_back();
+
+    if (!delete_queue->empty()) {
+      DBusGProxyCall* delete_call_id = ::dbus_g_proxy_begin_call(
+          gproxy,
+          kSMSDeleteFunction,
+          &SMSHandler::DeleteChainSMSCallback,
+          delete_queue,
+          NULL,
+          G_TYPE_UINT,
+          delete_queue->back(),
+          G_TYPE_INVALID);
+      if (!delete_call_id) {
+        LOG(ERROR) << "NULL call_id for: " << kModemManagerSMSInterface
+                   << " : " << kSMSDeleteFunction
+                   << " index " << delete_queue->back();
+        delete delete_queue;
+        return;
+      }
+    } else {
+      delete delete_queue;
+    }
+  }
+
+  static void ListSMSCallback(DBusGProxy* gproxy,
+                             DBusGProxyCall* call_id,
+                             void* user_data) {
+    DCHECK(user_data);
+    SMSHandler* self = static_cast<SMSHandler*>(user_data);
+    glib::ScopedError error;
+    // See notes in RetrieveCeullarDataPlans about GPtrArray vs. ScopedPtrArray.
+    GPtrArray *sms_list = NULL;
+
+    ::GType g_type_map = ::dbus_g_type_get_map("GHashTable",
+                                               G_TYPE_STRING,
+                                               G_TYPE_VALUE);
+    ::GType g_type_map_array = ::dbus_g_type_get_collection("GPtrArray",
+                                                            g_type_map);
+
+    if (!::dbus_g_proxy_end_call(
+           gproxy,
+           call_id,
+           &Resetter(&error).lvalue(),
+           g_type_map_array,
+           &sms_list,
+           G_TYPE_INVALID)) {
+      LOG(WARNING) << "Get SMS failed with error:"
+                   << (error->message ? error->message : "Unknown Error.");
+      return;
+    }
+    DCHECK(sms_list);
+
+    std::vector<guint> *delete_queue = new std::vector<guint>();
+    for (guint i = 0 ; i < sms_list->len; i++) {
+      GHashTable *smshash =
+          static_cast<GHashTable*>(g_ptr_array_index(sms_list, i));
+      glib::ScopedHashTable scoped_sms(g_hash_table_ref(smshash));
+      SMS sms;
+      ParseSMS(&sms, &scoped_sms);
+      self->callback_(self->object_, self->path_.c_str(), &sms);
+      guint index;
+      if (scoped_sms.Retrieve("index", &index))
+        delete_queue->push_back(index);
+    }
+
+    g_ptr_array_unref(sms_list);
+
+    if (!delete_queue->empty()) {
+      DBusGProxyCall* delete_call_id = ::dbus_g_proxy_begin_call(
+          gproxy,
+          kSMSDeleteFunction,
+          &SMSHandler::DeleteChainSMSCallback,
+          delete_queue,
+          NULL,
+          G_TYPE_UINT,
+          delete_queue->back(),
+          G_TYPE_INVALID);
+      if (!delete_call_id) {
+        LOG(ERROR) << "NULL call_id for: " << kModemManagerSMSInterface
+                   << " : " << kSMSDeleteFunction
+                   << " index " << delete_queue->back();
+        delete delete_queue;
+      }
+    } else
+      delete delete_queue;
   }
 
   const MonitorConnection& connection() const {
