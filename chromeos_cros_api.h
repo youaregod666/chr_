@@ -211,12 +211,14 @@
 //      (all functions in chromeos_keyboard.h)
 // 125: Fix Store/RetrievePolicy.  No one's using these yet, so change is ok.
 // 126: Added RequestPin, EnterPin, UnblockPin, ChangePin, MonitorNetworkDevice
+// 127: Added some properties to chromeos_mount DiskInfo. New interface is
+//      DiskInfoAdvanced
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 110,
-  kCrosAPIVersion = 126
+  kCrosAPIVersion = 127
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

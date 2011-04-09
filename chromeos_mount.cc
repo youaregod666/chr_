@@ -47,21 +47,36 @@ const char kDevicePresentationHide[] = "DevicePresentationHide";
 const char kDeviceIsMounted[] = "DeviceIsMounted";
 const char kDeviceMountPaths[] = "DeviceMountPaths";
 const char kDeviceIsMediaAvailable[] = "DeviceIsMediaAvailable";
-const char kNativePath[] ="NativePath";
+const char kNativePath[] = "NativePath";
+const char kDeviceFile[] = "DeviceFile";
+const char kLabel[] = "IdLabel";
+const char kDriveModel[] = "DriveModel";
+const char kPartitionSlave[] = "PartitionSlave";
+const char kDriveIsRotational[] = "DriveIsRotational";
+const char kDeviceIsOpticalDisc[] = "DeviceIsOpticalDisc";
+const char kDeviceSize[] = "DeviceSize";
+const char kReadOnly[] = "DeviceIsReadOnly";
 
 const char kBootDevicePrefix[] = "/org/freedesktop/DeviceKit/Disks/devices/sda";
 
 namespace {  // NOLINT
 
-struct DiskInfoImpl : public DiskInfo {
+struct DiskInfoImpl : public DiskInfoAdvanced {
  public:
-  DiskInfoImpl(const char* path, const glib::ScopedHashTable& properties) {
+  DiskInfoImpl(const char* path, const glib::ScopedHashTable& properties)
+    : mount_path_(NULL),
+      system_path_(NULL),
+      is_drive_(false),
+      has_media_(false),
+      file_path_(NULL),
+      label_(NULL),
+      drive_model_(NULL),
+      partition_slave_(NULL),
+      device_type_(UNDEFINED),
+      total_size_(0),
+      is_read_only_(false) {
     DCHECK(path);
     path_ = NewStringCopy(path);
-    mount_path_ = NULL;
-    system_path_ = NULL;
-    is_drive_ = false;
-    has_media_ = false;
     on_boot_device_ =
         strncmp(path, kBootDevicePrefix, strlen(kBootDevicePrefix)) == 0;
     InitializeFromProperties(properties);
@@ -73,6 +88,14 @@ struct DiskInfoImpl : public DiskInfo {
       delete mount_path_;
     if (system_path_)
       delete system_path_;
+    if (file_path_)
+      delete file_path_;
+    if (label_)
+      delete label_;
+    if (drive_model_)
+      delete drive_model_;
+    if (partition_slave_)
+      delete partition_slave_;
   }
   // DiskInfo overrides:
   virtual const char* path() const { return path_; }
@@ -82,9 +105,26 @@ struct DiskInfoImpl : public DiskInfo {
   virtual bool has_media() const { return has_media_; }
   virtual bool on_boot_device() const { return on_boot_device_; }
 
+  // DiskInfoAdvanced overrides:
+  virtual const char* file_path() const { return file_path_; }
+  virtual const char* label() const { return label_; }
+  virtual const char* drive_label() const { return drive_model_; }
+  virtual const char* partition_slave() const { return partition_slave_; }
+  virtual DeviceType device_type() const { return device_type_; }
+  virtual uint64 size() const { return total_size_; }
+  virtual bool is_read_only() const { return is_read_only_; }
  private:
+  DeviceType GetDeviceType(bool is_optical, bool is_rotational) {
+    if (is_optical)
+      return OPTICAL;
+    if (is_rotational)
+      return HDD;
+    return FLASH;
+  }
+
   void InitializeFromProperties(const glib::ScopedHashTable& properties) {
     properties.Retrieve(kDeviceIsDrive, &is_drive_);
+    properties.Retrieve(kReadOnly, &is_read_only_);
 
     bool hidden;
     if (properties.Retrieve(kDevicePresentationHide, &hidden) &&
@@ -96,20 +136,58 @@ struct DiskInfoImpl : public DiskInfo {
       if (properties.Retrieve(kNativePath, &path))
         system_path_ = NewStringCopy(path.c_str());
 
+      std::string file_path_str;
+      if (properties.Retrieve(kDeviceFile, &file_path_str))
+        file_path_ = NewStringCopy(file_path_str.c_str());
+
+      std::string drive_model_str;
+      if (properties.Retrieve(kDriveModel, &drive_model_str))
+        drive_model_ = NewStringCopy(drive_model_str.c_str());
+
+      std::string  device_label_str;
+      if (properties.Retrieve(kLabel, &device_label_str))
+        label_ = NewStringCopy(device_label_str.c_str());
+
+      glib::Value partition_slave_gval;
+      if (properties.Retrieve(kPartitionSlave, &partition_slave_gval)) {
+        char* partition_slave_path =
+            reinterpret_cast<char*>(g_value_get_boxed(&partition_slave_gval));
+        partition_slave_ = NewStringCopy(partition_slave_path);
+      }
+
+      glib::Value size_gval;
+      if (properties.Retrieve(kDeviceSize, &size_gval))
+        total_size_ = static_cast<uint64>(::g_value_get_uint64(&size_gval));
+
       glib::Value value;
       if (properties.Retrieve(kDeviceMountPaths, &value)) {
         char** paths = reinterpret_cast<char**>(g_value_get_boxed(&value));
         if (paths[0])
           mount_path_ = NewStringCopy(paths[0]);
       }
+
+      bool is_rotational;
+      bool is_optical;
+      if (properties.Retrieve(kDriveIsRotational,&is_rotational))
+        if (properties.Retrieve(kDeviceIsOpticalDisc, &is_optical))
+          device_type_ = GetDeviceType(is_optical, is_rotational);
     }
   }
+
   const char* path_;
   const char* mount_path_;
   const char* system_path_;
   bool is_drive_;
   bool has_media_;
   bool on_boot_device_;
+
+  const char* file_path_;
+  const char* label_;
+  const char* drive_model_;
+  const char* partition_slave_;
+  DeviceType device_type_;
+  uint64 total_size_;
+  bool is_read_only_;
 };
 
 struct MountCallbackData {
@@ -648,4 +726,4 @@ extern "C"
 void ChromeOSFreeMountStatus(MountStatus* status) {
 }
 
-}  // namespace chromeos
+} //  namespace chromeos

@@ -9,9 +9,17 @@
 
 namespace chromeos { //NOLINT
 
+enum DeviceType {
+  FLASH,
+  HDD,
+  OPTICAL,
+  UNDEFINED
+};
+
+
 class DiskInfo {
  public:
-  // DBus serivice path.
+  // DBus service path.
   virtual const char* path() const = 0;
   // Disk mount path.
   virtual const char* mount_path() const = 0;
@@ -23,6 +31,25 @@ class DiskInfo {
   virtual bool has_media() const = 0;
   // Is the disk on deveice we booted the machien from.
   virtual bool on_boot_device() const = 0;
+};
+
+// TODO(tbarzic): merge DiskInfoAdvanced with DinskInfo.
+class DiskInfoAdvanced : public DiskInfo {
+ public:
+  // Disk file path (e.g /dev/sdb).
+  virtual const char* file_path() const = 0;
+  // Disk label.
+  virtual const char* label() const = 0;
+  // Disk model
+  virtual const char* drive_label() const = 0;
+  // Partition table path of the device, if device is partition.
+  virtual const char* partition_slave() const = 0;
+  // Device type. Not working well, yet.
+  virtual DeviceType device_type() const = 0;
+  // Total size of the disk.
+  virtual uint64 size() const = 0;
+  // Is the device read-only.
+  virtual bool is_read_only() const = 0;
 };
 
 enum MountEventType {
