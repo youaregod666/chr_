@@ -93,7 +93,6 @@ SOURCES = Split('''\
   chromeos_imageburn.cc
   chromeos_input_method.cc
   chromeos_input_method_ui.cc
-  chromeos_keyboard.cc
   chromeos_libcros_service.cc
   chromeos_login.cc
   chromeos_login_helpers.cc
@@ -182,9 +181,7 @@ Load = base_env.Object('load.cc')
 # is set.
 unittests = [
   env_gtest_main.Program('libcros_unittests',
-                         ['chromeos_keyboard.cc',
-                          'chromeos_keyboard_unittest.cc',
-                          'chromeos_login.cc',
+                         ['chromeos_login.cc',
                           'chromeos_login_helpers.cc',
                           'chromeos_login_unittest.cc',
                           'chromeos_system.cc',

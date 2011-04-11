@@ -213,12 +213,14 @@
 // 126: Added RequestPin, EnterPin, UnblockPin, ChangePin, MonitorNetworkDevice
 // 127: Added some properties to chromeos_mount DiskInfo. New interface is
 //      DiskInfoAdvanced
+// 128: Removed SetCurrentKeyboardLayoutByName, RemapModifierKeys,
+//      SetAutoRepeatEnabled, SetAutoRepeatRate.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 110,
-  kCrosAPIVersion = 127
+  kCrosAPIMinVersion = 124,
+  kCrosAPIVersion = 128
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
