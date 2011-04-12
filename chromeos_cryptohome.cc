@@ -623,7 +623,7 @@ bool ChromeOSCryptohomeTpmIsReady() {
                     cryptohome::kCryptohomeServiceName,
                     cryptohome::kCryptohomeServicePath,
                     cryptohome::kCryptohomeInterface);
-  gboolean done = false;
+  gboolean ready = false;
   glib::ScopedError error;
 
   if (!::dbus_g_proxy_call(proxy.gproxy(),
@@ -631,14 +631,14 @@ bool ChromeOSCryptohomeTpmIsReady() {
                            &Resetter(&error).lvalue(),
                            G_TYPE_INVALID,
                            G_TYPE_BOOLEAN,
-                           &done,
+                           &ready,
                            G_TYPE_INVALID)) {
 
     LOG(WARNING) << cryptohome::kCryptohomeTpmIsReady << " failed: "
                  << (error->message ? error->message : "Unknown Error.");
 
   }
-  return done;
+  return ready;
 }
 
 extern "C"
@@ -797,6 +797,68 @@ void ChromeOSCryptohomeTpmClearStoredPassword() {
     LOG(WARNING) << cryptohome::kCryptohomeTpmClearStoredPassword << " failed: "
                  << (error->message ? error->message : "Unknown Error.");
 
+  }
+}
+
+extern "C"
+bool ChromeOSCryptohomePkcs11IsTpmTokenReady() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gboolean ready = FALSE;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomePkcs11IsTpmTokenReady,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN,
+                           &ready,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << cryptohome::kCryptohomePkcs11IsTpmTokenReady << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+
+  }
+  return ready;
+}
+
+extern "C"
+void ChromeOSCryptohomePkcs11GetTpmTokenInfo(std::string* label,
+                                             std::string* user_pin) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gchar* local_label = NULL;
+  gchar* local_user_pin = NULL;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomePkcs11GetTpmTokenInfo,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_STRING,
+                           &local_label,
+                           G_TYPE_STRING,
+                           &local_user_pin,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << cryptohome::kCryptohomePkcs11GetTpmTokenInfo << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+
+  }
+
+  if (local_label) {
+    *label = local_label;
+    g_free(local_label);
+  }
+  if (local_user_pin) {
+    *user_pin = local_user_pin;
+    g_free(local_user_pin);
   }
 }
 

@@ -105,12 +105,19 @@ int main(int argc, const char** argv) {
     LOG(INFO) << "TPM Ready: " << chromeos::CryptohomeTpmIsReady();
     LOG(INFO) << "TPM Owned: " << chromeos::CryptohomeTpmIsOwned();
     LOG(INFO) << "TPM Being Owned: " << chromeos::CryptohomeTpmIsBeingOwned();
+    LOG(INFO) << "PKCS11 TPM Token Ready: "
+              << chromeos::CryptohomePkcs11IsTpmTokenReady();
     if (cl->HasSwitch(kTpmStatus)) {
       char* tpm_password;
       chromeos::CryptohomeTpmGetPasswordSafe(&tpm_password);
       LOG(INFO) << "TPM Password: " << tpm_password;
       chromeos::CryptohomeFreeString(tpm_password);
     } else {
+      std::string token_label;
+      std::string token_user_pin;
+      chromeos::CryptohomePkcs11GetTpmTokenInfo(&token_label, &token_user_pin);
+      LOG(INFO) << "PKCS11 TPM Token Info: label: " << token_label << ", "
+                << "user PIN: " << token_user_pin;
       std::string tpm_password;
       chromeos::CryptohomeTpmGetPassword(&tpm_password);
       LOG(INFO) << "TPM Password: " << tpm_password;

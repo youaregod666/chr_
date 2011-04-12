@@ -90,6 +90,9 @@ extern bool (*CryptohomeTpmGetPassword)(std::string* password);
 extern bool (*CryptohomeTpmGetPasswordSafe)(char** password);
 extern void (*CryptohomeTpmCanAttemptOwnership)();
 extern void (*CryptohomeTpmClearStoredPassword)();
+extern void (*CryptohomePkcs11GetTpmTokenInfo)(std::string* label,
+                                               std::string* user_pin);
+extern bool (*CryptohomePkcs11IsTpmTokenReady)();
 extern bool (*CryptohomeGetStatusString)(std::string* status);
 extern bool (*CryptohomeGetStatusStringSafe)(char** status);
 
