@@ -906,6 +906,169 @@ bool ChromeOSCryptohomeGetStatusString(std::string* status) {
 }
 
 extern "C"
+bool ChromeOSCryptohomeInstallAttributesGet(const char* name, char** value) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gboolean done = false;
+  GArray* dbus_value = NULL;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeInstallAttributesGet,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           name,
+                           G_TYPE_INVALID,
+                           DBUS_TYPE_G_UCHAR_ARRAY,
+                           &dbus_value,
+                           G_TYPE_BOOLEAN,
+                           &done,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeInstallAttributesGet << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+
+  if (!dbus_value || !done)
+    return false;
+
+  char* local_value = static_cast<char*>(g_malloc(dbus_value->len));
+  if (local_value) {
+    memcpy(local_value, static_cast<const void*>(dbus_value->data),
+           dbus_value->len);
+    *value = local_value;
+    g_array_free(dbus_value, false);
+    return done;
+  }
+  g_array_free(dbus_value, false);
+  return false;
+}
+
+extern "C"
+bool ChromeOSCryptohomeInstallAttributesSet(const char* name,
+                                            const char* value) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gboolean done = false;
+  // TODO(pastarmovj): Change this to a bin data compatible impl. when needed.
+  int value_len = strlen(value)+1;
+  gchar* local_value = static_cast<char*>(g_malloc(value_len));
+  if (!local_value)
+    return false;
+
+  memcpy(local_value, static_cast<const gchar*>(value), value_len);
+  GArray *dbus_value = g_array_new(FALSE, FALSE, 1);
+  if (!dbus_value)
+    return false;
+
+  dbus_value->data = local_value;
+  dbus_value->len = value_len;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeInstallAttributesSet,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           name,
+                           DBUS_TYPE_G_UCHAR_ARRAY,
+                           dbus_value,
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN,
+                           &done,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeInstallAttributesSet << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+
+  g_array_free(dbus_value, FALSE);
+  g_free(local_value);
+
+  return done;
+}
+
+extern "C"
+int ChromeOSCryptohomeInstallAttributesCount() {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gint count = 0;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomeInstallAttributesCount,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_INT,
+                           &count,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << cryptohome::kCryptohomeInstallAttributesCount
+                 << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+  return count;
+}
+
+bool CallCryptohomeBoolFunction(const char* function) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gboolean done = false;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           function,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN,
+                           &done,
+                           G_TYPE_INVALID)) {
+    LOG(WARNING) << function << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+  }
+  return done;
+}
+
+
+extern "C"
+bool ChromeOSCryptohomeInstallAttributesFinalize() {
+  return CallCryptohomeBoolFunction(
+      cryptohome::kCryptohomeInstallAttributesFinalize);
+}
+
+extern "C"
+bool ChromeOSCryptohomeInstallAttributesIsReady() {
+  return CallCryptohomeBoolFunction(
+      cryptohome::kCryptohomeInstallAttributesIsReady);
+}
+
+extern "C"
+bool ChromeOSCryptohomeInstallAttributesIsSecure() {
+  return CallCryptohomeBoolFunction(
+      cryptohome::kCryptohomeInstallAttributesIsSecure);
+}
+
+extern "C"
+bool ChromeOSCryptohomeInstallAttributesIsInvalid() {
+  return CallCryptohomeBoolFunction(
+      cryptohome::kCryptohomeInstallAttributesIsInvalid);
+}
+
+extern "C"
+bool ChromeOSCryptohomeInstallAttributesIsFirstInstall() {
+  return CallCryptohomeBoolFunction(
+      cryptohome::kCryptohomeInstallAttributesIsFirstInstall);
+}
+
+extern "C"
 void ChromeOSCryptohomeFreeString(char* value) {
   if (value) {
     g_free(value);

@@ -95,6 +95,15 @@ extern void (*CryptohomePkcs11GetTpmTokenInfo)(std::string* label,
 extern bool (*CryptohomePkcs11IsTpmTokenReady)();
 extern bool (*CryptohomeGetStatusString)(std::string* status);
 extern bool (*CryptohomeGetStatusStringSafe)(char** status);
+extern bool (*CryptohomeInstallAttributesGet)(const char* name, char** value);
+extern bool (*CryptohomeInstallAttributesSet)(const char* name,
+                                              const char* value);
+extern int (*CryptohomeInstallAttributesCount)();
+extern bool (*CryptohomeInstallAttributesFinalize)();
+extern bool (*CryptohomeInstallAttributesIsReady)();
+extern bool (*CryptohomeInstallAttributesIsSecure)();
+extern bool (*CryptohomeInstallAttributesIsInvalid)();
+extern bool (*CryptohomeInstallAttributesIsFirstInstall)();
 
 extern void (*CryptohomeFreeString)(char* value);
 extern void (*CryptohomeFreeBlob)(char* blob);

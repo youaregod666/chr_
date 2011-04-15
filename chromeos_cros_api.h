@@ -216,12 +216,13 @@
 // 128: Removed SetCurrentKeyboardLayoutByName, RemapModifierKeys,
 //      SetAutoRepeatEnabled, SetAutoRepeatRate.
 // 129: Added CryptohomePkcs11IsTpmTokenReady, CryptohomePkcs11GetTpmTokenInfo.
+// 130: Added InstallAttributes* to the cryptohome DBus bindings.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 124,
-  kCrosAPIVersion = 129
+  kCrosAPIVersion = 130
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
