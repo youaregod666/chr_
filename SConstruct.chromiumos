@@ -131,10 +131,10 @@ ime_whitelist_file = env['ENV']['SYSROOT'] + '/usr/share/chromeos-assets/' + \
 
 env.IBusEngines('ibus_input_methods.h',
                 [ime_whitelist_file, # The first argument must be whitelist.
-                 ibus_component_dir + 'chewing.xml',
                  ibus_component_dir + 'hangul.xml',
                  ibus_component_dir + 'm17n.xml',
                  ibus_component_dir + 'mozc.xml',
+                 ibus_component_dir + 'mozc-chewing.xml',
                  ibus_component_dir + 'pinyin.xml',
                  ibus_component_dir + 'xkb-layouts.xml'])
 
