@@ -160,6 +160,70 @@ class InputMethodUiStatusConnection {
     return true;
   }
 
+  // A function called when a user clicks the cursor up button.
+  bool NotifyCursorUp() {
+    if (!ibus_ || !ibus_bus_is_connected(ibus_)) {
+      LOG(ERROR) << "NotifyCursorUp: bus is not connected.";
+      return false;
+    }
+    if (!ibus_panel_service_) {
+      LOG(ERROR) << "NotifyCursorUp: panel service is not available.";
+      return false;
+    }
+
+    /* Send a D-Bus signal to ibus-daemon *asynchronously*. */
+    ibus_panel_service_cursor_up(ibus_panel_service_);
+    return true;
+  }
+
+  // A function called when a user clicks the cursor down button.
+  bool NotifyCursorDown() {
+    if (!ibus_ || !ibus_bus_is_connected(ibus_)) {
+      LOG(ERROR) << "NotifyCursorDown: bus is not connected.";
+      return false;
+    }
+    if (!ibus_panel_service_) {
+      LOG(ERROR) << "NotifyCursorDown: panel service is not available.";
+      return false;
+    }
+     /* Send a D-Bus signal to ibus-daemon *asynchronously*. */
+    ibus_panel_service_cursor_down(ibus_panel_service_);
+    return true;
+  }
+
+  // A function called when a user clicks the page up button.
+  bool NotifyPageUp() {
+    if (!ibus_ || !ibus_bus_is_connected(ibus_)) {
+      LOG(ERROR) << "NotifyPageUp: bus is not connected.";
+      return false;
+    }
+    if (!ibus_panel_service_) {
+      LOG(ERROR) << "NotifyPageUp: panel service is not available.";
+      return false;
+    }
+
+    /* Send a D-Bus signal to ibus-daemon *asynchronously*. */
+    ibus_panel_service_page_up(ibus_panel_service_);
+    return true;
+  }
+
+  // A function called when a user clicks the page down button.
+  bool NotifyPageDown() {
+    if (!ibus_ || !ibus_bus_is_connected(ibus_)) {
+      LOG(ERROR) << "NotifyPageDown: bus is not connected.";
+      return false;
+    }
+    if (!ibus_panel_service_) {
+      LOG(ERROR) << "NotifyPageDown: panel service is not available.";
+      return false;
+    }
+
+    /* Send a D-Bus signal to ibus-daemon *asynchronously*. */
+    ibus_panel_service_page_down(ibus_panel_service_);
+    return true;
+  }
+
+
   // Registers a callback function which is called when IBusBus connection
   // status is changed.
   void MonitorInputMethodConnection(
@@ -517,6 +581,42 @@ void ChromeOSNotifyCandidateClicked(InputMethodUiStatusConnection* connection,
   DCHECK(connection);
   if (connection) {
     connection->NotifyCandidateClicked(index, button, flags);
+  }
+}
+
+extern "C"
+void ChromeOSNotifyCursorUp(InputMethodUiStatusConnection* connection) {
+  DLOG(INFO) << "NotifyCursorUp";
+  DCHECK(connection);
+  if (connection) {
+    connection->NotifyCursorUp();
+  }
+}
+
+extern "C"
+void ChromeOSNotifyCursorDown(InputMethodUiStatusConnection* connection) {
+  DLOG(INFO) << "NotifyCursorDown";
+  DCHECK(connection);
+  if (connection) {
+    connection->NotifyCursorDown();
+  }
+}
+
+extern "C"
+void ChromeOSNotifyPageUp(InputMethodUiStatusConnection* connection) {
+  DLOG(INFO) << "NotifyPageUp";
+  DCHECK(connection);
+  if (connection) {
+    connection->NotifyPageUp();
+  }
+}
+
+extern "C"
+void ChromeOSNotifyPageDown(InputMethodUiStatusConnection* connection) {
+  DLOG(INFO) << "NotifyPageDown";
+  DCHECK(connection);
+  if (connection) {
+    connection->NotifyPageDown();
   }
 }
 

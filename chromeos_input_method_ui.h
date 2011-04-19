@@ -165,6 +165,26 @@ extern void (*NotifyCandidateClicked)(
     InputMethodUiStatusConnection* connection,
     int index, int button, int flags);
 
+// Notifies that the cursor up button is clicked. |CursorUp| signal will be
+// sent to the ibus-daemon
+extern void (*NotifyCursorUp)(
+    InputMethodUiStatusConnection* connection);
+
+// Notifies that the cursor down button is clicked. |CursorDown| signal will be
+// sent to the ibus-daemon
+extern void (*NotifyCursorDown)(
+    InputMethodUiStatusConnection* connection);
+
+// Notifies that the page up button is clicked. |PageUp| signal will be
+// sent to the ibus-daemon
+extern void (*NotifyPageUp)(
+    InputMethodUiStatusConnection* connection);
+
+// Notifies that the page down button is clicked. |PageDown| signal will be
+// sent to the ibus-daemon
+extern void (*NotifyPageDown)(
+    InputMethodUiStatusConnection* connection);
+
 // Set a notification function for changes to an ibus connection.
 extern void (*MonitorInputMethodConnection)(
     InputMethodUiStatusConnection* connection,

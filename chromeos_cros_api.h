@@ -218,6 +218,7 @@
 // 129: Added CryptohomePkcs11IsTpmTokenReady, CryptohomePkcs11GetTpmTokenInfo.
 // 130: Added InstallAttributes* to the cryptohome DBus bindings.
 // 131: Added ProposeScan and RequestCellularRegister.
+// 132: Added NotifyCursorUp, NotifyCursorDown, NotifyPageUp, NotifyPageDown
 
 namespace chromeos {  // NOLINT
 
