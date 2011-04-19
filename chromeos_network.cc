@@ -52,6 +52,8 @@ static const char* kRequirePinFunction = "RequirePin";
 static const char* kEnterPinFunction = "EnterPin";
 static const char* kUnblockPinFunction = "UnblockPin";
 static const char* kChangePinFunction = "ChangePin";
+static const char* kProposeScanFunction = "ProposeScan";
+static const char* kRegisterFunction = "Register";
 
 // Flimflam property names.
 static const char* kSecurityProperty = "Security";
@@ -1803,6 +1805,48 @@ void ChromeOSRequestChangePin(const char* device_path,
       G_TYPE_INVALID);
   if (!call_id) {
     LOG(ERROR) << "NULL call_id for: " << kChangePinFunction
+               << " : " << device_path;
+    callback(object, device_path, NETWORK_METHOD_ERROR_LOCAL,
+             "dbus: NULL call_id");
+    delete cb_data;
+  }
+}
+
+extern "C"
+void ChromeOSProposeScan(const char* device_path) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamDeviceInterface, device_path);
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kProposeScanFunction,
+      &FlimflamNotifyHandleError,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kProposeScanFunction;
+    delete cb_data;
+  }
+}
+
+extern "C"
+void ChromeOSRequestCellularRegister(const char* device_path,
+                                     const char* network_id,
+                                     NetworkActionCallback callback,
+                                     void* object) {
+  NetworkActionCallbackData* cb_data = new NetworkActionCallbackData(
+      kFlimflamDeviceInterface, device_path, device_path, callback, object);
+
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kRegisterFunction,
+      &NetworkOperationNotify,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_STRING, network_id,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kRegisterFunction
                << " : " << device_path;
     callback(object, device_path, NETWORK_METHOD_ERROR_LOCAL,
              "dbus: NULL call_id");

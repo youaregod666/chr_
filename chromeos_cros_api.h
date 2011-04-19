@@ -217,12 +217,13 @@
 //      SetAutoRepeatEnabled, SetAutoRepeatRate.
 // 129: Added CryptohomePkcs11IsTpmTokenReady, CryptohomePkcs11GetTpmTokenInfo.
 // 130: Added InstallAttributes* to the cryptohome DBus bindings.
+// 131: Added ProposeScan and RequestCellularRegister.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 124,
-  kCrosAPIVersion = 130
+  kCrosAPIVersion = 131
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

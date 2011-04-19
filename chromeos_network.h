@@ -369,6 +369,18 @@ extern void (*RequestChangePin)(const char* device_path,
                                 NetworkActionCallback callback,
                                 void* object);
 
+// Proposes to trigger a scan transaction. For cellular networks scan result
+// is set in the property Cellular.FoundNetworks.
+extern void (*ProposeScan)(const char* device_path);
+
+// Initiate registration on the network specified by network_id, which is in the
+// form MCCMNC. If the network ID is the empty string, then switch back to
+// automatic registration mode before initiating registration.
+extern void (*RequestCellularRegister)(const char* device_path,
+                                       const char* network_id,
+                                       NetworkActionCallback callback,
+                                       void* object);
+
 //////////////////////////////////////////////////////////////////////////////
 // Enable or disable the specific network device for connection.
 //

@@ -254,6 +254,9 @@ DECL_FUNC_5(RequestUnblockPin, void, const char*, const char*, const char*,
             NetworkActionCallback, void*);
 DECL_FUNC_5(RequestChangePin, void, const char*, const char*, const char*,
             NetworkActionCallback, void*);
+DECL_FUNC_1(ProposeScan, void, const char*);
+DECL_FUNC_4(RequestCellularRegister, void, const char*, const char*,
+            NetworkActionCallback, void*);
 DECL_FUNC_2(EnableNetworkDevice, bool, ConnectionType, bool);
 DECL_FUNC_1(SetOfflineMode, bool, bool);
 DECL_FUNC_2(SetAutoConnect, bool, const char*, bool);
@@ -607,6 +610,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RequestEnterPin);
   INIT_FUNC(RequestUnblockPin);
   INIT_FUNC(RequestChangePin);
+  INIT_FUNC(ProposeScan);
+  INIT_FUNC(RequestCellularRegister);
 
   // Synaptics
   INIT_FUNC(SetSynapticsParameter);
