@@ -219,12 +219,13 @@
 // 130: Added InstallAttributes* to the cryptohome DBus bindings.
 // 131: Added ProposeScan and RequestCellularRegister.
 // 132: Added NotifyCursorUp, NotifyCursorDown, NotifyPageUp, NotifyPageDown
+// 133: Remove deprecated chromeos_login.cc functions.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 124,
-  kCrosAPIVersion = 131
+  kCrosAPIVersion = 133
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
