@@ -1,4 +1,4 @@
-// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -44,25 +44,6 @@ class OpaqueSessionConnection {
 };
 
 extern "C"
-bool ChromeOSCheckWhitelist(const char* email,
-                            std::vector<uint8>* signature) {
-  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
-  NOTREACHED() << "ChromeOSCheckWhitelist is deprecated";
-  DCHECK(signature);
-  GArray* sig;
-  if (!ChromeOSLoginHelpers::CheckWhitelistHelper(email, &sig))
-    return false;
-  bool rv = false;
-  signature->resize(sig->len);
-  if (signature->size() == sig->len) {
-    memcpy(&(signature->at(0)), static_cast<const void*>(sig->data), sig->len);
-    rv = true;
-  }
-  g_array_free(sig, false);
-  return rv;
-}
-
-extern "C"
 bool ChromeOSCheckWhitelistSafe(const char* email,
                                 CryptoBlob** OUT_signature) {
   DCHECK(OUT_signature);
@@ -91,21 +72,6 @@ bool ChromeOSEmitLoginPromptReady() {
                  << " failed: " << SCOPED_SAFE_MESSAGE(error);
   }
   return done;
-}
-
-extern "C"
-bool ChromeOSEnumerateWhitelisted(std::vector<std::string>* OUT_whitelisted) {
-  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
-  NOTREACHED() << "ChromeOSEnumerateWhitelisted is deprecated";
-  DCHECK(OUT_whitelisted);
-  gchar** whitelisted = NULL;
-  if (!ChromeOSLoginHelpers::EnumerateWhitelistedHelper(&whitelisted))
-    return false;
-  for (int i = 0; whitelisted[i] != NULL; ++i)
-    OUT_whitelisted->push_back(std::string(whitelisted[i]));
-
-  g_strfreev(whitelisted);
-  return true;
 }
 
 extern "C"
@@ -198,30 +164,6 @@ void ChromeOSRequestRetrieveProperty(const char* name,
 }
 
 extern "C"
-bool ChromeOSRetrieveProperty(const char* name,
-                              std::string* out_value,
-                              std::vector<uint8>* signature) {
-  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
-  NOTREACHED() << "ChromeOSRetrieveProperty is deprecated";
-  DCHECK(signature);
-  DCHECK(out_value);
-  GArray* sig;
-  gchar* value = NULL;
-  if (!ChromeOSLoginHelpers::RetrievePropertyHelper(name, &value, &sig))
-    return false;
-  bool rv = false;
-  signature->resize(sig->len);
-  if (signature->size() == sig->len) {
-    memcpy(&(signature->at(0)), static_cast<const void*>(sig->data), sig->len);
-    rv = true;
-  }
-  g_array_free(sig, false);
-  out_value->assign(value);
-  g_free(value);
-  return rv;
-}
-
-extern "C"
 bool ChromeOSRetrievePropertySafe(const char* name, Property** OUT_property) {
   DCHECK(OUT_property);
   GArray* sig;
@@ -232,18 +174,6 @@ bool ChromeOSRetrievePropertySafe(const char* name, Property** OUT_property) {
   g_array_free(sig, false);
   g_free(value);
   return true;
-}
-
-extern "C"
-bool ChromeOSSetOwnerKey(const std::vector<uint8>& public_key_der) {
-  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
-  NOTREACHED() << "ChromeOSSetOwnerKey is deprecated";
-  GArray* key_der =
-      ChromeOSLoginHelpers::CreateGArrayFromBytes(&public_key_der[0],
-                                                  public_key_der.size());
-  bool rv = ChromeOSLoginHelpers::SetOwnerKeyHelper(key_der);
-  g_array_free(key_der, TRUE);
-  return rv;
 }
 
 extern "C"
@@ -292,19 +222,6 @@ bool ChromeOSStopSession(const char* unique_id /* unused */) {
 }
 
 extern "C"
-bool ChromeOSStoreProperty(const char* name,
-                           const char* value,
-                           const std::vector<uint8>& signature) {
-  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
-  NOTREACHED() << "ChromeOSStoreProperty is deprecated!";
-  GArray* sig = ChromeOSLoginHelpers::CreateGArrayFromBytes(&signature[0],
-                                                            signature.size());
-  bool rv = ChromeOSLoginHelpers::StorePropertyHelper(name, value, sig);
-  g_array_free(sig, TRUE);
-  return rv;
-}
-
-extern "C"
 bool ChromeOSStorePropertySafe(const Property* prop) {
   GArray* sig =
       ChromeOSLoginHelpers::CreateGArrayFromBytes(prop->signature->data,
@@ -317,34 +234,12 @@ bool ChromeOSStorePropertySafe(const Property* prop) {
 }
 
 extern "C"
-bool ChromeOSUnwhitelist(const char* email,
-                         const std::vector<uint8>& signature) {
-  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
-  NOTREACHED() << "ChromeOSUnwhitelist is deprecated!";
-  return ChromeOSLoginHelpers::WhitelistOpHelper(
-      login_manager::kSessionManagerUnwhitelist,
-      email,
-      signature);
-}
-
-extern "C"
 bool ChromeOSUnwhitelistSafe(const char* email, const CryptoBlob* signature) {
   std::vector<uint8> sig(signature->data, signature->data + signature->length);
   return ChromeOSLoginHelpers::WhitelistOpHelper(
       login_manager::kSessionManagerUnwhitelist,
       email,
       sig);
-}
-
-extern "C"
-bool ChromeOSWhitelist(const char* email,
-                       const std::vector<uint8>& signature) {
-  // TODO(cmasone): Remove this code, once we're sure NOTREACHED isn't hit.
-  NOTREACHED() << "ChromeOSWhitelist is deprecated!";
-  return ChromeOSLoginHelpers::WhitelistOpHelper(
-      login_manager::kSessionManagerWhitelist,
-      email,
-      signature);
 }
 
 extern "C"

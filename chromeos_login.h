@@ -1,4 +1,4 @@
-// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -57,10 +57,6 @@ typedef void(*RetrievePropertyCallback)(void* user_data,
 extern SessionConnection (*MonitorSession)(SessionMonitor monitor, void*);
 extern void (*DisconnectSession)(SessionConnection connection);
 
-// DEPRECATED due to memory unsafety.
-extern bool (*CheckWhitelist)(const char* email,
-                              std::vector<uint8>* OUT_signature);
-
 // Checks if |email| is on the whitelist.
 // Returns true if so, and allocates a CryptoBlob to pass back in the out param.
 // If not, returns false and |OUT_signature| is untouched.
@@ -70,9 +66,6 @@ extern bool (*CheckWhitelistSafe)(const char* email,
 
 // Kicks off an attempt to emit the "login-prompt-ready" upstart signal.
 extern bool (*EmitLoginPromptReady)();
-
-// DEPRECATED due to memory unsafety.
-extern bool (*EnumerateWhitelisted)(std::vector<std::string>* OUT_whitelisted);
 
 // EnumerateWhitelisted() is for informational purposes only.  The data
 // is returned without signatures.  To determine if a user is allowed to log in
@@ -112,20 +105,12 @@ extern void (*RequestRetrieveProperty)(const char* name,
 // protobuf to the callback.  On failure, we will pass NULL.
 extern void (*RetrievePolicy)(RetrievePolicyCallback callback, void* delegate);
 
-// DEPRECATED due to memory unsafety.
-extern bool (*RetrieveProperty)(const char* name,
-                                std::string* OUT_value,
-                                std::vector<uint8>* OUT_signature);
-
 // DEPRECATED as we switch to async dbus calls.
 // Fetches the property called |name|.
 // Returns true if it can be fetched, allocates a Property to pass back.
 // If not, returns false and |OUT_property| is untouched
 // Free |OUT_property| using FreeProperty.
 extern bool (*RetrievePropertySafe)(const char* name, Property** OUT_property);
-
-// DEPRECATED due to memory unsafety.
-extern bool (*SetOwnerKey)(const std::vector<uint8>& public_key_der);
 
 // Attempts to set the Owner key to |public_key_der|.
 // Returns true if the attempt starts successfully.
@@ -144,27 +129,14 @@ extern void (*StorePolicy)(const char* prop,
                            StorePolicyCallback callback,
                            void* delegate);
 
-// DEPRECATED due to memory unsafety.
-extern bool (*StoreProperty)(const char* name,
-                             const char* value,
-                             const std::vector<uint8>& signature);
-
 // Attempts to store |prop|.
 // Returns true if the attempt starts successfully.
 extern bool (*StorePropertySafe)(const Property* prop);
-
-// DEPRECATED due to memory unsafety.
-extern bool (*Unwhitelist)(const char* email,
-                           const std::vector<uint8>& signature);
 
 // Attempts to remove |email| from the whitelist.
 // Returns true if the attempt is started successfully.
 extern bool (*UnwhitelistSafe)(const char* email,
                                const CryptoBlob* signature);
-
-// DEPRECATED due to memory unsafety.
-extern bool (*Whitelist)(const char* email,
-                         const std::vector<uint8>& signature);
 
 // Attempts to whitelist |email|.
 // Returns true if the attempt is successfully started.
