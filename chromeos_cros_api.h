@@ -220,12 +220,13 @@
 // 131: Added ProposeScan and RequestCellularRegister.
 // 132: Added NotifyCursorUp, NotifyCursorDown, NotifyPageUp, NotifyPageDown
 // 133: Remove deprecated chromeos_login.cc functions.
+// 134: Added CryptohomeAsyncSetOwnerUser.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 124,
-  kCrosAPIVersion = 133
+  kCrosAPIVersion = 134
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

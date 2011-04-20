@@ -82,6 +82,7 @@ extern bool (*CryptohomeRemoveTrackedSubdirectories)();
 extern int (*CryptohomeAsyncRemoveTrackedSubdirectories)();
 extern bool (*CryptohomeDoAutomaticFreeDiskSpaceControl)();
 extern int (*CryptohomeAsyncDoAutomaticFreeDiskSpaceControl)();
+extern int (*CryptohomeAsyncSetOwnerUser)(const char* username);
 extern bool (*CryptohomeTpmIsReady)();
 extern bool (*CryptohomeTpmIsEnabled)();
 extern bool (*CryptohomeTpmIsOwned)();
