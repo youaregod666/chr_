@@ -222,12 +222,13 @@
 // 133: Stop loading deprecated chromeos_login.cc functions.
 // 134: Added CryptohomeAsyncSetOwnerUser.
 // 135: Remove deprecated chromeos_login.cc functions.
+// 136: Added SetNetworkDeviceProperty and ClearNetworkDeviceProperty.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 133,
-  kCrosAPIVersion = 135
+  kCrosAPIVersion = 136
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

@@ -1916,6 +1916,47 @@ static glib::Value *ConvertToGlibValue(const ::Value* value) {
   return NULL;
 }
 
+static void SetNetworkProperty(FlimflamCallbackData *cb_data,
+                               const char* property,
+                               const ::Value* setting) {
+  // Start the DBus call. FlimflamNotifyHandleError will get called when
+  // it completes and log any errors.
+  scoped_ptr<glib::Value> gsetting(ConvertToGlibValue(setting));
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kSetPropertyFunction,
+      &FlimflamNotifyHandleError,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_STRING,
+      property,
+      G_TYPE_VALUE,
+      gsetting.get(),
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kSetPropertyFunction;
+    delete cb_data;
+  }
+}
+
+static void ClearNetworkProperty(FlimflamCallbackData *cb_data,
+                                 const char* property) {
+  // Start the DBus call. FlimflamNotifyHandleError will get called when
+  // it completes and log any errors.
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kClearPropertyFunction,
+      &FlimflamNotifyHandleError,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_STRING,
+      property,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kClearPropertyFunction;
+    delete cb_data;
+  }
+}
 
 extern "C"
 void ChromeOSSetNetworkServiceProperty(const char* service_path,
@@ -1938,24 +1979,7 @@ void ChromeOSSetNetworkServiceProperty(const char* service_path,
     return;
   }
 
-  // Start the DBus call. FlimflamNotifyHandleError will get called when
-  // it completes and log any errors.
-  scoped_ptr<glib::Value> gsetting(ConvertToGlibValue(setting));
-  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
-      cb_data->proxy->gproxy(),
-      kSetPropertyFunction,
-      &FlimflamNotifyHandleError,
-      cb_data,
-      &DeleteFlimflamCallbackData,
-      G_TYPE_STRING,
-      property,
-      G_TYPE_VALUE,
-      gsetting.get(),
-      G_TYPE_INVALID);
-  if (!call_id) {
-    LOG(ERROR) << "NULL call_id for: " << kSetPropertyFunction;
-    delete cb_data;
-  }
+  SetNetworkProperty(cb_data, property, setting);
 }
 
 extern "C"
@@ -1964,21 +1988,26 @@ void ChromeOSClearNetworkServiceProperty(const char* service_path,
   FlimflamCallbackData* cb_data =
       new FlimflamCallbackData(kFlimflamServiceInterface, service_path);
 
-  // Start the DBus call. FlimflamNotifyHandleError will get called when
-  // it completes and log any errors.
-  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
-      cb_data->proxy->gproxy(),
-      kClearPropertyFunction,
-      &FlimflamNotifyHandleError,
-      cb_data,
-      &DeleteFlimflamCallbackData,
-      G_TYPE_STRING,
-      property,
-      G_TYPE_INVALID);
-  if (!call_id) {
-    LOG(ERROR) << "NULL call_id for: " << kClearPropertyFunction;
-    delete cb_data;
-  }
+  ClearNetworkProperty(cb_data, property);
+}
+
+extern "C"
+void ChromeOSSetNetworkDeviceProperty(const char* device_path,
+                                      const char* property,
+                                      const ::Value* setting) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamDeviceInterface, device_path);
+
+  SetNetworkProperty(cb_data, property, setting);
+}
+
+extern "C"
+void ChromeOSClearNetworkDeviceProperty(const char* device_path,
+                                        const char* property) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamDeviceInterface, device_path);
+
+  ClearNetworkProperty(cb_data, property);
 }
 
 // Cashew services

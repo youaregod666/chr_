@@ -135,6 +135,17 @@ extern void (*SetNetworkServiceProperty)(const char* service_path,
 extern void (*ClearNetworkServiceProperty)(const char* service_path,
                                            const char* property);
 
+// Set a property of a device to the provided value
+//
+// Success is indicated by the receipt of a matching PropertyChanged signal.
+extern void (*SetNetworkDeviceProperty)(const char* device_path,
+                                        const char* property,
+                                        const ::Value* setting);
+
+// Clear a property of a device
+extern void (*ClearNetworkDeviceProperty)(const char* device_path,
+                                          const char* property);
+
 // Connects to the network with the |service_path|.
 //
 // Set |passphrase| to NULL if the network doesn't require authentication.

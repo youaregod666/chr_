@@ -208,6 +208,9 @@ DECL_FUNC_2(ConnectToNetwork, bool, const char*, const char*);
 DECL_FUNC_3(SetNetworkServiceProperty, void, const char*, const char*,
             const ::Value *);
 DECL_FUNC_2(ClearNetworkServiceProperty, void, const char*, const char*);
+DECL_FUNC_3(SetNetworkDeviceProperty, void, const char*, const char*,
+            const ::Value *);
+DECL_FUNC_2(ClearNetworkDeviceProperty, void, const char*, const char*);
 DECL_FUNC_4(ConnectToNetworkWithCertInfo, bool, const char*, const char*,
             const char*, const char*);
 DECL_FUNC_1(DisconnectFromNetwork, bool, const char*);
@@ -557,6 +560,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(ConfigureWifiService);
   INIT_FUNC(SetNetworkServiceProperty);
   INIT_FUNC(ClearNetworkServiceProperty);
+  INIT_FUNC(SetNetworkDeviceProperty);
+  INIT_FUNC(ClearNetworkDeviceProperty);
   INIT_FUNC(ConnectToNetwork);
   INIT_FUNC(ConnectToNetworkWithCertInfo);
   INIT_FUNC(DisconnectFromNetwork);
