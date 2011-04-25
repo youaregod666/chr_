@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -12,14 +12,20 @@ It will produce output that looks like:
 #ifndef CHROMEOS_INPUT_METHOD_WHITELIST_H_
 #define CHROMEOS_INPUT_METHOD_WHITELIST_H_
 
-namespace {
+namespace chromeos {
 const char* kInputMethodIdsWhitelist[] = {
   "chewing",
   "hangul",
   "mozc",
   ...
 };
-}  // namespace
+const char* kXkbLayoutsWhitelist[] = {
+  "us",
+  "us(dvorak)",
+  "fr",
+  ...
+};
+}  // namespace chromeos
 
 #endif  // CHROMEOS_INPUT_METHOD_WHITELIST_H_
 """
@@ -34,16 +40,22 @@ OUTPUT_HEADER = """
 #ifndef CHROMEOS_INPUT_METHOD_WHITELIST_H_
 #define CHROMEOS_INPUT_METHOD_WHITELIST_H_
 
-namespace {
+namespace chromeos {"""
+
+OUTPUT_INPUT_METHOD_IDS = """
 const char* kInputMethodIdsWhitelist[] = {
-"""
+%s
+};"""
+
+OUTPUT_XKB_LAYOUTS = """
+const char* kXkbLayoutsWhitelist[] = {
+%s
+};"""
 
 OUTPUT_FOOTER = """
-};
-}  // namespace
+}  // namespace chromeos
 
-#endif  // CHROMEOS_INPUT_METHOD_WHITELIST_H_
-"""
+#endif  // CHROMEOS_INPUT_METHOD_WHITELIST_H_"""
 
 
 def main():
@@ -51,11 +63,39 @@ def main():
     print >> sys.stderr, 'Usage: gen_input_method_whitelist.py [file]'
     sys.exit(1)
   print OUTPUT_HEADER
+
+  # Write the kInputMethodIdsWhitelist array.
+  ids = []
   for line in fileinput.input(sys.argv[1]):
     line = re.sub(r'#.*', '', line)  # Remove comments.
     line = line.split()
-    if len(line) > 0:
-      print '  "%s",' % line[0]
+    if len(line) == 0:
+      # The line only contains white spaces.
+      continue
+    # line[0] is a IBus input method name (e.g. "mozc", "xkb:us::eng"),
+    # and line[1] is an ID for a keyboard overlay help (e.g. "en_US", "ja").
+    ids.append('  "%s",' % line[0])
+  print OUTPUT_INPUT_METHOD_IDS % '\n'.join(ids)
+
+  # Write the kXkbLayoutsWhitelist array.
+  layouts = []
+  for line in fileinput.input(sys.argv[1]):
+    line = re.sub(r'#.*', '', line)  # Remove comments.
+    line = line.split()
+    if len(line) == 0 or (not line[0].startswith('xkb:')):
+      continue
+
+    # 'xkb:us::eng' would be splitted into ['xkb', 'us', '', 'eng'].
+    # 'xkb:us:dvorak:eng' woulb be ['xkb', 'us', 'dvorak', 'eng'].
+    line = line[0].split(':')
+    assert(len(line) == 4);
+
+    if len(line[2]) == 0:
+      layouts.append('  "%s",' % line[1])
+    else:
+      layouts.append('  "%s(%s)",' % (line[1], line[2]))
+  print OUTPUT_XKB_LAYOUTS % '\n'.join(layouts)
+
   print OUTPUT_FOOTER
 
 

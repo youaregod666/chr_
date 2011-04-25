@@ -19,7 +19,82 @@
 #include <utility>
 
 #include "base/singleton.h"
+#include "chromeos/string.h"  // for chromeos::SplitStringUsing.
 #include "ibus_input_methods.h"
+
+namespace chromeos {
+
+// Returns true if |input_method_id| is whitelisted.
+bool InputMethodIdIsWhitelisted(const std::string& input_method_id) {
+  static std::set<std::string>* g_supported_input_methods = NULL;
+  if (!g_supported_input_methods) {
+    g_supported_input_methods = new std::set<std::string>;
+    for (size_t i = 0; i < arraysize(kInputMethodIdsWhitelist); ++i) {
+      g_supported_input_methods->insert(kInputMethodIdsWhitelist[i]);
+    }
+  }
+  return (g_supported_input_methods->count(input_method_id) > 0);
+}
+
+// Returns true if |xkb_layout| is supported.
+bool XkbLayoutIsSupported(const std::string& xkb_layout) {
+  static std::set<std::string>* g_supported_layouts = NULL;
+  if (!g_supported_layouts) {
+    g_supported_layouts = new std::set<std::string>;
+    for (size_t i = 0; i < arraysize(kXkbLayoutsWhitelist); ++i) {
+      g_supported_layouts->insert(kXkbLayoutsWhitelist[i]);
+    }
+  }
+  return (g_supported_layouts->count(xkb_layout) > 0);
+}
+
+// Returns true if |virtual_keyboard_layout| is supported.
+// TODO(yusukes): implement this function.
+bool VirtualKeyboardLayoutIsSupported(
+    const std::string& virtual_keyboard_layout) {
+  return false;
+}
+
+// Creates an InputMethodDescriptor object. |raw_layout| is a comma-separated
+// list of XKB and virtual keyboard layouts.
+// (e.g. "special-us-virtual-keyboard-for-the-input-method,us")
+InputMethodDescriptor CreateInputMethodDescriptor(
+    const std::string& id,
+    const std::string& display_name,
+    const std::string& raw_layout,
+    const std::string& language_code) {
+  static const char fallback_layout[] = "us";
+  std::string physical_keyboard_layout = fallback_layout;
+  std::string virtual_keyboard_layout = fallback_layout;
+
+  std::vector<std::string> layout_names;
+  SplitStringUsing(raw_layout, ",", &layout_names);
+
+  // Find a valid XKB layout name from the comma-separated list, |raw_layout|.
+  // Only the first acceptable XKB layout name in the list is used as the
+  // |keyboard_layout| value of the InputMethodDescriptor object to be created.
+  for (size_t i = 0; i < layout_names.size(); ++i) {
+    if (XkbLayoutIsSupported(layout_names[i])) {
+      physical_keyboard_layout = layout_names[i];
+      break;
+    }
+  }
+  // Find a valid virtual keyboard name from the comma-separated list. Only the
+  // first acceptable virtual keyboard layout name in the list is used as the
+  // |virtual_keyboard_layout| value of the InputMethodDescriptor object.
+  for (size_t i = 0; i < layout_names.size(); ++i) {
+    if (VirtualKeyboardLayoutIsSupported(layout_names[i])) {
+      virtual_keyboard_layout = layout_names[i];
+      break;
+    }
+  }
+
+  return InputMethodDescriptor(id,
+                               display_name,
+                               physical_keyboard_layout,
+                               virtual_keyboard_layout,
+                               language_code);
+}
 
 namespace {
 
@@ -46,19 +121,6 @@ bool PropertyKeyIsBlacklisted(const char* key) {
     }
   }
   return false;
-}
-
-// Returns true if |input_method_id| is whitelisted.
-// TODO(yusukes): Write unittest.
-bool InputMethodIdIsWhitelisted(const char* input_method_id) {
-  static std::set<std::string>* g_supported_input_methods = NULL;
-  if (!g_supported_input_methods) {
-    g_supported_input_methods = new std::set<std::string>;
-    for (size_t i = 0; i < arraysize(kInputMethodIdsWhitelist); ++i) {
-      g_supported_input_methods->insert(kInputMethodIdsWhitelist[i]);
-    }
-  }
-  return (g_supported_input_methods->count(input_method_id) > 0);
 }
 
 // Removes input methods that are not whitelisted from |requested_input_methods|
@@ -90,8 +152,7 @@ void FreeInputMethodNames(GList* engines) {
 
 // Copies input method names in |engines| to |out|.
 // TODO(yusukes): Write unittest.
-void AddInputMethodNames(
-    const GList* engines, chromeos::InputMethodDescriptors* out) {
+void AddInputMethodNames(const GList* engines, InputMethodDescriptors* out) {
   DCHECK(out);
   for (; engines; engines = g_list_next(engines)) {
     IBusEngineDesc* engine_desc = IBUS_ENGINE_DESC(engines->data);
@@ -100,10 +161,10 @@ void AddInputMethodNames(
     const gchar* layout = ibus_engine_desc_get_layout(engine_desc);
     const gchar* language = ibus_engine_desc_get_language(engine_desc);
     if (InputMethodIdIsWhitelisted(name)) {
-      out->push_back(chromeos::InputMethodDescriptor(name,
-                                                     longname,
-                                                     layout,
-                                                     language));
+      out->push_back(CreateInputMethodDescriptor(name,
+                                                 longname,
+                                                 layout,
+                                                 language));
       DLOG(INFO) << name << " (preloaded)";
     }
   }
@@ -137,7 +198,7 @@ bool PropertyHasChildren(IBusProperty* prop) {
 // returns false if sanity checks for |ibus_prop| fail.
 bool ConvertProperty(IBusProperty* ibus_prop,
                      int selection_item_id,
-                     chromeos::ImePropertyList* out_prop_list) {
+                     ImePropertyList* out_prop_list) {
   DCHECK(ibus_prop);
   DCHECK(ibus_prop->key);
   DCHECK(out_prop_list);
@@ -162,7 +223,7 @@ bool ConvertProperty(IBusProperty* ibus_prop,
 
   const bool is_selection_item = (ibus_prop->type == PROP_TYPE_RADIO);
   selection_item_id = is_selection_item ?
-      selection_item_id : chromeos::ImeProperty::kInvalidSelectionItemId;
+      selection_item_id : ImeProperty::kInvalidSelectionItemId;
 
   bool is_selection_item_checked = false;
   if (ibus_prop->state == PROP_STATE_INCONSISTENT) {
@@ -203,11 +264,11 @@ bool ConvertProperty(IBusProperty* ibus_prop,
     label = Or(ibus_prop->key, "");
   }
 
-  out_prop_list->push_back(chromeos::ImeProperty(ibus_prop->key,
-                                                 label,
-                                                 is_selection_item,
-                                                 is_selection_item_checked,
-                                                 selection_item_id));
+  out_prop_list->push_back(ImeProperty(ibus_prop->key,
+                                       label,
+                                       is_selection_item,
+                                       is_selection_item_checked,
+                                       selection_item_id));
   return true;
 }
 
@@ -215,8 +276,7 @@ bool ConvertProperty(IBusProperty* ibus_prop,
 // may or may not have children. See the comment for FlattenPropertyList
 // for details. Returns true if no error is found.
 // TODO(yusukes): Write unittest.
-bool FlattenProperty(
-    IBusProperty* ibus_prop, chromeos::ImePropertyList* out_prop_list) {
+bool FlattenProperty(IBusProperty* ibus_prop, ImePropertyList* out_prop_list) {
   DCHECK(ibus_prop);
   DCHECK(out_prop_list);
 
@@ -283,7 +343,7 @@ bool FlattenProperty(
 // ======================================================================
 // TODO(yusukes): Write unittest.
 bool FlattenPropertyList(
-    IBusPropList* ibus_prop_list, chromeos::ImePropertyList* out_prop_list) {
+    IBusPropList* ibus_prop_list, ImePropertyList* out_prop_list) {
   DCHECK(ibus_prop_list);
   DCHECK(out_prop_list);
 
@@ -394,8 +454,6 @@ std::string PrintPropList(IBusPropList *prop_list, int tree_level) {
 }
 
 }  // namespace
-
-namespace chromeos {
 
 // A singleton class that holds IBus connections.
 class InputMethodStatusConnection {
@@ -798,11 +856,10 @@ class InputMethodStatusConnection {
   void UpdateUI(const char* current_global_engine_id) {
     DCHECK(current_global_engine_id);
 
-    const chromeos::IBusEngineInfo* engine_info = NULL;
-    for (size_t i = 0; i < arraysize(chromeos::ibus_engines); ++i) {
-      if (chromeos::ibus_engines[i].name ==
-          std::string(current_global_engine_id)) {
-        engine_info = &chromeos::ibus_engines[i];
+    const IBusEngineInfo* engine_info = NULL;
+    for (size_t i = 0; i < arraysize(kIBusEngines); ++i) {
+      if (kIBusEngines[i].name == std::string(current_global_engine_id)) {
+        engine_info = &kIBusEngines[i];
         break;
       }
     }
@@ -813,10 +870,11 @@ class InputMethodStatusConnection {
       return;
     }
 
-    InputMethodDescriptor current_input_method(engine_info->name,
-                                               engine_info->longname,
-                                               engine_info->layout,
-                                               engine_info->language);
+    InputMethodDescriptor current_input_method =
+        CreateInputMethodDescriptor(engine_info->name,
+                                    engine_info->longname,
+                                    engine_info->layout,
+                                    engine_info->language);
 
     DLOG(INFO) << "Updating the UI. ID:" << current_input_method.id
                << ", keyboard_layout:" << current_input_method.keyboard_layout;
@@ -1072,13 +1130,13 @@ bool ChromeOSStopInputMethodProcess(InputMethodStatusConnection* connection) {
 extern "C"
 InputMethodDescriptors* ChromeOSGetSupportedInputMethodDescriptors() {
   InputMethodDescriptors* input_methods = new InputMethodDescriptors;
-  for (size_t i = 0; i < arraysize(chromeos::ibus_engines); ++i) {
-    if (InputMethodIdIsWhitelisted(chromeos::ibus_engines[i].name)) {
-      input_methods->push_back(chromeos::InputMethodDescriptor(
-          chromeos::ibus_engines[i].name,
-          chromeos::ibus_engines[i].longname,
-          chromeos::ibus_engines[i].layout,
-          chromeos::ibus_engines[i].language));
+  for (size_t i = 0; i < arraysize(chromeos::kIBusEngines); ++i) {
+    if (InputMethodIdIsWhitelisted(chromeos::kIBusEngines[i].name)) {
+      input_methods->push_back(chromeos::CreateInputMethodDescriptor(
+          chromeos::kIBusEngines[i].name,
+          chromeos::kIBusEngines[i].longname,
+          chromeos::kIBusEngines[i].layout,
+          chromeos::kIBusEngines[i].language));
     }
   }
   return input_methods;

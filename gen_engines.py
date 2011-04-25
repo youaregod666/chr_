@@ -27,7 +27,7 @@ struct IBusEngineInfo {
   const char* layout;
   const char* language;
 };
-const IBusEngineInfo ibus_engines[] = {
+const IBusEngineInfo kIBusEngines[] = {
 {"chewing", "Chewing", "us", "zh_TW"},
 {"xkb:us::eng", "USA", "us", "eng"},
 {"xkb:us:dvorak:eng", "USA - Dvorak", "us(dvorak)", "eng"},
@@ -60,7 +60,7 @@ struct IBusEngineInfo {
   const char* layout;
   const char* language;
 };
-const IBusEngineInfo ibus_engines[] = {
+const IBusEngineInfo kIBusEngines[] = {
 """
 
 ENGINE_FORMAT = """{"%(name)s", "%(longname)s", "%(layout)s", "%(language)s"},

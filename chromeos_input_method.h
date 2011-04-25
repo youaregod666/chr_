@@ -1,4 +1,4 @@
-// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -14,22 +14,27 @@
 
 namespace chromeos {
 
-// DEPRECATED: TODO(yusukes): Remove this enum when it's ready.
-enum DeprecatedLanguageCategory {
-  DEPRECATED_LANGUAGE_CATEGORY
-};
-
-// A structure which represents an input method.
+// A structure which represents an input method. All methods in this class have
+// to be in chromeos_input_method.h since Chrome also creates an instance of
+// the class.
 struct InputMethodDescriptor {
+  InputMethodDescriptor() {
+  }
+
+  // Do not call this function directly. Use CreateInputMethodDescriptor() in
+  // chromeos_input_method.cc whenever possible.
   InputMethodDescriptor(const std::string& in_id,
                         const std::string& in_display_name,
                         const std::string& in_keyboard_layout,
+                        const std::string& in_virtual_keyboard_layout,
                         const std::string& in_language_code)
-      : deprecated_category(DEPRECATED_LANGUAGE_CATEGORY),
+      : virtual_keyboard_layout(in_virtual_keyboard_layout),
         id(in_id),
         display_name(in_display_name),
         keyboard_layout(in_keyboard_layout),
         language_code(in_language_code) {
+    DCHECK(virtual_keyboard_layout.find(",") == std::string::npos);
+    DCHECK(keyboard_layout.find(",") == std::string::npos);
   }
 
   bool operator==(const InputMethodDescriptor& other) const {
@@ -42,20 +47,22 @@ struct InputMethodDescriptor {
     stream << "id=" << id
            << ", display_name=" << display_name
            << ", keyboard_layout=" << keyboard_layout
+           << ", virtual_keyboard_layout=" << virtual_keyboard_layout
            << ", language_code=" << language_code;
     return stream.str();
   }
 
-  // DEPRECATED: TODO(yusukes): Remove this when it's ready.
-  DeprecatedLanguageCategory deprecated_category;
+  // A preferred virtual keyboard layout for the input method (e.g., "us",
+  // "us(dvorak)", "jp", "japanese-flick").
+  std::string virtual_keyboard_layout;
 
   // An ID that identifies an input method engine (e.g., "t:latn-post",
   // "pinyin", "hangul").
   std::string id;
   // An input method name which can be used in the UI (e.g., "Pinyin").
   std::string display_name;
-  // A preferred keyboard layout for the input method (e.g., "us", "us(dvorak)",
-  // "jp").
+  // A preferred physical keyboard layout for the input method (e.g., "us",
+  // "us(dvorak)", "jp").
   std::string keyboard_layout;
   // Language codes like "ko", "ja", "zh_CN", and "t".
   // "t" is used for languages in the "Others" category.
@@ -270,6 +277,17 @@ extern bool (*SetImeConfig)(InputMethodStatusConnection* connection,
 // Returns an empty string if there is no corresponding keyboard overlay ID.
 extern std::string (*GetKeyboardOverlayId)(
     const std::string& input_method_id);
+
+//
+// FUNCTIONS BELOW ARE ONLY FOR UNIT TESTS. DO NOT USE THEM.
+//
+bool InputMethodIdIsWhitelisted(const std::string& input_method_id);
+bool XkbLayoutIsSupported(const std::string& xkb_layout);
+InputMethodDescriptor CreateInputMethodDescriptor(
+    const std::string& id,
+    const std::string& display_name,
+    const std::string& raw_layout,
+    const std::string& language_code);
 
 }  // namespace chromeos
 
