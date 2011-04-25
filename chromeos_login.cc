@@ -43,6 +43,7 @@ class OpaqueSessionConnection {
   DISALLOW_COPY_AND_ASSIGN(OpaqueSessionConnection);
 };
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 extern "C"
 bool ChromeOSCheckWhitelistSafe(const char* email,
                                 CryptoBlob** OUT_signature) {
@@ -74,6 +75,7 @@ bool ChromeOSEmitLoginPromptReady() {
   return done;
 }
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 extern "C"
 bool ChromeOSEnumerateWhitelistedSafe(UserList** OUT_whitelisted) {
   DCHECK(OUT_whitelisted);
@@ -85,6 +87,7 @@ bool ChromeOSEnumerateWhitelistedSafe(UserList** OUT_whitelisted) {
   return true;
 }
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 extern "C"
 CryptoBlob* ChromeOSCreateCryptoBlob(const uint8* in, const int in_len) {
   GArray* ary = ChromeOSLoginHelpers::CreateGArrayFromBytes(in, in_len);
@@ -93,6 +96,7 @@ CryptoBlob* ChromeOSCreateCryptoBlob(const uint8* in, const int in_len) {
   return blob;
 }
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 extern "C"
 Property* ChromeOSCreateProperty(const char* name, const char* value,
                                  const uint8* sig, const int sig_len) {
@@ -102,11 +106,13 @@ Property* ChromeOSCreateProperty(const char* name, const char* value,
   return prop;
 }
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 extern "C"
 UserList* ChromeOSCreateUserList(char** users) {
   return ChromeOSLoginHelpers::CreateUserList(users);
 }
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 // These Free* methods all use delete (as opposed to delete []) on purpose,
 // following the pattern established by code that uses NewStringCopy.
 extern "C"
@@ -114,11 +120,13 @@ void ChromeOSFreeCryptoBlob(CryptoBlob* blob) {
   ChromeOSLoginHelpers::FreeCryptoBlob(blob);
 }
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 extern "C"
 void ChromeOSFreeProperty(Property* property) {
   ChromeOSLoginHelpers::FreeProperty(property);
 }
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 extern "C"
 void ChromeOSFreeUserList(UserList* userlist) {
   ChromeOSLoginHelpers::FreeUserList(userlist);
@@ -155,6 +163,7 @@ bool ChromeOSRestartEntd() {
   return true;
 }
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 extern "C"
 void ChromeOSRequestRetrieveProperty(const char* name,
                                      RetrievePropertyCallback callback,
@@ -163,6 +172,7 @@ void ChromeOSRequestRetrieveProperty(const char* name,
       user_data);
 }
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 extern "C"
 bool ChromeOSRetrievePropertySafe(const char* name, Property** OUT_property) {
   DCHECK(OUT_property);
@@ -176,6 +186,7 @@ bool ChromeOSRetrievePropertySafe(const char* name, Property** OUT_property) {
   return true;
 }
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 extern "C"
 bool ChromeOSSetOwnerKeySafe(const CryptoBlob* public_key_der) {
   GArray* key_der =
@@ -221,6 +232,7 @@ bool ChromeOSStopSession(const char* unique_id /* unused */) {
   return true;
 }
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 extern "C"
 bool ChromeOSStorePropertySafe(const Property* prop) {
   GArray* sig =
@@ -233,6 +245,7 @@ bool ChromeOSStorePropertySafe(const Property* prop) {
   return rv;
 }
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 extern "C"
 bool ChromeOSUnwhitelistSafe(const char* email, const CryptoBlob* signature) {
   std::vector<uint8> sig(signature->data, signature->data + signature->length);
@@ -242,6 +255,7 @@ bool ChromeOSUnwhitelistSafe(const char* email, const CryptoBlob* signature) {
       sig);
 }
 
+// TODO(cmasone): Remove as part of http://crosbug.com/14425
 extern "C"
 bool ChromeOSWhitelistSafe(const char* email, const CryptoBlob* signature) {
   std::vector<uint8> sig(signature->data, signature->data + signature->length);

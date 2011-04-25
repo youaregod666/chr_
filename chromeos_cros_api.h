@@ -25,8 +25,9 @@
 // Removing an API method is a bit tricky. It takes a few steps:
 // 1) First remove all calls to that method in Chrome.
 // 2) Deprecate the method but keep the method implementation. Remove the
-//      binding of the method in load.cc and increment kCrosAPIVersion in this
-//      file. Check this in.
+//      binding of the method in load.cc, pull the code in header files that
+//      exports the symbols,  and increment kCrosAPIVersion in this file.
+//      Check this in.
 // 3) Once ChromeOS looks good, update cros_deps/DEPS in Chrome source tree.
 //      This new libcros.so will work with new Chrome (which does not bind with
 //      the deprecated method) and it will still work with an older Chrome
@@ -223,12 +224,13 @@
 // 134: Added CryptohomeAsyncSetOwnerUser.
 // 135: Remove deprecated chromeos_login.cc functions.
 // 136: Added SetNetworkDeviceProperty and ClearNetworkDeviceProperty.
+// 137: Stop loading more deprecated chromeos_login.cc functions.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 133,
-  kCrosAPIVersion = 136
+  kCrosAPIVersion = 137
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

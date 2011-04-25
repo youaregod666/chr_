@@ -291,30 +291,10 @@ DECL_FUNC_1(SetTouchpadSensitivity, void, int);
 DECL_FUNC_1(SetTouchpadTapToClick, void, bool);
 
 // Login
-DECL_FUNC_2(CheckWhitelistSafe, bool, const char*, CryptoBlob**);
 DECL_FUNC_0(EmitLoginPromptReady, bool);
-DECL_FUNC_1(EnumerateWhitelistedSafe, bool, UserList**);
-DECL_FUNC_2(CreateCryptoBlob, CryptoBlob*, const uint8*, const int);
-DECL_FUNC_4(CreateProperty,
-            Property*,
-            const char*,
-            const char*,
-            const uint8*,
-            const int);
-DECL_FUNC_1(CreateUserList, UserList*, char**);
-DECL_FUNC_1(FreeCryptoBlob, void, CryptoBlob*);
-DECL_FUNC_1(FreeProperty, void, Property*);
-DECL_FUNC_1(FreeUserList, void, UserList*);
 DECL_FUNC_2(RestartJob, bool, int, const char*);
 DECL_FUNC_0(RestartEntd, bool);
 DECL_FUNC_2(RetrievePolicy, void, RetrievePolicyCallback, void*);
-DECL_FUNC_3(RequestRetrieveProperty,
-            void,
-            const char*,
-            RetrievePropertyCallback,
-            void*);
-DECL_FUNC_2(RetrievePropertySafe, bool, const char*, Property**);
-DECL_FUNC_1(SetOwnerKeySafe, bool, const CryptoBlob*);
 DECL_FUNC_2(StartSession, bool, const char*, const char*);
 DECL_FUNC_1(StopSession, bool, const char*);
 DECL_FUNC_4(StorePolicy,
@@ -323,9 +303,6 @@ DECL_FUNC_4(StorePolicy,
             const unsigned int,
             StorePolicyCallback,
             void*);
-DECL_FUNC_1(StorePropertySafe, bool, const Property*);
-DECL_FUNC_2(UnwhitelistSafe, bool, const char*, const CryptoBlob*);
-DECL_FUNC_2(WhitelistSafe, bool, const char*, const CryptoBlob*);
 DECL_FUNC_2(MonitorSession, SessionConnection, SessionMonitor, void*);
 DECL_FUNC_1(DisconnectSession, void, SessionConnection);
 
@@ -624,27 +601,13 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(SetTouchpadTapToClick);
 
   // Login
-  INIT_FUNC(CheckWhitelistSafe);
   INIT_FUNC(EmitLoginPromptReady);
-  INIT_FUNC(EnumerateWhitelistedSafe);
-  INIT_FUNC(CreateCryptoBlob);
-  INIT_FUNC(CreateProperty);
-  INIT_FUNC(CreateUserList);
-  INIT_FUNC(FreeCryptoBlob);
-  INIT_FUNC(FreeProperty);
-  INIT_FUNC(FreeUserList);
   INIT_FUNC(RestartJob);
   INIT_FUNC(RestartEntd);
-  INIT_FUNC(RequestRetrieveProperty);
   INIT_FUNC(RetrievePolicy);
-  INIT_FUNC(RetrievePropertySafe);
-  INIT_FUNC(SetOwnerKeySafe);
   INIT_FUNC(StartSession);
   INIT_FUNC(StopSession);
   INIT_FUNC(StorePolicy);
-  INIT_FUNC(StorePropertySafe);
-  INIT_FUNC(UnwhitelistSafe);
-  INIT_FUNC(WhitelistSafe);
   INIT_FUNC(MonitorSession);
   INIT_FUNC(DisconnectSession);
 
