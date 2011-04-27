@@ -225,12 +225,14 @@
 // 135: Remove deprecated chromeos_login.cc functions.
 // 136: Added SetNetworkDeviceProperty and ClearNetworkDeviceProperty.
 // 137: Stop loading more deprecated chromeos_login.cc functions.
+// 138: Deprecated GetTimezoneID, SetTimezoneID, GetMachineInfo,
+//      FreeMachineInfo (all functions in chromeos_system.h)
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 133,
-  kCrosAPIVersion = 137
+  kCrosAPIVersion = 138
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

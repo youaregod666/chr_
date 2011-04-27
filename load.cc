@@ -28,7 +28,6 @@
 #include "chromeos_update.h"  // NOLINT
 #include "chromeos_update_engine.h"  // NOLINT
 #include "chromeos_syslogs.h"  // NOLINT
-#include "chromeos_system.h"  // NOLINT
 
 namespace chromeos {  // NOLINT //
 
@@ -402,12 +401,6 @@ DECL_FUNC_1(InitTts, void, InitStatusCallback);
 // Syslogs
 DECL_FUNC_2(GetSystemLogs, LogDictionaryType*, FilePath*, const std::string&);
 
-// System
-DECL_FUNC_0(GetTimezoneID, std::string);
-DECL_FUNC_1(SetTimezoneID, void, const std::string&);
-DECL_FUNC_0(GetMachineInfo, MachineInfo*);
-DECL_FUNC_1(FreeMachineInfo, void, MachineInfo*);
-
 // Brightness
 DECL_FUNC_2(MonitorBrightnessV2,
             BrightnessConnection,
@@ -698,12 +691,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
 
   // Syslogs
   INIT_FUNC(GetSystemLogs);
-
-  // System
-  INIT_FUNC(GetTimezoneID);
-  INIT_FUNC(SetTimezoneID);
-  INIT_FUNC(GetMachineInfo);
-  INIT_FUNC(FreeMachineInfo);
 
   // Brightness
   INIT_FUNC(MonitorBrightnessV2);
