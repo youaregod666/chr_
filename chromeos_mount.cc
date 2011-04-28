@@ -542,7 +542,7 @@ class OpaqueMountEventConnection {
       return;
     }
     if (strcmp(action, "add") == 0) {
-      const char* device_path = g_udev_device_get_device_file(device);
+      const char* device_path = g_udev_device_get_sysfs_path(device);
       if (device_path == NULL)
         return;
       std::string device_string(device_path);
@@ -554,7 +554,7 @@ class OpaqueMountEventConnection {
         self->FireEvent(DEVICE_ADDED, device_path);
       }
     } else if (strcmp(action, "remove") == 0) {
-      const char* device_path = g_udev_device_get_device_file(device);
+      const char* device_path = g_udev_device_get_sysfs_path(device);
       if (device_path == NULL)
         return;
       std::string device_string(device_path);
