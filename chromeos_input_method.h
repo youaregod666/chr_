@@ -7,6 +7,7 @@
 
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <base/basictypes.h>
@@ -277,6 +278,20 @@ extern bool (*SetImeConfig)(InputMethodStatusConnection* connection,
 // Returns an empty string if there is no corresponding keyboard overlay ID.
 extern std::string (*GetKeyboardOverlayId)(
     const std::string& input_method_id);
+
+// Sends a handwriting stroke to ibus-daemon. The std::pair contains x and y
+// coordinates. (0.0, 0.0) represents the top-left corner of a handwriting area,
+// and (1.0, 1.0) does the bottom-right. For example, the second stroke for ロ
+// (Katakana character Ro) would be something like [(0,0), (1,0), (1,1)].
+// stroke.size() should always be >= 2 (i.e. a single dot is not allowed).
+typedef std::vector<std::pair<double, double> > HandwritingStroke;
+extern void (*SendHandwritingStroke)(
+    InputMethodStatusConnection* connection, const HandwritingStroke& stroke);
+
+// Clears the last N handwriting strokes. Pass zero for clearing all strokes.
+// TODO(yusukes): Currently ibus-daemon only accepts 0 for |n_strokes|.
+extern void (*CancelHandwriting)(InputMethodStatusConnection* connection,
+                                 int n_strokes);
 
 //
 // FUNCTIONS BELOW ARE ONLY FOR UNIT TESTS. DO NOT USE THEM.

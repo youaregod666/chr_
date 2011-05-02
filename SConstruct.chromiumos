@@ -138,6 +138,8 @@ env.IBusEngines('ibus_input_methods.h',
                  ibus_component_dir + 'mozc-chewing.xml',
                  ibus_component_dir + 'pinyin.xml',
                  ibus_component_dir + 'xkb-layouts.xml'])
+# TODO(yusukes): Add zinnia.xml:
+#                ibus_component_dir + 'zinnia.xml'
 
 env.InputMethodWhitelist('chromeos_input_method_whitelist.h',
                          ime_whitelist_file)

@@ -153,6 +153,11 @@ DECL_FUNC_4(SetImeConfig,
     const char*,
     const ImeConfigValue&);
 DECL_FUNC_1(GetKeyboardOverlayId, std::string, const std::string&);
+DECL_FUNC_2(SendHandwritingStroke,
+            void,
+            InputMethodStatusConnection*,
+            const chromeos::HandwritingStroke&);
+DECL_FUNC_2(CancelHandwriting, void, InputMethodStatusConnection*, int);
 DECL_FUNC_2(MonitorInputMethodUiStatus,
             InputMethodUiStatusConnection*,
             const InputMethodUiStatusMonitorFunctions&,
@@ -497,6 +502,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(SetImePropertyActivated);
   INIT_FUNC(SetImeConfig);
   INIT_FUNC(GetKeyboardOverlayId);
+  INIT_FUNC(SendHandwritingStroke);
+  INIT_FUNC(CancelHandwriting);
   INIT_FUNC(MonitorInputMethodUiStatus);
   INIT_FUNC(DisconnectInputMethodUiStatus);
   INIT_FUNC(NotifyCandidateClicked);

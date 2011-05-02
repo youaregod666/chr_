@@ -1,4 +1,4 @@
-// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -18,6 +18,7 @@
 #include <stack>
 #include <utility>
 
+#include "base/scoped_ptr.h"
 #include "base/singleton.h"
 #include "chromeos/string.h"  // for chromeos::SplitStringUsing.
 #include "ibus_input_methods.h"
@@ -651,6 +652,37 @@ class InputMethodStatusConnection {
     return true;
   }
 
+  void SendHandwritingStroke(const HandwritingStroke& stroke) {
+    if (stroke.size() < 2) {
+      LOG(WARNING) << "Empty stroke data or a single dot is passed.";
+      return;
+    }
+
+    IBusInputContext* context = GetInputContext(input_context_path_, ibus_);
+    if (!context) {
+      return;
+    }
+
+    const size_t raw_stroke_size = stroke.size() * 2;
+    scoped_array<double> raw_stroke(new double[raw_stroke_size]);
+    for (size_t n = 0; n < stroke.size(); ++n) {
+      raw_stroke[n * 2] = stroke[n].first;  // x
+      raw_stroke[n * 2 + 1] = stroke[n].second;  // y
+    }
+    ibus_input_context_process_hand_writing_event(
+        context, raw_stroke.get(), raw_stroke_size);
+    g_object_unref(context);
+  }
+
+  void CancelHandwriting(int n_strokes) {
+    IBusInputContext* context = GetInputContext(input_context_path_, ibus_);
+    if (!context) {
+      return;
+    }
+    ibus_input_context_cancel_hand_writing(context, n_strokes);
+    g_object_unref(context);
+  }
+
  private:
   friend struct DefaultSingletonTraits<InputMethodStatusConnection>;
   InputMethodStatusConnection()
@@ -1179,6 +1211,20 @@ std::string ChromeOSGetKeyboardOverlayId(const std::string& input_method_id) {
     }
   }
   return "";
+}
+
+extern "C"
+void ChromeOSSendHandwritingStroke(InputMethodStatusConnection* connection,
+                                   const HandwritingStroke& stroke) {
+  g_return_if_fail(connection);
+  connection->SendHandwritingStroke(stroke);
+}
+
+extern "C"
+void ChromeOSCancelHandwriting(InputMethodStatusConnection* connection,
+                               int n_strokes) {
+  g_return_if_fail(connection);
+  connection->CancelHandwriting(n_strokes);
 }
 
 }  // namespace chromeos
