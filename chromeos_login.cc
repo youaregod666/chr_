@@ -43,19 +43,6 @@ class OpaqueSessionConnection {
   DISALLOW_COPY_AND_ASSIGN(OpaqueSessionConnection);
 };
 
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-extern "C"
-bool ChromeOSCheckWhitelistSafe(const char* email,
-                                CryptoBlob** OUT_signature) {
-  DCHECK(OUT_signature);
-  GArray* sig;
-  if (!ChromeOSLoginHelpers::CheckWhitelistHelper(email, &sig))
-    return false;
-  *OUT_signature = ChromeOSLoginHelpers::CreateCryptoBlob(sig);
-  g_array_free(sig, true);
-  return true;
-}
-
 extern "C"
 bool ChromeOSEmitLoginPromptReady() {
   chromeos::dbus::Proxy proxy = ChromeOSLoginHelpers::CreateProxy();
@@ -73,63 +60,6 @@ bool ChromeOSEmitLoginPromptReady() {
                  << " failed: " << SCOPED_SAFE_MESSAGE(error);
   }
   return done;
-}
-
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-extern "C"
-bool ChromeOSEnumerateWhitelistedSafe(UserList** OUT_whitelisted) {
-  DCHECK(OUT_whitelisted);
-  gchar** whitelisted = NULL;
-  if (!ChromeOSLoginHelpers::EnumerateWhitelistedHelper(&whitelisted))
-    return false;
-  *OUT_whitelisted = ChromeOSLoginHelpers::CreateUserList(whitelisted);
-  g_strfreev(whitelisted);
-  return true;
-}
-
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-extern "C"
-CryptoBlob* ChromeOSCreateCryptoBlob(const uint8* in, const int in_len) {
-  GArray* ary = ChromeOSLoginHelpers::CreateGArrayFromBytes(in, in_len);
-  CryptoBlob* blob = ChromeOSLoginHelpers::CreateCryptoBlob(ary);
-  g_array_free(ary, TRUE);
-  return blob;
-}
-
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-extern "C"
-Property* ChromeOSCreateProperty(const char* name, const char* value,
-                                 const uint8* sig, const int sig_len) {
-  GArray* ary = ChromeOSLoginHelpers::CreateGArrayFromBytes(sig, sig_len);
-  Property* prop = ChromeOSLoginHelpers::CreateProperty(name, value, ary);
-  g_array_free(ary, TRUE);
-  return prop;
-}
-
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-extern "C"
-UserList* ChromeOSCreateUserList(char** users) {
-  return ChromeOSLoginHelpers::CreateUserList(users);
-}
-
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-// These Free* methods all use delete (as opposed to delete []) on purpose,
-// following the pattern established by code that uses NewStringCopy.
-extern "C"
-void ChromeOSFreeCryptoBlob(CryptoBlob* blob) {
-  ChromeOSLoginHelpers::FreeCryptoBlob(blob);
-}
-
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-extern "C"
-void ChromeOSFreeProperty(Property* property) {
-  ChromeOSLoginHelpers::FreeProperty(property);
-}
-
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-extern "C"
-void ChromeOSFreeUserList(UserList* userlist) {
-  ChromeOSLoginHelpers::FreeUserList(userlist);
 }
 
 extern "C"
@@ -161,40 +91,6 @@ bool ChromeOSRestartEntd() {
                                G_TYPE_INVALID,
                                G_TYPE_INVALID);
   return true;
-}
-
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-extern "C"
-void ChromeOSRequestRetrieveProperty(const char* name,
-                                     RetrievePropertyCallback callback,
-                                     void* user_data) {
-  ChromeOSLoginHelpers::RequestRetrievePropertyHelper(name, callback,
-      user_data);
-}
-
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-extern "C"
-bool ChromeOSRetrievePropertySafe(const char* name, Property** OUT_property) {
-  DCHECK(OUT_property);
-  GArray* sig;
-  gchar* value = NULL;
-  if (!ChromeOSLoginHelpers::RetrievePropertyHelper(name, &value, &sig))
-    return false;
-  *OUT_property = ChromeOSLoginHelpers::CreateProperty(name, value, sig);
-  g_array_free(sig, false);
-  g_free(value);
-  return true;
-}
-
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-extern "C"
-bool ChromeOSSetOwnerKeySafe(const CryptoBlob* public_key_der) {
-  GArray* key_der =
-      ChromeOSLoginHelpers::CreateGArrayFromBytes(public_key_der->data,
-                                                  public_key_der->length);
-  bool rv = ChromeOSLoginHelpers::SetOwnerKeyHelper(key_der);
-  g_array_free(key_der, TRUE);
-  return rv;
 }
 
 extern "C"
@@ -230,39 +126,6 @@ bool ChromeOSStopSession(const char* unique_id /* unused */) {
                                G_TYPE_BOOLEAN, &unused,
                                G_TYPE_INVALID);
   return true;
-}
-
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-extern "C"
-bool ChromeOSStorePropertySafe(const Property* prop) {
-  GArray* sig =
-      ChromeOSLoginHelpers::CreateGArrayFromBytes(prop->signature->data,
-                                                  prop->signature->length);
-  bool rv = ChromeOSLoginHelpers::StorePropertyHelper(prop->name,
-                                                      prop->value,
-                                                      sig);
-  g_array_free(sig, TRUE);
-  return rv;
-}
-
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-extern "C"
-bool ChromeOSUnwhitelistSafe(const char* email, const CryptoBlob* signature) {
-  std::vector<uint8> sig(signature->data, signature->data + signature->length);
-  return ChromeOSLoginHelpers::WhitelistOpHelper(
-      login_manager::kSessionManagerUnwhitelist,
-      email,
-      sig);
-}
-
-// TODO(cmasone): Remove as part of http://crosbug.com/14425
-extern "C"
-bool ChromeOSWhitelistSafe(const char* email, const CryptoBlob* signature) {
-  std::vector<uint8> sig(signature->data, signature->data + signature->length);
-  return ChromeOSLoginHelpers::WhitelistOpHelper(
-      login_manager::kSessionManagerWhitelist,
-      email,
-      sig);
 }
 
 namespace {

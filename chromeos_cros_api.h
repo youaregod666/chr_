@@ -227,12 +227,15 @@
 // 137: Stop loading more deprecated chromeos_login.cc functions.
 // 138: Deprecated GetTimezoneID, SetTimezoneID, GetMachineInfo,
 //      FreeMachineInfo (all functions in chromeos_system.h)
+// 139: Remove CheckWhitelistSafe, EnumerateWhitelistedSafe, StorePropertySafe,
+//      RetrievePropertySafe, RequestRetrieveProperty, all Create/Free
+//      functions, WhitelistSafe, UnwhitelistSafe, SetOwnerKeySafe.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 133,
-  kCrosAPIVersion = 138
+  kCrosAPIMinVersion = 137,
+  kCrosAPIVersion = 139
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
