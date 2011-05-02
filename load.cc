@@ -407,6 +407,8 @@ DECL_FUNC_1(InitTts, void, InitStatusCallback);
 DECL_FUNC_2(GetSystemLogs, LogDictionaryType*, FilePath*, const std::string&);
 
 // Brightness
+DECL_FUNC_1(DecreaseScreenBrightness, void, bool);
+DECL_FUNC_0(IncreaseScreenBrightness, void);
 DECL_FUNC_2(MonitorBrightnessV2,
             BrightnessConnection,
             BrightnessMonitorFunctionV2,
@@ -700,6 +702,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(GetSystemLogs);
 
   // Brightness
+  INIT_FUNC(DecreaseScreenBrightness);
+  INIT_FUNC(IncreaseScreenBrightness);
   INIT_FUNC(MonitorBrightnessV2);
   INIT_FUNC(MonitorBrightness);
   INIT_FUNC(DisconnectBrightness);

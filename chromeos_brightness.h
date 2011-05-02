@@ -17,6 +17,15 @@ typedef void (*BrightnessMonitorFunction)(void*, int);  // DEPRECATED
 class OpaqueBrightnessConnection;
 typedef OpaqueBrightnessConnection* BrightnessConnection;
 
+// Decrease the screen brightness by a small amount.
+// If |allow_off| is true, the brightness may be reduced to zero
+// and the backlight turned off. Otherwise the brightness will never be
+// decreased to zero.
+extern void (*DecreaseScreenBrightness)(bool allow_off);
+
+// Increase the screen brightness by a small amount.
+extern void (*IncreaseScreenBrightness)(void);
+
 // Register a handler that will be called when the screen brightness changes.
 extern BrightnessConnection (*MonitorBrightnessV2)(
     BrightnessMonitorFunctionV2 monitor_function,

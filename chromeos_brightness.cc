@@ -16,6 +16,31 @@ using std::string;
 
 namespace chromeos {
 
+extern "C"
+void ChromeOSDecreaseScreenBrightness(bool allow_off) {
+  dbus::Proxy proxy(dbus::GetSystemBusConnection(),
+                    power_manager::kPowerManagerServiceName,
+                    power_manager::kPowerManagerServicePath,
+                    power_manager::kPowerManagerInterface);
+  LOG(INFO) << "Sending call to decrease screen brightness";
+  ::dbus_g_proxy_call_no_reply(proxy.gproxy(),
+      power_manager::kPowerManagerDecreaseScreenBrightness,
+      G_TYPE_BOOLEAN, allow_off,
+      G_TYPE_INVALID, G_TYPE_INVALID);
+}
+
+extern "C"
+void ChromeOSIncreaseScreenBrightness(void) {
+  dbus::Proxy proxy(dbus::GetSystemBusConnection(),
+                    power_manager::kPowerManagerServiceName,
+                    power_manager::kPowerManagerServicePath,
+                    power_manager::kPowerManagerInterface);
+  LOG(INFO) << "Sending call to increase screen brightness";
+  ::dbus_g_proxy_call_no_reply(proxy.gproxy(),
+      power_manager::kPowerManagerIncreaseScreenBrightness,
+      G_TYPE_INVALID, G_TYPE_INVALID);
+}
+
 class OpaqueBrightnessConnection : public dbus::SignalWatcher {
  public:
   OpaqueBrightnessConnection(

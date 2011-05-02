@@ -230,12 +230,13 @@
 // 139: Remove CheckWhitelistSafe, EnumerateWhitelistedSafe, StorePropertySafe,
 //      RetrievePropertySafe, RequestRetrieveProperty, all Create/Free
 //      functions, WhitelistSafe, UnwhitelistSafe, SetOwnerKeySafe.
+// 140: Added DecreaseScreenBrightness and IncreaseScreenBrightness.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 137,
-  kCrosAPIVersion = 139
+  kCrosAPIVersion = 140
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
