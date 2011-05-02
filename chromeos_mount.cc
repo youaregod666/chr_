@@ -53,7 +53,7 @@ const char kDeviceIsOpticalDisc[] = "DeviceIsOpticalDisc";
 const char kDeviceSize[] = "DeviceSize";
 const char kReadOnly[] = "DeviceIsReadOnly";
 
-const char kBootDevicePrefix[] = "/dev/sda";
+const char kBootDeviceSubstring[] = "/block/sda";
 
 namespace {  // NOLINT
 
@@ -73,8 +73,7 @@ struct DiskInfoImpl : public DiskInfoAdvanced {
       is_read_only_(false) {
     DCHECK(path);
     path_ = NewStringCopy(path);
-    on_boot_device_ =
-        strncmp(path, kBootDevicePrefix, strlen(kBootDevicePrefix)) == 0;
+    on_boot_device_ = strstr(path, kBootDeviceSubstring) != 0;
     InitializeFromProperties(properties);
   }
   virtual ~DiskInfoImpl() {
@@ -453,8 +452,7 @@ void RequestMountInfoNotify(DBusGProxy* gproxy,
       device_iter < devices.end();
       ++device_iter) {
     // Skip disks from the device where we booted from.
-    if (strncmp(*device_iter, kBootDevicePrefix,
-                strlen(kBootDevicePrefix)) == 0)
+    if (strstr(*device_iter, kBootDeviceSubstring) != 0)
       continue;
     device_paths[removable_device_count++] = NewStringCopy(*device_iter);
   }
