@@ -2315,7 +2315,7 @@ class SMSHandler {
       sms->timestamp -= base::TimeDelta::FromHours(hours);
     } else {
       LOG(WARNING) << "SMS did not contain a timestamp";
-      sms->timestamp = base::Time::Time();
+      sms->timestamp = base::Time();
     }
     if (!smshash->Retrieve("smsc", &sms->smsc))
       sms->smsc = NULL;
