@@ -43,6 +43,7 @@ const char kDeviceIsDrive[] = "DeviceIsDrive";
 const char kDevicePresentationHide[] = "DevicePresentationHide";
 const char kDeviceMountPaths[] = "DeviceMountPaths";
 const char kDeviceIsMediaAvailable[] = "DeviceIsMediaAvailable";
+const char kDeviceIsOnBootDevice[] = "DeviceIsOnBootDevice";
 const char kNativePath[] = "NativePath";
 const char kDeviceFile[] = "DeviceFile";
 const char kLabel[] = "IdLabel";
@@ -53,8 +54,6 @@ const char kDeviceIsOpticalDisc[] = "DeviceIsOpticalDisc";
 const char kDeviceSize[] = "DeviceSize";
 const char kReadOnly[] = "DeviceIsReadOnly";
 
-const char kBootDeviceSubstring[] = "/block/sda";
-
 namespace {  // NOLINT
 
 struct DiskInfoImpl : public DiskInfoAdvanced {
@@ -64,6 +63,7 @@ struct DiskInfoImpl : public DiskInfoAdvanced {
       system_path_(NULL),
       is_drive_(false),
       has_media_(false),
+      on_boot_device_(false),
       file_path_(NULL),
       label_(NULL),
       drive_model_(NULL),
@@ -73,7 +73,6 @@ struct DiskInfoImpl : public DiskInfoAdvanced {
       is_read_only_(false) {
     DCHECK(path);
     path_ = NewStringCopy(path);
-    on_boot_device_ = strstr(path, kBootDeviceSubstring) != 0;
     InitializeFromProperties(properties);
   }
   virtual ~DiskInfoImpl() {
@@ -126,6 +125,7 @@ struct DiskInfoImpl : public DiskInfoAdvanced {
        !hidden) {
 
       properties.Retrieve(kDeviceIsMediaAvailable, &has_media_);
+      properties.Retrieve(kDeviceIsOnBootDevice, &on_boot_device_);
 
       std::string path;
       if (properties.Retrieve(kNativePath, &path))
@@ -451,9 +451,6 @@ void RequestMountInfoNotify(DBusGProxy* gproxy,
           devices.begin();
       device_iter < devices.end();
       ++device_iter) {
-    // Skip disks from the device where we booted from.
-    if (strstr(*device_iter, kBootDeviceSubstring) != 0)
-      continue;
     device_paths[removable_device_count++] = NewStringCopy(*device_iter);
   }
   cb_data->callback(cb_data->object,
@@ -472,7 +469,7 @@ void RequestMountInfoAsync(RequestMountInfoCallback callback,
           callback, object);
   DBusGProxyCall* call_id =
       ::dbus_g_proxy_begin_call(cb_data->proxy->gproxy(),
-            "EnumerateDeviceFiles",
+            "EnumerateAutoMountableDevices",
             RequestMountInfoNotify,
             cb_data,
             &DeleteMountCallbackData<RequestMountInfoCallback>,
