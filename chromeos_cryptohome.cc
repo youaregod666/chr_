@@ -264,8 +264,8 @@ bool ChromeOSCryptohomeIsMounted() {
                            &done,
                            G_TYPE_INVALID)) {
 
-    LOG(WARNING) << cryptohome::kCryptohomeIsMounted << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
+    LOG(FATAL) << cryptohome::kCryptohomeIsMounted << " failed: "
+               << (error->message ? error->message : "Unknown Error.");
 
   }
   return done;
