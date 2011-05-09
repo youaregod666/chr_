@@ -23,11 +23,11 @@ const char* const kUpdateEngineServiceInterface =
     "org.chromium.UpdateEngineInterface";
 
 // This is the "virtualized" destructor for UpdateProgress.
-void Destruct(const UpdateProgress& x) {
+void DestroyUpdateProgress(const UpdateProgress& x) {
   delete x.new_version_;
 }
 
-// Returns -1 on error.
+// Returns UPDATE_STATUS_ERROR on error.
 UpdateStatusOperation UpdateStatusFromString(const char* str) {
   const char* const kPrefix = "UPDATE_STATUS_";
   if (strncmp(str, kPrefix, strlen(kPrefix)))
@@ -118,7 +118,7 @@ class OpaqueUpdateStatusConnection {
                      gchar* new_version,
                      int64_t new_size) {
     UpdateStatusOperation status = UpdateStatusFromString(current_operation);
-    if (status == -1) {
+    if (status == UPDATE_STATUS_ERROR) {
       LOG(ERROR) << "Error parsing status: " << current_operation;
       return;
     }
@@ -128,7 +128,7 @@ class OpaqueUpdateStatusConnection {
     information.last_checked_time_ = last_checked_time;
     information.new_version_ = NewStringCopy(new_version);
     information.new_size_ = new_size;
-    information.destruct_ = &Destruct;
+    information.destruct_ = &DestroyUpdateProgress;
     monitor_(monitor_data_, information);
   }
  private:
@@ -179,7 +179,7 @@ bool ChromeOSRetrieveUpdateProgress(UpdateProgress* information) {
   }
 
   UpdateStatusOperation status = UpdateStatusFromString(current_op);
-  if (status == -1) {
+  if (status == UPDATE_STATUS_ERROR) {
     LOG(ERROR) << "Error parsing status: " << current_op;
     g_free(current_op);
     g_free(new_version);
@@ -191,7 +191,7 @@ bool ChromeOSRetrieveUpdateProgress(UpdateProgress* information) {
   information->last_checked_time_ = last_checked_time;
   information->new_version_ = NewStringCopy(new_version);
   information->new_size_ = new_size;
-  information->destruct_ = &Destruct;
+  information->destruct_ = &DestroyUpdateProgress;
   g_free(current_op);
   g_free(new_version);
   return true;
@@ -285,6 +285,15 @@ struct UpdateEngineCallbackData {
   scoped_ptr<dbus::Proxy> proxy;
 };
 
+struct GetStatusCallbackData : public UpdateEngineCallbackData {
+  GetStatusCallbackData(UpdateMonitor callback, void* user_data)
+      : UpdateEngineCallbackData(),
+        callback_(callback),
+        user_data_(user_data) {}
+  UpdateMonitor callback_;
+  void* user_data_;
+};
+
 struct AttemptUpdateCallbackData : public UpdateEngineCallbackData {
   AttemptUpdateCallbackData(UpdateCallback cb, void* data)
       : UpdateEngineCallbackData(),
@@ -308,6 +317,40 @@ struct GetTrackCallbackData : public UpdateEngineCallbackData {
 
 // Note: org_chromium_*Interface functions wrap the DBus calls and provide
 // their own callback and data, which in turn calls these callbacks.
+
+void GetStatusNotify(DBusGProxy* proxy,
+                     int64_t last_checked_time,
+                     double progress,
+                     gchar* current_operation,
+                     gchar* new_version,
+                     int64_t new_size,
+                     GError* error,
+                     void* user_data) {
+  GetStatusCallbackData* cb_data =
+      static_cast<GetStatusCallbackData*>(user_data);
+  if (error) {
+    LOG(WARNING) << "GetStatus DBus error: " << GetGErrorMessage(error);
+    delete cb_data;
+    return;
+  }
+  UpdateStatusOperation status = UpdateStatusFromString(current_operation);
+  if (status == UPDATE_STATUS_ERROR) {
+    LOG(ERROR) << "Error parsing status: " << current_operation;
+    delete cb_data;
+    return;
+  }
+  UpdateProgress information;
+  information.status_ = status;
+  information.download_progress_ = progress;
+  information.last_checked_time_ = last_checked_time;
+  information.new_version_ = NewStringCopy(new_version);
+  information.new_size_ = new_size;
+  information.destruct_ = &DestroyUpdateProgress;
+  if (cb_data->callback_)
+    cb_data->callback_(cb_data->user_data_, information);
+  // UpdateProgress destructor cleans up the new_version_ string.
+  delete cb_data;
+}
 
 void AttemptUpdateNotify(DBusGProxy* gproxy,
                          GError* error,
@@ -355,6 +398,20 @@ void GetTrackNotify(DBusGProxy* gproxy,
 }
 
 }  // namespace
+
+extern "C"
+void ChromeOSRequestUpdateStatus(UpdateMonitor callback,
+                                 void* user_data) {
+  GetStatusCallbackData* cb_data =
+      new GetStatusCallbackData(callback, user_data);
+  DBusGProxyCall* call_id =
+      org_chromium_UpdateEngineInterface_get_status_async(
+          cb_data->proxy->gproxy(), &GetStatusNotify, cb_data);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id";
+    delete cb_data;
+  }
+}
 
 extern "C"
 void ChromeOSRequestUpdateCheck(UpdateCallback callback, void* user_data) {

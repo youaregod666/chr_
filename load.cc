@@ -392,6 +392,7 @@ DECL_FUNC_0(InitiateUpdateCheck, bool);
 DECL_FUNC_0(RebootIfUpdated, bool);
 DECL_FUNC_1(SetTrack, bool, const std::string&);
 DECL_FUNC_0(GetTrack, std::string);
+DECL_FUNC_2(RequestUpdateStatus, void, UpdateMonitor, void*);
 DECL_FUNC_2(RequestUpdateCheck, void, UpdateCallback, void*);
 DECL_FUNC_1(SetUpdateTrack, void, const std::string&);
 DECL_FUNC_2(RequestUpdateTrack, void, UpdateTrackCallback, void*);
@@ -687,6 +688,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RebootIfUpdated);
   INIT_FUNC(SetTrack);
   INIT_FUNC(GetTrack);
+  INIT_FUNC(RequestUpdateStatus);
   INIT_FUNC(RequestUpdateCheck);
   INIT_FUNC(SetUpdateTrack);
   INIT_FUNC(RequestUpdateTrack);

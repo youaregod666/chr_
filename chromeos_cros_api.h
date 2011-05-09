@@ -232,12 +232,13 @@
 //      functions, WhitelistSafe, UnwhitelistSafe, SetOwnerKeySafe.
 // 140: Added DecreaseScreenBrightness and IncreaseScreenBrightness.
 // 141: Added SendHandwritingStroke and CancelHandwriting.
+// 142: Added async RequestUpdateStatus.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 137,
-  kCrosAPIVersion = 141
+  kCrosAPIVersion = 142
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

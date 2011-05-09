@@ -61,6 +61,7 @@ extern UpdateStatusConnection (*MonitorUpdateStatus)(UpdateMonitor monitor,
 extern void (*DisconnectUpdateProgress)(UpdateStatusConnection connection);
 
 // Poll for the status once. Returns true on success.
+// Deprecated.  Use async RequestUpdateStatus below.
 extern bool (*RetrieveUpdateProgress)(UpdateProgress* information);
 // Tell UpdateEngine daemon to check for an update. Returns true on success.
 extern bool (*InitiateUpdateCheck)();
@@ -74,6 +75,10 @@ extern bool (*SetTrack)(const std::string& track);
 extern std::string (*GetTrack)();
 
 // Asynchronous API.
+
+// Asynchronously poll UpdateEngine once for its state and call |callback|
+// with the result.
+extern void (*RequestUpdateStatus)(UpdateMonitor callback, void* user_data);
 
 // Asynchronously tell UpdateEngine daemon to check for an update.
 // If |callback| is non NULL, call with the result when the request completes.
