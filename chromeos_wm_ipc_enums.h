@@ -109,7 +109,10 @@ enum WmIpcWindowType {
   //   param[0]: X ID of snapshot window that is associated with this fav icon.
   WM_IPC_WINDOW_CHROME_TAB_FAV_ICON = 18,
 
-  // NEXT VALUE TO USE: 19
+  // A WebUI Browser for displaying startup screens.
+  WM_IPC_WINDOW_LOGIN_WEBUI = 19,
+
+  // NEXT VALUE TO USE: 20
 };
 
 inline bool WmIpcWindowTypeIsChrome(WmIpcWindowType type) {
@@ -134,6 +137,7 @@ inline const char* WmIpcWindowTypeToString(WmIpcWindowType type) {
     case WM_IPC_WINDOW_CHROME_SCREEN_LOCKER:   return "CHROME_SCREEN_LOCKER";
     case WM_IPC_WINDOW_CHROME_TAB_TITLE:       return "CHROME_TAB_TITLE";
     case WM_IPC_WINDOW_CHROME_TAB_FAV_ICON:    return "CHROME_TAB_FAV_ICON";
+    case WM_IPC_WINDOW_LOGIN_WEBUI:            return "LOGIN_WEBUI";
     default:                                   return "INVALID";
   }
 }
