@@ -947,6 +947,7 @@ bool ChromeOSDisconnectFromNetwork(const char* service_path) {
   return true;
 }
 
+// Deprecated
 extern "C"
 bool ChromeOSDeleteRememberedService(const char* service_path) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -1998,6 +1999,30 @@ void ChromeOSClearNetworkIPConfigProperty(const char* ipconfig_path,
   ClearNetworkProperty(cb_data, property);
 }
 
+extern "C"
+void ChromeOSDeleteServiceFromProfile(const char* profile_path,
+                                      const char* service_path) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamProfileInterface, profile_path);
+
+  // Start the DBus call. FlimflamNotifyHandleError will get called when
+  // it completes and log any errors.
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kDeleteEntryFunction,
+      &FlimflamNotifyHandleError,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_STRING,
+      service_path,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kDeleteEntryFunction;
+    delete cb_data;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Cashew services
 
 extern "C"
@@ -2161,6 +2186,8 @@ CellularDataPlanList* ChromeOSRetrieveCellularDataPlans(
   g_ptr_array_unref(properties_array);
   return data_plan_list;
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 class SMSHandler {
  public:

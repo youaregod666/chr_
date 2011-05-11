@@ -157,6 +157,10 @@ extern void (*SetNetworkIPConfigProperty)(const char* ipconfig_path,
 extern void (*ClearNetworkIPConfigProperty)(const char* ipconfig_path,
                                             const char* property);
 
+// Delete a remembered service from a profile.
+extern void (*DeleteServiceFromProfile)(const char* profile_path,
+                                        const char* service_path);
+
 // Connects to the network with the |service_path|.
 //
 // Set |passphrase| to NULL if the network doesn't require authentication.
