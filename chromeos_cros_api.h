@@ -233,12 +233,13 @@
 // 140: Added DecreaseScreenBrightness and IncreaseScreenBrightness.
 // 141: Added SendHandwritingStroke and CancelHandwriting.
 // 142: Added async RequestUpdateStatus.
+// 143: Migrate to a more recent version of libbase.a
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 137,
-  kCrosAPIVersion = 142
+  kCrosAPIVersion = 143
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

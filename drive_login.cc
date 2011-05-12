@@ -18,7 +18,7 @@
 #include <base/file_path.h>
 #include <base/file_util.h>
 #include <base/nss_util.h>
-#include <base/scoped_temp_dir.h>
+#include <base/memory/scoped_temp_dir.h>
 #include <base/string_util.h>
 #include <base/stringprintf.h>
 

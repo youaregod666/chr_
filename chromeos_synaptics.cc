@@ -4,6 +4,8 @@
 
 #include "chromeos_synaptics.h"  // NOLINT
 
+#include <stdlib.h>
+
 #include <string>
 
 #include "base/logging.h"

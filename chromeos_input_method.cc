@@ -18,9 +18,9 @@
 #include <stack>
 #include <utility>
 
-#include "base/scoped_ptr.h"
-#include "base/singleton.h"
-#include "chromeos/string.h"  // for chromeos::SplitStringUsing.
+#include "base/memory/scoped_ptr.h"
+#include "base/memory/singleton.h"
+#include "base/string_split.h"
 #include "ibus_input_methods.h"
 
 namespace chromeos {
@@ -69,7 +69,7 @@ InputMethodDescriptor CreateInputMethodDescriptor(
   std::string virtual_keyboard_layout = fallback_layout;
 
   std::vector<std::string> layout_names;
-  SplitStringUsing(raw_layout, ",", &layout_names);
+  base::SplitString(raw_layout, ',', &layout_names);
 
   // Find a valid XKB layout name from the comma-separated list, |raw_layout|.
   // Only the first acceptable XKB layout name in the list is used as the
@@ -474,8 +474,7 @@ class InputMethodStatusConnection {
     DCHECK(register_ime_properties);
     DCHECK(update_ime_property);
 
-    InputMethodStatusConnection* object = Singleton<InputMethodStatusConnection,
-        LeakySingletonTraits<InputMethodStatusConnection> >::get();
+    InputMethodStatusConnection* object = GetInstance();
     if (!object->language_library_) {
       object->language_library_ = language_library;
       object->current_input_method_changed_ = current_input_method_changed;
@@ -487,6 +486,11 @@ class InputMethodStatusConnection {
       LOG(ERROR) << "Unknown language_library is passed";
     }
     return object;
+  }
+
+  static InputMethodStatusConnection* GetInstance() {
+    return Singleton<InputMethodStatusConnection,
+        LeakySingletonTraits<InputMethodStatusConnection> >::get();
   }
 
   // Called by cros API ChromeOSStopInputMethodProcess().

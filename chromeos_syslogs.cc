@@ -13,7 +13,7 @@
 #include <base/file_path.h>
 #include <base/file_util.h>
 #include <base/logging.h>
-#include <base/scoped_ptr.h>
+#include <base/memory/scoped_ptr.h>
 
 namespace chromeos { // NOLINT
 
