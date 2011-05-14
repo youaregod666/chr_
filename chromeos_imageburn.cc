@@ -65,20 +65,11 @@ class OpaqueBurnStatusConnection {
     return finishedconnection_;
   }
 
-  void StartBurn(const char* from_path, const char* to_path) {
-    glib::ScopedError error;
-
-    if (!::dbus_g_proxy_call(burn_proxy_.gproxy(),
-                             imageburn::kBurnImage,
-                             &Resetter(&error).lvalue(),
-                             G_TYPE_STRING, from_path,
-                             G_TYPE_STRING, to_path,
-                             G_TYPE_INVALID,
-                             G_TYPE_INVALID)) {
-      LOG(WARNING) << "Burn operation unable to start: "
-          << (error->message ? error->message : "Unknown Error.");
-      Finished(this, to_path, false, error->message);
-    }
+  // Deprecated.
+  void DoBurn(const char* from_path, const char* to_path,
+              const char** devices_to_unmount) {
+    LOG(ERROR) << "Deprecated method call";
+    NOTREACHED();
   }
 
  private:
@@ -88,6 +79,84 @@ class OpaqueBurnStatusConnection {
   ConnectionUpdateType updatedconnection_;
   ConnectionFinishedType finishedconnection_;
 };
+
+struct BurnCallbackData {
+  BurnCallbackData(const char* target_path,
+                   BurnMonitor cb,
+                   void* obj)
+    : proxy(new dbus::Proxy(dbus::GetSystemBusConnection(),
+            imageburn::kImageBurnServiceName,
+            imageburn::kImageBurnServicePath,
+            imageburn::kImageBurnServiceInterface)),
+      callback(cb),
+      object(obj),
+      callback_target_path(target_path) {
+  }
+
+  scoped_ptr<dbus::Proxy> proxy;
+  BurnMonitor callback;
+  void* object;
+  std::string callback_target_path;
+};
+
+void DeleteBurnCallbackData(void* user_data) {
+  BurnCallbackData* cb_data = reinterpret_cast<BurnCallbackData*>(user_data);
+  delete cb_data;
+}
+
+void OnStartBurnFailed(const char* target_path, const char* error,
+    BurnMonitor callback, void* object) {
+  BurnStatus info;
+  info.target_path = target_path;
+  info.amount_burnt = 0;
+  info.total_size = 0;
+  callback(object, info, BURN_CANCELED);
+}
+
+void BurnImageRequestNotify(DBusGProxy* gproxy,
+                            DBusGProxyCall* call_id,
+                            void* user_data) {
+  BurnCallbackData* cb_data =
+      reinterpret_cast<BurnCallbackData*>(user_data);
+  DCHECK(cb_data);
+  glib::ScopedError error;
+  if (!::dbus_g_proxy_end_call(gproxy,
+                               call_id,
+                               &Resetter(&error).lvalue(),
+                               G_TYPE_INVALID)) {
+    LOG(WARNING) << "BurnImageNotify for path: '"
+                << cb_data->callback_target_path << "' error: "
+                << (error->message ? error->message : "Unknown Error.");
+    std::string err = "Image burn failed: ";
+    err = err.append(error->message ? error->message : "Unknown Error");
+    OnStartBurnFailed(cb_data->callback_target_path.c_str(), err.c_str(),
+        cb_data->callback, cb_data->object);
+  } else {
+    // Nothing. Image burn service will send status update messages.
+  }
+}
+
+void DoBurnAsync(const char* from_path, const char* to_path,
+    BurnMonitor callback, void* object) {
+  scoped_ptr<BurnCallbackData> cb_data(
+     new  BurnCallbackData(to_path, callback, object));
+  //We need this temp because cb_data is being released in the argument list.
+  dbus::Proxy* proxy = cb_data->proxy.get();
+  glib::ScopedError error;
+  DBusGProxyCall* call_id =
+      ::dbus_g_proxy_begin_call(proxy->gproxy(),
+                                imageburn::kBurnImage,
+                                &BurnImageRequestNotify,
+                                cb_data.release(),
+                                &DeleteBurnCallbackData,
+                                G_TYPE_STRING, from_path,
+                                G_TYPE_STRING, to_path,
+                                G_TYPE_INVALID);
+  if(!call_id) {
+    LOG(ERROR) << "StartBurn failed";
+    OnStartBurnFailed(to_path, "StartBurn failed", callback, object);
+  }
+}
 
 extern "C"
 BurnStatusConnection ChromeOSMonitorBurnStatus(BurnMonitor monitor,
@@ -170,7 +239,12 @@ void ChromeOSDisconnectBurnStatus(BurnStatusConnection connection) {
 extern "C"
 void ChromeOSStartBurn(const char* from_path, const char* to_path,
                BurnStatusConnection connection) {
-  connection->StartBurn(from_path, to_path);
+}
+
+extern "C"
+void ChromeOSRequestBurn(const char* from_path, const char* to_path,
+               BurnMonitor callback, void* user_data) {
+  DoBurnAsync(from_path, to_path, callback, user_data);
 }
 
 }  // namespace chromeos

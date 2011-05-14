@@ -383,6 +383,7 @@ DECL_FUNC_1(CryptohomeDisconnectSession, void, void*);
 DECL_FUNC_2(MonitorBurnStatus, BurnStatusConnection, BurnMonitor, void*);
 DECL_FUNC_1(DisconnectBurnStatus, void, BurnStatusConnection);
 DECL_FUNC_3(StartBurn, void, const char*, const char*, BurnStatusConnection);
+DECL_FUNC_4(RequestBurn, void, const char*, const char*, BurnMonitor, void*);
 
 // Update library
 DECL_FUNC_1(Update, bool, UpdateInformation*);
@@ -682,6 +683,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MonitorBurnStatus);
   INIT_FUNC(DisconnectBurnStatus);
   INIT_FUNC(StartBurn);
+  INIT_FUNC(RequestBurn);
 
   // Update
   INIT_FUNC(Update);

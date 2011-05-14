@@ -44,10 +44,13 @@ extern BurnStatusConnection (*MonitorBurnStatus)(BurnMonitor monitor,
 extern void (*DisconnectBurnStatus)(BurnStatusConnection connection);
 
 // Initiates image burning. Image located on path from_path is burnt to a device
-// on to_path. Call is done over connection since in case of failure, an event
-// that informs us of failure will be fired.
-extern void (*StartBurn)(const char* from_path, const char* to_path,
-                         BurnStatusConnection connection);
+// on to_path. BurnStatusConnection is not used anymore. It is left here due to
+// back-compatibility.
+extern void (*RequestBurn)(const char* from_path, const char* to_path,
+                           BurnMonitor callback, void* user_data);
 
+// Deprecated.
+extern void (*StartBurn)(const char* from_path, const char* to_path,
+                         BurnStatusConnection);
 } // namespace chromeos
 #endif  // PLATFORM_CROS_CHROMEOS_IMAGEBURN_H_
