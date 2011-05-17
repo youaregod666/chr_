@@ -2192,8 +2192,16 @@ class SMSHandler {
                                        const char* path,
                                        const Value* properties) {
     DCHECK(object);
+    // Callback is called with properties == NULL in case of DBUs errors.
+    if (!object || !properties)
+      return;
+
+    if (properties->GetType() != Value::TYPE_DICTIONARY) {
+      LOG(ERROR) << "Properties type is not a dictionary."
+      return;
+    }
+
     SMSHandler* self = static_cast<SMSHandler*>(object);
-    DCHECK_EQ(properties->GetType(), Value::TYPE_DICTIONARY);
     const DictionaryValue* dict =
         static_cast<const DictionaryValue*>(properties);
 
