@@ -2197,7 +2197,7 @@ class SMSHandler {
       return;
 
     if (properties->GetType() != Value::TYPE_DICTIONARY) {
-      LOG(ERROR) << "Properties type is not a dictionary."
+      LOG(ERROR) << "Properties type is not a dictionary.";
       return;
     }
 
