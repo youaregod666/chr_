@@ -89,7 +89,7 @@ class InputMethodUiStatusConnection {
     bool result = false;
     // Check the IBus connection status.
     if (ibus_bus_is_connected(ibus_)) {
-      LOG(INFO) << "ibus_bus_is_connected(). IBus connection is ready!";
+      LOG(INFO) << "ibus_bus_is_connected(). IBus connection is ready.";
       if (connection_change_handler_) {
         connection_change_handler_(input_method_library_, true);
       }
@@ -335,7 +335,7 @@ class InputMethodUiStatusConnection {
   // |ibus_panel_service_| object since the connection the service has will be
   // destroyed soon.
   static void IBusBusDisconnectedCallback(IBusBus* bus, gpointer user_data) {
-    LOG(WARNING) << "IBus connection is terminated!";
+    LOG(WARNING) << "IBus connection is terminated.";
     g_return_if_fail(user_data);
     InputMethodUiStatusConnection* self
         = static_cast<InputMethodUiStatusConnection*>(user_data);

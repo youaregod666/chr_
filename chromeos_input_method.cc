@@ -767,7 +767,7 @@ class InputMethodStatusConnection {
     ibus_bus_set_watch_ibus_signal(ibus_, TRUE);
 
     if (ibus_bus_is_connected(ibus_)) {
-      LOG(INFO) << "ibus_bus_is_connected(). IBus connection is ready!";
+      LOG(INFO) << "IBus connection is ready.";
     }
   }
 
@@ -784,8 +784,8 @@ class InputMethodStatusConnection {
     if (!ibus_config_) {
       GDBusConnection* ibus_connection = ibus_bus_get_connection(ibus_);
       if (!ibus_connection) {
-        LOG(ERROR) << "ibus_bus_get_connection() failed. ibus-daemon is "
-                   << "restarted and |ibus_| connection is not recovered yet?";
+        LOG(INFO) << "Couldn't create an ibus config object since "
+                  << "IBus connection is not ready.";
         return;
       }
       const gboolean disconnected
@@ -794,8 +794,8 @@ class InputMethodStatusConnection {
         // |ibus_| object is not NULL, but the connection between ibus-daemon
         // is not yet established. In this case, we don't create |ibus_config_|
         // object.
-        LOG(WARNING) << "Couldn't create an ibus config object since "
-                     << "ibus_connection_is_connected() returned false.";
+        LOG(ERROR) << "Couldn't create an ibus config object since "
+                   << "IBus connection is closed.";
         return;
       }
       // If memconf is not successfully started yet, ibus_config_new() will
@@ -814,7 +814,7 @@ class InputMethodStatusConnection {
       // libcros to detect the delivery of the "destroy" glib signal the
       // |ibus_config_| object.
       g_object_ref(ibus_config_);
-      LOG(INFO) << "ibus_config_ is ready!";
+      LOG(INFO) << "ibus_config_ is ready.";
     }
   }
 
@@ -991,7 +991,7 @@ class InputMethodStatusConnection {
 
   // Handles "disconnected" signal from ibus-daemon.
   static void IBusBusDisconnectedCallback(IBusBus* bus, gpointer user_data) {
-    LOG(WARNING) << "IBus connection is terminated!";
+    LOG(WARNING) << "IBus connection is terminated.";
     g_return_if_fail(user_data);
     InputMethodStatusConnection* self
         = static_cast<InputMethodStatusConnection*>(user_data);
