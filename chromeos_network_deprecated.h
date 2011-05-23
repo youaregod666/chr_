@@ -276,6 +276,9 @@ extern void (*RequestWifiServicePath)(const char* ssid,
                                       NetworkPropertiesCallback callback,
                                       void* object);
 
+// Save the IP config data
+extern bool (*SaveIPConfig)(IPConfig* config);
+
 }  // namespace chromeos
 
 #endif  // CHROMEOS_NETWORK_DEPRECATED_H_

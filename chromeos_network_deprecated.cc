@@ -1313,4 +1313,8 @@ void ChromeOSRequestWifiServicePath(
       ssid, SecurityToString(security), callback, object);
 }
 
+extern "C"
+bool ChromeOSSaveIPConfig(IPConfig* config) {
+  return true;
+}
 }  // namespace chromeos

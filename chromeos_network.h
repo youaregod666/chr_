@@ -146,6 +146,17 @@ extern void (*SetNetworkDeviceProperty)(const char* device_path,
 extern void (*ClearNetworkDeviceProperty)(const char* device_path,
                                           const char* property);
 
+// Set a property of an ip config to the provided value
+//
+// Success is indicated by the receipt of a matching PropertyChanged signal.
+extern void (*SetNetworkIPConfigProperty)(const char* ipconfig_path,
+                                          const char* property,
+                                          const ::Value* setting);
+
+// Clear a property of an ip config
+extern void (*ClearNetworkIPConfigProperty)(const char* ipconfig_path,
+                                            const char* property);
+
 // Connects to the network with the |service_path|.
 //
 // Set |passphrase| to NULL if the network doesn't require authentication.

@@ -234,12 +234,13 @@
 // 141: Added SendHandwritingStroke and CancelHandwriting.
 // 142: Added async RequestUpdateStatus.
 // 143: Migrate to a more recent version of libbase.a
+// 144: Added SetNetworkIPConfigProperty and ClearNetworkIPConfigProperty.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 137,
-  kCrosAPIVersion = 143
+  kCrosAPIVersion = 144
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

@@ -615,37 +615,6 @@ bool ChromeOSAddIPConfig(const char* device_path, IPConfigType type) {
 }
 
 extern "C"
-bool ChromeOSSaveIPConfig(IPConfig* config) {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy device_proxy(bus,
-                           kFlimflamServiceName,
-                           config->path,
-                           kFlimflamIPConfigInterface);
-/*
-  TODO(chocobo): Save all the values
-
-  glib::Value value_set;
-
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(device_proxy.gproxy(),
-                           kSetPropertyFunction,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           key,
-                           G_TYPE_VALUE,
-                           &value_set,
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) <<"Set IPConfig Property failed: "
-        << (error->message ? error->message : "Unknown Error.");
-    return false;
-  }
-*/
-  return true;
-}
-
-extern "C"
 bool ChromeOSRemoveIPConfig(IPConfig* config) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy config_proxy(bus,
@@ -2006,6 +1975,25 @@ void ChromeOSClearNetworkDeviceProperty(const char* device_path,
                                         const char* property) {
   FlimflamCallbackData* cb_data =
       new FlimflamCallbackData(kFlimflamDeviceInterface, device_path);
+
+  ClearNetworkProperty(cb_data, property);
+}
+
+extern "C"
+void ChromeOSSetNetworkIPConfigProperty(const char* ipconfig_path,
+                                        const char* property,
+                                        const ::Value* setting) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamIPConfigInterface, ipconfig_path);
+
+  SetNetworkProperty(cb_data, property, setting);
+}
+
+extern "C"
+void ChromeOSClearNetworkIPConfigProperty(const char* ipconfig_path,
+                                          const char* property) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamIPConfigInterface, ipconfig_path);
 
   ClearNetworkProperty(cb_data, property);
 }
