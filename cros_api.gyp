@@ -13,7 +13,6 @@
         'chromeos_input_method_ui.h',
         'chromeos_libcros_service.h',
         'chromeos_syslogs.h',
-        'chromeos_system.h',
         'load.cc',
       ],
       'include_dirs': [

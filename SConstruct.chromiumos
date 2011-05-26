@@ -105,7 +105,6 @@ SOURCES = Split('''\
   chromeos_speech_synthesis.cc
   chromeos_synaptics.cc
   chromeos_syslogs.cc
-  chromeos_system.cc
   chromeos_touchpad.cc
   chromeos_update.cc
   chromeos_update_engine.cc
@@ -187,9 +186,7 @@ unittests = [
                          ['chromeos_input_method.cc',
                           'chromeos_input_method_unittest.cc',
                           'chromeos_login.cc',
-                          'chromeos_login_helpers.cc',
-                          'chromeos_system.cc',
-                          'chromeos_system_unittest.cc']),
+                          'chromeos_login_helpers.cc']),
 ]
 unittest_alias = Alias('unittest', unittests)
 AlwaysBuild(unittest_alias)
