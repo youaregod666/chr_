@@ -237,12 +237,14 @@
 // 144: Added SetNetworkIPConfigProperty and ClearNetworkIPConfigProperty.
 // 145: Added async DeleteServiceFromProfile.
 // 146: Made call to burn service async, deprecated StartBurn.
+// 147: Change a member variable name in chromeos_input_method.h. The change is
+//      backward-compatible since the variable is not used in Chrome yet.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 137,
-  kCrosAPIVersion = 146
+  kCrosAPIVersion = 147
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

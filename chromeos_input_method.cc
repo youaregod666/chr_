@@ -49,13 +49,6 @@ bool XkbLayoutIsSupported(const std::string& xkb_layout) {
   return (g_supported_layouts->count(xkb_layout) > 0);
 }
 
-// Returns true if |virtual_keyboard_layout| is supported.
-// TODO(yusukes): implement this function.
-bool VirtualKeyboardLayoutIsSupported(
-    const std::string& virtual_keyboard_layout) {
-  return false;
-}
-
 // Creates an InputMethodDescriptor object. |raw_layout| is a comma-separated
 // list of XKB and virtual keyboard layouts.
 // (e.g. "special-us-virtual-keyboard-for-the-input-method,us")
@@ -66,7 +59,7 @@ InputMethodDescriptor CreateInputMethodDescriptor(
     const std::string& language_code) {
   static const char fallback_layout[] = "us";
   std::string physical_keyboard_layout = fallback_layout;
-  std::string virtual_keyboard_layout = fallback_layout;
+  const std::string& virtual_keyboard_layout = raw_layout;
 
   std::vector<std::string> layout_names;
   base::SplitString(raw_layout, ',', &layout_names);
@@ -77,15 +70,6 @@ InputMethodDescriptor CreateInputMethodDescriptor(
   for (size_t i = 0; i < layout_names.size(); ++i) {
     if (XkbLayoutIsSupported(layout_names[i])) {
       physical_keyboard_layout = layout_names[i];
-      break;
-    }
-  }
-  // Find a valid virtual keyboard name from the comma-separated list. Only the
-  // first acceptable virtual keyboard layout name in the list is used as the
-  // |virtual_keyboard_layout| value of the InputMethodDescriptor object.
-  for (size_t i = 0; i < layout_names.size(); ++i) {
-    if (VirtualKeyboardLayoutIsSupported(layout_names[i])) {
-      virtual_keyboard_layout = layout_names[i];
       break;
     }
   }

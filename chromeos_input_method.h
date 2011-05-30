@@ -27,14 +27,13 @@ struct InputMethodDescriptor {
   InputMethodDescriptor(const std::string& in_id,
                         const std::string& in_display_name,
                         const std::string& in_keyboard_layout,
-                        const std::string& in_virtual_keyboard_layout,
+                        const std::string& in_virtual_keyboard_layouts,
                         const std::string& in_language_code)
-      : virtual_keyboard_layout(in_virtual_keyboard_layout),
+      : virtual_keyboard_layouts(in_virtual_keyboard_layouts),
         id(in_id),
         display_name(in_display_name),
         keyboard_layout(in_keyboard_layout),
         language_code(in_language_code) {
-    DCHECK(virtual_keyboard_layout.find(",") == std::string::npos);
     DCHECK(keyboard_layout.find(",") == std::string::npos);
   }
 
@@ -48,14 +47,14 @@ struct InputMethodDescriptor {
     stream << "id=" << id
            << ", display_name=" << display_name
            << ", keyboard_layout=" << keyboard_layout
-           << ", virtual_keyboard_layout=" << virtual_keyboard_layout
+           << ", virtual_keyboard_layouts=" << virtual_keyboard_layouts
            << ", language_code=" << language_code;
     return stream.str();
   }
 
-  // A preferred virtual keyboard layout for the input method (e.g., "us",
-  // "us(dvorak)", "jp", "japanese-flick").
-  std::string virtual_keyboard_layout;
+  // Preferred virtual keyboard layouts for the input method. Comma separated
+  // layout names in order of priority, such as "handwriting,us", could appear.
+  std::string virtual_keyboard_layouts;
 
   // An ID that identifies an input method engine (e.g., "t:latn-post",
   // "pinyin", "hangul").
@@ -63,7 +62,7 @@ struct InputMethodDescriptor {
   // An input method name which can be used in the UI (e.g., "Pinyin").
   std::string display_name;
   // A preferred physical keyboard layout for the input method (e.g., "us",
-  // "us(dvorak)", "jp").
+  // "us(dvorak)", "jp"). Comma separated layout names do NOT appear.
   std::string keyboard_layout;
   // Language codes like "ko", "ja", "zh_CN", and "t".
   // "t" is used for languages in the "Others" category.
