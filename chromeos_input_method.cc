@@ -20,7 +20,6 @@
 
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/singleton.h"
-#include "base/string_split.h"
 #include "ibus_input_methods.h"
 
 namespace chromeos {

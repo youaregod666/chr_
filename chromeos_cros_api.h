@@ -239,12 +239,13 @@
 // 146: Made call to burn service async, deprecated StartBurn.
 // 147: Change a member variable name in chromeos_input_method.h. The change is
 //      backward-compatible since the variable is not used in Chrome yet.
+// 148: Added virtual_keyboard_layouts() getter to InputMethodDescriptor.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 137,
-  kCrosAPIVersion = 147
+  kCrosAPIVersion = 148
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

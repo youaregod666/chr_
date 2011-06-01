@@ -12,6 +12,7 @@
 
 #include <base/basictypes.h>
 #include <base/logging.h>  // DCHECK
+#include <base/string_split.h>
 
 namespace chromeos {
 
@@ -29,7 +30,7 @@ struct InputMethodDescriptor {
                         const std::string& in_keyboard_layout,
                         const std::string& in_virtual_keyboard_layouts,
                         const std::string& in_language_code)
-      : virtual_keyboard_layouts(in_virtual_keyboard_layouts),
+      : virtual_keyboard_layouts_(in_virtual_keyboard_layouts),
         id(in_id),
         display_name(in_display_name),
         keyboard_layout(in_keyboard_layout),
@@ -47,14 +48,27 @@ struct InputMethodDescriptor {
     stream << "id=" << id
            << ", display_name=" << display_name
            << ", keyboard_layout=" << keyboard_layout
-           << ", virtual_keyboard_layouts=" << virtual_keyboard_layouts
+           << ", virtual_keyboard_layouts=" << virtual_keyboard_layouts_
            << ", language_code=" << language_code;
     return stream.str();
   }
 
+  // TODO(yusukes): When libcros is moved to Chrome, do the following:
+  // 1. Change the type of the virtual_keyboard_layouts_ variable to
+  //    std::vector<std::string> and rename it back to virtual_keyboard_layouts.
+  // 2. Remove the virtual_keyboard_layouts() function.
+  // We can't do them right now because it will break ABI compatibility...
+  std::vector<std::string> virtual_keyboard_layouts() const {
+    std::vector<std::string> layout_names;
+    base::SplitString(virtual_keyboard_layouts_, ',', &layout_names);
+    return layout_names;
+  }
+
   // Preferred virtual keyboard layouts for the input method. Comma separated
   // layout names in order of priority, such as "handwriting,us", could appear.
-  std::string virtual_keyboard_layouts;
+  // Note: DO NOT ACCESS THIS VARIABLE DIRECTLY. USE virtual_keyboard_layouts()
+  // INSTEAD. SEE THE TODO ABOVE.
+  std::string virtual_keyboard_layouts_;
 
   // An ID that identifies an input method engine (e.g., "t:latn-post",
   // "pinyin", "hangul").
