@@ -27,7 +27,6 @@
 #include "chromeos_touchpad.h"  // NOLINT
 #include "chromeos_update.h"  // NOLINT
 #include "chromeos_update_engine.h"  // NOLINT
-#include "chromeos_syslogs.h"  // NOLINT
 
 namespace chromeos {  // NOLINT //
 
@@ -409,9 +408,6 @@ DECL_FUNC_0(StopSpeaking, bool);
 DECL_FUNC_0(IsSpeaking, bool);
 DECL_FUNC_1(InitTts, void, InitStatusCallback);
 
-// Syslogs
-DECL_FUNC_2(GetSystemLogs, LogDictionaryType*, FilePath*, const std::string&);
-
 // Brightness
 DECL_FUNC_1(DecreaseScreenBrightness, void, bool);
 DECL_FUNC_0(IncreaseScreenBrightness, void);
@@ -708,9 +704,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(StopSpeaking);
   INIT_FUNC(IsSpeaking);
   INIT_FUNC(InitTts);
-
-  // Syslogs
-  INIT_FUNC(GetSystemLogs);
 
   // Brightness
   INIT_FUNC(DecreaseScreenBrightness);
