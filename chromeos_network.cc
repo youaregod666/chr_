@@ -16,150 +16,23 @@
 #include "base/string_util.h"
 #include "base/values.h"
 #include "chromeos/dbus/dbus.h"  // NOLINT
+#include "chromeos/dbus/service_constants.h"  // NOLINT
 #include "chromeos/glib/object.h"  // NOLINT
 #include "chromeos/string.h"
 
-namespace chromeos {  // NOLINT
+using namespace cashew;
+using namespace flimflam;
+using namespace modemmanager;
+
+namespace chromeos {  // NOLINT-
 
 namespace { // NOLINT
 
-// Flimflam D-Bus service identifiers.
-static const char* kFlimflamManagerInterface = "org.chromium.flimflam.Manager";
-static const char* kFlimflamServiceInterface = "org.chromium.flimflam.Service";
-static const char* kFlimflamServiceName = "org.chromium.flimflam";
-static const char* kFlimflamIPConfigInterface = "org.chromium.flimflam.IPConfig";
-static const char* kFlimflamDeviceInterface = "org.chromium.flimflam.Device";
-static const char* kFlimflamProfileInterface = "org.chromium.flimflam.Profile";
-static const char* kFlimflamNetworkInterface = "org.chromium.flimflam.Network";
-
-// Flimflam function names.
-static const char* kGetPropertiesFunction = "GetProperties";
-static const char* kSetPropertyFunction = "SetProperty";
-static const char* kClearPropertyFunction = "ClearProperty";
-static const char* kConnectFunction = "Connect";
-static const char* kDisconnectFunction = "Disconnect";
-static const char* kRequestScanFunction = "RequestScan";
-static const char* kGetWifiServiceFunction = "GetWifiService";
-static const char* kGetVPNServiceFunction = "GetVPNService";
-static const char* kEnableTechnologyFunction = "EnableTechnology";
-static const char* kDisableTechnologyFunction = "DisableTechnology";
-static const char* kAddIPConfigFunction = "AddIPConfig";
-static const char* kRemoveConfigFunction = "Remove";
-static const char* kGetEntryFunction = "GetEntry";
-static const char* kDeleteEntryFunction = "DeleteEntry";
-static const char* kActivateCellularModemFunction = "ActivateCellularModem";
-static const char* kRequirePinFunction = "RequirePin";
-static const char* kEnterPinFunction = "EnterPin";
-static const char* kUnblockPinFunction = "UnblockPin";
-static const char* kChangePinFunction = "ChangePin";
-static const char* kProposeScanFunction = "ProposeScan";
-static const char* kRegisterFunction = "Register";
-
-// Flimflam property names.
-static const char* kSecurityProperty = "Security";
-static const char* kPassphraseProperty = "Passphrase";
-static const char* kIdentityProperty = "Identity";
-static const char* kCertPathProperty = "CertPath"; // DEPRECATED
-static const char* kOfflineModeProperty = "OfflineMode";
-static const char* kSignalStrengthProperty = "Strength";
-static const char* kNameProperty = "Name";
-static const char* kTypeProperty = "Type";
-static const char* kUnknownString = "UNKNOWN";
-static const char* kAutoConnectProperty = "AutoConnect";
-static const char* kModeProperty = "Mode";
-static const char* kActiveProfileProperty = "ActiveProfile";
-static const char* kSSIDProperty = "SSID";
-static const char* kDevicesProperty = "Devices";
-static const char* kNetworksProperty = "Networks";
-static const char* kConnectedProperty = "Connected";
-static const char* kWifiChannelProperty = "WiFi.Channel";
-static const char* kScanIntervalProperty = "ScanInterval";
-static const char* kPoweredProperty = "Powered";
-static const char* kHostProperty = "Host";
-static const char* kDBusConnectionProperty = "DBus.Connection";
-static const char* kDBusObjectProperty = "DBus.Object";
-
-// Flimflam device info property names.
-static const char* kIPConfigsProperty = "IPConfigs";
-static const char* kCertpathSettingsPrefix = "SETTINGS:";
-
-// Flimflam EAP service properties
-static const char* kEAPEAPProperty = "EAP.EAP";
-static const char* kEAPClientCertProperty = "EAP.ClientCert";
-static const char* kEAPCertIDProperty = "EAP.CertID";
-static const char* kEAPKeyIDProperty = "EAP.KeyID";
-static const char* kEAPPINProperty = "EAP.PIN";
-
-// Flimflam VPN service properties
-static const char* kVPNDomainProperty = "VPN.Domain";
-
-// Flimflam monitored properties
-static const char* kMonitorPropertyChanged = "PropertyChanged";
-
-// Flimflam type options.
-static const char* kTypeWifi = "wifi";
-
-// Flimflam mode options.
-static const char* kModeManaged = "managed";
-
-// Cashew D-Bus service identifiers.
-static const char* kCashewServiceName = "org.chromium.Cashew";
-static const char* kCashewServicePath = "/org/chromium/Cashew";
-static const char* kCashewServiceInterface = "org.chromium.Cashew";
-
-// Cashew function names.
-static const char* kRequestDataPlanFunction = "RequestDataPlansUpdate";
-static const char* kRetrieveDataPlanFunction = "GetDataPlans";
-
-// Flimflam monitored properties
-static const char* kMonitorDataPlanUpdate = "DataPlansUpdate";
-
-// Cashew data plan properties
-static const char* kCellularPlanNameProperty = "CellularPlanName";
-static const char* kCellularPlanTypeProperty = "CellularPlanType";
-static const char* kCellularPlanUpdateTimeProperty = "CellularPlanUpdateTime";
-static const char* kCellularPlanStartProperty = "CellularPlanStart";
-static const char* kCellularPlanEndProperty = "CellularPlanEnd";
-static const char* kCellularPlanDataBytesProperty = "CellularPlanDataBytes";
-static const char* kCellularDataBytesUsedProperty = "CellularDataBytesUsed";
-
-// Cashew Data Plan types
-static const char* kCellularDataPlanUnlimited = "UNLIMITED";
-static const char* kCellularDataPlanMeteredPaid = "METERED_PAID";
-static const char* kCellularDataPlanMeteredBase = "METERED_BASE";
-
-// IPConfig property names.
-static const char* kMethodProperty = "Method";
-static const char* kAddressProperty = "Address";
-static const char* kMtuProperty = "Mtu";
-static const char* kPrefixlenProperty = "Prefixlen";
-static const char* kBroadcastProperty = "Broadcast";
-static const char* kPeerAddressProperty = "PeerAddress";
-static const char* kGatewayProperty = "Gateway";
-static const char* kDomainNameProperty = "DomainName";
-static const char* kNameServersProperty = "NameServers";
-
-// IPConfig type options.
-static const char* kTypeIPv4 = "ipv4";
-static const char* kTypeIPv6 = "ipv6";
-static const char* kTypeDHCP = "dhcp";
-static const char* kTypeBOOTP = "bootp";
-static const char* kTypeZeroConf = "zeroconf";
-static const char* kTypeDHCP6 = "dhcp6";
-static const char* kTypePPP = "ppp";
-
-// ModemManager D-Bus service identifiers
-static const char* kModemManagerSMSInterface =
-    "org.freedesktop.ModemManager.Modem.Gsm.SMS";
-
-// ModemManager function names.
-static const char* kSMSGetFunction = "Get";
-static const char* kSMSDeleteFunction = "Delete";
-static const char* kSMSListFunction = "List";
-
-// ModemManager monitored signals
-static const char* kSMSReceivedSignal = "SmsReceived";
-
+// Looking for all the interface, method, signal, and property identifiers
+// that used to be defined here?  Now they're declared in
+// chromeos/dbus/service_constants.h, which is installed as a part of the
+// libchromeos package.
+// See http://code.google.com/p/chromium-os/issues/detail?id=16303
 
 static CellularDataPlanType ParseCellularDataPlanType(const std::string& type) {
   if (type == kCellularDataPlanUnlimited)
