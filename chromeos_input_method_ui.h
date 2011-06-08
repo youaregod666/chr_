@@ -92,6 +92,10 @@ typedef void (*InputMethodHideAuxiliaryTextMonitorFunction)(
 typedef void (*InputMethodHideLookupTableMonitorFunction)(
     void* input_method_library);
 
+// Callback function tyoe for handling IBus's |HidePreeditText| signal.
+typedef void (*InputMethodHidePreeditTextFunction)(
+    void* input_method_library);
+
 // Callback function type for handling IBus's |SetCandidateText| signal.
 typedef void (*InputMethodSetCursorLocationMonitorFunction)(
     void* input_method_library,
@@ -107,6 +111,11 @@ typedef void (*InputMethodUpdateAuxiliaryTextMonitorFunction)(
 typedef void (*InputMethodUpdateLookupTableMonitorFunction)(
     void* input_method_library,
     const InputMethodLookupTable& table);
+
+// Callback function type for handling IBus's |UpdatePreeditText| signal.
+typedef void (*InputMethodUpdatePreeditTextFunction)(
+    void* input_method_library, const std::string& utf8_text,
+    unsigned int cursor, bool visible);
 
 // A monitor function which is called when ibus connects or disconnects.
 typedef void(*InputMethodConnectionChangeMonitorFunction)(
@@ -189,6 +198,12 @@ extern void (*NotifyPageDown)(
 extern void (*MonitorInputMethodConnection)(
     InputMethodUiStatusConnection* connection,
     InputMethodConnectionChangeMonitorFunction connection_change_handler);
+
+// Sets notification functionis for changes to preedit text.
+extern void (*MonitorInputMethodPreeditText)(
+    InputMethodUiStatusConnection* connection,
+    InputMethodHidePreeditTextFunction hide_preedit_text,
+    InputMethodUpdatePreeditTextFunction update_preedit_text);
 
 }  // namespace chromeos
 
