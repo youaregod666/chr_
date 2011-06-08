@@ -241,12 +241,13 @@
 //      backward-compatible since the variable is not used in Chrome yet.
 // 148: Added virtual_keyboard_layouts() getter to InputMethodDescriptor.
 // 149: Deperecated GetSystemLogs
+// 150: Added MonitorInputMethodPreeditText.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 137,
-  kCrosAPIVersion = 149
+  kCrosAPIVersion = 150
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

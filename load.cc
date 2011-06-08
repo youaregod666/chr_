@@ -178,6 +178,11 @@ DECL_FUNC_2(MonitorInputMethodConnection,
             void,
             InputMethodUiStatusConnection*,
             InputMethodConnectionChangeMonitorFunction);
+DECL_FUNC_3(MonitorInputMethodPreeditText,
+            void,
+            InputMethodUiStatusConnection*,
+            InputMethodHidePreeditTextFunction,
+            InputMethodUpdatePreeditTextFunction);
 
 // Mount
 DECL_FUNC_3(MountRemovableDevice, void,
@@ -516,6 +521,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(NotifyPageUp);
   INIT_FUNC(NotifyPageDown);
   INIT_FUNC(MonitorInputMethodConnection);
+  INIT_FUNC(MonitorInputMethodPreeditText);
 
   // Mount
   INIT_FUNC(MountRemovableDevice);

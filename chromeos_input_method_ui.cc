@@ -58,6 +58,8 @@ class InputMethodUiStatusConnection {
       void* input_method_library)
       : monitor_functions_(monitor_functions),
         connection_change_handler_(NULL),
+        hide_preedit_text_handler_(NULL),
+        update_preedit_text_handler_(NULL),
         input_method_library_(input_method_library),
         ibus_(NULL),
         ibus_panel_service_(NULL) {
@@ -231,6 +233,13 @@ class InputMethodUiStatusConnection {
     connection_change_handler_ = connection_change_handler;
   }
 
+  void MonitorInputMethodPreeditText(
+    InputMethodHidePreeditTextFunction hide_preedit_text_handler,
+    InputMethodUpdatePreeditTextFunction update_preedit_text_handler) {
+    hide_preedit_text_handler_ = hide_preedit_text_handler;
+    update_preedit_text_handler_ = update_preedit_text_handler;
+  }
+
  private:
   // Installs gobject signal handlers to |ibus_|.
   void ConnectIBusSignals() {
@@ -287,6 +296,14 @@ class InputMethodUiStatusConnection {
                      "update-lookup-table",
                      G_CALLBACK(UpdateLookupTableCallback),
                      this);
+    g_signal_connect(ibus_panel_service_,
+                     "update-preedit-text",
+                     G_CALLBACK(UpdatePreeditTextCallback),
+                     this);
+    g_signal_connect(ibus_panel_service_,
+                     "hide-preedit-text",
+                     G_CALLBACK(HidePreeditTextCallback),
+                     this);
   }
 
   // Removes gobject signal handlers from |ibus_panel_service_|.
@@ -313,6 +330,14 @@ class InputMethodUiStatusConnection {
     g_signal_handlers_disconnect_by_func(
         ibus_panel_service_,
         reinterpret_cast<gpointer>(UpdateLookupTableCallback),
+        this);
+    g_signal_handlers_disconnect_by_func(
+        ibus_panel_service_,
+        reinterpret_cast<gpointer>(UpdatePreeditTextCallback),
+        this);
+    g_signal_handlers_disconnect_by_func(
+        ibus_panel_service_,
+        reinterpret_cast<gpointer>(HidePreeditTextCallback),
         this);
   }
 
@@ -417,6 +442,32 @@ class InputMethodUiStatusConnection {
     g_return_if_fail(self->monitor_functions_.set_cursor_location);
     self->monitor_functions_.set_cursor_location(
         self->input_method_library_, x, y, width, height);
+  }
+
+  // Handles IBusPanelService's |UpdatePreeditText| method call.
+  // Calls |update_preedit_text| in |monitor_functions|.
+  static void UpdatePreeditTextCallback(IBusPanelService *panel,
+                                        IBusText *text,
+                                        guint cursor_pos,
+                                        gboolean visible,
+                                        gpointer user_data) {
+    g_return_if_fail(user_data);
+    InputMethodUiStatusConnection* self
+        = static_cast<InputMethodUiStatusConnection*>(user_data);
+    g_return_if_fail(self->update_preedit_text_handler_);
+    self->update_preedit_text_handler_(
+        self->input_method_library_, text->text, cursor_pos, visible);
+  }
+
+  // Handles IBusPanelService's |UpdatePreeditText| method call.
+  // Calls |update_preedit_text| in |monitor_functions|.
+  static void HidePreeditTextCallback(IBusPanelService *panel,
+                                      gpointer user_data) {
+    g_return_if_fail(user_data);
+    InputMethodUiStatusConnection* self
+        = static_cast<InputMethodUiStatusConnection*>(user_data);
+    g_return_if_fail(self->hide_preedit_text_handler_);
+    self->hide_preedit_text_handler_(self->input_method_library_);
   }
 
   // Handles IBusPanelService's |UpdateLookupTable| method call.
@@ -537,6 +588,8 @@ class InputMethodUiStatusConnection {
 
   InputMethodUiStatusMonitorFunctions monitor_functions_;
   InputMethodConnectionChangeMonitorFunction connection_change_handler_;
+  InputMethodHidePreeditTextFunction hide_preedit_text_handler_;
+  InputMethodUpdatePreeditTextFunction update_preedit_text_handler_;
   void* input_method_library_;
   IBusBus* ibus_;
   IBusPanelService* ibus_panel_service_;
@@ -628,6 +681,19 @@ void ChromeOSMonitorInputMethodConnection(
   DCHECK(connection);
   if (connection) {
     connection->MonitorInputMethodConnection(connection_change_handler);
+  }
+}
+
+extern "C"
+void ChromeOSMonitorInputMethodPreeditText(
+    InputMethodUiStatusConnection* connection,
+    InputMethodHidePreeditTextFunction hide_preedit_text,
+    InputMethodUpdatePreeditTextFunction update_preedit_text) {
+  DLOG(INFO) << "MonitorInputMethodPreeditText";
+  DCHECK(connection);
+  if (connection) {
+    connection->MonitorInputMethodPreeditText(hide_preedit_text,
+                                              update_preedit_text);
   }
 }
 
