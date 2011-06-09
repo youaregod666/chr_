@@ -5,7 +5,6 @@
 #include "chromeos_mount.h" // NOLINT
 
 #include <base/logging.h>
-#include <base/memory/scoped_vector.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -18,6 +17,9 @@
 #include "chromeos/dbus/dbus.h"
 #include "chromeos/glib/object.h"
 #include "chromeos/string.h"
+#define G_UDEV_API_IS_SUBJECT_TO_CHANGE
+#include <gudev/gudev.h>
+#include <rootdev/rootdev.h>
 
 namespace chromeos { // NOLINT
 
@@ -219,16 +221,6 @@ void DeleteMountCallbackData(void* user_data) {
       reinterpret_cast<MountRequestCallbackData<T>*>(user_data);
   delete cb_data;
 }
-
-struct MountEventCallbackData {
-  MountEventCallbackData(MountEventConnection connection,
-                         MountEventType type)
-      : event_connection(connection),
-        event_type(type) {}
-
-  MountEventConnection event_connection;
-  MountEventType event_type;
-};
 
 void MountRequestNotify(DBusGProxy* gproxy,
                         DBusGProxyCall* call_id,
@@ -499,88 +491,98 @@ void RequestMountInfoAsync(RequestMountInfoCallback callback,
 
 class OpaqueMountEventConnection {
  public:
-  typedef dbus::MonitorConnection<void (const char*)> ConnectionType;
+  typedef dbus::MonitorConnection<void (const char*)>* ConnectionType;
 
   OpaqueMountEventConnection(const MountEventMonitor& monitor,
                              const dbus::Proxy& mount,
                              void* object)
-     : monitor_(monitor),
+     : gudev_client(NULL),
+       monitor_(monitor),
        object_(object),
-       mount_(mount) {
-  }
-
-  ~OpaqueMountEventConnection() {
-    TearDownConnections();
-  }
-
-  void SetUpConnections() {
-    static const struct {
-      const char *signal_name;
-      MountEventType event_type;
-    } kSignalEventTuples[] = {
-      { "DeviceAdded", DEVICE_ADDED },
-      { "DeviceScanned", DEVICE_SCANNED },
-      { "DeviceRemoved", DEVICE_REMOVED },
-      { "DiskAdded", DISK_ADDED },
-      { "DiskChanged", DISK_CHANGED },
-      { "DiskRemoved", DISK_REMOVED },
-    };
-    static const size_t kNumSignalEventTuples =
-      sizeof(kSignalEventTuples) / sizeof(kSignalEventTuples[0]);
-
-    callback_data_.reserve(kNumSignalEventTuples);
-    connections_.reserve(kNumSignalEventTuples);
-
-    for (size_t i = 0; i < kNumSignalEventTuples; ++i) {
-      MountEventCallbackData* cb_data = new MountEventCallbackData(this,
-          kSignalEventTuples[i].event_type);
-      callback_data_.push_back(cb_data);
-
-      ConnectionType* connection = new ConnectionType(mount_,
-          kSignalEventTuples[i].signal_name,
-          &OpaqueMountEventConnection::MountEventCallback,
-          cb_data);
-      connections_.push_back(connection);
-
-      ::dbus_g_proxy_add_signal(mount_.gproxy(),
-          kSignalEventTuples[i].signal_name,
-          G_TYPE_STRING,
-          G_TYPE_INVALID);
-
-      ::dbus_g_proxy_connect_signal(mount_.gproxy(),
-          kSignalEventTuples[i].signal_name,
-          G_CALLBACK(&ConnectionType::Run),
-          connection, NULL);
-    }
-  }
-
-  void TearDownConnections() {
-    for (std::vector<ConnectionType*>::const_iterator
-        connection_iter = connections_.begin();
-        connection_iter != connections_.end();
-        ++connection_iter) {
-      dbus::Disconnect(*connection_iter);
-    }
-    connections_.reset();
-    callback_data_.reset();
+       mount_(mount),
+       addconnection_(NULL),
+       removeconnection_(NULL) {
   }
 
   void FireEvent(MountEventType evt, const char* path) {
     monitor_(object_, evt, path);
   }
 
-  static void MountEventCallback(void* data, const char* device) {
-    MountEventCallbackData* cb_data =
-        reinterpret_cast<MountEventCallbackData*>(data);
-    cb_data->event_connection->FireEvent(cb_data->event_type, device);
+  static void Added(void* object, const char* device) {
+    MountEventConnection self =
+        reinterpret_cast<MountEventConnection>(object);
+    self->FireEvent(DISK_ADDED, device);
   }
+
+  static void Removed(void* object, const char* device) {
+    MountEventConnection self =
+        reinterpret_cast<MountEventConnection>(object);
+    self->FireEvent(DISK_REMOVED, device);
+  }
+
+  static void Changed(void* object, const char* device) {
+    MountEventConnection self =
+        reinterpret_cast<MountEventConnection>(object);
+    self->FireEvent(DISK_CHANGED, device);
+  }
+
+  static void OnUDevEvent(GUdevClient* client,
+                          const char* action,
+                          GUdevDevice* device,
+                          gpointer object) {
+    MountEventConnection self = reinterpret_cast<MountEventConnection>(object);
+    std::set<std::string>::iterator iter;
+    // can be scsi or block
+    const char* subsystem = g_udev_device_get_subsystem(device);
+    if (subsystem == NULL || strcmp(subsystem, "scsi") != 0) {
+      return;
+    }
+    if (strcmp(action, "add") == 0) {
+      const char* device_path = g_udev_device_get_sysfs_path(device);
+      if (device_path == NULL)
+        return;
+      std::string device_string(device_path);
+      iter = self->paths_.find(device_string);
+      if (iter != self->paths_.end()) {
+        self->FireEvent(DEVICE_SCANNED, device_path);
+      } else {
+        self->paths_.insert(device_string);
+        self->FireEvent(DEVICE_ADDED, device_path);
+      }
+    } else if (strcmp(action, "remove") == 0) {
+      const char* device_path = g_udev_device_get_sysfs_path(device);
+      if (device_path == NULL)
+        return;
+      std::string device_string(device_path);
+      iter = self->paths_.find(device_string);
+      if (iter != self->paths_.end()) {
+        self->paths_.erase(iter);
+        self->FireEvent(DEVICE_REMOVED, device_path);
+      }
+    }
+  }
+  ConnectionType& addedconnection() {
+    return addconnection_;
+  }
+
+  ConnectionType& removedconnection() {
+    return removeconnection_;
+  }
+
+  ConnectionType& changedconnection() {
+    return changedconnection_;
+  }
+
+  GUdevClient* gudev_client;
 
  private:
   MountEventMonitor monitor_;
   void* object_;
+  std::set<std::string> paths_;
   dbus::Proxy mount_;
-  ScopedVector<MountEventCallbackData> callback_data_;
-  ScopedVector<ConnectionType> connections_;
+  ConnectionType addconnection_;
+  ConnectionType removeconnection_;
+  ConnectionType changedconnection_;
 };
 
 extern "C"
@@ -591,10 +593,58 @@ MountEventConnection ChromeOSMonitorMountEvents(MountEventMonitor monitor,
                     kCrosDisksInterface,
                     kCrosDisksPath,
                     kCrosDisksInterface);
-  MountEventConnection connection =
-    new OpaqueMountEventConnection(monitor, mount, object);
-  connection->SetUpConnections();
-  return connection;
+  MountEventConnection result =
+     new OpaqueMountEventConnection(monitor, mount, object);
+  ::dbus_g_proxy_add_signal(mount.gproxy(),
+                            "DeviceAdded",
+                            G_TYPE_STRING,
+                            G_TYPE_INVALID);
+  ::dbus_g_proxy_add_signal(mount.gproxy(),
+                            "DeviceRemoved",
+                            G_TYPE_STRING,
+                            G_TYPE_INVALID);
+  ::dbus_g_proxy_add_signal(mount.gproxy(),
+                            "DeviceChanged",
+                            G_TYPE_STRING,
+                            G_TYPE_INVALID);
+  typedef dbus::MonitorConnection<void (const char*)> ConnectionType;
+
+  ConnectionType* added = new ConnectionType(mount, "DeviceAdded",
+      &OpaqueMountEventConnection::Added, result);
+
+  ::dbus_g_proxy_connect_signal(mount.gproxy(), "DeviceAdded",
+                                G_CALLBACK(&ConnectionType::Run),
+                                added, NULL);
+  result->addedconnection() = added;
+
+
+  ConnectionType* removed = new ConnectionType(mount, "DeviceRemoved",
+      &OpaqueMountEventConnection::Removed, result);
+
+  ::dbus_g_proxy_connect_signal(mount.gproxy(), "DeviceRemoved",
+                                G_CALLBACK(&ConnectionType::Run),
+                                removed, NULL);
+  result->removedconnection() = removed;
+
+
+  ConnectionType* changed = new ConnectionType(mount, "DeviceChanged",
+      &OpaqueMountEventConnection::Changed, result);
+
+  ::dbus_g_proxy_connect_signal(mount.gproxy(), "DeviceChanged",
+                                G_CALLBACK(&ConnectionType::Run),
+                                changed, NULL);
+  result->changedconnection() = changed;
+
+  // Listen to udev events
+
+  const char *subsystems[] = {"scsi", "block", NULL};
+  result->gudev_client = g_udev_client_new(subsystems);
+  g_signal_connect(result->gudev_client,
+                   "uevent",
+                   G_CALLBACK(&OpaqueMountEventConnection::OnUDevEvent),
+                   result);
+
+  return result;
 }
 
 extern "C"
@@ -626,6 +676,9 @@ void ChromeOSRequestMountInfo(RequestMountInfoCallback callback,
 
 extern "C"
 void ChromeOSDisconnectMountEventMonitor(MountEventConnection connection) {
+  dbus::Disconnect(connection->addedconnection());
+  dbus::Disconnect(connection->removedconnection());
+  dbus::Disconnect(connection->changedconnection());
   delete connection;
 }
 
