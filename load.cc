@@ -12,7 +12,6 @@
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_cryptohome.h" // NOLINT
 #include "chromeos_imageburn.h"  //NOLINT
-#include "chromeos_input_method.h"  // NOLINT
 #include "chromeos_input_method_ui.h"  // NOLINT
 #include "chromeos_libcros_service.h"  // NOLINT
 #include "chromeos_login.h"  // NOLINT
@@ -132,31 +131,6 @@ DECL_FUNC_2(MonitorResume, ResumeConnection, ResumeMonitor, void*);
 DECL_FUNC_1(DisconnectResume, void, ResumeConnection);
 
 // Input methods
-DECL_FUNC_5(MonitorInputMethodStatus,
-    InputMethodStatusConnection*,
-    void*,
-    chromeos::LanguageCurrentInputMethodMonitorFunction,
-    chromeos::LanguageRegisterImePropertiesFunction,
-    chromeos::LanguageUpdateImePropertyFunction,
-    chromeos::LanguageConnectionChangeMonitorFunction);
-DECL_FUNC_1(StopInputMethodProcess, bool, InputMethodStatusConnection*);
-DECL_FUNC_0(GetSupportedInputMethodDescriptors, InputMethodDescriptors*);
-DECL_FUNC_2(ChangeInputMethod,
-    bool, InputMethodStatusConnection*, const char*);
-DECL_FUNC_3(SetImePropertyActivated,
-    void, InputMethodStatusConnection*, const char*, bool);
-DECL_FUNC_4(SetImeConfig,
-    bool,
-    InputMethodStatusConnection*,
-    const char*,
-    const char*,
-    const ImeConfigValue&);
-DECL_FUNC_1(GetKeyboardOverlayId, std::string, const std::string&);
-DECL_FUNC_2(SendHandwritingStroke,
-            void,
-            InputMethodStatusConnection*,
-            const chromeos::HandwritingStroke&);
-DECL_FUNC_2(CancelHandwriting, void, InputMethodStatusConnection*, int);
 DECL_FUNC_2(MonitorInputMethodUiStatus,
             InputMethodUiStatusConnection*,
             const InputMethodUiStatusMonitorFunctions&,
@@ -504,15 +478,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(DisconnectResume);
 
   // Input methods
-  INIT_FUNC(MonitorInputMethodStatus);
-  INIT_FUNC(StopInputMethodProcess);
-  INIT_FUNC(GetSupportedInputMethodDescriptors);
-  INIT_FUNC(ChangeInputMethod);
-  INIT_FUNC(SetImePropertyActivated);
-  INIT_FUNC(SetImeConfig);
-  INIT_FUNC(GetKeyboardOverlayId);
-  INIT_FUNC(SendHandwritingStroke);
-  INIT_FUNC(CancelHandwriting);
   INIT_FUNC(MonitorInputMethodUiStatus);
   INIT_FUNC(DisconnectInputMethodUiStatus);
   INIT_FUNC(NotifyCandidateClicked);

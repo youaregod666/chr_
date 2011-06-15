@@ -1,6 +1,8 @@
 // Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+//
+// TODO(satorux): Remove this file.
 
 #ifndef CHROMEOS_INPUT_METHOD_H_
 #define CHROMEOS_INPUT_METHOD_H_
@@ -246,65 +248,7 @@ typedef void(*LanguageUpdateImePropertyFunction)(
 typedef void(*LanguageConnectionChangeMonitorFunction)(
     void* language_library, bool connected);
 
-// Establishes IBus connection to the ibus-daemon. LanguageXXXFunction functions
-// will be called when status of input method engines is changed.
-class InputMethodStatusConnection;
-extern InputMethodStatusConnection* (*MonitorInputMethodStatus)(
-    void* language_library,
-    LanguageCurrentInputMethodMonitorFunction current_input_method,
-    LanguageRegisterImePropertiesFunction register_ime_properties,
-    LanguageUpdateImePropertyFunction update_ime_property,
-    LanguageConnectionChangeMonitorFunction connection_changed);
-
-// Stops ibus-daemon. Returns true on success.
-extern bool (*StopInputMethodProcess)(InputMethodStatusConnection* connection);
-
-// Gets all input method engines that are supported, including ones not active.
-// Caller has to delete the returned list. This function never returns NULL.
-extern InputMethodDescriptors* (*GetSupportedInputMethodDescriptors)();
-
-// Changes the current input method engine to |name|. Returns true on success.
-// Examples of names: "pinyin", "m17n:ar:kbd", "xkb:us:dvorak:eng".
-extern bool (*ChangeInputMethod)(
-    InputMethodStatusConnection* connection, const char* name);
-
-// Sets whether the input method property specified by |key| is activated.
-// If |activated| is true, activates the property. If |activated| is false,
-// deactivates the property.
-// TODO(yusukes): "SetInputMethodPropertyActivated" might be better?
-extern void (*SetImePropertyActivated)(InputMethodStatusConnection* connection,
-                                       const char* key,
-                                       bool activated);
-
-// Sets a configuration of ibus-daemon or IBus engines to |value|.
-// Returns true if the configuration is successfully set.
-//
-// To set 'panel/custom_font', |section| should be "panel", and
-// |config_name| should be "custom_font".
-// TODO(yusukes): "SetInputMethodConfig" might be better?
-extern bool (*SetImeConfig)(InputMethodStatusConnection* connection,
-                            const char* section,
-                            const char* config_name,
-                            const ImeConfigValue& value);
-
-// Returns the keyboard overlay ID corresponding to |input_method_id|.
-// Returns an empty string if there is no corresponding keyboard overlay ID.
-extern std::string (*GetKeyboardOverlayId)(
-    const std::string& input_method_id);
-
-// Sends a handwriting stroke to ibus-daemon. The std::pair contains x and y
-// coordinates. (0.0, 0.0) represents the top-left corner of a handwriting area,
-// and (1.0, 1.0) does the bottom-right. For example, the second stroke for ロ
-// (Katakana character Ro) would be something like [(0,0), (1,0), (1,1)].
-// stroke.size() should always be >= 2 (i.e. a single dot is not allowed).
 typedef std::vector<std::pair<double, double> > HandwritingStroke;
-extern void (*SendHandwritingStroke)(
-    InputMethodStatusConnection* connection, const HandwritingStroke& stroke);
-
-// Clears the last N handwriting strokes. Pass zero for clearing all strokes.
-// TODO(yusukes): Currently ibus-daemon only accepts 0 for |n_strokes|.
-extern void (*CancelHandwriting)(InputMethodStatusConnection* connection,
-                                 int n_strokes);
 
 //
 // FUNCTIONS BELOW ARE ONLY FOR UNIT TESTS. DO NOT USE THEM.

@@ -242,12 +242,16 @@
 // 148: Added virtual_keyboard_layouts() getter to InputMethodDescriptor.
 // 149: Deperecated GetSystemLogs
 // 150: Added MonitorInputMethodPreeditText.
+// 151: Deprecated MonitorInputMethodStatus, StopInputMethodProcess,
+//      GetSupportedInputMethodDescriptors, ChangeInputMethod,
+//      SetImePropertyActivated, SetImeConfig, GetKeyboardOverlayId,
+//      SendHandwritingStroke, CancelHandwriting.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 137,
-  kCrosAPIVersion = 150
+  kCrosAPIVersion = 151
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
