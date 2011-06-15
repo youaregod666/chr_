@@ -161,33 +161,6 @@ extern void (*ClearNetworkIPConfigProperty)(const char* ipconfig_path,
 extern void (*DeleteServiceFromProfile)(const char* profile_path,
                                         const char* service_path);
 
-// Connects to the network with the |service_path|.
-//
-// Set |passphrase| to NULL if the network doesn't require authentication.
-// Set |identity| and |certpath| to NULL if the network doesn't require
-// certificate-based authentication.
-//
-// returns false on failure and true on success.
-//
-// Note, a successful call to this function only indicates that the
-// connection process has started. You will have to query the connection state
-// to determine if the connection was established successfully.
-extern bool (*ConnectToNetworkWithCertInfo)(const char* service_path,
-                                            const char* passphrase,
-                                            const char* identity,
-                                            const char* certpath);
-
-// Connects to the network with the |service_path|.
-//
-// Set |passphrase| to NULL if the network doesn't require authentication.
-// returns false on failure and true on success.
-//
-// Note, a successful call to this function only indicates that the
-// connection process has started. You will have to query the connection state
-// to determine if the connection was established successfully.
-extern bool (*ConnectToNetwork)(const char* service_path,
-                                const char* passphrase);
-
 // Disconnects from the network with the |service_path|.
 extern bool (*DisconnectFromNetwork)(const char* service_path);
 
@@ -429,11 +402,6 @@ extern bool (*SetPassphrase)(const char* service_path, const char* passphrase);
 //
 // Returns true on success.
 extern bool (*SetIdentity)(const char* service_path, const char* identity);
-
-// Set certificate id/path for service.
-//
-// Returns true on success.
-extern bool (*SetCertPath)(const char* service_path, const char* cert_path);
 
 // Gets a list of all the IPConfigs using a given device path
 extern IPConfigStatus* (*ListIPConfigs)(const char* device_path);

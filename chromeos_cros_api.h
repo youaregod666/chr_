@@ -246,12 +246,13 @@
 //      GetSupportedInputMethodDescriptors, ChangeInputMethod,
 //      SetImePropertyActivated, SetImeConfig, GetKeyboardOverlayId,
 //      SendHandwritingStroke, CancelHandwriting.
+// 152: Deprecated ConnectToNetwork, ConnectToNetworkWithCertInfo, SetCertPath.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 137,
-  kCrosAPIVersion = 151
+  kCrosAPIVersion = 152
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

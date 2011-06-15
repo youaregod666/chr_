@@ -186,7 +186,6 @@ DECL_FUNC_2(GetWifiService, ServiceInfo*, const char*, ConnectionSecurity);
 DECL_FUNC_2(ActivateCellularModem, bool, const char*, const char*);
 DECL_FUNC_5(ConfigureWifiService, bool, const char*, ConnectionSecurity,
             const char*, const char*, const char*);
-DECL_FUNC_2(ConnectToNetwork, bool, const char*, const char*);
 DECL_FUNC_3(SetNetworkServiceProperty, void, const char*, const char*,
             const ::Value *);
 DECL_FUNC_2(ClearNetworkServiceProperty, void, const char*, const char*);
@@ -197,8 +196,6 @@ DECL_FUNC_3(SetNetworkIPConfigProperty, void, const char*, const char*,
             const ::Value *);
 DECL_FUNC_2(ClearNetworkIPConfigProperty, void, const char*, const char*);
 DECL_FUNC_2(DeleteServiceFromProfile, void, const char*, const char*);
-DECL_FUNC_4(ConnectToNetworkWithCertInfo, bool, const char*, const char*,
-            const char*, const char*);
 DECL_FUNC_1(DisconnectFromNetwork, bool, const char*);
 DECL_FUNC_1(DeleteRememberedService, bool, const char*);
 DECL_FUNC_1(FreeSystemInfo, void, SystemInfo*);
@@ -259,7 +256,6 @@ DECL_FUNC_1(SetOfflineMode, bool, bool);
 DECL_FUNC_2(SetAutoConnect, bool, const char*, bool);
 DECL_FUNC_2(SetPassphrase, bool, const char*, const char*);
 DECL_FUNC_2(SetIdentity, bool, const char*, const char*);
-DECL_FUNC_2(SetCertPath, bool, const char*, const char*);
 DECL_FUNC_1(ListIPConfigs, IPConfigStatus*, const char*);
 DECL_FUNC_2(AddIPConfig, bool, const char*, IPConfigType);
 DECL_FUNC_1(SaveIPConfig, bool, IPConfig*);
@@ -517,8 +513,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(SetNetworkIPConfigProperty);
   INIT_FUNC(ClearNetworkIPConfigProperty);
   INIT_FUNC(DeleteServiceFromProfile);
-  INIT_FUNC(ConnectToNetwork);
-  INIT_FUNC(ConnectToNetworkWithCertInfo);
   INIT_FUNC(DisconnectFromNetwork);
   INIT_FUNC(DeleteRememberedService);
   INIT_FUNC(FreeSystemInfo);
@@ -537,7 +531,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(SetAutoConnect);
   INIT_FUNC(SetPassphrase);
   INIT_FUNC(SetIdentity);
-  INIT_FUNC(SetCertPath);
   INIT_FUNC(ListIPConfigs);
   INIT_FUNC(AddIPConfig);
   INIT_FUNC(SaveIPConfig);
