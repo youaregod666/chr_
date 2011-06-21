@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <base/logging.h>
+#include <base/string_split.h>
 #include <base/string_util.h>
 #include <base/values.h>
 
@@ -22,6 +23,7 @@
 GMainLoop* loop;
 
 typedef std::vector<std::string> stringlist;
+using base::SplitStringAlongWhitespace;
 
 void set_up_for_next_command();
 
