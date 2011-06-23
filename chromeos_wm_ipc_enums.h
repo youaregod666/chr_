@@ -274,7 +274,14 @@ enum WmIpcMessageType {
   //             if switching to the previous window.
   WM_IPC_MESSAGE_WM_CYCLE_WINDOWS = 23,
 
-  // NEXT VALUE TO USE: 24
+  // Sent from Chrome to the window manager to ask it to switch to a particular
+  // layout mode (e.g. in response to a maximize/restore button being clicked).
+  // The current state is stored in a _CHROME_LAYOUT_MODE property on the root
+  // window by the window manager.
+  //   param[0]: New mode, from WmIpcLayoutMode.
+  WM_IPC_MESSAGE_WM_SET_LAYOUT_MODE = 24,
+
+  // NEXT VALUE TO USE: 25
 };
 
 inline const char* WmIpcMessageTypeToString(WmIpcMessageType type) {
@@ -356,6 +363,17 @@ enum WmIpcPowerButtonState {
   // The power button was released before being held long enough to shut
   // down the machine.
   WM_IPC_POWER_BUTTON_ABORTED_SHUTDOWN,
+};
+
+// A parameter used by WM_IPC_MESSAGE_WM_SET_LAYOUT_MODE to describe the
+// requested window layout mode.
+enum WmIpcLayoutMode {
+  // The active browser window is covering the whole screen.
+  WM_IPC_LAYOUT_MAXIMIZED = 0,
+
+  // Multiple browser windows are visible onscreen at once and are overlapping
+  // each other.
+  WM_IPC_LAYOUT_OVERLAPPING,
 };
 
 }  // namespace chromeos
