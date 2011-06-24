@@ -12,7 +12,6 @@
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_cryptohome.h" // NOLINT
 #include "chromeos_imageburn.h"  //NOLINT
-#include "chromeos_input_method_ui.h"  // NOLINT
 #include "chromeos_libcros_service.h"  // NOLINT
 #include "chromeos_login.h"  // NOLINT
 #include "chromeos_mount.h"  // NOLINT
@@ -129,34 +128,6 @@ DECL_FUNC_0(RequestRestart, void);
 DECL_FUNC_0(RequestShutdown, void);
 DECL_FUNC_2(MonitorResume, ResumeConnection, ResumeMonitor, void*);
 DECL_FUNC_1(DisconnectResume, void, ResumeConnection);
-
-// Input methods
-DECL_FUNC_2(MonitorInputMethodUiStatus,
-            InputMethodUiStatusConnection*,
-            const InputMethodUiStatusMonitorFunctions&,
-            void*);
-DECL_FUNC_1(DisconnectInputMethodUiStatus,
-            void,
-            InputMethodUiStatusConnection*);
-DECL_FUNC_4(NotifyCandidateClicked, void,
-            InputMethodUiStatusConnection*, int, int, int);
-DECL_FUNC_1(NotifyCursorUp, void,
-            InputMethodUiStatusConnection*);
-DECL_FUNC_1(NotifyCursorDown, void,
-            InputMethodUiStatusConnection*);
-DECL_FUNC_1(NotifyPageUp, void,
-            InputMethodUiStatusConnection*);
-DECL_FUNC_1(NotifyPageDown, void,
-            InputMethodUiStatusConnection*);
-DECL_FUNC_2(MonitorInputMethodConnection,
-            void,
-            InputMethodUiStatusConnection*,
-            InputMethodConnectionChangeMonitorFunction);
-DECL_FUNC_3(MonitorInputMethodPreeditText,
-            void,
-            InputMethodUiStatusConnection*,
-            InputMethodHidePreeditTextFunction,
-            InputMethodUpdatePreeditTextFunction);
 
 // Mount
 DECL_FUNC_3(MountRemovableDevice, void,
@@ -472,17 +443,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RequestShutdown);
   INIT_FUNC(MonitorResume);
   INIT_FUNC(DisconnectResume);
-
-  // Input methods
-  INIT_FUNC(MonitorInputMethodUiStatus);
-  INIT_FUNC(DisconnectInputMethodUiStatus);
-  INIT_FUNC(NotifyCandidateClicked);
-  INIT_FUNC(NotifyCursorUp);
-  INIT_FUNC(NotifyCursorDown);
-  INIT_FUNC(NotifyPageUp);
-  INIT_FUNC(NotifyPageDown);
-  INIT_FUNC(MonitorInputMethodConnection);
-  INIT_FUNC(MonitorInputMethodPreeditText);
 
   // Mount
   INIT_FUNC(MountRemovableDevice);

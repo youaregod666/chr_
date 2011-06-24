@@ -1,10 +1,12 @@
-// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 //
 // The header files provides APIs for monitoring and controlling input
 // method UI status. The APIs encapsulate the APIs of IBus, the underlying
 // input method framework.
+//
+// TODO(satorux): Remove this file.
 
 #ifndef CHROMEOS_INPUT_METHOD_UI_H_
 #define CHROMEOS_INPUT_METHOD_UI_H_
@@ -137,73 +139,6 @@ struct InputMethodUiStatusMonitorFunctions {
   InputMethodUpdateAuxiliaryTextMonitorFunction update_auxiliary_text;
   InputMethodUpdateLookupTableMonitorFunction update_lookup_table;
 };
-
-// Establishes IBus connection to the ibus-daemon.
-//
-// Returns an InputMethodUiStatusConnection object that is used for
-// maintaining and monitoring an IBus connection. The implementation
-// details of InputMethodUiStatusConnection is not exposed.
-//
-// Function pointers in |monitor_functions| are registered in the returned
-// InputMethodUiStatusConnection object. These functions will be called,
-// unless the pointers are NULL, when certain signals are received from
-// ibus-daemon.
-//
-// The client can pass a pointer to an abitrary object as
-// |input_method_library|. The pointer passed as |input_method_library|
-// will be passed to the registered callback functions as the first
-// parameter.
-class InputMethodUiStatusConnection;
-extern InputMethodUiStatusConnection* (*MonitorInputMethodUiStatus)(
-    const InputMethodUiStatusMonitorFunctions& monitor_functions,
-    void* input_method_library);
-
-// Disconnects the input method UI status connection, as well as the
-// underlying IBus connection.
-extern void (*DisconnectInputMethodUiStatus)(
-    InputMethodUiStatusConnection* connection);
-
-// Notifies that a candidate is clicked. |CandidateClicked| signal will be
-// sent to the ibus-daemon.
-//
-// - |index| Index in the Lookup table. The semantics is same with
-//   |cursor_absolute_index|.
-// - |button| GdkEventButton::button (1: left button, etc.)
-// - |state|  GdkEventButton::state (key modifier flags)
-extern void (*NotifyCandidateClicked)(
-    InputMethodUiStatusConnection* connection,
-    int index, int button, int flags);
-
-// Notifies that the cursor up button is clicked. |CursorUp| signal will be
-// sent to the ibus-daemon
-extern void (*NotifyCursorUp)(
-    InputMethodUiStatusConnection* connection);
-
-// Notifies that the cursor down button is clicked. |CursorDown| signal will be
-// sent to the ibus-daemon
-extern void (*NotifyCursorDown)(
-    InputMethodUiStatusConnection* connection);
-
-// Notifies that the page up button is clicked. |PageUp| signal will be
-// sent to the ibus-daemon
-extern void (*NotifyPageUp)(
-    InputMethodUiStatusConnection* connection);
-
-// Notifies that the page down button is clicked. |PageDown| signal will be
-// sent to the ibus-daemon
-extern void (*NotifyPageDown)(
-    InputMethodUiStatusConnection* connection);
-
-// Set a notification function for changes to an ibus connection.
-extern void (*MonitorInputMethodConnection)(
-    InputMethodUiStatusConnection* connection,
-    InputMethodConnectionChangeMonitorFunction connection_change_handler);
-
-// Sets notification functionis for changes to preedit text.
-extern void (*MonitorInputMethodPreeditText)(
-    InputMethodUiStatusConnection* connection,
-    InputMethodHidePreeditTextFunction hide_preedit_text,
-    InputMethodUpdatePreeditTextFunction update_preedit_text);
 
 }  // namespace chromeos
 

@@ -249,12 +249,16 @@
 // 152: Deprecated ConnectToNetwork, ConnectToNetworkWithCertInfo, SetCertPath.
 // 153: Removed GetSystemLogs.
 // 154: Removed ConnectToNetworkWithCertInfo, ConnectToNetwork, and SetCertPath.
+// 155: Deprecated MonitorInputMethodUiStatus,
+//      DisconnectInputMethodUiStatus, NotifyCandidateClicked,
+//      NotifyCursorUp, NotifyCursorDown, NotifyPageUp, NotifyPageDown,
+//      MonitorInputMethodConnection, MonitorInputMethodPreeditText,
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 152,
-  kCrosAPIVersion = 154
+  kCrosAPIVersion = 155
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
