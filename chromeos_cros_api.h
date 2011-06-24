@@ -253,12 +253,16 @@
 //      DisconnectInputMethodUiStatus, NotifyCandidateClicked,
 //      NotifyCursorUp, NotifyCursorDown, NotifyPageUp, NotifyPageDown,
 //      MonitorInputMethodConnection, MonitorInputMethodPreeditText,
+// 156: Removed MonitorInputMethodStatus, StopInputMethodProcess,
+//      GetSupportedInputMethodDescriptors, ChangeInputMethod,
+//      SetImePropertyActivated, SetImeConfig, GetKeyboardOverlayId,
+//      SendHandwritingStroke, CancelHandwriting.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 152,
-  kCrosAPIVersion = 155
+  kCrosAPIVersion = 156
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

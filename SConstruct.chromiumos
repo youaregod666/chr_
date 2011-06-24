@@ -46,16 +46,6 @@ glib_marshal_builder = Builder(generator = GlibMarshalGenerator,
                                single_source = 1,
                                suffix = 'glibmarshal.c')
 
-ibus_engines_builder = Builder(action = "./gen_engines.py $SOURCES > $TARGET")
-
-input_methodwhitelist_builder = Builder(action =
-                                        "./gen_input_method_whitelist.py " +
-                                        "$SOURCES > $TARGET")
-
-keyboard_overlay_map_builder = Builder(action =
-                                        "./gen_keyboard_overlay_map.py " +
-                                        "$SOURCES > $TARGET")
-
 dbus_server_builder = Builder(action =
  "/usr/bin/dbus-binding-tool --mode=glib-server " \
  "--prefix=libcros_servicer $SOURCES > $TARGET")
@@ -66,9 +56,6 @@ dbus_client_builder = Builder(action =
 
 base_env = Environment()
 base_env['BUILDERS']['GlibMarshal'] = glib_marshal_builder
-base_env['BUILDERS']['IBusEngines'] = ibus_engines_builder
-base_env['BUILDERS']['InputMethodWhitelist'] = input_methodwhitelist_builder
-base_env['BUILDERS']['KeyboardOverlayMap'] = keyboard_overlay_map_builder
 base_env['BUILDERS']['DBusServer'] = dbus_server_builder
 base_env['BUILDERS']['DBusClient'] = dbus_client_builder
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
@@ -91,7 +78,6 @@ SOURCES = Split('''\
   chromeos_brightness.cc
   chromeos_cryptohome.cc
   chromeos_imageburn.cc
-  chromeos_input_method.cc
   chromeos_input_method_ui.cc
   chromeos_libcros_service.cc
   chromeos_login.cc
@@ -122,28 +108,6 @@ env.ParseConfig('%s --cflags --libs dbus-1 glib-2.0 dbus-glib-1 '
                 'ibus-1.0 libpcrecpp x11' % env['ENV']['PKG_CONFIG'])
 
 env.GlibMarshal('marshal.glibmarshal.c', 'marshal.list')
-
-ibus_component_dir = "%s%s" % (env['ENV']['SYSROOT'],
-                               '/usr/share/ibus/component/')
-ime_whitelist_file = env['ENV']['SYSROOT'] + '/usr/share/chromeos-assets/' + \
-                     'input_methods/whitelist.txt'
-
-env.IBusEngines('ibus_input_methods.h',
-                [ime_whitelist_file, # The first argument must be whitelist.
-                 ibus_component_dir + 'hangul.xml',
-                 ibus_component_dir + 'm17n.xml',
-                 ibus_component_dir + 'mozc.xml',
-                 ibus_component_dir + 'mozc-chewing.xml',
-                 ibus_component_dir + 'pinyin.xml',
-                 ibus_component_dir + 'xkb-layouts.xml'])
-# TODO(yusukes): Add zinnia.xml:
-#                ibus_component_dir + 'zinnia.xml'
-
-env.InputMethodWhitelist('chromeos_input_method_whitelist.h',
-                         ime_whitelist_file)
-
-env.KeyboardOverlayMap('chromeos_keyboard_overlay_map.h',
-			ime_whitelist_file)
 
 env.DBusServer('bindings_server.h',
                ['libcros_service.xml'])
@@ -182,9 +146,7 @@ Load = base_env.Object('load.cc')
 # is set.
 unittests = [
   env_gtest_main.Program('libcros_unittests',
-                         ['chromeos_input_method.cc',
-                          'chromeos_input_method_unittest.cc',
-                          'chromeos_login.cc',
+                         ['chromeos_login.cc',
                           'chromeos_login_helpers.cc']),
 ]
 unittest_alias = Alias('unittest', unittests)
