@@ -78,6 +78,7 @@ SOURCES = Split('''\
   chromeos_brightness.cc
   chromeos_cryptohome.cc
   chromeos_imageburn.cc
+  chromeos_input_method_ui.cc
   chromeos_libcros_service.cc
   chromeos_login.cc
   chromeos_login_helpers.cc

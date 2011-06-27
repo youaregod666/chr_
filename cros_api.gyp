@@ -9,6 +9,7 @@
       'sources': [
         'chromeos_power.h',
         'chromeos_network.h',
+        'chromeos_input_method_ui.h',
         'chromeos_libcros_service.h',
         'load.cc',
       ],
