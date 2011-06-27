@@ -322,6 +322,8 @@ inline const char* WmIpcMessageTypeToString(WmIpcMessageType type) {
       return "WM_NOTIFY_SIGNING_OUT";
     case WM_IPC_MESSAGE_WM_CYCLE_WINDOWS:
       return "WM_CYCLE_WINDOWS";
+    case WM_IPC_MESSAGE_WM_SET_LAYOUT_MODE:
+      return "WM_SET_LAYOUT_MODE";
     default:
       return "INVALID";
   }
