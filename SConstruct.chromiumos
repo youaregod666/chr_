@@ -102,9 +102,9 @@ SOURCES = Split('''\
 env = base_env.Clone()
 env.Append(LIBS=['chromeos', 'base', 'rt'])
 
-# glib, dbus, and ibus environment
+# glib and dbus environment
 env.ParseConfig('%s --cflags --libs dbus-1 glib-2.0 dbus-glib-1 '
-                'ibus-1.0 libpcrecpp x11' % env['ENV']['PKG_CONFIG'])
+                'libpcrecpp x11' % env['ENV']['PKG_CONFIG'])
 
 env.GlibMarshal('marshal.glibmarshal.c', 'marshal.list')
 
@@ -122,7 +122,7 @@ env_test = base_env.Clone()
 env_test.Append(LIBS=['base', 'dl', 'rt', 'nss3'])
 
 env_test.ParseConfig('%s --cflags --libs gobject-2.0 dbus-glib-1 dbus-1 nss '
-                     'ibus-1.0' % (env_test['ENV']['PKG_CONFIG']))
+                     % (env_test['ENV']['PKG_CONFIG']))
 env_test.Append(CCFLAGS=['-DOS_CHROMEOS'])
 
 env_gtest = env_test.Clone()
