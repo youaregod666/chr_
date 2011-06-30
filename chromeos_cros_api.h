@@ -260,13 +260,14 @@
 // 157: Removed MonitorInputMethodUiStatus,
 //      DisconnectInputMethodUiStatus, NotifyCandidateClicked,
 //      NotifyCursorUp, NotifyCursorDown, NotifyPageUp, NotifyPageDown,
-//      MonitorInputMethodConnection, MonitorInputMethodPreeditText,>
+//      MonitorInputMethodConnection, MonitorInputMethodPreeditText.
+// 158: Removed SetSynapticsParameter.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 155,
-  kCrosAPIVersion = 157
+  kCrosAPIVersion = 158
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
