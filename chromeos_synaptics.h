@@ -24,12 +24,6 @@ enum SynapticsParameter {
   PARAM_RANGE_SPEED_SENSITIVITY,
 };
 
-// This method will set the synaptics setting for the passed in param to the
-// value specified. For boolean parameters, the value should be 0 or 1. For
-// range parameters, the value should be an integer from 1 to 10.
-extern void (*SetSynapticsParameter)(SynapticsParameter param, int value);
-
 }  // namespace chromeos
 
 #endif  // CHROMEOS_SYNAPTICS_H_
-
