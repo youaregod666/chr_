@@ -262,12 +262,13 @@
 //      NotifyCursorUp, NotifyCursorDown, NotifyPageUp, NotifyPageDown,
 //      MonitorInputMethodConnection, MonitorInputMethodPreeditText,
 // 158: Deprecated SetSynapticsParameter.
+// 159: Removed SetSynapticsParameter.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 155,
-  kCrosAPIVersion = 158
+  kCrosAPIMinVersion = 158,
+  kCrosAPIVersion = 159
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
