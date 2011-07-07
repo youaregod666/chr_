@@ -327,10 +327,6 @@ DECL_FUNC_1(DisconnectBurnStatus, void, BurnStatusConnection);
 DECL_FUNC_3(StartBurn, void, const char*, const char*, BurnStatusConnection);
 DECL_FUNC_4(RequestBurn, void, const char*, const char*, BurnMonitor, void*);
 
-// Update library
-DECL_FUNC_1(Update, bool, UpdateInformation*);
-DECL_FUNC_1(CheckForUpdate, bool, UpdateInformation*);
-
 // Update Engine (replacing Update library)
 DECL_FUNC_2(MonitorUpdateStatus, UpdateStatusConnection, UpdateMonitor, void*);
 DECL_FUNC_1(DisconnectUpdateProgress, void, UpdateStatusConnection);
@@ -598,10 +594,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(DisconnectBurnStatus);
   INIT_FUNC(StartBurn);
   INIT_FUNC(RequestBurn);
-
-  // Update
-  INIT_FUNC(Update);
-  INIT_FUNC(CheckForUpdate);
 
   // Update Engine
   INIT_FUNC(MonitorUpdateStatus);

@@ -41,24 +41,6 @@ struct UpdateInformation {
   void (*destruct_)(const UpdateInformation&);
 };
 
-// \brief Check for and install any available updates.
-// \param information Output argument. information->status_ will contain one of:
-//    UPDATE_ERROR
-//    UPDATE_SUCCESSFUL
-//    UPDATE_ALREADY_UP_TO_DATE
-// information->version_ will contain latest new version number or may be NULL
-// if an error occurs.
-extern bool (*Update)(UpdateInformation* information);
-
-// \brief Check for updates.
-// \param information Output argument. information->status_ will contain one of:
-//    UPDATE_ERROR
-//    UPDATE_IS_AVAILABLE
-//    UPDATE_ALREADY_UP_TO_DATE
-// information->version_ will contain the latest version number or may be NULL
-// if an error occurs.
-extern bool (*CheckForUpdate)(UpdateInformation* information);
-
 }  // namespace chromeos
 
 #endif  // CHROMEOS_UPDATE_H_
