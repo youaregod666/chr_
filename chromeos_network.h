@@ -8,8 +8,7 @@
 #include <base/basictypes.h>
 #include <base/logging.h>
 #include <base/time.h>
-
-class Value;
+#include <base/values.h>
 
 namespace chromeos { // NOLINT
 
@@ -129,7 +128,7 @@ extern bool (*ActivateCellularModem)(const char* service_path,
 // Success is indicated by the receipt of a matching PropertyChanged signal.
 extern void (*SetNetworkServiceProperty)(const char* service_path,
                                          const char* property,
-                                         const ::Value* setting);
+                                         const Value* setting);
 
 // Clear a property of a service
 extern void (*ClearNetworkServiceProperty)(const char* service_path,
@@ -140,7 +139,7 @@ extern void (*ClearNetworkServiceProperty)(const char* service_path,
 // Success is indicated by the receipt of a matching PropertyChanged signal.
 extern void (*SetNetworkDeviceProperty)(const char* device_path,
                                         const char* property,
-                                        const ::Value* setting);
+                                        const Value* setting);
 
 // Clear a property of a device
 extern void (*ClearNetworkDeviceProperty)(const char* device_path,
@@ -151,7 +150,7 @@ extern void (*ClearNetworkDeviceProperty)(const char* device_path,
 // Success is indicated by the receipt of a matching PropertyChanged signal.
 extern void (*SetNetworkIPConfigProperty)(const char* ipconfig_path,
                                           const char* property,
-                                          const ::Value* setting);
+                                          const Value* setting);
 
 // Clear a property of an ip config
 extern void (*ClearNetworkIPConfigProperty)(const char* ipconfig_path,

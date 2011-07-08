@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "base/basictypes.h"
+#include "base/values.h"
 #include "chromeos_brightness.h" // NOLINT
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_cryptohome.h" // NOLINT
@@ -157,13 +158,13 @@ DECL_FUNC_2(ActivateCellularModem, bool, const char*, const char*);
 DECL_FUNC_5(ConfigureWifiService, bool, const char*, ConnectionSecurity,
             const char*, const char*, const char*);
 DECL_FUNC_3(SetNetworkServiceProperty, void, const char*, const char*,
-            const ::Value *);
+            const Value *);
 DECL_FUNC_2(ClearNetworkServiceProperty, void, const char*, const char*);
 DECL_FUNC_3(SetNetworkDeviceProperty, void, const char*, const char*,
-            const ::Value *);
+            const Value *);
 DECL_FUNC_2(ClearNetworkDeviceProperty, void, const char*, const char*);
 DECL_FUNC_3(SetNetworkIPConfigProperty, void, const char*, const char*,
-            const ::Value *);
+            const Value *);
 DECL_FUNC_2(ClearNetworkIPConfigProperty, void, const char*, const char*);
 DECL_FUNC_2(DeleteServiceFromProfile, void, const char*, const char*);
 DECL_FUNC_1(DisconnectFromNetwork, bool, const char*);
