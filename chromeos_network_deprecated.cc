@@ -11,7 +11,6 @@
 #include <set>
 #include <vector>
 
-#include "marshal.glibmarshal.h"  // NOLINT
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/scoped_vector.h"
 #include "base/string_util.h"

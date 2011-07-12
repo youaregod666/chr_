@@ -7,7 +7,6 @@
 #include <chromeos/dbus/abstract_dbus_service.h>
 #include <chromeos/dbus/service_constants.h>
 
-#include "marshal.glibmarshal.h"
 #include "libcros_service.h"
 
 namespace chromeos {

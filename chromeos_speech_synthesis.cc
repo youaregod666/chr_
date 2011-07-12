@@ -13,8 +13,6 @@
 #include <chromeos/glib/object.h>
 #include <dbus/dbus-glib-lowlevel.h>
 
-#include "marshal.glibmarshal.h"  // NOLINT
-
 namespace chromeos {
 
 const int kDBusTtsTimeoutMs = 50;

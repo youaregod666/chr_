@@ -8,7 +8,6 @@
 #include <chromeos/dbus/dbus.h>
 #include <chromeos/dbus/service_constants.h>
 #include <cros/chromeos_cros_api.h>
-#include <cros/marshal.glibmarshal.h>
 #include <dbus/dbus-glib-lowlevel.h>
 #include <glib.h>
 
@@ -119,4 +118,3 @@ void LibCrosService::Cleanup() {
 }
 
 }  // namespace chromeos
-

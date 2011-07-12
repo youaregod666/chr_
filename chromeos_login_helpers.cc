@@ -14,8 +14,6 @@
 #include <chromeos/string.h>
 #include <vector>
 
-#include "marshal.glibmarshal.h"  // NOLINT
-
 namespace chromeos {  // NOLINT
 
 ChromeOSLoginHelpers::ChromeOSLoginHelpers() {}

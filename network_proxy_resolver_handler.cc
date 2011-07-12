@@ -6,7 +6,6 @@
 
 #include <base/string_util.h>
 #include <cros/chromeos_cros_api.h>
-#include <cros/marshal.glibmarshal.h>
 #include <dbus/dbus-glib-lowlevel.h>
 #include <glib.h>
 
@@ -121,4 +120,3 @@ bool NetworkProxyResolverHandler::NotifyProxyResolved(const char* source_url,
 }
 
 }  // namespace chromeos
-

@@ -7,7 +7,6 @@
 #include <base/basictypes.h>
 #include <base/string_util.h>
 #include <chromeos/dbus/dbus.h>
-#include <cros/marshal.glibmarshal.h>
 #include <dbus/dbus-glib-lowlevel.h>
 #include <glib.h>
 
@@ -161,4 +160,3 @@ int main(int argc, char* argv[]) {
 
   return 0;
 }
-

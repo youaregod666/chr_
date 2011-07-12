@@ -16,7 +16,6 @@
 #include <chromeos/string.h>
 
 #include "chromeos_login_helpers.h"  // NOLINT
-#include "marshal.glibmarshal.h"  // NOLINT
 
 namespace chromeos {  // NOLINT
 
