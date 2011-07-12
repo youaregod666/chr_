@@ -22,7 +22,6 @@
 #include "chromeos_resume.h"  // NOLINT
 #include "chromeos_screen_lock.h"  // NOLINT
 #include "chromeos_speech_synthesis.h"  // NOLINT
-#include "chromeos_update.h"  // NOLINT
 #include "chromeos_update_engine.h"  // NOLINT
 
 namespace chromeos {  // NOLINT //

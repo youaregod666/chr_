@@ -265,12 +265,13 @@
 // 159: Removed SetSynapticsParameter.
 // 160: Deprecated CheckForUpdate and Update.
 // 161: Deprecated SetTouchpadSensitivity and SetTouchpadTapToClick.
+// 162: Removed CheckForUpdate and Update.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 158,
-  kCrosAPIVersion = 161
+  kCrosAPIMinVersion = 160,
+  kCrosAPIVersion = 162
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
