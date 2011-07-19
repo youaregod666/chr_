@@ -121,8 +121,7 @@ struct DiskInfoImpl : public DiskInfoAdvanced {
 
     bool hidden;
     if (properties.Retrieve(kDevicePresentationHide, &hidden) &&
-       !hidden) {
-
+        !hidden) {
       properties.Retrieve(kDeviceIsMediaAvailable, &has_media_);
       properties.Retrieve(kDeviceIsOnBootDevice, &on_boot_device_);
 
@@ -162,7 +161,7 @@ struct DiskInfoImpl : public DiskInfoAdvanced {
 
       bool is_rotational;
       bool is_optical;
-      if (properties.Retrieve(kDriveIsRotational,&is_rotational))
+      if (properties.Retrieve(kDriveIsRotational, &is_rotational))
         if (properties.Retrieve(kDeviceIsOpticalDisc, &is_optical))
           device_type_ = GetDeviceType(is_optical, is_rotational);
     }
@@ -244,20 +243,20 @@ void MountRequestNotify(DBusGProxy* gproxy,
                                &Resetter(&error).lvalue(),
                                G_TYPE_STRING, &mount_point,
                                G_TYPE_INVALID)) {
-    MountMethodErrorType etype;
+    MountMethodErrorType error_type;
     if (error->domain == DBUS_GERROR &&
         error->code == DBUS_GERROR_REMOTE_EXCEPTION) {
-      etype = MOUNT_METHOD_ERROR_REMOTE;
+      error_type = MOUNT_METHOD_ERROR_REMOTE;
     } else {
       LOG(WARNING) << "MountRequestNotify for path: '"
                    << cb_data->callback_device_path << "' error: "
                    << (error->message ? error->message : "Unknown Error.");
-      etype = MOUNT_METHOD_ERROR_LOCAL;
+      error_type = MOUNT_METHOD_ERROR_LOCAL;
     }
     cb_data->callback(cb_data->object,
                       cb_data->callback_device_path.c_str(),
                       NULL,
-                      etype, error->message);
+                      error_type, error->message);
   } else {
     cb_data->callback(cb_data->object,
                       cb_data->callback_device_path.c_str(),
@@ -281,20 +280,20 @@ void UnmountRequestNotify(DBusGProxy* gproxy,
                                call_id,
                                &Resetter(&error).lvalue(),
                                G_TYPE_INVALID)) {
-    MountMethodErrorType etype;
+    MountMethodErrorType error_type;
     if (error->domain == DBUS_GERROR &&
         error->code == DBUS_GERROR_REMOTE_EXCEPTION) {
-      etype = MOUNT_METHOD_ERROR_REMOTE;
+      error_type = MOUNT_METHOD_ERROR_REMOTE;
     } else {
       LOG(WARNING) << "UnmountRequestNotify for path: '"
                    << cb_data->callback_device_path << "' error: "
                    << (error->message ? error->message : "Unknown Error.");
-      etype = MOUNT_METHOD_ERROR_LOCAL;
+      error_type = MOUNT_METHOD_ERROR_LOCAL;
     }
     cb_data->callback(cb_data->object,
                       cb_data->callback_device_path.c_str(),
                       NULL,
-                      etype, error->message);
+                      error_type, error->message);
   } else {
     cb_data->callback(cb_data->object,
                       cb_data->callback_device_path.c_str(),
@@ -371,21 +370,21 @@ void GetDiskPropertiesNotify(DBusGProxy* gproxy,
                                                      G_TYPE_VALUE),
                                &Resetter(&properties).lvalue(),
           G_TYPE_INVALID)) {
-    MountMethodErrorType etype;
+    MountMethodErrorType error_type;
     if (error->domain == DBUS_GERROR &&
         error->code == DBUS_GERROR_REMOTE_EXCEPTION) {
-      etype = MOUNT_METHOD_ERROR_REMOTE;
+      error_type = MOUNT_METHOD_ERROR_REMOTE;
     } else {
       LOG(WARNING) << "GetDiskPropertiesNotify for path: '"
                    << cb_data->callback_device_path << "' error: "
                    << (error->message ? error->message : "Unknown Error.");
-      etype = MOUNT_METHOD_ERROR_LOCAL;
+      error_type = MOUNT_METHOD_ERROR_LOCAL;
     }
     if (cb_data->callback) {
       cb_data->callback(cb_data->object,
                         cb_data->callback_device_path.c_str(),
                         NULL,
-                        etype, error->message);
+                        error_type, error->message);
     }
     return;
   }
@@ -405,7 +404,7 @@ void GetDiskPropertiesAsync(const char* device_path,
   DBusGProxyCall* call_id =
       ::dbus_g_proxy_begin_call(cb_data->proxy->gproxy(),
           "GetDeviceProperties",
-          GetDiskPropertiesNotify,
+          &GetDiskPropertiesNotify,
           cb_data,
           &DeleteMountCallbackData<GetDiskPropertiesCallback>,
           G_TYPE_STRING, device_path,
@@ -417,6 +416,67 @@ void GetDiskPropertiesAsync(const char* device_path,
                       device_path,
                       NULL,
                       MOUNT_METHOD_ERROR_LOCAL, NULL);
+    delete cb_data;
+  }
+}
+
+void FormatRequestNotify(DBusGProxy* gproxy,
+                         DBusGProxyCall* call_id,
+                         void* user_data) {
+  MountRequestCallbackData<FormatRequestCallback>* cb_data =
+      reinterpret_cast<MountRequestCallbackData<FormatRequestCallback>*>(
+          user_data);
+  DCHECK(cb_data);
+  glib::ScopedError error;
+  bool success = false;
+  if (!::dbus_g_proxy_end_call(gproxy,
+                               call_id,
+                               &Resetter(&error).lvalue(),
+                               G_TYPE_BOOLEAN, &success,
+                               G_TYPE_INVALID)) {
+    MountMethodErrorType error_type = MOUNT_METHOD_ERROR_LOCAL;
+    if (error->domain == DBUS_GERROR &&
+        error->code == DBUS_GERROR_REMOTE_EXCEPTION) {
+      error_type = MOUNT_METHOD_ERROR_REMOTE;
+    } else {
+      LOG(WARNING) << "FormatRequestNotify for path: '"
+                   << cb_data->callback_device_path << "' error: "
+                   << (error->message ? error->message : "Unknown Error.");
+      error_type = MOUNT_METHOD_ERROR_LOCAL;
+    }
+    cb_data->callback(cb_data->object,
+                      cb_data->callback_device_path.c_str(),
+                      false,
+                      error_type, error->message);
+  } else {
+    cb_data->callback(cb_data->object,
+                      cb_data->callback_device_path.c_str(),
+                      success,
+                      MOUNT_METHOD_ERROR_NONE, NULL);
+  }
+}
+
+void FormatDeviceAsync(const char* device_path, const char* filesystem,
+                       FormatRequestCallback callback,
+                       void* object) {
+  MountRequestCallbackData<FormatRequestCallback>* cb_data =
+      new MountRequestCallbackData<FormatRequestCallback>(
+          kCrosDisksInterface, device_path, callback, object);
+  DBusGProxyCall* call_id =
+      ::dbus_g_proxy_begin_call(cb_data->proxy->gproxy(),
+                                "FormatDevice",
+                                &FormatRequestNotify,
+                                cb_data,
+                                &DeleteMountCallbackData<FormatRequestCallback>,
+                                G_TYPE_STRING, device_path,
+                                G_TYPE_STRING, filesystem,
+                                G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "MountRemoveableDeviceAsync call failed";
+    callback(object,
+             device_path,
+             NULL,
+             MOUNT_METHOD_ERROR_LOCAL, NULL);
     delete cb_data;
   }
 }
@@ -437,19 +497,19 @@ void RequestMountInfoNotify(DBusGProxy* gproxy,
                                &Resetter(&error).lvalue(),
                                g_type_array, &Resetter(&devices).lvalue(),
                                G_TYPE_INVALID)) {
-    MountMethodErrorType etype;
+    MountMethodErrorType error_type;
     if (error->domain == DBUS_GERROR &&
         error->code == DBUS_GERROR_REMOTE_EXCEPTION) {
-      etype = MOUNT_METHOD_ERROR_REMOTE;
+      error_type = MOUNT_METHOD_ERROR_REMOTE;
     } else {
       LOG(WARNING) << "RequestMountInfoNotify failed: '"
                    << (error->message ? error->message : "Unknown Error.");
-      etype = MOUNT_METHOD_ERROR_LOCAL;
+      error_type = MOUNT_METHOD_ERROR_LOCAL;
     }
     cb_data->callback(cb_data->object,
                       NULL,   // device paths
                       0,      // device path count
-                      etype, error->message);
+                      error_type, error->message);
     return;
   }
 
@@ -524,6 +584,7 @@ class OpaqueMountEventConnection {
       { "DiskAdded", DISK_ADDED },
       { "DiskChanged", DISK_CHANGED },
       { "DiskRemoved", DISK_REMOVED },
+      { "FormattingFinished", FORMATTING_FINISHED },
     };
     static const size_t kNumSignalEventTuples =
       sizeof(kSignalEventTuples) / sizeof(kSignalEventTuples[0]);
@@ -620,6 +681,13 @@ void ChromeOSDisconnectMountEventMonitor(MountEventConnection connection) {
   delete connection;
 }
 
+extern "C"
+void ChromeOSFormatDevice(const char* device_path,
+                          const char* filesystem,
+                          FormatRequestCallback callback,
+                          void* object) {
+  FormatDeviceAsync(device_path, filesystem, callback, object);
+}
 
 // TODO(zelidrag): Remove everything from here intil the rest of the file.
 class OpaqueMountStatusConnection {
@@ -658,4 +726,4 @@ extern "C"
 void ChromeOSFreeMountStatus(MountStatus* status) {
 }
 
-} //  namespace chromeos
+}  //  namespace chromeos

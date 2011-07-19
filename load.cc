@@ -134,6 +134,8 @@ DECL_FUNC_3(UnmountRemovableDevice, void,
             const char*, MountRequestCallback, void*);
 DECL_FUNC_3(GetDiskProperties, void,
             const char*, GetDiskPropertiesCallback, void*);
+DECL_FUNC_4(FormatDevice, void,
+            const char*, const char*, FormatRequestCallback, void*);
 DECL_FUNC_2(RequestMountInfo, void,
             RequestMountInfoCallback, void*);
 DECL_FUNC_2(MonitorMountEvents, MountEventConnection, MountEventMonitor, void*);
@@ -435,6 +437,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MountRemovableDevice);
   INIT_FUNC(UnmountRemovableDevice);
   INIT_FUNC(GetDiskProperties);
+  INIT_FUNC(FormatDevice);
   INIT_FUNC(RequestMountInfo);
   INIT_FUNC(MonitorMountEvents);
   INIT_FUNC(DisconnectMountEventMonitor);

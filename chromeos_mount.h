@@ -58,7 +58,8 @@ enum MountEventType {
   DISK_CHANGED,
   DEVICE_ADDED,
   DEVICE_REMOVED,
-  DEVICE_SCANNED
+  DEVICE_SCANNED,
+  FORMATTING_FINISHED,
 };
 
 // Describes whether there is an error and whether the error came from
@@ -104,6 +105,13 @@ typedef void (*GetDiskPropertiesCallback)(void* object,
                                           MountMethodErrorType error,
                                           const char* error_message);
 
+// Callback for disk formatting request.
+typedef void (*FormatRequestCallback)(void* object,
+                                      const char* device_path,
+                                      bool success,
+                                      MountMethodErrorType error,
+                                      const char* error_message);
+
 // Callback for disk information retreival calls.
 typedef void (*RequestMountInfoCallback)(void* object,
                                          const char** devices,
@@ -130,6 +138,15 @@ extern void (*UnmountRemovableDevice)(const char* device_path,
 extern void (*GetDiskProperties)(const char* service_path,
                                  GetDiskPropertiesCallback callback,
                                  void* object);
+
+// Initiates formatting of a device using given filesystem.
+// Device path is simple /dev/* file represeting the device
+// For supported filesystems check the format-manager.cc
+// example: device_path: "/dev/sdb1", filesystem: "vfat"
+extern void (*FormatDevice)(const char* device_path,
+                            const char* filesystem,
+                            FormatRequestCallback callback,
+                            void* object);
 
 // Initiates retrieval of information about all mounted disks. Please note that
 // |callback| will be called once for each disk found on the system.
@@ -160,6 +177,7 @@ struct MountStatus {
   DiskStatus *disks;
   int size;
 };
+
 class OpaqueMountStatusConnection;
 typedef OpaqueMountStatusConnection* MountStatusConnection;
 extern MountStatus* (*RetrieveMountInformation)();
