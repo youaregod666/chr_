@@ -267,12 +267,14 @@
 // 161: Deprecated SetTouchpadSensitivity and SetTouchpadTapToClick.
 // 162: Removed CheckForUpdate and Update.
 // 163: Added Formatting Support
+// 164: Removed obsolete mount methods from load.cc and added support for
+//      mounting mount points different from removable device
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 160,
-  kCrosAPIVersion = 163
+  kCrosAPIVersion = 164
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

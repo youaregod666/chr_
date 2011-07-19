@@ -128,27 +128,26 @@ DECL_FUNC_2(MonitorResume, ResumeConnection, ResumeMonitor, void*);
 DECL_FUNC_1(DisconnectResume, void, ResumeConnection);
 
 // Mount
-DECL_FUNC_3(MountRemovableDevice, void,
-            const char*, MountRequestCallback, void*);
-DECL_FUNC_3(UnmountRemovableDevice, void,
-            const char*, MountRequestCallback, void*);
+DECL_FUNC_5(MountSourcePath, void, const char*, MountType,
+            const MountPathOptions&, MountCompletedMonitor, void*);
+DECL_FUNC_3(UnmountMountPoint, void,
+            const char*, UnmountRequestCallback, void*);
 DECL_FUNC_3(GetDiskProperties, void,
             const char*, GetDiskPropertiesCallback, void*);
 DECL_FUNC_4(FormatDevice, void,
             const char*, const char*, FormatRequestCallback, void*);
 DECL_FUNC_2(RequestMountInfo, void,
             RequestMountInfoCallback, void*);
-DECL_FUNC_2(MonitorMountEvents, MountEventConnection, MountEventMonitor, void*);
+DECL_FUNC_3(MonitorAllMountEvents, MountEventConnection,
+            MountEventMonitor, MountCompletedMonitor, void*);
 DECL_FUNC_1(DisconnectMountEventMonitor, void, MountEventConnection);
+// DEPRECATED:
+DECL_FUNC_3(MountRemovableDevice, void,
+            const char*, MountRequestCallback, void*);
+DECL_FUNC_3(UnmountRemovableDevice, void,
+            const char*, MountRequestCallback, void*);
+DECL_FUNC_2(MonitorMountEvents, MountEventConnection, MountEventMonitor, void*);
 
-// TODO(zelidrag): Remove this chunk after libcros package rev up:
-DECL_FUNC_2(MonitorMountStatus, MountStatusConnection, MountMonitor, void*);
-DECL_FUNC_1(DisconnectMountStatus, void, MountStatusConnection);
-DECL_FUNC_0(RetrieveMountInformation, MountStatus*);
-DECL_FUNC_1(FreeMountStatus, void, MountStatus*);
-DECL_FUNC_1(MountDevicePath, bool, const char*);
-DECL_FUNC_1(UnmountDevicePath, bool, const char*);
-DECL_FUNC_1(IsBootDevicePath, bool, const char*);
 
 // Networking
 DECL_FUNC_0(GetSystemInfo, SystemInfo*);
@@ -434,21 +433,17 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(DisconnectResume);
 
   // Mount
-  INIT_FUNC(MountRemovableDevice);
-  INIT_FUNC(UnmountRemovableDevice);
+  INIT_FUNC(MountSourcePath);
+  INIT_FUNC(UnmountMountPoint);
   INIT_FUNC(GetDiskProperties);
   INIT_FUNC(FormatDevice);
   INIT_FUNC(RequestMountInfo);
-  INIT_FUNC(MonitorMountEvents);
+  INIT_FUNC(MonitorAllMountEvents);
   INIT_FUNC(DisconnectMountEventMonitor);
-  // TODO(zelidrag): Remove these once libcro revs up.
-  INIT_FUNC(MonitorMountStatus);
-  INIT_FUNC(DisconnectMountStatus);
-  INIT_FUNC(RetrieveMountInformation);
-  INIT_FUNC(FreeMountStatus);
-  INIT_FUNC(MountDevicePath);
-  INIT_FUNC(UnmountDevicePath);
-  INIT_FUNC(IsBootDevicePath);
+  // DEPRECATED:
+  INIT_FUNC(MountRemovableDevice);
+  INIT_FUNC(UnmountRemovableDevice);
+  INIT_FUNC(MonitorMountEvents);
 
   // Networking
   INIT_FUNC(GetSystemInfo);

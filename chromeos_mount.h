@@ -5,6 +5,7 @@
 #ifndef CHROMEOS_MOUNT_H_
 #define CHROMEOS_MOUNT_H_
 #include <string>
+#include <vector>
 #include <base/basictypes.h>
 
 namespace chromeos { //NOLINT
@@ -14,6 +15,26 @@ enum DeviceType {
   HDD,
   OPTICAL,
   UNDEFINED
+};
+
+enum MountType {
+  MOUNT_TYPE_INVALID,
+  MOUNT_TYPE_DEVICE,
+  MOUNT_TYPE_ARCHIVE,
+  MOUNT_TYPE_NETWORK_STORAGE
+};
+
+enum MountError {
+  MOUNT_ERROR_NONE = 0,
+  MOUNT_ERROR_UNKNOWN = 1,
+  MOUNT_ERROR_INTERNAL = 2,
+  MOUNT_ERROR_UNKNOWN_FILESYSTEM = 101,
+  MOUNT_ERROR_UNSUPORTED_FILESYSTEM = 102,
+  MOUNT_ERROR_INVALID_ARCHIVE = 201,
+  MOUNT_ERROR_LIBRARY_NOT_LOADED = 501,
+  MOUNT_ERROR_PATH_UNMOUNTED = 901
+  // TODO(tbarzic): Add more error codes as they get added to cros-disks and
+  // consider doing explicit translation from cros-disks error_types.
 };
 
 
@@ -82,21 +103,28 @@ typedef void(*MountEventMonitor)(void*,
                                  MountEventType,
                                  const char*);
 
+typedef void(*MountCompletedMonitor)(void*,  // Callback data passed by client.
+                                     MountError,  // Error code.
+                                     const char*,  // Source path.
+                                     MountType,  // Type of the mount.
+                                     const char*);  // Mount path.
+
 // Processes a callback from a d-bus signal by finding the path of the
 // DeviceKit Disks service that changed and sending the details along to the
 // next handler in the chain as an instance of MountStatus.
-extern MountEventConnection (*MonitorMountEvents)(MountEventMonitor monitor,
-                                                  void*);
+extern MountEventConnection (*MonitorAllMountEvents)(
+    MountEventMonitor monitor,
+    MountCompletedMonitor mount_complete_monitor,
+    void*);
 
 // Disconnects a listener from the mounting events.
 extern void (*DisconnectMountEventMonitor)(MountEventConnection connection);
 
-// Callback for asynchronous mount/unmount requests.
-typedef void (*MountRequestCallback)(void* object,
-                                     const char* path,
-                                     const char* mount_path,
-                                     MountMethodErrorType error,
-                                     const char* error_message);
+// Callback for asynchronous unmount requests.
+typedef void (*UnmountRequestCallback)(void* object,
+                                       const char* path,
+                                       MountMethodErrorType error,
+                                       const char* error_message);
 
 // Callback for disk information retreival calls.
 typedef void (*GetDiskPropertiesCallback)(void* object,
@@ -119,19 +147,24 @@ typedef void (*RequestMountInfoCallback)(void* object,
                                          MountMethodErrorType error,
                                          const char* error_message);
 
-// Initiates mount operation for a given |device_path|. When the operation
-// completes, the callback will be invoked with appropriate |error| parameter
-// indicating operation's outcome.
-extern void (*MountRemovableDevice)(const char* device_path,
-                                    MountRequestCallback callback,
-                                    void* object);
+typedef std::vector<std::pair<const char*, const char*> > MountPathOptions;
 
-// Initiates unmount operation for a given |device_path|. When the operation
+// Initiates mount operation for a given |source_path|. When the operation
 // completes, the callback will be invoked with appropriate |error| parameter
 // indicating operation's outcome.
-extern void (*UnmountRemovableDevice)(const char* device_path,
-                                     MountRequestCallback callback,
-                                     void* object);
+extern void (*MountSourcePath)(const char* source_path,
+                               MountType mount_type,
+                               const MountPathOptions& options,
+                               MountCompletedMonitor callback,
+                               void* object);
+
+// Initiates unmount operation for a given |path|. When the operation
+// completes, the callback will be invoked with appropriate |error| parameter
+// indicating operation's outcome.
+// Path may be either mount_path or source_path.
+extern void (*UnmountMountPoint)(const char* path,
+                                 UnmountRequestCallback callback,
+                                 void* object);
 
 // Initiates retrieval of information about given |service_path| representing
 // disk drive.
@@ -155,13 +188,21 @@ extern void (*FormatDevice)(const char* device_path,
 extern void (*RequestMountInfo)(RequestMountInfoCallback callback,
                                 void* object);
 
-// Mounts a given device path. If successful, a DISK_CHANGED event will fire
-// after the call. Returns false on failure.
-extern bool (*MountDevicePath)(const char* device_path);
 
-// Unmounts a given device path. If successful, a DISK_CHANGED event will fire
-// after the call. Returns false on failure.
-extern bool (*UnmountDevicePath)(const char* device_path);
+// Deprecated on 07/20/11.
+extern MountEventConnection (*MonitorMountEvents)(MountEventMonitor monitor,
+                                                  void*);
+typedef void (*MountRequestCallback)(void* object,
+                                     const char* path,
+                                     const char* mount_path,
+                                     MountMethodErrorType error,
+                                     const char* error_message);
+extern void (*MountRemovableDevice)(const char* source_path,
+                                    MountRequestCallback callback,
+                                    void* object);
+extern void (*UnmountRemovableDevice)(const char* path,
+                                     MountRequestCallback callback,
+                                     void* object);
 
 // Obsolete methods, kept here just as sacrifice to ChromeOS build gods.
 // This block will be removed in the next iteration.
@@ -187,6 +228,8 @@ typedef void(*MountMonitor)(void*,
                             const MountStatus&,
                             MountEventType,
                             const char*);
+extern bool (*MountDevicePath)(const char* device_path);
+extern bool (*UnmountDevicePath)(const char* device_path);
 extern MountStatusConnection (*MonitorMountStatus)(MountMonitor monitor, void*);
 extern void (*DisconnectMountStatus)(MountStatusConnection connection);
 
