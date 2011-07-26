@@ -6,6 +6,7 @@
 #define CHROMEOS_POWER_H_
 
 #include <base/basictypes.h>
+#include <string>
 
 namespace chromeos {
 
@@ -67,15 +68,17 @@ struct PowerInformation {
   bool battery_is_rechargeable;  // [needed?]
   double battery_capacity;
 
-  BatteryTechnology battery_technology;  // [needed?]
+  std::string battery_technology;  // [needed?]
 
-  const char* battery_vendor;
-  const char* battery_model;
-  const char* battery_serial;
+  std::string battery_vendor;
+  std::string battery_model;
+  std::string battery_serial;
 
-  const char* line_power_vendor;
-  const char* line_power_model;
-  const char* line_power_serial;
+  std::string line_power_vendor;
+  std::string line_power_model;
+  std::string line_power_serial;
+
+  std::string battery_state_string;
 };
 
 class OpaquePowerStatusConnection;
