@@ -1,12 +1,8 @@
-// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "chromeos_power.h"
-
-#include <dbus/dbus.h>
-#include <dbus/dbus-glib.h>
-#include <dbus/dbus-glib-lowlevel.h>
 
 #include <cstdlib>
 #include <cstring>
@@ -27,62 +23,154 @@ namespace chromeos {
 
 namespace {  // NOLINT
 
-bool GetPowerProperty(const dbus::Proxy& proxy,
-                      const char *param_name,
-                      GType data_type,
-                      void *result) {
-  GError* error = NULL;
-  // Use a dbus call to read the requested parameter.
-  if(!dbus_g_proxy_call(proxy.gproxy(), "GetProperty", &error,
-                        G_TYPE_STRING, param_name,
-                        G_TYPE_INVALID,
-                        data_type, result,
-                        G_TYPE_INVALID)) {
-    LOG(WARNING) << (error->message ? error->message : "GetProperty failed.");
+bool RetrieveBatteryStatus(const glib::ScopedHashTable& table,
+                           PowerStatus* status) {
+  bool success = true;
+  success &= table.Retrieve("Energy", &status->battery_energy);
+  success &= table.Retrieve("EnergyRate", &status->battery_energy_rate);
+  success &= table.Retrieve("Voltage", &status->battery_voltage);
+  success &= table.Retrieve("TimeToEmpty", &status->battery_time_to_empty);
+  success &= table.Retrieve("TimeToFull", &status->battery_time_to_full);
+  success &= table.Retrieve("Percentage", &status->battery_percentage);
+  success &= table.Retrieve("IsPresent", &status->battery_is_present);
+
+  ::uint32 state = 0;
+  success &= table.Retrieve("State", &state);
+  status->battery_state = BatteryState(state);
+
+  return success;
+}
+
+// If the battery proxy is empty, then clear the battery status, otherwise
+// retrieve the battery status from the proxy.
+
+bool RetrieveBatteryStatus(const dbus::Proxy& battery,
+                           PowerStatus* status) {
+  if (!battery) {
+    // Clear the battery status but don't overwrite the line_power status.
+    const PowerStatus zero_battery = { status->line_power_on };
+    *status = zero_battery;
+    return true;
+  }
+
+  glib::ScopedHashTable table;
+
+  if (!dbus::RetrieveProperties(battery,
+                                "org.freedesktop.UPower.Device",
+                                &table))
+    return false;
+
+  return RetrieveBatteryStatus(table, status);
+}
+
+bool RetrieveLinePowerStatus(const dbus::Proxy& line_power,
+                             PowerStatus* status) {
+  if (!line_power) {
+    status->line_power_on = true;
+    return true;
+  }
+  return dbus::RetrieveProperty(line_power,
+                                "org.freedesktop.UPower.Device",
+                                "online",
+                                &status->line_power_on);
+}
+
+// Will return the battery and line_power proxies if available, otherwise they
+// are left unchanged. An error code is not returned because the devices may
+// not be present (such as within a virtual machine for QE).
+
+bool RetrievePowerDeviceProxies(const dbus::BusConnection& bus,
+                                const dbus::Proxy& power,
+                                dbus::Proxy* battery,
+                                dbus::Proxy* line_power) {
+  typedef glib::ScopedPtrArray<const char*> ScopedPtrArray;
+  typedef ScopedPtrArray::iterator iterator;
+
+  ScopedPtrArray devices;
+
+  if (!dbus::CallPtrArray(power, "EnumerateDevices", &devices)) {
+    DLOG(WARNING) << "Could not enumerate power devices.";
     return false;
   }
+
+  // Iterate the devices and pull out the first battery and line-power.
+
+  const char* battery_name = NULL;
+  const char* line_power_name = NULL;
+
+  // REVISIT (seanparent) : There is some kind of algorithm here which
+  // splits a sequence to a set of outputs where each output is associated
+  // with a predicate. A from of a multi-out copy_if
+  //
+  // copy_if(range, pred1, out1, pred2, out2, ...)
+
+  for (iterator f = devices.begin(), l = devices.end(); f != l; ++f) {
+    dbus::Proxy proxy(bus,
+                      "org.freedesktop.UPower",
+                      *f,
+                      "org.freedesktop.DBus.Properties");
+    ::uint32 type;
+    if (!dbus::RetrieveProperty(proxy,
+                                "org.freedesktop.UPower.Device",
+                                "type",
+                                &type))
+      return NULL;
+
+    if (!battery_name && type == 2)
+      battery_name = *f;
+    else if (!line_power_name && type == 1)
+      line_power_name = *f;
+  }
+
+  DLOG_IF(WARNING, !battery_name) << "Battery is missing!";
+  DLOG_IF(WARNING, !line_power_name) << "Line power is missing!";
+
+  if (battery_name)
+    *battery = dbus::Proxy(bus,
+                           "org.freedesktop.UPower",
+                           battery_name,
+                           "org.freedesktop.DBus.Properties");
+
+  if (line_power_name)
+    *line_power = dbus::Proxy(bus,
+                              "org.freedesktop.UPower",
+                              line_power_name,
+                              "org.freedesktop.DBus.Properties");
+
   return true;
 }
 
-bool RetrievePowerStatus(const dbus::Proxy& proxy, PowerStatus* status) {
-#define GET_PROPERTY(proxy, object, type, property) \
-    GetPowerProperty(proxy, #property, type, &(object)->property)
-  if (!GET_PROPERTY(proxy, status, G_TYPE_BOOLEAN, line_power_on) ||
-      !GET_PROPERTY(proxy, status, G_TYPE_DOUBLE,  battery_energy) ||
-      !GET_PROPERTY(proxy, status, G_TYPE_DOUBLE,  battery_energy_rate) ||
-      !GET_PROPERTY(proxy, status, G_TYPE_DOUBLE,  battery_voltage) ||
-      !GET_PROPERTY(proxy, status, G_TYPE_INT64,   battery_time_to_empty) ||
-      !GET_PROPERTY(proxy, status, G_TYPE_INT64,   battery_time_to_full) ||
-      !GET_PROPERTY(proxy, status, G_TYPE_DOUBLE,  battery_percentage) ||
-      !GET_PROPERTY(proxy, status, G_TYPE_BOOLEAN, battery_is_present) ||
-      !GET_PROPERTY(proxy, status, G_TYPE_INT,     battery_state)) {
-    return false;
-  }
-#undef GET_PROPERTY
-  return true;
-}
-
-} // namespace
+}  // namespace
 
 class OpaquePowerStatusConnection {
  public:
   typedef dbus::MonitorConnection<void (const char*)>* ConnectionType;
 
   OpaquePowerStatusConnection(const PowerStatus& status,
-                              const dbus::Proxy& proxy,
+                              const dbus::Proxy& battery,
+                              const dbus::Proxy& line_power,
                               const PowerMonitor& monitor,
                               void* object)
      : status_(status),
-       proxy_(proxy),
+       battery_(battery),
+       line_power_(line_power),
        monitor_(monitor),
        object_(object),
        connection_(NULL) {
   }
 
-  void Run() {
-    if (!RetrievePowerStatus(proxy_, &status_))
+  static void Run(void* object, const char* device) {
+    PowerStatusConnection self = static_cast<PowerStatusConnection>(object);
+
+    if (self->battery_ && std::strcmp(device, self->battery_.path()) == 0)
+      RetrieveBatteryStatus(self->battery_, &self->status_);
+    else if (self->line_power_
+             && std::strcmp(device, self->line_power_.path()) == 0)
+      RetrieveLinePowerStatus(self->line_power_, &self->status_);
+    else
       return;
-    monitor_(object_, status_);
+
+    self->monitor_(self->object_, self->status_);
   }
 
   ConnectionType& connection() {
@@ -91,67 +179,45 @@ class OpaquePowerStatusConnection {
 
  private:
   PowerStatus status_;
-  dbus::Proxy proxy_;
+  dbus::Proxy battery_;
+  dbus::Proxy line_power_;
   PowerMonitor monitor_;
   void* object_;
   ConnectionType connection_;
 };
 
-namespace {  // NOLINT
-
-DBusHandlerResult DBusMessageHandler(DBusConnection* connection,
-                                     DBusMessage* message,
-                                     void* data) {
-  OpaquePowerStatusConnection* power_connection =
-      static_cast<OpaquePowerStatusConnection*>(data);
-
-  if (dbus_message_is_signal(message, power_manager::kPowerManagerInterface,
-                             "PowerSupplyPoll")) {
-    power_connection->Run();
-    return DBUS_HANDLER_RESULT_HANDLED;
-  }
-  return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-}
-
-}  // namespace
-
 extern "C"
 PowerStatusConnection ChromeOSMonitorPowerStatus(PowerMonitor monitor,
                                                  void* object) {
-
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy power(bus,
+                    "org.freedesktop.UPower",
+                    "/org/freedesktop/UPower",
+                    "org.freedesktop.UPower");
 
-  dbus::Proxy power_status_proxy(bus,
-                                 power_manager::kPowerManagerServiceName,
-                                 power_manager::kPowerManagerServicePath,
-                                 power_manager::kPowerManagerInterface);
+  dbus::Proxy battery;
+  dbus::Proxy line_power;
+
+
+  if (!RetrievePowerDeviceProxies(bus, power, &battery, &line_power))
+    return NULL;
+
   PowerStatus status = { };
 
-  RetrievePowerStatus(power_status_proxy, &status);
+  if (!RetrieveBatteryStatus(battery, &status))
+    return NULL;
+
+  if (!RetrieveLinePowerStatus(line_power, &status))
+    return NULL;
+
   monitor(object, status);
 
-  PowerStatusConnection result =
-      new OpaquePowerStatusConnection(status,
-                                      power_status_proxy,
-                                      monitor,
-                                      object);
+  PowerStatusConnection result = new OpaquePowerStatusConnection(status,
+      battery, line_power, monitor, object);
 
-  DBusConnection* connection = dbus_g_connection_get_connection(
-      bus.g_connection());
-  CHECK(connection);
-
-  DBusError error;
-  dbus_error_init(&error);
-  std::string match = StringPrintf("type='signal', interface='%s'",
-                                   power_manager::kPowerManagerInterface);
-  dbus_bus_add_match(connection, match.c_str(), &error);
-  if (dbus_error_is_set(&error)) {
-    LOG(DFATAL) << "Failed to add match \"" << match << "\": "
-                << error.name << ", message=" << error.message;
-  }
-
-  CHECK(dbus_connection_add_filter(connection, &DBusMessageHandler, result,
-                                   NULL));
+  result->connection() = dbus::Monitor(power, "DeviceChanged",
+                                       &OpaquePowerStatusConnection::Run,
+                                       result);
 
   return result;
 }
@@ -166,9 +232,85 @@ void ChromeOSDisconnectPowerStatus(PowerStatusConnection connection) {
 
 extern "C"
 bool ChromeOSRetrievePowerInformation(PowerInformation* info) {
-  // Func has been stubbed out because some functions it calls has been removed.
-  // It will be removed at a later time.
-  return true;
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy power(bus,
+                    "org.freedesktop.UPower",
+                    "/org/freedesktop/UPower",
+                    "org.freedesktop.UPower");
+
+  dbus::Proxy battery;
+  dbus::Proxy line_power;
+
+  if (!RetrievePowerDeviceProxies(bus, power, &battery, &line_power))
+    return false;
+
+  glib::ScopedHashTable battery_table;
+  glib::ScopedHashTable line_power_table;
+
+  if (!dbus::RetrieveProperties(battery,
+                                "org.freedesktop.UPower.Device",
+                                &battery_table))
+    return false;
+
+  if (!dbus::RetrieveProperties(line_power,
+                                "org.freedesktop.UPower.Device",
+                                &line_power_table))
+    return false;
+
+  // NOTE (seanparent) : If this code needs to be made thread safe in the
+  // future then the info_g should be moved to thread local storage.
+
+  static bool init = false;
+  static PowerInformation info_g = {};
+
+  bool success = true;
+
+  if (!init) {
+    success &= battery_table.Retrieve("EnergyEmpty",
+                                      &info_g.battery_energy_empty);
+    success &= battery_table.Retrieve("EnergyFull",
+                                      &info_g.battery_energy_full);
+    success &= battery_table.Retrieve("EnergyFullDesign",
+                                      &info_g.battery_energy_full_design);
+    success &= battery_table.Retrieve("IsRechargable",
+                                      &info_g.battery_is_rechargeable);
+
+    ::uint32 technology = 0;
+    success &= battery_table.Retrieve("Technology", &technology);
+    info_g.battery_technology = BatteryTechnology(technology);
+
+    // We malloc space for the strings and simply leak them.
+    const char* tmp = "";
+
+    success &= battery_table.Retrieve("Vendor", &tmp);
+    info_g.battery_vendor = NewStringCopy(tmp);
+
+    success &= battery_table.Retrieve("Model", &tmp);
+    info_g.battery_model = NewStringCopy(tmp);
+
+    success &= battery_table.Retrieve("Serial", &tmp);
+    info_g.battery_serial = NewStringCopy(tmp);
+
+    success &= line_power_table.Retrieve("Vendor", &tmp);
+    info_g.line_power_vendor = NewStringCopy(tmp);
+
+    success &= line_power_table.Retrieve("Model", &tmp);
+    info_g.line_power_model = NewStringCopy(tmp);
+
+    success &= line_power_table.Retrieve("Serial", &tmp);
+    info_g.line_power_serial = NewStringCopy(tmp);
+
+    init = success;
+  }
+
+  *info = info_g;
+
+  success &= RetrieveBatteryStatus(battery_table,
+                                   &info->power_status);
+  success &= line_power_table.Retrieve("Online",
+                                       &info->power_status.line_power_on);
+
+  return success;
 }
 
 extern "C"
