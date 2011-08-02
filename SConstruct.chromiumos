@@ -88,7 +88,6 @@ SOURCES = Split('''\
   chromeos_resume.cc
   chromeos_screen_lock.cc
   chromeos_speech_synthesis.cc
-  chromeos_touchpad.cc
   chromeos_update_engine.cc
   libcros_service.cc
   libcros_servicer.cc
