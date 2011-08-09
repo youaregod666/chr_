@@ -5,6 +5,8 @@
 #include <iostream>
 
 #include <base/basictypes.h>
+#include <base/command_line.h>
+#include <base/string_split.h>
 #include <base/string_util.h>
 #include <chromeos/dbus/dbus.h>
 #include <dbus/dbus-glib-lowlevel.h>
@@ -138,10 +140,33 @@ int main(int argc, char* argv[]) {
   ::g_type_init();
   GMainLoop* loop = ::g_main_loop_new(NULL, true);
 
+  CommandLine::Init(argc, argv);
+  CommandLine *command_line = CommandLine::ForCurrentProcess();
+
+  const char* kDefaultServiceName = "org.chromium.LibCrosService";
+  const char* kDefaultObjectPath = "/org/chromium/LibCrosService";
+  const char* kDefaultInterfaceName = "org.chromium.LibCrosServiceInterface";
+
+  // Use the custom service name if specified by --service_name.
+  std::string service_name = command_line->GetSwitchValueASCII("service_name");
+  if (service_name.empty())
+    service_name = kDefaultServiceName;
+
+  // Use the custom object path if specified by --object_path.
+  std::string object_path = command_line->GetSwitchValueASCII("object_path");
+  if (object_path.empty())
+    object_path = kDefaultObjectPath;
+
+  // Use the custom interface name if specified by --interface_name.
+  std::string interface_name =
+      command_line->GetSwitchValueASCII("interface_name");
+  if (interface_name.empty())
+    interface_name = kDefaultInterfaceName;
+
   chromeos::dbus::Proxy request_proxy(chromeos::dbus::GetSystemBusConnection(),
-                                      "org.chromium.LibCrosService",
-                                      "/org/chromium/LibCrosService",
-                                      "org.chromium.LibCrosServiceInterface");
+                                      service_name.c_str(),
+                                      object_path.c_str(),
+                                      interface_name.c_str());
   if (!request_proxy) {
     std::cout << "Can't create proxy for LibCrosService" << std::endl;
     return -1;
@@ -151,9 +176,20 @@ int main(int argc, char* argv[]) {
   if (!test.Initialize())
     return -1;
 
-  test.ResolveNetworkProxy("http://maps.google.com");
-  test.ResolveNetworkProxy("http://www.youtube.com");
-  test.ResolveNetworkProxy("http://127.0.0.1");
+  std::string comma_separated_urls = command_line->GetSwitchValueASCII("urls");
+  if (!comma_separated_urls.empty()) {
+    // Resolve the custom URLs if specified by --urls.
+    std::vector<std::string> urls;
+    base::SplitString(comma_separated_urls, ',', &urls);
+    for (size_t i = 0; i < urls.size(); ++i)
+      test.ResolveNetworkProxy(urls[i].c_str());
+  } else {
+    // Otherwise, just resolve the preset URLs.
+    test.ResolveNetworkProxy("http://maps.google.com");
+    test.ResolveNetworkProxy("http://www.youtube.com");
+    test.ResolveNetworkProxy("http://www.gmail.com");
+    test.ResolveNetworkProxy("http://127.0.0.1");
+  }
 
   // Run glib loop if there're signal(s) to wait for.
   test.RunLoopIfNecessary();
