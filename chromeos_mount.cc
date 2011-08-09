@@ -537,7 +537,7 @@ void RequestMountInfoAsync(RequestMountInfoCallback callback,
     if (callback) {
       cb_data->callback(cb_data->object,
                         NULL,   // device path
-                        NULL,   // disk
+                        0,      // device path count
                         MOUNT_METHOD_ERROR_LOCAL, NULL);
     }
     delete cb_data;
