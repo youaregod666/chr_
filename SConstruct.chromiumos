@@ -135,7 +135,9 @@ env_network_monitor.Append(LIBS=['dbus-glib-1'])
 
 env_libcros_service_test = env.Clone()
 
-Load = base_env.Object('load.cc')
+env_load = base_env.Clone()
+env_load.ParseConfig('%s --cflags --libs dbus-glib-1' % env['ENV']['PKG_CONFIG'])
+Load = env_load.Object('load.cc')
 
 # Tests that do not require libcros.so. The ebuild script for libcros
 # automatically builds and runs the tests (libcros_unittests) if FEATURES="test"
@@ -172,4 +174,4 @@ libcros_service_test_alias = \
     Alias('libcros_service_test', libcros_service_tests)
 AlwaysBuild(libcros_service_test_alias)
 
-Alias('crosapi', base_env.StaticLibrary('crosapi', Load), CCFLAGS='-ggdb')
+Alias('crosapi', env_load.StaticLibrary('crosapi', Load), CCFLAGS='-ggdb')

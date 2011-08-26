@@ -14,7 +14,6 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/scoped_vector.h"
 #include "base/string_util.h"
-#include "base/values.h"
 #include "chromeos/dbus/dbus.h"  // NOLINT
 #include "chromeos/dbus/service_constants.h"  // NOLINT
 #include "chromeos/glib/object.h"  // NOLINT
@@ -34,7 +33,7 @@ namespace { // NOLINT
 // libchromeos package.
 // See http://code.google.com/p/chromium-os/issues/detail?id=16303
 
-static CellularDataPlanType ParseCellularDataPlanType(const std::string& type) {
+CellularDataPlanType ParseCellularDataPlanType(const std::string& type) {
   if (type == kCellularDataPlanUnlimited)
     return CELLULAR_DATA_PLAN_UNLIMITED;
   if (type == kCellularDataPlanMeteredPaid)
@@ -42,81 +41,6 @@ static CellularDataPlanType ParseCellularDataPlanType(const std::string& type) {
   if (type == kCellularDataPlanMeteredBase)
     return CELLULAR_DATA_PLAN_METERED_BASE;
   return CELLULAR_DATA_PLAN_UNKNOWN;
-}
-
-static Value* ConvertGlibValue(const glib::Value* gvalue);
-
-static void AppendListElement(const GValue *gvalue, gpointer user_data) {
-  ListValue* list = static_cast<ListValue*>(user_data);
-  glib::Value glibvalue(*gvalue);
-  Value* value = ConvertGlibValue(&glibvalue);
-  list->Append(value);
-}
-
-static void AppendDictionaryElement(const GValue *keyvalue,
-                                    const GValue *gvalue,
-                                    gpointer user_data) {
-  DictionaryValue* dict = static_cast<DictionaryValue*>(user_data);
-  std::string key(g_value_get_string(keyvalue));
-  glib::Value glibvalue(*gvalue);
-  Value* value = ConvertGlibValue(&glibvalue);
-  dict->SetWithoutPathExpansion(key, value);
-}
-
-static Value* ConvertGlibValue(const glib::Value* gvalue) {
-  if (G_VALUE_HOLDS_STRING(gvalue)) {
-    return Value::CreateStringValue(g_value_get_string(gvalue));
-  } else if (G_VALUE_HOLDS_BOOLEAN(gvalue)) {
-    return Value::CreateBooleanValue(
-        static_cast<bool>(g_value_get_boolean(gvalue)));
-  } else if (G_VALUE_HOLDS_INT(gvalue)) {
-    return Value::CreateIntegerValue(g_value_get_int(gvalue));
-  } else if (G_VALUE_HOLDS_UINT(gvalue)) {
-    return Value::CreateIntegerValue(
-        static_cast<int>(g_value_get_uint(gvalue)));
-  } else if (G_VALUE_HOLDS_UCHAR(gvalue)) {
-    return Value::CreateIntegerValue(
-        static_cast<int>(g_value_get_uchar(gvalue)));
-  } else if (G_VALUE_HOLDS(gvalue, DBUS_TYPE_G_OBJECT_PATH)) {
-    const char* path = static_cast<const char*>(::g_value_get_boxed(gvalue));
-    return Value::CreateStringValue(path);
-  } else if (G_VALUE_HOLDS(gvalue, G_TYPE_STRV)) {
-    ListValue* list = new ListValue();
-    for (GStrv strv = static_cast<GStrv>(::g_value_get_boxed(gvalue));
-         *strv != NULL; ++strv) {
-      list->Append(Value::CreateStringValue(*strv));
-    }
-    return list;
-  } else if (::dbus_g_type_is_collection(G_VALUE_TYPE(gvalue))) {
-    ListValue* list = new ListValue();
-    ::dbus_g_type_collection_value_iterate(gvalue, AppendListElement, list);
-    return list;
-  } else if (::dbus_g_type_is_map(G_VALUE_TYPE(gvalue))) {
-    DictionaryValue* dict = new DictionaryValue();
-    ::dbus_g_type_map_value_iterate(gvalue, AppendDictionaryElement, dict);
-    return dict;
-  } else if (G_VALUE_HOLDS(gvalue, G_TYPE_VALUE)) {
-    const GValue* bvalue = static_cast<GValue*>(::g_value_get_boxed(gvalue));
-    glib::Value glibvalue(*bvalue);
-    return ConvertGlibValue(&glibvalue);
-  } else {
-    LOG(ERROR) << "Unrecognized Glib value type: " << G_VALUE_TYPE(gvalue);
-    return Value::CreateNullValue();
-  }
-}
-
-static Value* ConvertGHashTable(GHashTable* ghash) {
-  DictionaryValue* dict = new DictionaryValue();
-  GHashTableIter iter;
-  gpointer gkey, gvalue;
-  g_hash_table_iter_init (&iter, ghash);
-  while (g_hash_table_iter_next (&iter, &gkey, &gvalue))  {
-    std::string key(static_cast<char*>(gkey));
-    glib::Value glibvalue(*(static_cast<GValue*>(gvalue)));
-    Value* value = ConvertGlibValue(&glibvalue);
-    dict->SetWithoutPathExpansion(key, value);
-  }
-  return dict;
 }
 
 // Invokes the given method on the proxy and stores the result
@@ -138,13 +62,24 @@ bool GetProperties(const dbus::Proxy& proxy, glib::ScopedHashTable* result) {
   return true;
 }
 
+// Retrieves a string from a hash table without creating a ScopedHashTable.
+const char* GetStringFromGHashTable(GHashTable* ghash, const char* key) {
+  gpointer ptr = g_hash_table_lookup(ghash, key);
+  if (!ptr)
+    return NULL;
+  GValue* gvalue = static_cast<GValue*>(ptr);
+  if (!G_VALUE_HOLDS_STRING(gvalue))
+    return NULL;
+  return g_value_get_string(gvalue);
+}
+
 // Deletes all of the heap allocated members of a given
 // CellularDataPlan instance.
-static void DeleteDataPlanProperties(CellularDataPlanInfo &plan) {
+void DeleteDataPlanProperties(CellularDataPlanInfo &plan) {
   delete plan.plan_name;
 }
 
-static void ParseCellularDataPlan(const glib::ScopedHashTable& properties,
+void ParseCellularDataPlan(const glib::ScopedHashTable& properties,
                            CellularDataPlanInfo* plan) {
   DCHECK(plan);
   // Plan Name
@@ -177,9 +112,8 @@ static void ParseCellularDataPlan(const glib::ScopedHashTable& properties,
   plan->data_bytes_used = default_bytes;
 }
 
-static CellularDataPlanList* ParseCellularDataPlanList(
-    const GPtrArray* properties_array)
-{
+CellularDataPlanList* ParseCellularDataPlanList(
+    const GPtrArray* properties_array) {
   DCHECK(properties_array);
 
   CellularDataPlanList* data_plan_list = new CellularDataPlanList;
@@ -202,7 +136,6 @@ static CellularDataPlanList* ParseCellularDataPlanList(
   }
   return data_plan_list;
 }
-
 
 }  // namespace
 
@@ -229,46 +162,6 @@ void RegisterNetworkMarshallers() {
     registered = true;
   }
 }
-
-class PropertyChangedHandler {
- public:
-  typedef dbus::MonitorConnection<void(const char*, const glib::Value*)>*
-      MonitorConnection;
-
-  PropertyChangedHandler(const MonitorPropertyCallback& callback,
-                         const char* path,
-                         void* object)
-     : callback_(callback),
-       path_(path),
-       object_(object),
-       connection_(NULL) {
-  }
-
-  static void Run(void* object,
-                  const char* property,
-                  const glib::Value* gvalue) {
-    PropertyChangedHandler* self =
-        static_cast<PropertyChangedHandler*>(object);
-    scoped_ptr<Value> value(ConvertGlibValue(gvalue));
-    self->callback_(self->object_, self->path_.c_str(), property, value.get());
-  }
-
-  const MonitorConnection& connection() const {
-    return connection_;
-  }
-
-  void set_connection(const MonitorConnection& c) {
-    connection_ = c;
-  }
-
- private:
-  MonitorPropertyCallback callback_;
-  std::string path_;
-  void* object_;
-  MonitorConnection connection_;
-
-  DISALLOW_COPY_AND_ASSIGN(PropertyChangedHandler);
-};
 
 IPConfigType ParseIPConfigType(const std::string& type) {
   if (type == kTypeIPv4)
@@ -543,8 +436,44 @@ void ChromeOSFreeIPConfigStatus(IPConfigStatus* status) {
 
 }
 
-static PropertyChangeMonitor CreatePropertyChangeMonitor(
-    MonitorPropertyCallback callback,
+class PropertyChangedGValueMonitor {
+ public:
+  typedef dbus::MonitorConnection<void(const char*, const glib::Value*)>*
+      MonitorConnection;
+
+  PropertyChangedGValueMonitor(const MonitorPropertyGValueCallback& callback,
+                               const char* path,
+                               void* object)
+     : callback_(callback),
+       path_(path),
+       object_(object),
+       connection_(NULL) {
+  }
+
+  const MonitorConnection& connection() const { return connection_; }
+  void set_connection(const MonitorConnection& c) { connection_ = c; }
+
+  static void Run(void* object,
+                  const char* property,
+                  const glib::Value* gvalue) {
+    PropertyChangedGValueMonitor* self =
+        static_cast<PropertyChangedGValueMonitor*>(object);
+    self->callback_(self->object_, self->path_.c_str(), property, gvalue);
+  }
+
+ private:
+  MonitorPropertyGValueCallback callback_;
+  std::string path_;
+  void* object_;
+  MonitorConnection connection_;
+
+  DISALLOW_COPY_AND_ASSIGN(PropertyChangedGValueMonitor);
+};
+
+namespace {
+
+NetworkPropertiesMonitor CreatePropertyChangeGValueMonitor(
+    MonitorPropertyGValueCallback callback,
     const char* interface,
     const char* dbus_path,
     void* object) {
@@ -553,43 +482,47 @@ static PropertyChangeMonitor CreatePropertyChangeMonitor(
                             kFlimflamServiceName,
                             dbus_path,
                             interface);
-  PropertyChangeMonitor monitor =
-      new PropertyChangedHandler(callback, dbus_path, object);
+  PropertyChangedGValueMonitor* monitor =
+      new PropertyChangedGValueMonitor(callback, dbus_path, object);
   monitor->set_connection(dbus::Monitor(service_proxy,
                                         kMonitorPropertyChanged,
-                                        &PropertyChangedHandler::Run,
+                                        &PropertyChangedGValueMonitor::Run,
                                         monitor));
-  return monitor;
+  // NetworkPropertiesMonitor is typedef'd to PropertyChangedGValueMonitor*.
+  return static_cast<NetworkPropertiesMonitor>(monitor);
 }
 
+}  // namespace
+
 extern "C"
-PropertyChangeMonitor ChromeOSMonitorNetworkManager(
-    MonitorPropertyCallback callback,
+NetworkPropertiesMonitor ChromeOSMonitorNetworkManagerProperties(
+    MonitorPropertyGValueCallback callback,
     void* object) {
-  return CreatePropertyChangeMonitor(callback, kFlimflamManagerInterface,
-                                     "/", object);
+  return CreatePropertyChangeGValueMonitor(callback, kFlimflamManagerInterface,
+                                           "/", object);
 }
 
 extern "C"
-PropertyChangeMonitor ChromeOSMonitorNetworkService(
-    MonitorPropertyCallback callback,
+NetworkPropertiesMonitor ChromeOSMonitorNetworkServiceProperties(
+    MonitorPropertyGValueCallback callback,
     const char* service_path,
     void* object) {
-  return CreatePropertyChangeMonitor(callback, kFlimflamServiceInterface,
-                                     service_path, object);
+  return CreatePropertyChangeGValueMonitor(callback, kFlimflamServiceInterface,
+                                           service_path, object);
 }
 
 extern "C"
-PropertyChangeMonitor ChromeOSMonitorNetworkDevice(
-    MonitorPropertyCallback callback,
+NetworkPropertiesMonitor ChromeOSMonitorNetworkDeviceProperties(
+    MonitorPropertyGValueCallback callback,
     const char* device_path,
     void* object) {
-  return CreatePropertyChangeMonitor(callback, kFlimflamDeviceInterface,
-                                     device_path, object);
+  return CreatePropertyChangeGValueMonitor(callback, kFlimflamDeviceInterface,
+                                           device_path, object);
 }
 
 extern "C"
-void ChromeOSDisconnectPropertyChangeMonitor(PropertyChangeMonitor connection) {
+void ChromeOSDisconnectNetworkPropertiesMonitor(
+    NetworkPropertiesMonitor connection) {
   dbus::Disconnect(connection->connection());
   delete connection;
 }
@@ -997,28 +930,28 @@ void FlimflamNotifyHandleError(DBusGProxy* gproxy,
   }
 }
 
-struct GetPropertiesCallbackData : public FlimflamCallbackData {
-  GetPropertiesCallbackData(const char* interface,
-                            const char* service_path,
-                            const char* cb_path,
-                            NetworkPropertiesCallback cb,
-                            void* obj) :
+struct GetPropertiesGValueCallbackData : public FlimflamCallbackData {
+  GetPropertiesGValueCallbackData(const char* interface,
+                                  const char* service_path,
+                                  const char* cb_path,
+                                  NetworkPropertiesGValueCallback cb,
+                                  void* obj) :
       FlimflamCallbackData(interface, service_path),
       callback(cb),
       object(obj),
       callback_path(cb_path) {}
   // Owned by the caller (i.e. Chrome), do not destroy them:
-  NetworkPropertiesCallback callback;
+  NetworkPropertiesGValueCallback callback;
   void* object;
   // Owned by the callback, deleteted in the destructor:
   std::string callback_path;
 };
 
-void GetPropertiesNotify(DBusGProxy* gproxy,
-                         DBusGProxyCall* call_id,
-                         void* user_data) {
-  GetPropertiesCallbackData* cb_data =
-      static_cast<GetPropertiesCallbackData*>(user_data);
+void GetPropertiesGValueNotify(DBusGProxy* gproxy,
+                               DBusGProxyCall* call_id,
+                               void* user_data) {
+  GetPropertiesGValueCallbackData* cb_data =
+      static_cast<GetPropertiesGValueCallbackData*>(user_data);
   DCHECK(cb_data);
   glib::ScopedError error;
   glib::ScopedHashTable properties;
@@ -1036,24 +969,24 @@ void GetPropertiesNotify(DBusGProxy* gproxy,
                       cb_data->callback_path.c_str(),
                       NULL);
   } else {
-    scoped_ptr<Value> value(ConvertGHashTable(properties.get()));
     cb_data->callback(cb_data->object,
                       cb_data->callback_path.c_str(),
-                      value.get());
+                      properties.get());
   }
 }
 
-void GetPropertiesAsync(const char* interface,
-                        const char* service_path,
-                        NetworkPropertiesCallback callback,
-                        void* object) {
+void GetPropertiesGValueAsync(const char* interface,
+                              const char* service_path,
+                              NetworkPropertiesGValueCallback callback,
+                              void* object) {
   DCHECK(interface && service_path  && callback);
-  GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
-      interface, service_path, service_path, callback, object);
+  GetPropertiesGValueCallbackData* cb_data =
+      new GetPropertiesGValueCallbackData(
+          interface, service_path, service_path, callback, object);
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
       kGetPropertiesFunction,
-      &GetPropertiesNotify,
+      &GetPropertiesGValueNotify,
       cb_data,
       &DeleteFlimflamCallbackData,
       G_TYPE_INVALID);
@@ -1065,18 +998,19 @@ void GetPropertiesAsync(const char* interface,
   }
 }
 
-void GetEntryAsync(const char* interface,
-                   const char* profile_path,
-                   const char* entry_path,
-                   NetworkPropertiesCallback callback,
-                   void* object) {
+void GetEntryGValueAsync(const char* interface,
+                         const char* profile_path,
+                         const char* entry_path,
+                         NetworkPropertiesGValueCallback callback,
+                         void* object) {
   DCHECK(interface && profile_path  && entry_path && callback);
-  GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
-      interface, profile_path, entry_path, callback, object);
+  GetPropertiesGValueCallbackData* cb_data =
+      new GetPropertiesGValueCallbackData(
+          interface, profile_path, entry_path, callback, object);
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
       kGetEntryFunction,
-      &GetPropertiesNotify,
+      &GetPropertiesGValueNotify,
       cb_data,
       &DeleteFlimflamCallbackData,
       G_TYPE_STRING,
@@ -1091,11 +1025,11 @@ void GetEntryAsync(const char* interface,
   }
 }
 
-void GetServiceNotify(DBusGProxy* gproxy,
+void GetServiceGValueNotify(DBusGProxy* gproxy,
                       DBusGProxyCall* call_id,
                       void* user_data) {
-  GetPropertiesCallbackData* cb_data =
-      static_cast<GetPropertiesCallbackData*>(user_data);
+  GetPropertiesGValueCallbackData* cb_data =
+      static_cast<GetPropertiesGValueCallbackData*>(user_data);
   DCHECK(cb_data);
   glib::ScopedError error;
   char* service_path;
@@ -1112,10 +1046,10 @@ void GetServiceNotify(DBusGProxy* gproxy,
     cb_data->callback(cb_data->object, cb_data->callback_path.c_str(), NULL);
   } else {
     // Now request the properties for the service.
-    GetPropertiesAsync(kFlimflamServiceInterface,
-                       service_path,
-                       cb_data->callback,
-                       cb_data->object);
+    GetPropertiesGValueAsync(kFlimflamServiceInterface,
+                             service_path,
+                             cb_data->callback,
+                             cb_data->object);
   }
 }
 
@@ -1203,57 +1137,62 @@ void ChromeOSRequestNetworkServiceConnect(
 
 
 extern "C"
-void ChromeOSRequestNetworkManagerInfo(
-    NetworkPropertiesCallback callback,
+void ChromeOSRequestNetworkManagerProperties(
+    NetworkPropertiesGValueCallback callback,
     void* object) {
-  GetPropertiesAsync(kFlimflamManagerInterface, "/", callback, object);
+  GetPropertiesGValueAsync(kFlimflamManagerInterface,
+                           "/", callback, object);
 }
 
 extern "C"
-void ChromeOSRequestNetworkServiceInfo(
+void ChromeOSRequestNetworkServiceProperties(
     const char* service_path,
-    NetworkPropertiesCallback callback,
+    NetworkPropertiesGValueCallback callback,
     void* object) {
-  GetPropertiesAsync(kFlimflamServiceInterface, service_path, callback, object);
+  GetPropertiesGValueAsync(kFlimflamServiceInterface,
+                           service_path, callback, object);
 }
 
 extern "C"
-void ChromeOSRequestNetworkDeviceInfo(
+void ChromeOSRequestNetworkDeviceProperties(
     const char* device_path,
-    NetworkPropertiesCallback callback,
+    NetworkPropertiesGValueCallback callback,
     void* object) {
-  GetPropertiesAsync(kFlimflamDeviceInterface, device_path, callback, object);
+  GetPropertiesGValueAsync(kFlimflamDeviceInterface,
+                           device_path, callback, object);
 }
 
 extern "C"
-void ChromeOSRequestNetworkProfile(
+void ChromeOSRequestNetworkProfileProperties(
     const char* profile_path,
-    NetworkPropertiesCallback callback,
+    NetworkPropertiesGValueCallback callback,
     void* object) {
-  GetPropertiesAsync(kFlimflamProfileInterface, profile_path, callback, object);
+  GetPropertiesGValueAsync(kFlimflamProfileInterface,
+                           profile_path, callback, object);
 }
 
 extern "C"
-void ChromeOSRequestNetworkProfileEntry(
+void ChromeOSRequestNetworkProfileEntryProperties(
     const char* profile_path,
     const char* entry_service_path,
-    NetworkPropertiesCallback callback,
+    NetworkPropertiesGValueCallback callback,
     void* object) {
-  GetEntryAsync(kFlimflamProfileInterface, profile_path, entry_service_path,
-                callback, object);
+  GetEntryGValueAsync(kFlimflamProfileInterface,
+                      profile_path, entry_service_path, callback, object);
 }
 
 extern "C"
-void ChromeOSRequestHiddenWifiNetwork(
+void ChromeOSRequestHiddenWifiNetworkProperties(
     const char* ssid,
     const char* security,
-    NetworkPropertiesCallback callback,
+    NetworkPropertiesGValueCallback callback,
     void* object) {
   DCHECK(ssid);
   DCHECK(security);
   DCHECK(callback);
-  GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
-      kFlimflamManagerInterface, "/", ssid, callback, object);
+  GetPropertiesGValueCallbackData* cb_data =
+      new GetPropertiesGValueCallbackData(
+          kFlimflamManagerInterface, "/", ssid, callback, object);
 
   glib::ScopedHashTable scoped_properties =
       glib::ScopedHashTable(::g_hash_table_new_full(
@@ -1277,7 +1216,7 @@ void ChromeOSRequestHiddenWifiNetwork(
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
       kGetWifiServiceFunction,
-      &GetServiceNotify,
+      &GetServiceGValueNotify,
       cb_data,
       &DeleteFlimflamCallbackData,
       ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING, G_TYPE_VALUE),
@@ -1291,18 +1230,19 @@ void ChromeOSRequestHiddenWifiNetwork(
 }
 
 extern "C"
-void ChromeOSRequestVirtualNetwork(
+void ChromeOSRequestVirtualNetworkProperties(
     const char* service_name,
     const char* server_hostname,
     const char* provider_type,
-    NetworkPropertiesCallback callback,
+    NetworkPropertiesGValueCallback callback,
     void* object) {
   DCHECK(service_name);
   DCHECK(server_hostname);
   DCHECK(provider_type);
   DCHECK(callback);
-  GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
-      kFlimflamManagerInterface, "/", service_name, callback, object);
+  GetPropertiesGValueCallbackData* cb_data =
+      new GetPropertiesGValueCallbackData(
+          kFlimflamManagerInterface, "/", service_name, callback, object);
 
   glib::ScopedHashTable scoped_properties =
       glib::ScopedHashTable(::g_hash_table_new_full(
@@ -1327,7 +1267,7 @@ void ChromeOSRequestVirtualNetwork(
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
       kGetVPNServiceFunction,
-      &GetServiceNotify,
+      &GetPropertiesGValueNotify,
       cb_data,
       &DeleteFlimflamCallbackData,
       ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING, G_TYPE_VALUE),
@@ -1596,10 +1536,9 @@ static glib::Value *ConvertToGlibValue(const ::Value* value) {
 
 static void SetNetworkProperty(FlimflamCallbackData *cb_data,
                                const char* property,
-                               const ::Value* setting) {
+                               const GValue* setting) {
   // Start the DBus call. FlimflamNotifyHandleError will get called when
   // it completes and log any errors.
-  scoped_ptr<glib::Value> gsetting(ConvertToGlibValue(setting));
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
       kSetPropertyFunction,
@@ -1609,7 +1548,7 @@ static void SetNetworkProperty(FlimflamCallbackData *cb_data,
       G_TYPE_STRING,
       property,
       G_TYPE_VALUE,
-      gsetting.get(),
+      setting,
       G_TYPE_INVALID);
   if (!call_id) {
     LOG(ERROR) << "NULL call_id for: " << kSetPropertyFunction;
@@ -1637,12 +1576,12 @@ static void ClearNetworkProperty(FlimflamCallbackData *cb_data,
 }
 
 extern "C"
-void ChromeOSSetNetworkServiceProperty(const char* service_path,
-                                       const char* property,
-                                       const ::Value* setting) {
+void ChromeOSSetNetworkServicePropertyGValue(const char* service_path,
+                                             const char* property,
+                                             const GValue* gvalue) {
   FlimflamCallbackData* cb_data =
       new FlimflamCallbackData(kFlimflamServiceInterface, service_path);
-  SetNetworkProperty(cb_data, property, setting);
+  SetNetworkProperty(cb_data, property, gvalue);
 }
 
 extern "C"
@@ -1655,13 +1594,13 @@ void ChromeOSClearNetworkServiceProperty(const char* service_path,
 }
 
 extern "C"
-void ChromeOSSetNetworkDeviceProperty(const char* device_path,
-                                      const char* property,
-                                      const ::Value* setting) {
+void ChromeOSSetNetworkDevicePropertyGValue(const char* device_path,
+                                            const char* property,
+                                            const GValue* gvalue) {
   FlimflamCallbackData* cb_data =
       new FlimflamCallbackData(kFlimflamDeviceInterface, device_path);
 
-  SetNetworkProperty(cb_data, property, setting);
+  SetNetworkProperty(cb_data, property, gvalue);
 }
 
 extern "C"
@@ -1674,13 +1613,13 @@ void ChromeOSClearNetworkDeviceProperty(const char* device_path,
 }
 
 extern "C"
-void ChromeOSSetNetworkIPConfigProperty(const char* ipconfig_path,
-                                        const char* property,
-                                        const ::Value* setting) {
+void ChromeOSSetNetworkIPConfigPropertyGValue(const char* ipconfig_path,
+                                              const char* property,
+                                              const GValue* gvalue) {
   FlimflamCallbackData* cb_data =
       new FlimflamCallbackData(kFlimflamIPConfigInterface, ipconfig_path);
 
-  SetNetworkProperty(cb_data, property, setting);
+  SetNetworkProperty(cb_data, property, gvalue);
 }
 
 extern "C"
@@ -1898,37 +1837,31 @@ class SMSHandler {
   // matches NetworkPropertiesCallback type
   static void DevicePropertiesCallback(void* object,
                                        const char* path,
-                                       const Value* properties) {
+                                       GHashTable* ghash) {
     DCHECK(object);
     // Callback is called with properties == NULL in case of DBUs errors.
-    if (!object || !properties)
+    if (!object || !ghash)
       return;
 
-    if (properties->GetType() != Value::TYPE_DICTIONARY) {
-      LOG(ERROR) << "Properties type is not a dictionary.";
-      return;
-    }
-
-    SMSHandler* self = static_cast<SMSHandler*>(object);
-    const DictionaryValue* dict =
-        static_cast<const DictionaryValue*>(properties);
-
-    std::string dbus_connection, dbus_object_path;
-    if (!dict->GetStringWithoutPathExpansion(kDBusConnectionProperty,
-                                             &dbus_connection)) {
+    const char* dbus_connection =
+        GetStringFromGHashTable(ghash, kDBusConnectionProperty);
+    if (!dbus_connection) {
       LOG(WARNING) << "Modem device properties do not include DBus connection.";
       return;
     }
-    if (!dict->GetStringWithoutPathExpansion(kDBusObjectProperty,
-                                             &dbus_object_path)) {
+    const char* dbus_object_path =
+        GetStringFromGHashTable(ghash, kDBusObjectProperty);
+    if (!dbus_object_path) {
       LOG(WARNING) << "Modem device properties do not include DBus object.";
       return;
     }
 
     dbus::Proxy modemmanager_proxy(dbus::GetSystemBusConnection(),
-                                   dbus_connection.c_str(),
-                                   dbus_object_path.c_str(),
+                                   dbus_connection,
+                                   dbus_object_path,
                                    kModemManagerSMSInterface);
+
+    SMSHandler* self = static_cast<SMSHandler*>(object);
 
     // TODO(njw): We should listen for the "Completed" signal instead,
     // but right now the existing implementation only sends
@@ -2266,8 +2199,8 @@ SMSMonitor ChromeOSMonitorSMS(
 
   // Fire off the first GetProperties call, then return the
   // as-yet-unfinished monitor object.
-  GetPropertiesAsync(kFlimflamDeviceInterface, modem_device_path,
-                     &SMSHandler::DevicePropertiesCallback, monitor);
+  GetPropertiesGValueAsync(kFlimflamDeviceInterface, modem_device_path,
+                           &SMSHandler::DevicePropertiesCallback, monitor);
 
   return monitor;
 }
@@ -2277,6 +2210,492 @@ void ChromeOSDisconnectSMSMonitor(SMSMonitor monitor) {
   if (monitor->connection())
     dbus::Disconnect(monitor->connection());
   delete monitor;
+}
+
+}  // namespace chromeos
+
+///////////////////////////////////////////////////////////////////////////////
+// Deprecated
+
+#include "base/values.h"
+
+namespace chromeos {  // NOLINT-
+
+namespace {
+
+static Value* ConvertGlibValue(const glib::Value* gvalue);
+
+static void AppendListElement(const GValue *gvalue, gpointer user_data) {
+  ListValue* list = static_cast<ListValue*>(user_data);
+  glib::Value glibvalue(*gvalue);
+  Value* value = ConvertGlibValue(&glibvalue);
+  list->Append(value);
+}
+
+static void AppendDictionaryElement(const GValue *keyvalue,
+                                    const GValue *gvalue,
+                                    gpointer user_data) {
+  DictionaryValue* dict = static_cast<DictionaryValue*>(user_data);
+  std::string key(g_value_get_string(keyvalue));
+  glib::Value glibvalue(*gvalue);
+  Value* value = ConvertGlibValue(&glibvalue);
+  dict->SetWithoutPathExpansion(key, value);
+}
+
+static Value* ConvertGlibValue(const glib::Value* gvalue) {
+  if (G_VALUE_HOLDS_STRING(gvalue)) {
+    return Value::CreateStringValue(g_value_get_string(gvalue));
+  } else if (G_VALUE_HOLDS_BOOLEAN(gvalue)) {
+    return Value::CreateBooleanValue(
+        static_cast<bool>(g_value_get_boolean(gvalue)));
+  } else if (G_VALUE_HOLDS_INT(gvalue)) {
+    return Value::CreateIntegerValue(g_value_get_int(gvalue));
+  } else if (G_VALUE_HOLDS_UINT(gvalue)) {
+    return Value::CreateIntegerValue(
+        static_cast<int>(g_value_get_uint(gvalue)));
+  } else if (G_VALUE_HOLDS_UCHAR(gvalue)) {
+    return Value::CreateIntegerValue(
+        static_cast<int>(g_value_get_uchar(gvalue)));
+  } else if (G_VALUE_HOLDS(gvalue, DBUS_TYPE_G_OBJECT_PATH)) {
+    const char* path = static_cast<const char*>(::g_value_get_boxed(gvalue));
+    return Value::CreateStringValue(path);
+  } else if (G_VALUE_HOLDS(gvalue, G_TYPE_STRV)) {
+    ListValue* list = new ListValue();
+    for (GStrv strv = static_cast<GStrv>(::g_value_get_boxed(gvalue));
+         *strv != NULL; ++strv) {
+      list->Append(Value::CreateStringValue(*strv));
+    }
+    return list;
+  } else if (::dbus_g_type_is_collection(G_VALUE_TYPE(gvalue))) {
+    ListValue* list = new ListValue();
+    ::dbus_g_type_collection_value_iterate(gvalue, AppendListElement, list);
+    return list;
+  } else if (::dbus_g_type_is_map(G_VALUE_TYPE(gvalue))) {
+    DictionaryValue* dict = new DictionaryValue();
+    ::dbus_g_type_map_value_iterate(gvalue, AppendDictionaryElement, dict);
+    return dict;
+  } else if (G_VALUE_HOLDS(gvalue, G_TYPE_VALUE)) {
+    const GValue* bvalue = static_cast<GValue*>(::g_value_get_boxed(gvalue));
+    glib::Value glibvalue(*bvalue);
+    return ConvertGlibValue(&glibvalue);
+  } else {
+    LOG(ERROR) << "Unrecognized Glib value type: " << G_VALUE_TYPE(gvalue);
+    return Value::CreateNullValue();
+  }
+}
+
+static Value* ConvertGHashTable(GHashTable* ghash) {
+  DictionaryValue* dict = new DictionaryValue();
+  GHashTableIter iter;
+  gpointer gkey, gvalue;
+  g_hash_table_iter_init (&iter, ghash);
+  while (g_hash_table_iter_next (&iter, &gkey, &gvalue))  {
+    std::string key(static_cast<char*>(gkey));
+    glib::Value glibvalue(*(static_cast<GValue*>(gvalue)));
+    Value* value = ConvertGlibValue(&glibvalue);
+    dict->SetWithoutPathExpansion(key, value);
+  }
+  return dict;
+}
+
+}  // namespace
+
+static void SetNetworkProperty(FlimflamCallbackData *cb_data,
+                               const char* property,
+                               const ::Value* setting) {
+  scoped_ptr<glib::Value> gsetting(ConvertToGlibValue(setting));
+  SetNetworkProperty(cb_data, property, gsetting.get());
+}
+
+
+extern "C"
+void ChromeOSSetNetworkServiceProperty(const char* service_path,
+                                       const char* property,
+                                       const ::Value* setting) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamServiceInterface, service_path);
+  SetNetworkProperty(cb_data, property, setting);
+}
+
+extern "C"
+void ChromeOSSetNetworkDeviceProperty(const char* device_path,
+                                      const char* property,
+                                      const ::Value* setting) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamDeviceInterface, device_path);
+
+  SetNetworkProperty(cb_data, property, setting);
+}
+
+extern "C"
+void ChromeOSSetNetworkIPConfigProperty(const char* ipconfig_path,
+                                        const char* property,
+                                        const ::Value* setting) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamIPConfigInterface, ipconfig_path);
+
+  SetNetworkProperty(cb_data, property, setting);
+}
+
+
+class PropertyChangedHandler {
+ public:
+  typedef dbus::MonitorConnection<void(const char*, const glib::Value*)>*
+      MonitorConnection;
+
+  PropertyChangedHandler(const MonitorPropertyCallback& callback,
+                         const char* path,
+                         void* object)
+     : callback_(callback),
+       path_(path),
+       object_(object),
+       connection_(NULL) {
+  }
+
+  static void Run(void* object,
+                  const char* property,
+                  const glib::Value* gvalue) {
+    PropertyChangedHandler* self =
+        static_cast<PropertyChangedHandler*>(object);
+    scoped_ptr<Value> value(ConvertGlibValue(gvalue));
+    self->callback_(self->object_, self->path_.c_str(), property, value.get());
+  }
+
+  const MonitorConnection& connection() const {
+    return connection_;
+  }
+
+  void set_connection(const MonitorConnection& c) {
+    connection_ = c;
+  }
+
+ private:
+  MonitorPropertyCallback callback_;
+  std::string path_;
+  void* object_;
+  MonitorConnection connection_;
+
+  DISALLOW_COPY_AND_ASSIGN(PropertyChangedHandler);
+};
+
+namespace {
+
+PropertyChangeMonitor CreatePropertyChangeMonitor(
+    MonitorPropertyCallback callback,
+    const char* interface,
+    const char* dbus_path,
+    void* object) {
+  RegisterNetworkMarshallers();
+  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
+                            kFlimflamServiceName,
+                            dbus_path,
+                            interface);
+  PropertyChangeMonitor monitor =
+      new PropertyChangedHandler(callback, dbus_path, object);
+  monitor->set_connection(dbus::Monitor(service_proxy,
+                                        kMonitorPropertyChanged,
+                                        &PropertyChangedHandler::Run,
+                                        monitor));
+  return monitor;
+}
+
+}  // namespace
+
+extern "C"
+PropertyChangeMonitor ChromeOSMonitorNetworkManager(
+    MonitorPropertyCallback callback,
+    void* object) {
+  return CreatePropertyChangeMonitor(callback, kFlimflamManagerInterface,
+                                     "/", object);
+}
+
+extern "C"
+PropertyChangeMonitor ChromeOSMonitorNetworkService(
+    MonitorPropertyCallback callback,
+    const char* service_path,
+    void* object) {
+  return CreatePropertyChangeMonitor(callback, kFlimflamServiceInterface,
+                                     service_path, object);
+}
+
+extern "C"
+PropertyChangeMonitor ChromeOSMonitorNetworkDevice(
+    MonitorPropertyCallback callback,
+    const char* device_path,
+    void* object) {
+  return CreatePropertyChangeMonitor(callback, kFlimflamDeviceInterface,
+                                     device_path, object);
+}
+
+extern "C"
+void ChromeOSDisconnectPropertyChangeMonitor(
+    PropertyChangeMonitor connection) {
+  dbus::Disconnect(connection->connection());
+  delete connection;
+}
+
+namespace {
+
+struct GetPropertiesCallbackData : public FlimflamCallbackData {
+  GetPropertiesCallbackData(const char* interface,
+                            const char* service_path,
+                            const char* cb_path,
+                            NetworkPropertiesCallback cb,
+                            void* obj) :
+      FlimflamCallbackData(interface, service_path),
+      callback(cb),
+      object(obj),
+      callback_path(cb_path) {}
+  // Owned by the caller (i.e. Chrome), do not destroy them:
+  NetworkPropertiesCallback callback;
+  void* object;
+  // Owned by the callback, deleteted in the destructor:
+  std::string callback_path;
+};
+
+void GetPropertiesNotify(DBusGProxy* gproxy,
+                         DBusGProxyCall* call_id,
+                         void* user_data) {
+  GetPropertiesCallbackData* cb_data =
+      static_cast<GetPropertiesCallbackData*>(user_data);
+  DCHECK(cb_data);
+  glib::ScopedError error;
+  glib::ScopedHashTable properties;
+  if (!::dbus_g_proxy_end_call(
+          gproxy,
+          call_id,
+          &Resetter(&error).lvalue(),
+          ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING, G_TYPE_VALUE),
+          &Resetter(&properties).lvalue(),
+          G_TYPE_INVALID)) {
+    LOG(WARNING) << "GetPropertiesNotify for path: '"
+                 << cb_data->callback_path << "' error: "
+                 << (error->message ? error->message : "Unknown Error.");
+    cb_data->callback(cb_data->object,
+                      cb_data->callback_path.c_str(),
+                      NULL);
+  } else {
+    scoped_ptr<Value> value(ConvertGHashTable(properties.get()));
+    cb_data->callback(cb_data->object,
+                      cb_data->callback_path.c_str(),
+                      value.get());
+  }
+}
+
+void GetPropertiesAsync(const char* interface,
+                        const char* service_path,
+                        NetworkPropertiesCallback callback,
+                        void* object) {
+  DCHECK(interface && service_path  && callback);
+  GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
+      interface, service_path, service_path, callback, object);
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kGetPropertiesFunction,
+      &GetPropertiesNotify,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << interface
+               << "." << kGetPropertiesFunction << " : " << service_path;
+    callback(object, service_path, NULL);
+    delete cb_data;
+  }
+}
+
+void GetEntryAsync(const char* interface,
+                   const char* profile_path,
+                   const char* entry_path,
+                   NetworkPropertiesCallback callback,
+                   void* object) {
+  DCHECK(interface && profile_path  && entry_path && callback);
+  GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
+      interface, profile_path, entry_path, callback, object);
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kGetEntryFunction,
+      &GetPropertiesNotify,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_STRING,
+      entry_path,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << interface
+               << "." << kGetEntryFunction << " : " << profile_path
+               << " : " << entry_path;
+    callback(object, entry_path, NULL);
+    delete cb_data;
+  }
+}
+
+void GetServiceNotify(DBusGProxy* gproxy,
+                      DBusGProxyCall* call_id,
+                      void* user_data) {
+  GetPropertiesCallbackData* cb_data =
+      static_cast<GetPropertiesCallbackData*>(user_data);
+  DCHECK(cb_data);
+  glib::ScopedError error;
+  char* service_path;
+  if (!::dbus_g_proxy_end_call(
+          gproxy,
+          call_id,
+          &Resetter(&error).lvalue(),
+          DBUS_TYPE_G_OBJECT_PATH,
+          &service_path,
+          G_TYPE_INVALID)) {
+    LOG(WARNING) << "GetServiceNotify for path: '"
+                 << cb_data->callback_path << "' error: "
+                 << (error->message ? error->message : "Unknown Error.");
+    cb_data->callback(cb_data->object, cb_data->callback_path.c_str(), NULL);
+  } else {
+    // Now request the properties for the service.
+    GetPropertiesAsync(kFlimflamServiceInterface,
+                       service_path,
+                       cb_data->callback,
+                       cb_data->object);
+  }
+}
+
+}  // namespace
+
+extern "C"
+void ChromeOSRequestNetworkManagerInfo(
+    NetworkPropertiesCallback callback,
+    void* object) {
+  GetPropertiesAsync(kFlimflamManagerInterface, "/", callback, object);
+}
+
+extern "C"
+void ChromeOSRequestNetworkServiceInfo(
+    const char* service_path,
+    NetworkPropertiesCallback callback,
+    void* object) {
+  GetPropertiesAsync(kFlimflamServiceInterface, service_path, callback, object);
+}
+
+extern "C"
+void ChromeOSRequestNetworkDeviceInfo(
+    const char* device_path,
+    NetworkPropertiesCallback callback,
+    void* object) {
+  GetPropertiesAsync(kFlimflamDeviceInterface, device_path, callback, object);
+}
+
+extern "C"
+void ChromeOSRequestNetworkProfile(
+    const char* profile_path,
+    NetworkPropertiesCallback callback,
+    void* object) {
+  GetPropertiesAsync(kFlimflamProfileInterface, profile_path, callback, object);
+}
+
+extern "C"
+void ChromeOSRequestNetworkProfileEntry(
+    const char* profile_path,
+    const char* entry_service_path,
+    NetworkPropertiesCallback callback,
+    void* object) {
+  GetEntryAsync(kFlimflamProfileInterface, profile_path, entry_service_path,
+                callback, object);
+}
+
+extern "C"
+void ChromeOSRequestHiddenWifiNetwork(
+    const char* ssid,
+    const char* security,
+    NetworkPropertiesCallback callback,
+    void* object) {
+  DCHECK(ssid);
+  DCHECK(security);
+  DCHECK(callback);
+  GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
+      kFlimflamManagerInterface, "/", ssid, callback, object);
+
+  glib::ScopedHashTable scoped_properties =
+      glib::ScopedHashTable(::g_hash_table_new_full(
+          ::g_str_hash, ::g_str_equal, ::g_free, NULL));
+
+  glib::Value value_mode(kModeManaged);
+  glib::Value value_type(kTypeWifi);
+  glib::Value value_ssid(ssid);
+  glib::Value value_security(security);
+  ::GHashTable* properties = scoped_properties.get();
+  ::g_hash_table_insert(properties, ::g_strdup(kModeProperty), &value_mode);
+  ::g_hash_table_insert(properties, ::g_strdup(kTypeProperty), &value_type);
+  ::g_hash_table_insert(properties, ::g_strdup(kSSIDProperty), &value_ssid);
+  ::g_hash_table_insert(properties, ::g_strdup(kSecurityProperty),
+                        &value_security);
+
+  // flimflam.Manger.GetWifiService() will apply the property changes in
+  // |properties| and return a new or existing service to GetWifiNotify.
+  // GetWifiNotify will then call GetPropertiesAsync, triggering a second
+  // asynchronous call to GetPropertiesNotify which will then call |callback|.
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kGetWifiServiceFunction,
+      &GetServiceNotify,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING, G_TYPE_VALUE),
+      properties,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kGetWifiServiceFunction;
+    delete cb_data;
+    callback(object, ssid, NULL);
+  }
+}
+
+extern "C"
+void ChromeOSRequestVirtualNetwork(
+    const char* service_name,
+    const char* server_hostname,
+    const char* provider_type,
+    NetworkPropertiesCallback callback,
+    void* object) {
+  DCHECK(service_name);
+  DCHECK(server_hostname);
+  DCHECK(provider_type);
+  DCHECK(callback);
+  GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
+      kFlimflamManagerInterface, "/", service_name, callback, object);
+
+  glib::ScopedHashTable scoped_properties =
+      glib::ScopedHashTable(::g_hash_table_new_full(
+          ::g_str_hash, ::g_str_equal, ::g_free, NULL));
+
+  glib::Value value_name(service_name);
+  glib::Value value_host(server_hostname);
+  glib::Value value_type(provider_type);
+  // The actual value of Domain does not matter, so just use service_name.
+  glib::Value value_vpn_domain(service_name);
+  ::GHashTable* properties = scoped_properties.get();
+  ::g_hash_table_insert(properties, ::g_strdup(kNameProperty), &value_name);
+  ::g_hash_table_insert(properties, ::g_strdup(kHostProperty), &value_host);
+  ::g_hash_table_insert(properties, ::g_strdup(kTypeProperty), &value_type);
+  ::g_hash_table_insert(properties, ::g_strdup(kVPNDomainProperty),
+                        &value_vpn_domain);
+
+  // flimflam.Manger.GetVPNService() will apply the property changes in
+  // |properties| and pass a new or existing service to GetVPNNotify.
+  // GetVPNNotify will then call GetPropertiesAsync, triggering a second
+  // asynchronous call to GetPropertiesNotify which will then call |callback|.
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kGetVPNServiceFunction,
+      &GetServiceNotify,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING, G_TYPE_VALUE),
+      properties,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kGetVPNServiceFunction;
+    delete cb_data;
+    callback(object, service_name, NULL);
+  }
 }
 
 }  // namespace chromeos

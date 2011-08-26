@@ -26,14 +26,14 @@
 // 1) First remove all calls to that method in Chrome.
 // 2) Deprecate the method but keep the method implementation. Remove the
 //      binding of the method in load.cc, pull the code in header files that
-//      exports the symbols,  and increment kCrosAPIVersion in this file.
+//      exports the symbols, and increment kCrosAPIVersion in this file.
 //      Check this in.
 // 3) Once ChromeOS looks good, update cros_deps/DEPS in Chrome source tree.
 //      This new libcros.so will work with new Chrome (which does not bind with
 //      the deprecated method) and it will still work with an older Chrome
 //      (which does bind with the deprecated method but does not call it).
 // 4) Wait until all versions of Chrome (i.e. the binary release of Chrome)
-//      is using this new libcros.so.
+//      are using this new libcros.so.
 // 5) Now, delete the method implementation. Increment kCrosAPIVersion and set
 //      kCrosAPIMinVersion to what kCrosAPIVersion was. Check this in.
 // 6) Once ChromeOS looks good, update cros_deps/DEPS in Chrome source tree.
@@ -270,12 +270,14 @@
 // 164: Removed obsolete mount methods from load.cc and added support for
 //      mounting mount points different from removable device
 // 165: Removed SetTouchpadSensitivity and SetTouchpadTapToClick.
+// 166: Replace base::Value parameters with glib GValue in NetworkLibrary.
+//      Old calls stil exist, labeled 'deprecated.'
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 161,
-  kCrosAPIVersion = 165
+  kCrosAPIVersion = 166
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

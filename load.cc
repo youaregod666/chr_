@@ -150,48 +150,102 @@ DECL_FUNC_2(MonitorMountEvents, MountEventConnection, MountEventMonitor, void*);
 
 
 // Networking
-DECL_FUNC_0(GetSystemInfo, SystemInfo*);
-DECL_FUNC_1(RequestScan, void, ConnectionType);
-DECL_FUNC_2(GetWifiService, ServiceInfo*, const char*, ConnectionSecurity);
 DECL_FUNC_2(ActivateCellularModem, bool, const char*, const char*);
-DECL_FUNC_5(ConfigureWifiService, bool, const char*, ConnectionSecurity,
-            const char*, const char*, const char*);
-DECL_FUNC_3(SetNetworkServiceProperty, void, const char*, const char*,
-            const Value *);
+DECL_FUNC_3(SetNetworkServicePropertyGValue, void, const char*, const char*,
+            const GValue*);
 DECL_FUNC_2(ClearNetworkServiceProperty, void, const char*, const char*);
-DECL_FUNC_3(SetNetworkDeviceProperty, void, const char*, const char*,
-            const Value *);
+DECL_FUNC_3(SetNetworkDevicePropertyGValue, void, const char*, const char*,
+            const GValue*);
 DECL_FUNC_2(ClearNetworkDeviceProperty, void, const char*, const char*);
-DECL_FUNC_3(SetNetworkIPConfigProperty, void, const char*, const char*,
-            const Value *);
+DECL_FUNC_3(SetNetworkIPConfigPropertyGValue, void, const char*, const char*,
+            const GValue*);
 DECL_FUNC_2(ClearNetworkIPConfigProperty, void, const char*, const char*);
 DECL_FUNC_2(DeleteServiceFromProfile, void, const char*, const char*);
 DECL_FUNC_1(DisconnectFromNetwork, bool, const char*);
 DECL_FUNC_1(DeleteRememberedService, bool, const char*);
-DECL_FUNC_1(FreeSystemInfo, void, SystemInfo*);
-DECL_FUNC_1(FreeServiceInfo, void, ServiceInfo*);
-// MonitorNetwork is deprecated: use MonitorNetworkManager
-DECL_FUNC_2(MonitorNetwork,
-            MonitorNetworkConnection, MonitorNetworkCallback, void*);
-// DisconnectMonitorNetwork is deprecated: use DisconnectPropertyChangeMonitor
-DECL_FUNC_1(DisconnectMonitorNetwork, void, MonitorNetworkConnection);
-DECL_FUNC_2(MonitorNetworkManager, PropertyChangeMonitor,
-            MonitorPropertyCallback, void*);
-DECL_FUNC_1(DisconnectPropertyChangeMonitor, void, PropertyChangeMonitor);
-DECL_FUNC_3(MonitorNetworkService, PropertyChangeMonitor,
-            MonitorPropertyCallback, const char*, void*);
-DECL_FUNC_3(MonitorNetworkDevice, PropertyChangeMonitor,
-            MonitorPropertyCallback, const char*, void*);
-DECL_FUNC_2(MonitorCellularDataPlan, DataPlanUpdateMonitor,
-            MonitorDataPlanCallback, void*);
-DECL_FUNC_1(DisconnectDataPlanUpdateMonitor, void, DataPlanUpdateMonitor);
 DECL_FUNC_1(RetrieveCellularDataPlans, CellularDataPlanList*, const char*);
 DECL_FUNC_1(RequestCellularDataPlanUpdate, void, const char*);
 DECL_FUNC_1(FreeCellularDataPlanList, void, CellularDataPlanList*);
+DECL_FUNC_2(MonitorNetworkManagerProperties, NetworkPropertiesMonitor,
+            MonitorPropertyGValueCallback, void*);
+DECL_FUNC_3(MonitorNetworkServiceProperties, NetworkPropertiesMonitor,
+            MonitorPropertyGValueCallback, const char*, void*);
+DECL_FUNC_3(MonitorNetworkDeviceProperties, NetworkPropertiesMonitor,
+            MonitorPropertyGValueCallback, const char*, void*);
+DECL_FUNC_1(DisconnectNetworkPropertiesMonitor, void, NetworkPropertiesMonitor);
+DECL_FUNC_2(MonitorCellularDataPlan, DataPlanUpdateMonitor,
+            MonitorDataPlanCallback, void*);
+DECL_FUNC_1(DisconnectDataPlanUpdateMonitor, void, DataPlanUpdateMonitor);
 DECL_FUNC_3(MonitorSMS, SMSMonitor, const char*, MonitorSMSCallback, void*);
 DECL_FUNC_1(DisconnectSMSMonitor, void, SMSMonitor);
 DECL_FUNC_3(RequestNetworkServiceConnect, void, const char*,
             NetworkActionCallback, void *);
+DECL_FUNC_2(RequestNetworkManagerProperties, void,
+            NetworkPropertiesGValueCallback, void*);
+DECL_FUNC_3(RequestNetworkServiceProperties, void, const char*,
+            NetworkPropertiesGValueCallback, void*);
+DECL_FUNC_3(RequestNetworkDeviceProperties, void, const char*,
+            NetworkPropertiesGValueCallback, void*);
+DECL_FUNC_3(RequestNetworkProfileProperties, void, const char*,
+            NetworkPropertiesGValueCallback, void*);
+DECL_FUNC_4(RequestNetworkProfileEntryProperties, void, const char*,
+            const char*, NetworkPropertiesGValueCallback, void*);
+DECL_FUNC_4(RequestHiddenWifiNetworkProperties, void, const char*, const char*,
+            NetworkPropertiesGValueCallback, void*);
+DECL_FUNC_5(RequestVirtualNetworkProperties, void, const char*, const char*,
+            const char*, NetworkPropertiesGValueCallback, void*);
+DECL_FUNC_1(RequestNetworkScan, void, const char*);
+DECL_FUNC_2(RequestNetworkDeviceEnable, void, const char*, bool);
+DECL_FUNC_5(RequestRequirePin, void, const char*, const char*, bool,
+            NetworkActionCallback, void*);
+DECL_FUNC_4(RequestEnterPin, void, const char*, const char*,
+            NetworkActionCallback, void*);
+DECL_FUNC_5(RequestUnblockPin, void, const char*, const char*, const char*,
+            NetworkActionCallback, void*);
+DECL_FUNC_5(RequestChangePin, void, const char*, const char*, const char*,
+            NetworkActionCallback, void*);
+DECL_FUNC_1(ProposeScan, void, const char*);
+DECL_FUNC_4(RequestCellularRegister, void, const char*, const char*,
+            NetworkActionCallback, void*);
+DECL_FUNC_1(SetOfflineMode, bool, bool);
+DECL_FUNC_2(SetAutoConnect, bool, const char*, bool);
+DECL_FUNC_2(SetPassphrase, bool, const char*, const char*);
+DECL_FUNC_2(SetIdentity, bool, const char*, const char*);
+DECL_FUNC_1(ListIPConfigs, IPConfigStatus*, const char*);
+DECL_FUNC_2(AddIPConfig, bool, const char*, IPConfigType);
+DECL_FUNC_1(RemoveIPConfig, bool, IPConfig*);
+DECL_FUNC_1(FreeIPConfig, void, IPConfig*);
+DECL_FUNC_1(FreeIPConfigStatus, void, IPConfigStatus*);
+DECL_FUNC_0(GetDeviceNetworkList, DeviceNetworkList*);
+DECL_FUNC_1(FreeDeviceNetworkList, void, DeviceNetworkList*);
+
+// Deprecated (in chromeos_network_deprecated):
+DECL_FUNC_1(RequestScan, void, ConnectionType);
+DECL_FUNC_2(GetWifiService, ServiceInfo*, const char*, ConnectionSecurity);
+DECL_FUNC_5(ConfigureWifiService, bool, const char*, ConnectionSecurity,
+            const char*, const char*, const char*);
+DECL_FUNC_0(GetSystemInfo, SystemInfo*);
+DECL_FUNC_1(FreeSystemInfo, void, SystemInfo*);
+DECL_FUNC_1(FreeServiceInfo, void, ServiceInfo*);
+DECL_FUNC_2(MonitorNetwork,
+            MonitorNetworkConnection, MonitorNetworkCallback, void*);
+DECL_FUNC_1(DisconnectMonitorNetwork, void, MonitorNetworkConnection);
+DECL_FUNC_2(EnableNetworkDevice, bool, ConnectionType, bool);
+DECL_FUNC_1(SaveIPConfig, bool, IPConfig*);
+// Deprecated (Unused, to be removed):
+DECL_FUNC_3(SetNetworkServiceProperty, void, const char*, const char*,
+            const Value*);
+DECL_FUNC_3(SetNetworkDeviceProperty, void, const char*, const char*,
+            const Value*);
+DECL_FUNC_3(SetNetworkIPConfigProperty, void, const char*, const char*,
+            const Value*);
+DECL_FUNC_2(MonitorNetworkManager, PropertyChangeMonitor,
+            MonitorPropertyCallback, void*);
+DECL_FUNC_3(MonitorNetworkService, PropertyChangeMonitor,
+            MonitorPropertyCallback, const char*, void*);
+DECL_FUNC_3(MonitorNetworkDevice, PropertyChangeMonitor,
+            MonitorPropertyCallback, const char*, void*);
+DECL_FUNC_1(DisconnectPropertyChangeMonitor, void, PropertyChangeMonitor);
 DECL_FUNC_2(RequestNetworkManagerInfo, void,
             NetworkPropertiesCallback, void*);
 DECL_FUNC_3(RequestNetworkServiceInfo, void, const char*,
@@ -208,32 +262,6 @@ DECL_FUNC_4(RequestHiddenWifiNetwork, void, const char*, const char*,
             NetworkPropertiesCallback, void*);
 DECL_FUNC_5(RequestVirtualNetwork, void, const char*, const char*, const char*,
             NetworkPropertiesCallback, void*);
-DECL_FUNC_1(RequestNetworkScan, void, const char*);
-DECL_FUNC_2(RequestNetworkDeviceEnable, void, const char*, bool);
-DECL_FUNC_5(RequestRequirePin, void, const char*, const char*, bool,
-            NetworkActionCallback, void*);
-DECL_FUNC_4(RequestEnterPin, void, const char*, const char*,
-            NetworkActionCallback, void*);
-DECL_FUNC_5(RequestUnblockPin, void, const char*, const char*, const char*,
-            NetworkActionCallback, void*);
-DECL_FUNC_5(RequestChangePin, void, const char*, const char*, const char*,
-            NetworkActionCallback, void*);
-DECL_FUNC_1(ProposeScan, void, const char*);
-DECL_FUNC_4(RequestCellularRegister, void, const char*, const char*,
-            NetworkActionCallback, void*);
-DECL_FUNC_2(EnableNetworkDevice, bool, ConnectionType, bool);
-DECL_FUNC_1(SetOfflineMode, bool, bool);
-DECL_FUNC_2(SetAutoConnect, bool, const char*, bool);
-DECL_FUNC_2(SetPassphrase, bool, const char*, const char*);
-DECL_FUNC_2(SetIdentity, bool, const char*, const char*);
-DECL_FUNC_1(ListIPConfigs, IPConfigStatus*, const char*);
-DECL_FUNC_2(AddIPConfig, bool, const char*, IPConfigType);
-DECL_FUNC_1(SaveIPConfig, bool, IPConfig*);
-DECL_FUNC_1(RemoveIPConfig, bool, IPConfig*);
-DECL_FUNC_1(FreeIPConfig, void, IPConfig*);
-DECL_FUNC_1(FreeIPConfigStatus, void, IPConfigStatus*);
-DECL_FUNC_0(GetDeviceNetworkList, DeviceNetworkList*);
-DECL_FUNC_1(FreeDeviceNetworkList, void, DeviceNetworkList*);
 
 // Login
 DECL_FUNC_0(EmitLoginPromptReady, bool);
@@ -446,60 +474,35 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MonitorMountEvents);
 
   // Networking
-  INIT_FUNC(GetSystemInfo);
-  INIT_FUNC(RequestScan);
-  INIT_FUNC(GetWifiService);
   INIT_FUNC(ActivateCellularModem);
-  INIT_FUNC(ConfigureWifiService);
-  INIT_FUNC(SetNetworkServiceProperty);
+  INIT_FUNC(SetNetworkServicePropertyGValue);
   INIT_FUNC(ClearNetworkServiceProperty);
-  INIT_FUNC(SetNetworkDeviceProperty);
+  INIT_FUNC(SetNetworkDevicePropertyGValue);
   INIT_FUNC(ClearNetworkDeviceProperty);
-  INIT_FUNC(SetNetworkIPConfigProperty);
+  INIT_FUNC(SetNetworkIPConfigPropertyGValue);
   INIT_FUNC(ClearNetworkIPConfigProperty);
   INIT_FUNC(DeleteServiceFromProfile);
   INIT_FUNC(DisconnectFromNetwork);
   INIT_FUNC(DeleteRememberedService);
-  INIT_FUNC(FreeSystemInfo);
-  INIT_FUNC(FreeServiceInfo);
-  // MonitorNetwork is deprecated: use MonitorNetworkManager
-  INIT_FUNC(MonitorNetwork);
-  // DisconnectMonitorNetwork is deprecated:
-  // use DisconnectPropertyChangeMonitor
-  INIT_FUNC(DisconnectMonitorNetwork);
-  INIT_FUNC(MonitorNetworkManager);
-  INIT_FUNC(DisconnectPropertyChangeMonitor);
-  INIT_FUNC(MonitorNetworkService);
-  INIT_FUNC(MonitorNetworkDevice);
-  INIT_FUNC(EnableNetworkDevice);
-  INIT_FUNC(SetOfflineMode);
-  INIT_FUNC(SetAutoConnect);
-  INIT_FUNC(SetPassphrase);
-  INIT_FUNC(SetIdentity);
-  INIT_FUNC(ListIPConfigs);
-  INIT_FUNC(AddIPConfig);
-  INIT_FUNC(SaveIPConfig);
-  INIT_FUNC(RemoveIPConfig);
-  INIT_FUNC(FreeIPConfig);
-  INIT_FUNC(FreeIPConfigStatus);
-  INIT_FUNC(GetDeviceNetworkList);
-  INIT_FUNC(FreeDeviceNetworkList);
-  INIT_FUNC(MonitorCellularDataPlan);
-  INIT_FUNC(DisconnectDataPlanUpdateMonitor);
   INIT_FUNC(RetrieveCellularDataPlans);
   INIT_FUNC(RequestCellularDataPlanUpdate);
   INIT_FUNC(FreeCellularDataPlanList);
+  INIT_FUNC(MonitorNetworkManagerProperties);
+  INIT_FUNC(MonitorNetworkServiceProperties);
+  INIT_FUNC(MonitorNetworkDeviceProperties);
+  INIT_FUNC(DisconnectNetworkPropertiesMonitor);
+  INIT_FUNC(MonitorCellularDataPlan);
+  INIT_FUNC(DisconnectDataPlanUpdateMonitor);
   INIT_FUNC(MonitorSMS);
   INIT_FUNC(DisconnectSMSMonitor);
   INIT_FUNC(RequestNetworkServiceConnect);
-  INIT_FUNC(RequestNetworkManagerInfo);
-  INIT_FUNC(RequestNetworkServiceInfo);
-  INIT_FUNC(RequestNetworkDeviceInfo);
-  INIT_FUNC(RequestNetworkProfile);
-  INIT_FUNC(RequestNetworkProfileEntry);
-  INIT_FUNC(RequestWifiServicePath);
-  INIT_FUNC(RequestHiddenWifiNetwork);
-  INIT_FUNC(RequestVirtualNetwork);
+  INIT_FUNC(RequestNetworkManagerProperties);
+  INIT_FUNC(RequestNetworkServiceProperties);
+  INIT_FUNC(RequestNetworkDeviceProperties);
+  INIT_FUNC(RequestNetworkProfileProperties);
+  INIT_FUNC(RequestNetworkProfileEntryProperties);
+  INIT_FUNC(RequestHiddenWifiNetworkProperties);
+  INIT_FUNC(RequestVirtualNetworkProperties);
   INIT_FUNC(RequestNetworkScan);
   INIT_FUNC(RequestNetworkDeviceEnable);
   INIT_FUNC(RequestRequirePin);
@@ -508,6 +511,44 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RequestChangePin);
   INIT_FUNC(ProposeScan);
   INIT_FUNC(RequestCellularRegister);
+  INIT_FUNC(SetOfflineMode);
+  INIT_FUNC(SetAutoConnect);
+  INIT_FUNC(SetPassphrase);
+  INIT_FUNC(SetIdentity);
+  INIT_FUNC(ListIPConfigs);
+  INIT_FUNC(AddIPConfig);
+  INIT_FUNC(RemoveIPConfig);
+  INIT_FUNC(FreeIPConfig);
+  INIT_FUNC(FreeIPConfigStatus);
+  INIT_FUNC(GetDeviceNetworkList);
+  INIT_FUNC(FreeDeviceNetworkList);
+// Deprecated (in chromeos_network_deprecated):
+  INIT_FUNC(RequestScan);
+  INIT_FUNC(GetWifiService);
+  INIT_FUNC(ConfigureWifiService);
+  INIT_FUNC(GetSystemInfo);
+  INIT_FUNC(FreeSystemInfo);
+  INIT_FUNC(FreeServiceInfo);
+  INIT_FUNC(MonitorNetwork);
+  INIT_FUNC(DisconnectMonitorNetwork);
+  INIT_FUNC(EnableNetworkDevice);
+  INIT_FUNC(SaveIPConfig);
+// Deprecated (Unused, to be removed):
+  INIT_FUNC(SetNetworkServiceProperty);
+  INIT_FUNC(SetNetworkDeviceProperty);
+  INIT_FUNC(SetNetworkIPConfigProperty);
+  INIT_FUNC(MonitorNetworkManager);
+  INIT_FUNC(MonitorNetworkService);
+  INIT_FUNC(MonitorNetworkDevice);
+  INIT_FUNC(DisconnectPropertyChangeMonitor);
+  INIT_FUNC(RequestNetworkManagerInfo);
+  INIT_FUNC(RequestNetworkServiceInfo);
+  INIT_FUNC(RequestNetworkDeviceInfo);
+  INIT_FUNC(RequestNetworkProfile);
+  INIT_FUNC(RequestNetworkProfileEntry);
+  INIT_FUNC(RequestWifiServicePath);
+  INIT_FUNC(RequestHiddenWifiNetwork);
+  INIT_FUNC(RequestVirtualNetwork);
 
   // Login
   INIT_FUNC(EmitLoginPromptReady);

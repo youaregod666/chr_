@@ -5,11 +5,11 @@
 #include <dlfcn.h>
 #include <glib-object.h>
 #include <map>
+#include <string>
 #include <vector>
 
 #include <base/logging.h>
 #include <base/time.h>
-#include <base/values.h>
 
 #include "chromeos_cros_api.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
@@ -17,74 +17,77 @@
 #include "chromeos/glib/object.h"  // NOLINT
 #include "monitor_utils.h" //NOLINT
 
-static void PrintProperty(const char* path,
-                          const char* key,
-                          const Value* value) {
+namespace {
+
+void PrintValue(const std::string& prelude, const GValue* gvalue);
+
+void PrintListElement(const GValue *gvalue, gpointer user_data) {
+  std::string prelude("  ");
+  PrintValue(prelude, gvalue);
+}
+
+void PrintMapElement(const GValue *keyvalue,
+                     const GValue *gvalue,
+                     gpointer user_data) {
+  std::string prelude("  ");
+  const char* key = g_value_get_string(gvalue);
+  if (key)
+    prelude += key;
+  prelude += " : ";
+  PrintValue(prelude, gvalue);
+}
+
+void PrintValue(const std::string& prelude, const GValue* gvalue) {
+  if (G_VALUE_HOLDS_STRING(gvalue)) {
+    std::string strval(g_value_get_string(gvalue));
+    LOG(INFO) << prelude << "\"" << strval << "\"";
+  } else if (G_VALUE_HOLDS_BOOLEAN(gvalue)) {
+    bool boolval(static_cast<bool>(g_value_get_boolean(gvalue)));
+    LOG(INFO) << prelude << boolval;
+  } else if (G_VALUE_HOLDS_INT(gvalue)) {
+    int intval(g_value_get_int(gvalue));
+    LOG(INFO) << prelude << intval;
+  } else if (dbus_g_type_is_collection(G_VALUE_TYPE(gvalue))) {
+    LOG(INFO) << prelude << " : List [";
+    dbus_g_type_collection_value_iterate(gvalue, PrintListElement, NULL);
+    LOG(INFO) << "]";
+  } else if (::dbus_g_type_is_map(G_VALUE_TYPE(gvalue))) {
+    LOG(INFO) << prelude << " : Map [";
+    ::dbus_g_type_map_value_iterate(gvalue, PrintMapElement, NULL);
+    LOG(INFO) << "]";
+  } else {
+    LOG(INFO) << prelude << "<type "
+              << g_type_name(G_VALUE_TYPE(gvalue)) << ">";
+  }
+}
+
+void PrintProperty(const char* path,
+                   const char* key,
+                   const GValue* gvalue) {
     std::string prelude("PropertyChanged [");
     prelude += path;
     prelude += "] ";
     prelude += key;
     prelude += " : ";
-    if (value->IsType(Value::TYPE_STRING)) {
-      std::string strval;
-      value->GetAsString(&strval);
-      LOG(INFO) << prelude << "\"" << strval << "\"";
-    } else if (value->IsType(Value::TYPE_BOOLEAN)) {
-      bool boolval;
-      value->GetAsBoolean(&boolval);
-      LOG(INFO) << prelude << boolval;
-    }  else if (value->IsType(Value::TYPE_INTEGER)) {
-      int intval;
-      value->GetAsInteger(&intval);
-      LOG(INFO) << prelude << intval;
-    } else if (value->IsType(Value::TYPE_LIST)) {
-      const ListValue* list = static_cast<const ListValue*>(value);
-      Value *itemval;
-      std::string liststr;
-      size_t index = 0;
-      while (list->Get(index, &itemval)) {
-        if (!itemval->IsType(Value::TYPE_STRING)) {
-          ++index;
-          continue;
-        }
-        std::string itemstr;
-        itemval->GetAsString(&itemstr);
-        liststr += itemstr;
-        ++index;
-        if (index < list->GetSize())
-          liststr += ", ";
-      }
-      LOG(INFO) << prelude << "\"" << liststr << "\"";
-    } else if (value->IsType(Value::TYPE_DICTIONARY)) {
-      const DictionaryValue* dict = static_cast<const DictionaryValue*>(value);
-      std::string items;
-      std::string itemval;
-      size_t n = 0;
-      DictionaryValue::key_iterator iter = dict->begin_keys();
-      while (iter != dict->end_keys()) {
-        std::string key = *iter;
-        items += "{'" + key + "': '";
-        if (dict->GetStringWithoutPathExpansion(key, &itemval))
-          items += itemval + "'}";
-        else
-          items += "<not-a-string>'}";
-        if (n < dict->size())
-          items += ", ";
-        ++iter;
-        ++n;
-      }
-      LOG(INFO) << prelude << items;
-    } else
-      LOG(INFO) << prelude << "<type " << value->GetType() << ">";
+    PrintValue(prelude, gvalue);
 }
+
+GValue* ConvertToGValue(const char* c) {
+  GValue* gvalue = new GValue();
+  g_value_init(gvalue, G_TYPE_STRING);
+  g_value_set_string(gvalue, c);
+  return gvalue;
+}
+
+}  // namespace
 
 class CallbackMonitorNetwork {
  public:
   static void Run(void *object,
                   const char *path,
                   const char *key,
-                  const Value* value) {
-    PrintProperty(path, key, value);
+                  const GValue* gvalue) {
+    PrintProperty(path, key, gvalue);
   }
 };
 
@@ -117,30 +120,30 @@ int main(int argc, const char** argv) {
     value = argv[3];
   }
 
-  chromeos::PropertyChangeMonitor device_mon;
+  chromeos::NetworkPropertiesMonitor device_mon;
   if (strncmp(path, "/service/", 9) == 0) {
     LOG(INFO) << "Requesting properties messages on service '" << path << "'";
-    device_mon = chromeos::MonitorNetworkService(&CallbackMonitorNetwork::Run,
-                                                 path, NULL);
+    device_mon = chromeos::MonitorNetworkServiceProperties(
+        &CallbackMonitorNetwork::Run, path, NULL);
     if (clear) {
       LOG(INFO) << "Clearing property '" << property << "' on '" << path << "'";
       chromeos::ClearNetworkServiceProperty(path, property);
     } else {
       LOG(INFO) << "Setting property '" << property << "' on '" << path << "'";
-      chromeos::SetNetworkServiceProperty(path, property,
-                                          Value::CreateStringValue(value));
+      scoped_ptr<GValue> gvalue(ConvertToGValue(value));
+      chromeos::SetNetworkServicePropertyGValue(path, property, gvalue.get());
     }
   } else if (strncmp(path, "/device/", 8) == 0) {
     LOG(INFO) << "Requesting properties messages on device '" << path << "'";
-    device_mon = chromeos::MonitorNetworkDevice(&CallbackMonitorNetwork::Run,
-                                                path, NULL);
+    device_mon = chromeos::MonitorNetworkDeviceProperties(
+        &CallbackMonitorNetwork::Run, path, NULL);
     if (clear) {
       LOG(INFO) << "Clearing property '" << property << "' on '" << path << "'";
       chromeos::ClearNetworkDeviceProperty(path, property);
     } else {
       LOG(INFO) << "Setting property '" << property << "' on '" << path << "'";
-      chromeos::SetNetworkDeviceProperty(path, property,
-                                         Value::CreateStringValue(value));
+      scoped_ptr<GValue> gvalue(ConvertToGValue(value));
+      chromeos::SetNetworkDevicePropertyGValue(path, property, gvalue.get());
     }
   } else {
     LOG(INFO) << "Don't know what to do with path '" << path << "' "
@@ -154,6 +157,6 @@ int main(int argc, const char** argv) {
 
   LOG(INFO) << "Shutting down.";
 
-  chromeos::DisconnectPropertyChangeMonitor(device_mon);
+  chromeos::DisconnectNetworkPropertiesMonitor(device_mon);
   return 0;
 }

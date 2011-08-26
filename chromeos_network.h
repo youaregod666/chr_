@@ -8,10 +8,10 @@
 #include <base/basictypes.h>
 #include <base/logging.h>
 #include <base/time.h>
-#include <base/values.h>
+
+#include <glib-object.h>
 
 namespace chromeos { // NOLINT
-
 
 // ipconfig types (see flimflam/files/doc/ipconfig-api.txt)
 enum IPConfigType {
@@ -126,9 +126,9 @@ extern bool (*ActivateCellularModem)(const char* service_path,
 // Set a property of a service to the provided value
 //
 // Success is indicated by the receipt of a matching PropertyChanged signal.
-extern void (*SetNetworkServiceProperty)(const char* service_path,
-                                         const char* property,
-                                         const Value* setting);
+extern void (*SetNetworkServicePropertyGValue)(const char* service_path,
+                                               const char* property,
+                                               const GValue* gvalue);
 
 // Clear a property of a service
 extern void (*ClearNetworkServiceProperty)(const char* service_path,
@@ -137,9 +137,9 @@ extern void (*ClearNetworkServiceProperty)(const char* service_path,
 // Set a property of a device to the provided value
 //
 // Success is indicated by the receipt of a matching PropertyChanged signal.
-extern void (*SetNetworkDeviceProperty)(const char* device_path,
-                                        const char* property,
-                                        const Value* setting);
+extern void (*SetNetworkDevicePropertyGValue)(const char* device_path,
+                                              const char* property,
+                                              const GValue* gvalue);
 
 // Clear a property of a device
 extern void (*ClearNetworkDeviceProperty)(const char* device_path,
@@ -148,9 +148,9 @@ extern void (*ClearNetworkDeviceProperty)(const char* device_path,
 // Set a property of an ip config to the provided value
 //
 // Success is indicated by the receipt of a matching PropertyChanged signal.
-extern void (*SetNetworkIPConfigProperty)(const char* ipconfig_path,
-                                          const char* property,
-                                          const Value* setting);
+extern void (*SetNetworkIPConfigPropertyGValue)(const char* ipconfig_path,
+                                                const char* property,
+                                                const GValue* gvalue);
 
 // Clear a property of an ip config
 extern void (*ClearNetworkIPConfigProperty)(const char* ipconfig_path,
@@ -187,44 +187,37 @@ extern void (*FreeCellularDataPlanList)(CellularDataPlanList* list);
 
 // An internal listener to a d-bus signal. When notifications are received
 // they are rebroadcasted in non-glib form.
-class PropertyChangedHandler;
-typedef PropertyChangedHandler* PropertyChangeMonitor;
+class PropertyChangedGValueMonitor;
+typedef PropertyChangedGValueMonitor* NetworkPropertiesMonitor;
 
-// Callback for MonitorNetworkManager.
-typedef void (*MonitorPropertyCallback)(void* object,
-                                        const char* path,
-                                        const char* key,
-                                        const Value* value);
+// Callback for MonitorNetwork*Properties.
+typedef void (*MonitorPropertyGValueCallback)(void* object,
+                                              const char* path,
+                                              const char* key,
+                                              const GValue* value);
 
 // Sets up monitoring of the PropertyChanged signal on the flimflam manager.
-// The provided MonitorPropertyCallback will be called whenever a manager
-// property changes. |object| will be supplied as the first argument to the
-// callback.
-extern PropertyChangeMonitor (*MonitorNetworkManager)(
-    MonitorPropertyCallback callback,
+// The provided |callback| will be called whenever a manager property changes.
+// |object| will be supplied as the first argument to the callback.
+extern NetworkPropertiesMonitor (*MonitorNetworkManagerProperties)(
+    MonitorPropertyGValueCallback callback,
     void* object);
 
-// Disconnects a PropertyChangeMonitor.
-extern void (*DisconnectPropertyChangeMonitor)(
-    PropertyChangeMonitor monitor);
-
-// Sets up monitoring of the PropertyChanged signal on the specified service.
-// The provided MonitorPropertyCallback will be called whenever a service
-// property changes. |object| will be supplied as the first argument to the
-// callback.
-extern PropertyChangeMonitor (*MonitorNetworkService)(
-    MonitorPropertyCallback callback,
+// Similar to MonitorNetworkManagerProperties for a specified network service.
+extern NetworkPropertiesMonitor (*MonitorNetworkServiceProperties)(
+    MonitorPropertyGValueCallback callback,
     const char* service_path,
     void* object);
 
-// Sets up monitoring of the PropertyChanged signal on the specified device.
-// The provided MonitorPropertyCallback will be called whenever a device
-// property changes. |object| will be supplied as the first argument to the
-// callback.
-extern PropertyChangeMonitor (*MonitorNetworkDevice)(
-    MonitorPropertyCallback callback,
+// Similar to MonitorNetworkManagerProperties for a specified network device.
+extern NetworkPropertiesMonitor (*MonitorNetworkDeviceProperties)(
+    MonitorPropertyGValueCallback callback,
     const char* device_path,
     void* object);
+
+// Disconnects a PropertyChangeMonitor.
+extern void (*DisconnectNetworkPropertiesMonitor)(
+    NetworkPropertiesMonitor monitor);
 
 // An internal listener to a d-bus signal for plan data.
 class DataPlanUpdateHandler;
@@ -263,9 +256,10 @@ extern void (*DisconnectSMSMonitor)(SMSMonitor monitor);
 // Asynchronous flimflam interfaces.
 
 // Callback for asynchronous getters.
-typedef void (*NetworkPropertiesCallback)(void* object,
-                                          const char* path,
-                                          const Value* properties);
+typedef void (*NetworkPropertiesGValueCallback)(
+    void* object,
+    const char* path,
+    GHashTable* properties);
 
 // Describes whether there is an error and whether the error came from
 // the local system or from the server implementing the connect
@@ -294,41 +288,48 @@ extern void (*RequestNetworkServiceConnect)(const char* service_path,
                                             NetworkActionCallback callback,
                                             void* object);
 
-extern void (*RequestNetworkManagerInfo)(NetworkPropertiesCallback callback,
-                                         void* object);
+extern void (*RequestNetworkManagerProperties)(
+    NetworkPropertiesGValueCallback callback,
+    void* object);
 
-// Retrieve the latest info for a particular service.
-extern void (*RequestNetworkServiceInfo)(const char* service_path,
-                                         NetworkPropertiesCallback callback,
-                                         void* object);
+extern void (*RequestNetworkServiceProperties)(
+    const char* service_path,
+    NetworkPropertiesGValueCallback callback,
+    void* object);
 
 // Retrieve the latest info for a particular device.
-extern void (*RequestNetworkDeviceInfo)(const char* device_path,
-                                        NetworkPropertiesCallback callback,
-                                        void* object);
+extern void (*RequestNetworkDeviceProperties)(
+    const char* device_path,
+    NetworkPropertiesGValueCallback callback,
+    void* object);
 
 // Retrieve the list of remembered services for a profile.
-extern void (*RequestNetworkProfile)(const char* profile_path,
-                                     NetworkPropertiesCallback callback,
-                                     void* object);
+extern void (*RequestNetworkProfileProperties)(
+    const char* profile_path,
+    NetworkPropertiesGValueCallback callback,
+    void* object);
 
 // Retrieve the latest info for a profile service entry.
-extern void (*RequestNetworkProfileEntry)(const char* profile_path,
-                                          const char* profile_entry_path,
-                                          NetworkPropertiesCallback callback,
-                                          void* object);
+extern void (*RequestNetworkProfileEntryProperties)(
+    const char* profile_path,
+    const char* profile_entry_path,
+    NetworkPropertiesGValueCallback callback,
+    void* object);
 
 // Request a wifi service not in the network list (i.e. hidden).
-extern void (*RequestHiddenWifiNetwork)(const char* ssid,
-                                        const char* security,
-                                        NetworkPropertiesCallback callback,
-                                        void* object);
+extern void (*RequestHiddenWifiNetworkProperties)(
+    const char* ssid,
+    const char* security,
+    NetworkPropertiesGValueCallback callback,
+    void* object);
+
 // Request a new VPN service.
-extern void (*RequestVirtualNetwork)(const char* service_name,
-                                     const char* server_hostname,
-                                     const char* provider_type,
-                                     NetworkPropertiesCallback callback,
-                                     void* object);
+extern void (*RequestVirtualNetworkProperties)(
+    const char* service_name,
+    const char* server_hostname,
+    const char* provider_type,
+    NetworkPropertiesGValueCallback callback,
+    void* object);
 
 // Requests a scan of services of |type|.
 // |type| should be is a string recognized by flimflam's Manager API.
@@ -430,6 +431,93 @@ extern DeviceNetworkList* (*GetDeviceNetworkList)();
 // need to do this to safely pass data over the dll boundary between our .so
 // and Chrome.
 extern void (*FreeDeviceNetworkList)(DeviceNetworkList* network_list);
+
+}  // namespace chromeos
+
+//////////////////////////////////////////////////////////////////////////////
+// Deprecated
+
+#include <base/values.h>
+
+namespace chromeos { // NOLINT
+
+extern void (*SetNetworkServiceProperty)(const char* service_path,
+                                         const char* property,
+                                         const Value* setting);
+
+extern void (*SetNetworkDeviceProperty)(const char* device_path,
+                                        const char* property,
+                                        const Value* setting);
+
+extern void (*SetNetworkIPConfigProperty)(const char* ipconfig_path,
+                                          const char* property,
+                                          const Value* setting);
+
+typedef void (*MonitorPropertyCallback)(void* object,
+                                        const char* path,
+                                        const char* key,
+                                        const Value* value);
+
+class PropertyChangedHandler;
+typedef PropertyChangedHandler* PropertyChangeMonitor;
+
+extern PropertyChangeMonitor (*MonitorNetworkManager)(
+    MonitorPropertyCallback callback,
+    void* object);
+
+extern PropertyChangeMonitor (*MonitorNetworkService)(
+    MonitorPropertyCallback callback,
+    const char* service_path,
+    void* object);
+
+extern PropertyChangeMonitor (*MonitorNetworkDevice)(
+    MonitorPropertyCallback callback,
+    const char* device_path,
+    void* object);
+
+extern void (*DisconnectPropertyChangeMonitor)(
+    PropertyChangeMonitor monitor);
+
+typedef void (*NetworkPropertiesCallback)(void* object,
+                                          const char* path,
+                                          const Value* properties);
+
+
+extern void (*RequestNetworkManagerInfo)(NetworkPropertiesCallback callback,
+                                         void* object);
+
+// Retrieve the latest info for a particular service.
+extern void (*RequestNetworkServiceInfo)(const char* service_path,
+                                         NetworkPropertiesCallback callback,
+                                         void* object);
+
+// Retrieve the latest info for a particular device.
+extern void (*RequestNetworkDeviceInfo)(const char* device_path,
+                                        NetworkPropertiesCallback callback,
+                                        void* object);
+
+// Retrieve the list of remembered services for a profile.
+extern void (*RequestNetworkProfile)(const char* profile_path,
+                                     NetworkPropertiesCallback callback,
+                                     void* object);
+
+// Retrieve the latest info for a profile service entry.
+extern void (*RequestNetworkProfileEntry)(const char* profile_path,
+                                          const char* profile_entry_path,
+                                          NetworkPropertiesCallback callback,
+                                          void* object);
+
+// Request a wifi service not in the network list (i.e. hidden).
+extern void (*RequestHiddenWifiNetwork)(const char* ssid,
+                                        const char* security,
+                                        NetworkPropertiesCallback callback,
+                                        void* object);
+// Request a new VPN service.
+extern void (*RequestVirtualNetwork)(const char* service_name,
+                                     const char* server_hostname,
+                                     const char* provider_type,
+                                     NetworkPropertiesCallback callback,
+                                     void* object);
 
 }  // namespace chromeos
 
