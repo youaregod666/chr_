@@ -6,6 +6,9 @@
   'targets': [
     { 'target_name': 'cros_api',
       'type': '<(library)',
+      'dependencies': [
+        '../../build/linux/system.gyp:glib',
+      ],
       'sources': [
         'chromeos_power.h',
         'chromeos_network.h',
