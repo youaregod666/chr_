@@ -272,12 +272,13 @@
 // 165: Removed SetTouchpadSensitivity and SetTouchpadTapToClick.
 // 166: Replace base::Value parameters with glib GValue in NetworkLibrary.
 //      Old calls stil exist, labeled 'deprecated.'
+// 167: Added RequestRemoveNetworkService and RequestNetworkServiceDisconnect.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 161,
-  kCrosAPIVersion = 166
+  kCrosAPIVersion = 167
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

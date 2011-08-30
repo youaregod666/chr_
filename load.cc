@@ -194,6 +194,8 @@ DECL_FUNC_4(RequestHiddenWifiNetworkProperties, void, const char*, const char*,
             NetworkPropertiesGValueCallback, void*);
 DECL_FUNC_5(RequestVirtualNetworkProperties, void, const char*, const char*,
             const char*, NetworkPropertiesGValueCallback, void*);
+DECL_FUNC_1(RequestRemoveNetworkService, void, const char*);
+DECL_FUNC_1(RequestNetworkServiceDisconnect, void, const char*);
 DECL_FUNC_1(RequestNetworkScan, void, const char*);
 DECL_FUNC_2(RequestNetworkDeviceEnable, void, const char*, bool);
 DECL_FUNC_5(RequestRequirePin, void, const char*, const char*, bool,
@@ -503,6 +505,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RequestNetworkProfileEntryProperties);
   INIT_FUNC(RequestHiddenWifiNetworkProperties);
   INIT_FUNC(RequestVirtualNetworkProperties);
+  INIT_FUNC(RequestRemoveNetworkService);
+  INIT_FUNC(RequestNetworkServiceDisconnect);
   INIT_FUNC(RequestNetworkScan);
   INIT_FUNC(RequestNetworkDeviceEnable);
   INIT_FUNC(RequestRequirePin);

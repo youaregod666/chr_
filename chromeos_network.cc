@@ -559,19 +559,7 @@ bool ChromeOSActivateCellularModem(const char* service_path,
   return true;
 }
 
-namespace {
-// TODO(stevenjb): This should soon be part of chromeos_network_deprecated.cc
-
-class ScopedPtrGStrFreeV {
- public:
-  inline void operator()(char** x) const {
-    g_strfreev(x);
-  }
-};
-
-}  // namespace
-
-
+// Deprecated
 extern "C"
 bool ChromeOSDisconnectFromNetwork(const char* service_path) {
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
@@ -1277,6 +1265,40 @@ void ChromeOSRequestVirtualNetworkProperties(
     LOG(ERROR) << "NULL call_id for: " << kGetVPNServiceFunction;
     delete cb_data;
     callback(object, service_name, NULL);
+  }
+}
+
+extern "C"
+void ChromeOSRequestNetworkServiceDisconnect(const char* service_path) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamServiceInterface, service_path);
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kDisconnectFunction,
+      &FlimflamNotifyHandleError,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kDisconnectFunction;
+    delete cb_data;
+  }
+}
+
+extern "C"
+void ChromeOSRequestRemoveNetworkService(const char* service_path) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamServiceInterface, service_path);
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      kRemoveServiceFunction,
+      &FlimflamNotifyHandleError,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kRemoveServiceFunction;
+    delete cb_data;
   }
 }
 

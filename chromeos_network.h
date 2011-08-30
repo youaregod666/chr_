@@ -331,6 +331,12 @@ extern void (*RequestVirtualNetworkProperties)(
     NetworkPropertiesGValueCallback callback,
     void* object);
 
+// Asynchronous disconnect from network service.
+extern void (*RequestNetworkServiceDisconnect)(const char* service_path);
+
+// Remove an exisiting network service (e.g. after forgetting a VPN).
+extern void (*RequestRemoveNetworkService)(const char* service_path);
+
 // Requests a scan of services of |type|.
 // |type| should be is a string recognized by flimflam's Manager API.
 extern void (*RequestNetworkScan)(const char* network_type);
