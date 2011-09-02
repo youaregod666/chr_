@@ -25,6 +25,27 @@
 
 namespace chromeos {
 
+struct PowerRequestCallbackData {
+  PowerRequestCallbackData(GetIdleTimeCallback cb, void* obj)
+      : proxy(new dbus::Proxy(dbus::GetSystemBusConnection(),
+                              power_manager::kPowerManagerInterface,
+                              power_manager::kPowerManagerServicePath,
+                              power_manager::kPowerManagerInterface)),
+        callback(cb),
+        object(obj) {}
+  scoped_ptr<dbus::Proxy> proxy;
+  GetIdleTimeCallback callback;
+  void* object;
+};
+
+// DBus will always call the Delete function passed to it by
+// dbus_g_proxy_begin_call, whether DBus calls the callback or not.
+void DeletePowerCallbackData(void* user_data) {
+  PowerRequestCallbackData* cb_data =
+      reinterpret_cast<PowerRequestCallbackData*>(user_data);
+  delete cb_data;
+}
+
 namespace {  // NOLINT
 
 bool GetPowerProperty(const dbus::Proxy& proxy,
@@ -115,6 +136,33 @@ DBusHandlerResult DBusMessageHandler(DBusConnection* connection,
 
 }  // namespace
 
+void GetIdleTimeNotify(DBusGProxy* gproxy,
+                       DBusGProxyCall* call_id,
+                       void* user_data) {
+  PowerRequestCallbackData* cb_data =
+      reinterpret_cast<PowerRequestCallbackData*>(
+          user_data);
+  DCHECK(cb_data);
+  glib::ScopedError error;
+  int64 time_idle_ms = 0;
+  if (!::dbus_g_proxy_end_call(gproxy,
+                               call_id,
+                               &Resetter(&error).lvalue(),
+                               G_TYPE_INT64, &time_idle_ms,
+                               G_TYPE_INVALID)) {
+    if (error->domain == DBUS_GERROR &&
+        error->code == DBUS_GERROR_REMOTE_EXCEPTION) {
+      LOG(WARNING) << "Remote DBus error";
+    } else {
+      LOG(WARNING) << "GetIdleTimeNotify error: "
+                   << (error->message ? error->message : "Unknown Error.");
+    }
+    cb_data->callback(cb_data->object, 0, false);
+  } else {
+    cb_data->callback(cb_data->object, time_idle_ms, true);
+  }
+}
+
 extern "C"
 PowerStatusConnection ChromeOSMonitorPowerStatus(PowerMonitor monitor,
                                                  void* object) {
@@ -154,6 +202,25 @@ PowerStatusConnection ChromeOSMonitorPowerStatus(PowerMonitor monitor,
                                    NULL));
 
   return result;
+}
+
+extern "C"
+void ChromeOSGetIdleTime(GetIdleTimeCallback callback,
+                         void* object) {
+ PowerRequestCallbackData* cb_data =
+      new PowerRequestCallbackData(callback, object);
+  DBusGProxyCall* call_id =
+      ::dbus_g_proxy_begin_call(cb_data->proxy->gproxy(),
+                                "GetIdleTime",
+                                &GetIdleTimeNotify,
+                                cb_data,
+                                &DeletePowerCallbackData,
+                                G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "ChromeOSGetIdleTime call failed";
+    callback(object, 0, false);
+    delete cb_data;
+  }
 }
 
 extern "C"

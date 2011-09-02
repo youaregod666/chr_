@@ -28,6 +28,11 @@ enum BatteryTechnology {
   BATTERY_TECHNOLOGY_NICKEL_METAL_HYDRIDE
 };
 
+// Callback for GetIdleTime method.
+typedef void (*GetIdleTimeCallback)(void* object,
+                                    int64 time_idle_ms,
+                                    bool success);
+
 struct PowerStatus {
   bool line_power_on;
 
@@ -86,6 +91,10 @@ typedef OpaquePowerStatusConnection* PowerStatusConnection;
 typedef void(*PowerMonitor)(void*, const PowerStatus&);
 
 extern PowerStatusConnection (*MonitorPowerStatus)(PowerMonitor monitor, void*);
+
+extern void (*GetIdleTime)(GetIdleTimeCallback callback,
+                           void* object);
+
 extern void (*DisconnectPowerStatus)(PowerStatusConnection connection);
 extern bool (*RetrievePowerInformation)(PowerInformation* information);
 

@@ -273,12 +273,12 @@
 // 166: Replace base::Value parameters with glib GValue in NetworkLibrary.
 //      Old calls stil exist, labeled 'deprecated.'
 // 167: Added RequestRemoveNetworkService and RequestNetworkServiceDisconnect.
-
+// 168: Added GetIdleTime to power manager.
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 161,
-  kCrosAPIVersion = 167
+  kCrosAPIVersion = 168
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
