@@ -16,6 +16,7 @@
 #include "base/string_util.h"
 #include "base/time.h"
 #include "chromeos/dbus/dbus.h"  // NOLINT
+#include "chromeos/dbus/service_constants.h"  // NOLINT
 #include "chromeos/glib/object.h"  // NOLINT
 #include "chromeos/string.h"
 
@@ -36,169 +37,47 @@ static const char* kConnmanDeviceInterface = "org.chromium.flimflam.Device";
 static const char* kConnmanProfileInterface = "org.chromium.flimflam.Profile";
 
 // Connman function names.
-static const char* kGetPropertiesFunction = "GetProperties";
-static const char* kRequestScanFunction = "RequestScan";
 static const char* kConfigureWifiServiceFunction = "ConfigureWifiService";
-static const char* kGetWifiServiceFunction = "GetWifiService";
-static const char* kEnableTechnologyFunction = "EnableTechnology";
-static const char* kDisableTechnologyFunction = "DisableTechnology";
-static const char* kGetEntryFunction = "GetEntry";
 
 // Connman property names.
-static const char* kSecurityProperty = "Security";
-static const char* kPassphraseProperty = "Passphrase";
-static const char* kPassphraseRequiredProperty = "PassphraseRequired";
-static const char* kServicesProperty = "Services";
-static const char* kAvailableTechnologiesProperty = "AvailableTechnologies";
-static const char* kEnabledTechnologiesProperty = "EnabledTechnologies";
-static const char* kConnectedTechnologiesProperty = "ConnectedTechnologies";
-static const char* kDefaultTechnologyProperty = "DefaultTechnology";
-static const char* kOfflineModeProperty = "OfflineMode";
-static const char* kSignalStrengthProperty = "Strength";
-static const char* kNameProperty = "Name";
-static const char* kStateProperty = "State";
-static const char* kConnectivityStateProperty = "ConnectivityState";
-static const char* kTypeProperty = "Type";
-static const char* kUnknownString = "UNKNOWN";
-static const char* kDeviceProperty = "Device";
-static const char* kActivationStateProperty = "Cellular.ActivationState";
-static const char* kNetworkTechnologyProperty = "Cellular.NetworkTechnology";
-static const char* kRoamingStateProperty = "Cellular.RoamingState";
-static const char* kOperatorNameProperty = "Cellular.OperatorName";
-static const char* kOperatorCodeProperty = "Cellular.OperatorCode";
-static const char* kPaymentURLProperty = "Cellular.OlpUrl";
-static const char* kFavoriteProperty = "Favorite";
-static const char* kConnectableProperty = "Connectable";
-static const char* kAutoConnectProperty = "AutoConnect";
-static const char* kIsActiveProperty = "IsActive";
-static const char* kModeProperty = "Mode";
-static const char* kErrorProperty = "Error";
-static const char* kActiveProfileProperty = "ActiveProfile";
-static const char* kEntriesProperty = "Entries";
-static const char* kSSIDProperty = "SSID";
-static const char* kScanningProperty = "Scanning";
-static const char* kCarrierProperty = "Cellular.Carrier";
-static const char* kMeidProperty = "Cellular.MEID";
-static const char* kImeiProperty = "Cellular.IMEI";
-static const char* kImsiProperty = "Cellular.IMSI";
-static const char* kEsnProperty = "Cellular.ESN";
-static const char* kMdnProperty = "Cellular.MDN";
-static const char* kMinProperty = "Cellular.MIN";
-static const char* kModelIDProperty = "Cellular.ModelID";
-static const char* kManufacturerProperty = "Cellular.Manufacturer";
-static const char* kFirmwareRevisionProperty = "Cellular.FirmwareRevision";
-static const char* kHardwareRevisionProperty = "Cellular.HardwareRevision";
 static const char* kLastDeviceUpdateProperty = "Cellular.LastDeviceUpdate";
-static const char* kPRLVersionProperty = "Cellular.PRLVersion"; // (INT16)
 static const char* kCertpathSettingsPrefix = "SETTINGS:";
 
 // Connman EAP service properties
 static const char* kEAPIdentityProperty = "EAP.Identity";
-static const char* kEAPEAPProperty = "EAP.EAP";
 static const char* kEAPInnerEAPProperty = "EAP.InnerEAP";
 static const char* kEAPAnonymousIdentityProperty = "EAP.AnonymousIdentity";
-static const char* kEAPClientCertProperty = "EAP.ClientCert";
-static const char* kEAPCertIDProperty = "EAP.CertID";
 static const char* kEAPPrivateKeyProperty = "EAP.PrivateKey";
 static const char* kEAPPrivateKeyPasswordProperty = "EAP.PrivateKeyPassword";
-static const char* kEAPKeyIDProperty = "EAP.KeyID";
 static const char* kEAPCACertProperty = "EAP.CACert";
 static const char* kEAPCACertIDProperty = "EAP.CACertID";
-static const char* kEAPPINProperty = "EAP.PIN";
 static const char* kEAPPasswordProperty = "EAP.Password";
 
 // Connman network state
 static const char* kOnline = "online";
 
-// Connman monitored properties
-static const char* kMonitorPropertyChanged = "PropertyChanged";
-
 // Connman type options.
-static const char* kTypeEthernet = "ethernet";
-static const char* kTypeWifi = "wifi";
-static const char* kTypeWimax = "wimax";
-static const char* kTypeBluetooth = "bluetooth";
-static const char* kTypeCellular = "cellular";
 static const char* kTypeUnknown = "";
-
-// Connman mode options.
-static const char* kModeManaged = "managed";
-static const char* kModeAdhoc = "adhoc";
-
-// Connman security options.
-static const char* kSecurityWpa = "wpa";
-static const char* kSecurityWep = "wep";
-static const char* kSecurityRsn = "rsn";
-static const char* kSecurity8021x = "802_1x";
-static const char* kSecurityNone = "none";
 
 // Connman connectivity state options.
 static const char* kConnStateUnrestricted = "unrestricted";
 static const char* kConnStateRestricted = "restricted";
 static const char* kConnStateNone = "none";
 
-// Connman state options.
-static const char* kStateIdle = "idle";
-static const char* kStateCarrier = "carrier";
-static const char* kStateAssociation = "association";
-static const char* kStateConfiguration = "configuration";
-static const char* kStateReady = "ready";
-static const char* kStateDisconnect = "disconnect";
-static const char* kStateFailure = "failure";
-static const char* kStateActivationFailure = "activation-failure";
-
-// Connman network technology options.
-static const char* kNetworkTechnology1Xrtt = "1xRTT";
-static const char* kNetworkTechnologyEvdo = "EVDO";
-static const char* kNetworkTechnologyGprs = "GPRS";
-static const char* kNetworkTechnologyEdge = "EDGE";
-static const char* kNetworkTechnologyUmts = "UMTS";
-static const char* kNetworkTechnologyHspa = "HSPA";
-static const char* kNetworkTechnologyHspaPlus = "HSPA+";
-static const char* kNetworkTechnologyLte = "LTE";
-static const char* kNetworkTechnologyLteAdvanced = "LTE Advanced";
-
-
-// Connman roaming state options
-static const char* kRoamingStateHome = "home";
-static const char* kRoamingStateRoaming = "roaming";
-static const char* kRoamingStateUnknown = "unknown";
-
-// Connman activation state options
-static const char* kActivationStateActivated = "activated";
-static const char* kActivationStateActivating = "activating";
-static const char* kActivationStateNotActivated = "not-activated";
-static const char* kActivationStatePartiallyActivated = "partially-activated";
-static const char* kActivationStateUnknown = "unknown";
-
-// Connman error options.
-static const char* kErrorOutOfRange = "out-of-range";
-static const char* kErrorPinMissing = "pin-missing";
-static const char* kErrorDhcpFailed = "dhcp-failed";
-static const char* kErrorConnectFailed = "connect-failed";
-static const char* kErrorBadPassphrase = "bad-passphrase";
-static const char* kErrorBadWEPKey = "bad-wepkey";
-static const char* kErrorActivationFailed = "activation-failed";
-static const char* kErrorNeedEvdo = "need-evdo";
-static const char* kErrorNeedHomeNetwork = "need-home-network";
-static const char* kErrorOtaspFailed = "otasp-failed";
-static const char* kErrorAaaFailed = "aaa-failed";
-
-
 }  // namespace
 
 namespace {  // NOLINT
 
 static ConnectionType ParseType(const std::string& type) {
-  if (type == kTypeEthernet)
+  if (type == flimflam::kTypeEthernet)
     return TYPE_ETHERNET;
-  if (type == kTypeWifi)
+  if (type == flimflam::kTypeWifi)
     return TYPE_WIFI;
-  if (type == kTypeWimax)
+  if (type == flimflam::kTypeWimax)
     return TYPE_WIMAX;
-  if (type == kTypeBluetooth)
+  if (type == flimflam::kTypeBluetooth)
     return TYPE_BLUETOOTH;
-  if (type == kTypeCellular)
+  if (type == flimflam::kTypeCellular)
     return TYPE_CELLULAR;
   return TYPE_UNKNOWN;
 }
@@ -208,37 +87,37 @@ static const char* TypeToString(ConnectionType type) {
     case TYPE_UNKNOWN:
       break;
     case TYPE_ETHERNET:
-      return kTypeEthernet;
+      return flimflam::kTypeEthernet;
     case TYPE_WIFI:
-      return kTypeWifi;
+      return flimflam::kTypeWifi;
     case TYPE_WIMAX:
-      return kTypeWimax;
+      return flimflam::kTypeWimax;
     case TYPE_BLUETOOTH:
-      return kTypeBluetooth;
+      return flimflam::kTypeBluetooth;
     case TYPE_CELLULAR:
-      return kTypeCellular;
+      return flimflam::kTypeCellular;
   }
   return kTypeUnknown;
 }
 
 static ConnectionMode ParseMode(const std::string& mode) {
-  if (mode == kModeManaged)
+  if (mode == flimflam::kModeManaged)
     return MODE_MANAGED;
-  if (mode == kModeAdhoc)
+  if (mode == flimflam::kModeAdhoc)
     return MODE_ADHOC;
   return MODE_UNKNOWN;
 }
 
 static ConnectionSecurity ParseSecurity(const std::string& security) {
-  if (security == kSecurity8021x)
+  if (security == flimflam::kSecurity8021x)
     return SECURITY_8021X;
-  if (security == kSecurityRsn)
+  if (security == flimflam::kSecurityRsn)
     return SECURITY_RSN;
-  if (security == kSecurityWpa)
+  if (security == flimflam::kSecurityWpa)
     return SECURITY_WPA;
-  if (security == kSecurityWep)
+  if (security == flimflam::kSecurityWep)
     return SECURITY_WEP;
-  if (security == kSecurityNone)
+  if (security == flimflam::kSecurityNone)
     return SECURITY_NONE;
   return SECURITY_UNKNOWN;
 }
@@ -248,35 +127,35 @@ static const char* SecurityToString(ConnectionSecurity security) {
     case SECURITY_UNKNOWN:
       break;
     case SECURITY_8021X:
-      return kSecurity8021x;
+      return flimflam::kSecurity8021x;
     case SECURITY_RSN:
-      return kSecurityRsn;
+      return flimflam::kSecurityRsn;
     case SECURITY_WPA:
-      return kSecurityWpa;
+      return flimflam::kSecurityWpa;
     case SECURITY_WEP:
-      return kSecurityWep;
+      return flimflam::kSecurityWep;
     case SECURITY_NONE:
-      return kSecurityNone;
+      return flimflam::kSecurityNone;
   }
-  return kUnknownString;
+  return flimflam::kUnknownString;
 }
 
 static ConnectionState ParseState(const std::string& state) {
-  if (state == kStateIdle)
+  if (state == flimflam::kStateIdle)
     return STATE_IDLE;
-  if (state == kStateCarrier)
+  if (state == flimflam::kStateCarrier)
     return STATE_CARRIER;
-  if (state == kStateAssociation)
+  if (state == flimflam::kStateAssociation)
     return STATE_ASSOCIATION;
-  if (state == kStateConfiguration)
+  if (state == flimflam::kStateConfiguration)
     return STATE_CONFIGURATION;
-  if (state == kStateReady)
+  if (state == flimflam::kStateReady)
     return STATE_READY;
-  if (state == kStateDisconnect)
+  if (state == flimflam::kStateDisconnect)
     return STATE_DISCONNECT;
-  if (state == kStateFailure)
+  if (state == flimflam::kStateFailure)
     return STATE_FAILURE;
-  if (state == kStateActivationFailure)
+  if (state == flimflam::kStateActivationFailure)
     return STATE_ACTIVATION_FAILURE;
   return STATE_UNKNOWN;
 }
@@ -293,75 +172,75 @@ static ConnectivityState ParseConnectivityState(const std::string& state) {
 
 static NetworkTechnology ParseNetworkTechnology(
     const std::string& technology) {
-  if (technology == kNetworkTechnology1Xrtt)
+  if (technology == flimflam::kNetworkTechnology1Xrtt)
     return NETWORK_TECHNOLOGY_1XRTT;
-  if (technology == kNetworkTechnologyEvdo)
+  if (technology == flimflam::kNetworkTechnologyEvdo)
     return NETWORK_TECHNOLOGY_EVDO;
-  if (technology == kNetworkTechnologyGprs)
+  if (technology == flimflam::kNetworkTechnologyGprs)
     return NETWORK_TECHNOLOGY_GPRS;
-  if (technology == kNetworkTechnologyEdge)
+  if (technology == flimflam::kNetworkTechnologyEdge)
     return NETWORK_TECHNOLOGY_EDGE;
-  if (technology == kNetworkTechnologyUmts)
+  if (technology == flimflam::kNetworkTechnologyUmts)
     return NETWORK_TECHNOLOGY_UMTS;
-  if (technology == kNetworkTechnologyHspa)
+  if (technology == flimflam::kNetworkTechnologyHspa)
     return NETWORK_TECHNOLOGY_HSPA;
-  if (technology == kNetworkTechnologyHspaPlus)
+  if (technology == flimflam::kNetworkTechnologyHspaPlus)
     return NETWORK_TECHNOLOGY_HSPA_PLUS;
-  if (technology == kNetworkTechnologyLte)
+  if (technology == flimflam::kNetworkTechnologyLte)
     return NETWORK_TECHNOLOGY_LTE;
-  if (technology == kNetworkTechnologyLteAdvanced)
+  if (technology == flimflam::kNetworkTechnologyLteAdvanced)
     return NETWORK_TECHNOLOGY_LTE_ADVANCED;
   return NETWORK_TECHNOLOGY_UNKNOWN;
 }
 
 static NetworkRoamingState ParseRoamingState(
     const std::string& roaming_state) {
-  if (roaming_state == kRoamingStateHome)
+  if (roaming_state == flimflam::kRoamingStateHome)
     return ROAMING_STATE_HOME;
-  if (roaming_state == kRoamingStateRoaming)
+  if (roaming_state == flimflam::kRoamingStateRoaming)
     return ROAMING_STATE_ROAMING;
-  if (roaming_state == kRoamingStateUnknown)
+  if (roaming_state == flimflam::kRoamingStateUnknown)
     return ROAMING_STATE_UNKNOWN;
   return ROAMING_STATE_UNKNOWN;
 }
 
 static ActivationState ParseActivationState(
     const std::string& activation_state) {
-  if (activation_state == kActivationStateActivated)
+  if (activation_state == flimflam::kActivationStateActivated)
     return ACTIVATION_STATE_ACTIVATED;
-  if (activation_state == kActivationStateActivating)
+  if (activation_state == flimflam::kActivationStateActivating)
     return ACTIVATION_STATE_ACTIVATING;
-  if (activation_state == kActivationStateNotActivated)
+  if (activation_state == flimflam::kActivationStateNotActivated)
     return ACTIVATION_STATE_NOT_ACTIVATED;
-  if (activation_state == kActivationStateUnknown)
+  if (activation_state == flimflam::kActivationStateUnknown)
     return ACTIVATION_STATE_UNKNOWN;
-  if (activation_state == kActivationStatePartiallyActivated)
+  if (activation_state == flimflam::kActivationStatePartiallyActivated)
     return ACTIVATION_STATE_PARTIALLY_ACTIVATED;
   return ACTIVATION_STATE_UNKNOWN;
 }
 
 static ConnectionError ParseError(const std::string& error) {
-  if (error == kErrorOutOfRange)
+  if (error == flimflam::kErrorOutOfRange)
     return ERROR_OUT_OF_RANGE;
-  if (error == kErrorPinMissing)
+  if (error == flimflam::kErrorPinMissing)
     return ERROR_PIN_MISSING;
-  if (error == kErrorDhcpFailed)
+  if (error == flimflam::kErrorDhcpFailed)
     return ERROR_DHCP_FAILED;
-  if (error == kErrorConnectFailed)
+  if (error == flimflam::kErrorConnectFailed)
     return ERROR_CONNECT_FAILED;
-  if (error == kErrorBadPassphrase)
+  if (error == flimflam::kErrorBadPassphrase)
     return ERROR_BAD_PASSPHRASE;
-  if (error == kErrorBadWEPKey)
+  if (error == flimflam::kErrorBadWEPKey)
     return ERROR_BAD_WEPKEY;
-  if (error == kErrorActivationFailed)
+  if (error == flimflam::kErrorActivationFailed)
     return ERROR_ACTIVATION_FAILED;
-  if (error == kErrorNeedEvdo)
+  if (error == flimflam::kErrorNeedEvdo)
     return ERROR_NEED_EVDO;
-  if (error == kErrorNeedHomeNetwork)
+  if (error == flimflam::kErrorNeedHomeNetwork)
     return ERROR_NEED_HOME_NETWORK;
-  if (error == kErrorOtaspFailed)
+  if (error == flimflam::kErrorOtaspFailed)
     return ERROR_OTASP_FAILED;
-  if (error == kErrorAaaFailed)
+  if (error == flimflam::kErrorAaaFailed)
     return ERROR_AAA_FAILED;
   return ERROR_UNKNOWN;
 }
@@ -369,72 +248,72 @@ static ConnectionError ParseError(const std::string& error) {
 void ParseDeviceProperties(const glib::ScopedHashTable& properties,
                            DeviceInfo* info) {
   // Name
-  const char* default_string = kUnknownString;
-  properties.Retrieve(kNameProperty, &default_string);
+  const char* default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kNameProperty, &default_string);
   info->name = NewStringCopy(default_string);
   // Type
-  default_string = kUnknownString;
-  properties.Retrieve(kTypeProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kTypeProperty, &default_string);
   info->type = ParseType(default_string);
   // Scanning
   bool default_bool = false;
-  properties.Retrieve(kScanningProperty, &default_bool);
+  properties.Retrieve(flimflam::kScanningProperty, &default_bool);
   info->scanning = default_bool;
 }
 
 void ParseCellularDeviceProperties(const glib::ScopedHashTable& properties,
                                    DeviceInfo* info) {
   // Carrier
-  const char* default_string = kUnknownString;
-  properties.Retrieve(kCarrierProperty, &default_string);
+  const char* default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kCarrierProperty, &default_string);
   info->carrier = NewStringCopy(default_string);
   // MEID
-  default_string = kUnknownString;
-  properties.Retrieve(kMeidProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kMeidProperty, &default_string);
   info->MEID = NewStringCopy(default_string);
   // IMEI
-  default_string = kUnknownString;
-  properties.Retrieve(kImeiProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kImeiProperty, &default_string);
   info->IMEI = NewStringCopy(default_string);
   // IMSI
-  default_string = kUnknownString;
-  properties.Retrieve(kImsiProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kImsiProperty, &default_string);
   info->IMSI = NewStringCopy(default_string);
   // ESN
-  default_string = kUnknownString;
-  properties.Retrieve(kEsnProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kEsnProperty, &default_string);
   info->ESN = NewStringCopy(default_string);
   // MDN
-  default_string = kUnknownString;
-  properties.Retrieve(kMdnProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kMdnProperty, &default_string);
   info->MDN = NewStringCopy(default_string);
   // MIN
-  default_string = kUnknownString;
-  properties.Retrieve(kMinProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kMinProperty, &default_string);
   info->MIN = NewStringCopy(default_string);
   // ModelID
-  default_string = kUnknownString;
-  properties.Retrieve(kModelIDProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kModelIDProperty, &default_string);
   info->model_id = NewStringCopy(default_string);
   // Manufacturer
-  default_string = kUnknownString;
-  properties.Retrieve(kManufacturerProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kManufacturerProperty, &default_string);
   info->manufacturer = NewStringCopy(default_string);
   // FirmwareRevision
-  default_string = kUnknownString;
-  properties.Retrieve(kFirmwareRevisionProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kFirmwareRevisionProperty, &default_string);
   info->firmware_revision = NewStringCopy(default_string);
   // HardwareRevision
-  default_string = kUnknownString;
-  properties.Retrieve(kHardwareRevisionProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kHardwareRevisionProperty, &default_string);
   info->hardware_revision = NewStringCopy(default_string);
   // LastDeviceUpdate
-  default_string = kUnknownString;
+  default_string = flimflam::kUnknownString;
   properties.Retrieve(kLastDeviceUpdateProperty, &default_string);
   info->last_update = NewStringCopy(default_string);
   // PRLVersion
   unsigned int default_uint = 0;
-  properties.Retrieve(kPRLVersionProperty, &default_uint);
+  properties.Retrieve(flimflam::kPRLVersionProperty, &default_uint);
   info->PRL_version = default_uint;
 }
 
@@ -443,7 +322,7 @@ void ParseCellularDeviceProperties(const glib::ScopedHashTable& properties,
 bool GetProperties(const dbus::Proxy& proxy, glib::ScopedHashTable* result) {
   glib::ScopedError error;
   if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           kGetPropertiesFunction,
+                           flimflam::kGetPropertiesFunction,
                            &Resetter(&error).lvalue(),
                            G_TYPE_INVALID,
                            ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING,
@@ -463,7 +342,7 @@ bool GetEntry(const dbus::Proxy& proxy, const char* entry,
               glib::ScopedHashTable* result) {
   glib::ScopedError error;
   if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           kGetEntryFunction,
+                           flimflam::kGetEntryFunction,
                            &Resetter(&error).lvalue(),
                            G_TYPE_STRING,
                            entry,
@@ -522,43 +401,43 @@ bool GetDeviceInfo(const char* device_path, ConnectionType type,
 void ParseServiceProperties(const glib::ScopedHashTable& properties,
                             ServiceInfo* info) {
   // Name
-  const char* default_string = kUnknownString;
-  properties.Retrieve(kNameProperty, &default_string);
+  const char* default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kNameProperty, &default_string);
   info->name = NewStringCopy(default_string);
 
   // Type
-  default_string = kUnknownString;
-  properties.Retrieve(kTypeProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kTypeProperty, &default_string);
   info->type = ParseType(default_string);
 
   // Mode
-  default_string = kUnknownString;
-  properties.Retrieve(kModeProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kModeProperty, &default_string);
   info->mode = ParseMode(default_string);
 
   // Security
-  default_string = kSecurityNone;
-  properties.Retrieve(kSecurityProperty, &default_string);
+  default_string = flimflam::kSecurityNone;
+  properties.Retrieve(flimflam::kSecurityProperty, &default_string);
   info->security = ParseSecurity(default_string);
 
   // State
-  default_string = kUnknownString;
-  properties.Retrieve(kStateProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kStateProperty, &default_string);
   info->state = ParseState(default_string);
 
   // Error
-  default_string = kUnknownString;
-  properties.Retrieve(kErrorProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kErrorProperty, &default_string);
   info->error = ParseError(default_string);
 
   // PassphraseRequired
   bool default_bool = false;
-  properties.Retrieve(kPassphraseRequiredProperty, &default_bool);
+  properties.Retrieve(flimflam::kPassphraseRequiredProperty, &default_bool);
   info->passphrase_required = default_bool;
 
   // Passphrase
   default_string = "";
-  properties.Retrieve(kPassphraseProperty, &default_string);
+  properties.Retrieve(flimflam::kPassphraseProperty, &default_string);
   info->passphrase = NewStringCopy(default_string);
 
   // Identity
@@ -568,32 +447,32 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
 
   // Strength
   uint8 default_uint8 = 0;
-  properties.Retrieve(kSignalStrengthProperty, &default_uint8);
+  properties.Retrieve(flimflam::kSignalStrengthProperty, &default_uint8);
   info->strength = default_uint8;
 
   // Favorite
   default_bool = false;
-  properties.Retrieve(kFavoriteProperty, &default_bool);
+  properties.Retrieve(flimflam::kFavoriteProperty, &default_bool);
   info->favorite = default_bool;
 
   // Connectable
   default_bool = true;
-  properties.Retrieve(kConnectableProperty, &default_bool);
+  properties.Retrieve(flimflam::kConnectableProperty, &default_bool);
   info->connectable = default_bool;
 
   // AutoConnect
   default_bool = false;
-  properties.Retrieve(kAutoConnectProperty, &default_bool);
+  properties.Retrieve(flimflam::kAutoConnectProperty, &default_bool);
   info->auto_connect = default_bool;
 
   // IsActive
   default_bool = false;
-  properties.Retrieve(kIsActiveProperty, &default_bool);
+  properties.Retrieve(flimflam::kIsActiveProperty, &default_bool);
   info->is_active = default_bool;
 
   // Device
   glib::Value val;
-  if (properties.Retrieve(kDeviceProperty, &val)) {
+  if (properties.Retrieve(flimflam::kDeviceProperty, &val)) {
     const gchar* path = static_cast<const gchar*>(g_value_get_boxed (&val));
     info->device_path = NewStringCopy(path);
   } else {
@@ -601,23 +480,23 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   }
 
   // ActivationState
-  default_string = kUnknownString;
-  properties.Retrieve(kActivationStateProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kActivationStateProperty, &default_string);
   info->activation_state = ParseActivationState(default_string);
 
   // Network technology
-  default_string = kUnknownString;
-  properties.Retrieve(kNetworkTechnologyProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kNetworkTechnologyProperty, &default_string);
   info->network_technology = ParseNetworkTechnology(default_string);
 
   // Roaming state
-  default_string = kUnknownString;
-  properties.Retrieve(kRoamingStateProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kRoamingStateProperty, &default_string);
   info->roaming_state = ParseRoamingState(default_string);
 
   // Connectivity state
-  default_string = kUnknownString;
-  properties.Retrieve(kConnectivityStateProperty, &default_string);
+  default_string = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kConnectivityStateProperty, &default_string);
   info->connectivity_state = ParseConnectivityState(default_string);
 
   // TODO(ers) restricted_pool is deprecated, remove once chrome is changed
@@ -628,16 +507,16 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   if (info->type == TYPE_CELLULAR) {
     info->carrier_info = new CarrierInfo;
     // Operator Name
-    default_string = kUnknownString;
-    properties.Retrieve(kOperatorNameProperty, &default_string);
+    default_string = flimflam::kUnknownString;
+    properties.Retrieve(flimflam::kOperatorNameProperty, &default_string);
     info->carrier_info->operator_name = NewStringCopy(default_string);
     // Operator Code
-    default_string = kUnknownString;
-    properties.Retrieve(kOperatorCodeProperty, &default_string);
+    default_string = flimflam::kUnknownString;
+    properties.Retrieve(flimflam::kOperatorCodeProperty, &default_string);
     info->carrier_info->operator_code = NewStringCopy(default_string);
     // Payment URL
-    default_string = kUnknownString;
-    properties.Retrieve(kPaymentURLProperty, &default_string);
+    default_string = flimflam::kUnknownString;
+    properties.Retrieve(flimflam::kPaymentURLProperty, &default_string);
     info->carrier_info->payment_url = NewStringCopy(default_string);
   } else {
     info->carrier_info = NULL;
@@ -645,7 +524,7 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
 
   // EAP type
   default_string = "";
-  properties.Retrieve(kEAPEAPProperty, &default_string);
+  properties.Retrieve(flimflam::kEAPEAPProperty, &default_string);
   info->eap = NewStringCopy(default_string);
   // Inner EAP type
   default_string = "";
@@ -657,11 +536,11 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   info->anonymous_identity = NewStringCopy(default_string);
   // Client certificate
   default_string = "";
-  properties.Retrieve(kEAPClientCertProperty, &default_string);
+  properties.Retrieve(flimflam::kEAPClientCertProperty, &default_string);
   info->client_cert = NewStringCopy(default_string);
   // Certificate ID
   default_string = "";
-  properties.Retrieve(kEAPCertIDProperty, &default_string);
+  properties.Retrieve(flimflam::kEAPCertIDProperty, &default_string);
   info->cert_id = NewStringCopy(default_string);
   // Private key
   default_string = "";
@@ -673,7 +552,7 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   info->private_key_passwd = NewStringCopy(default_string);
   // Private key ID
   default_string = "";
-  properties.Retrieve(kEAPKeyIDProperty, &default_string);
+  properties.Retrieve(flimflam::kEAPKeyIDProperty, &default_string);
   info->key_id = NewStringCopy(default_string);
   // CA certificate
   default_string = "";
@@ -685,7 +564,7 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
   info->ca_cert_id = NewStringCopy(default_string);
   // PKCS#11 PIN
   default_string = "";
-  properties.Retrieve(kEAPPINProperty, &default_string);
+  properties.Retrieve(flimflam::kEAPPINProperty, &default_string);
   info->pin = NewStringCopy(default_string);
   // EAP Password
   default_string = "";
@@ -794,7 +673,7 @@ void ChromeOSRequestScan(ConnectionType type) {
   gchar* device = ::g_strdup(TypeToString(type));
   glib::ScopedError error;
   if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
-                           kRequestScanFunction,
+                           flimflam::kRequestScanFunction,
                            &Resetter(&error).lvalue(),
                            G_TYPE_STRING,
                            device,
@@ -821,25 +700,28 @@ ServiceInfo* ChromeOSGetWifiService(const char* ssid,
                                   ::g_free,
                                   NULL));
 
-  glib::Value value_mode(kModeManaged);
-  glib::Value value_type(kTypeWifi);
+  glib::Value value_mode(flimflam::kModeManaged);
+  glib::Value value_type(flimflam::kTypeWifi);
   glib::Value value_ssid(ssid);
   if (security == SECURITY_UNKNOWN)
     security = SECURITY_RSN;
   glib::Value value_security(SecurityToString(security));
 
   ::GHashTable* properties = scoped_properties.get();
-  ::g_hash_table_insert(properties, ::g_strdup(kModeProperty), &value_mode);
-  ::g_hash_table_insert(properties, ::g_strdup(kTypeProperty), &value_type);
-  ::g_hash_table_insert(properties, ::g_strdup(kSSIDProperty), &value_ssid);
-  ::g_hash_table_insert(properties, ::g_strdup(kSecurityProperty),
+  ::g_hash_table_insert(properties, ::g_strdup(flimflam::kModeProperty),
+                        &value_mode);
+  ::g_hash_table_insert(properties, ::g_strdup(flimflam::kTypeProperty),
+                        &value_type);
+  ::g_hash_table_insert(properties, ::g_strdup(flimflam::kSSIDProperty),
+                        &value_ssid);
+  ::g_hash_table_insert(properties, ::g_strdup(flimflam::kSecurityProperty),
                         &value_security);
 
 
   glib::ScopedError error;
   char* path;
   if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
-                           kGetWifiServiceFunction,
+                           flimflam::kGetWifiServiceFunction,
                            &Resetter(&error).lvalue(),
                            ::dbus_g_type_get_map("GHashTable",
                                                  G_TYPE_STRING,
@@ -876,11 +758,11 @@ class ScopedPtrGStrFreeV {
 static const char *map_oldprop_to_newprop(const char *oldprop)
 {
   if (strcmp(oldprop, "key_id") == 0)
-    return kEAPKeyIDProperty;
+    return flimflam::kEAPKeyIDProperty;
   if (strcmp(oldprop, "cert_id") == 0)
-    return kEAPCertIDProperty;
+    return flimflam::kEAPCertIDProperty;
   if (strcmp(oldprop, "pin") == 0)
-    return kEAPPINProperty;
+    return flimflam::kEAPPINProperty;
 
   return NULL;
 }
@@ -906,8 +788,8 @@ bool ChromeOSConfigureWifiService(const char* ssid,
                                   ::g_free,
                                   NULL));
 
-  glib::Value value_mode(kModeManaged);
-  glib::Value value_type(kTypeWifi);
+  glib::Value value_mode(flimflam::kModeManaged);
+  glib::Value value_type(flimflam::kTypeWifi);
   glib::Value value_ssid(ssid);
   if (security == SECURITY_UNKNOWN)
     security = SECURITY_RSN;
@@ -917,12 +799,15 @@ bool ChromeOSConfigureWifiService(const char* ssid,
   glib::Value value_cert_path(certpath);
 
   ::GHashTable* properties = scoped_properties.get();
-  ::g_hash_table_insert(properties, ::g_strdup(kModeProperty), &value_mode);
-  ::g_hash_table_insert(properties, ::g_strdup(kTypeProperty), &value_type);
-  ::g_hash_table_insert(properties, ::g_strdup(kSSIDProperty), &value_ssid);
-  ::g_hash_table_insert(properties, ::g_strdup(kSecurityProperty),
+  ::g_hash_table_insert(properties, ::g_strdup(flimflam::kModeProperty),
+                        &value_mode);
+  ::g_hash_table_insert(properties, ::g_strdup(flimflam::kTypeProperty),
+                        &value_type);
+  ::g_hash_table_insert(properties, ::g_strdup(flimflam::kSSIDProperty),
+                        &value_ssid);
+  ::g_hash_table_insert(properties, ::g_strdup(flimflam::kSecurityProperty),
                         &value_security);
-  ::g_hash_table_insert(properties, ::g_strdup(kPassphraseProperty),
+  ::g_hash_table_insert(properties, ::g_strdup(flimflam::kPassphraseProperty),
                         &value_passphrase);
   ::g_hash_table_insert(properties, ::g_strdup(kEAPIdentityProperty),
                         &value_identity);
@@ -949,9 +834,11 @@ bool ChromeOSConfigureWifiService(const char* ssid,
       // Presume EAP-TLS if we're here
       glib::Value *value = new glib::Value("TLS");
       values.push_back(value);
-      ::g_hash_table_insert(properties, ::g_strdup(kEAPEAPProperty), value);
+      ::g_hash_table_insert(properties,
+                            ::g_strdup(flimflam::kEAPEAPProperty), value);
   } else {
-    ::g_hash_table_insert(properties, ::g_strdup(kEAPClientCertProperty),
+    ::g_hash_table_insert(properties,
+                          ::g_strdup(flimflam::kEAPClientCertProperty),
                           &value_cert_path);
   }
 
@@ -993,57 +880,64 @@ SystemInfo* ChromeOSGetSystemInfo() {
   SystemInfo* system = new SystemInfo();
 
   // Online (State == "online")
-  const char* state = kUnknownString;
-  properties.Retrieve(kStateProperty, &state);
+  const char* state = flimflam::kUnknownString;
+  properties.Retrieve(flimflam::kStateProperty, &state);
   system->online = strcmp(kOnline, state) == 0;
 
   // AvailableTechnologies
   system->available_technologies = 0;
   glib::Value available_val;
-  if (properties.Retrieve(kAvailableTechnologiesProperty, &available_val)) {
+  if (properties.Retrieve(flimflam::kAvailableTechnologiesProperty,
+                          &available_val)) {
     gchar** available = static_cast<gchar**>(g_value_get_boxed(&available_val));
     while (*available) {
       system->available_technologies |= 1 << ParseType(*available);
       available++;
     }
   } else {
-    LOG(WARNING) << "Missing property: " << kAvailableTechnologiesProperty;
+    LOG(WARNING) << "Missing property: "
+                 << flimflam::kAvailableTechnologiesProperty;
   }
 
   // EnabledTechnologies
   system->enabled_technologies = 0;
   glib::Value enabled_val;
-  if (properties.Retrieve(kEnabledTechnologiesProperty, &enabled_val)) {
+  if (properties.Retrieve(flimflam::kEnabledTechnologiesProperty,
+                          &enabled_val)) {
     gchar** enabled = static_cast<gchar**>(g_value_get_boxed(&enabled_val));
     while (*enabled) {
       system->enabled_technologies |= 1 << ParseType(*enabled);
       enabled++;
     }
   } else {
-    LOG(WARNING) << "Missing property: " << kEnabledTechnologiesProperty;
+    LOG(WARNING) << "Missing property: "
+                 << flimflam::kEnabledTechnologiesProperty;
   }
 
   // ConnectedTechnologies
   system->connected_technologies = 0;
   glib::Value connected_val;
-  if (properties.Retrieve(kConnectedTechnologiesProperty, &connected_val)) {
+  if (properties.Retrieve(flimflam::kConnectedTechnologiesProperty,
+                          &connected_val)) {
     gchar** connected = static_cast<gchar**>(g_value_get_boxed(&connected_val));
     while (*connected) {
       system->connected_technologies |= 1 << ParseType(*connected);
       connected++;
     }
   } else {
-    LOG(WARNING) << "Missing property: " << kConnectedTechnologiesProperty;
+    LOG(WARNING) << "Missing property: "
+                 << flimflam::kConnectedTechnologiesProperty;
   }
 
   // DefaultTechnology
   const char* default_technology = kTypeUnknown;
-  properties.Retrieve(kDefaultTechnologyProperty, &default_technology);
+  properties.Retrieve(flimflam::kDefaultTechnologyProperty,
+                      &default_technology);
   system->default_technology = ParseType(default_technology);
 
   // OfflineMode
   bool offline_mode = false;
-  properties.Retrieve(kOfflineModeProperty, &offline_mode);
+  properties.Retrieve(flimflam::kOfflineModeProperty, &offline_mode);
   system->offline_mode = offline_mode;
 
   // Services
@@ -1051,7 +945,7 @@ SystemInfo* ChromeOSGetSystemInfo() {
   std::vector<ServiceInfo> service_info_list;
   typedef std::set<std::pair<std::string, ConnectionType> > DeviceSet;
   DeviceSet device_set;
-  if (properties.Retrieve(kServicesProperty, &services_val)) {
+  if (properties.Retrieve(flimflam::kServicesProperty, &services_val)) {
     GPtrArray* services =
         static_cast<GPtrArray*>(g_value_get_boxed(&services_val));
     for (size_t i = 0; i < services->len; i++) {
@@ -1069,7 +963,7 @@ SystemInfo* ChromeOSGetSystemInfo() {
       }
     }
   } else {
-    LOG(WARNING) << "Missing property: " << kServicesProperty;
+    LOG(WARNING) << "Missing property: " << flimflam::kServicesProperty;
   }
 
   // Copy service_info_list -> system->services.
@@ -1121,7 +1015,7 @@ SystemInfo* ChromeOSGetSystemInfo() {
   // Profile
   glib::Value profile_val;
   std::vector<ServiceInfo> remembered_service_info_list;
-  if (properties.Retrieve(kActiveProfileProperty, &profile_val)) {
+  if (properties.Retrieve(flimflam::kActiveProfileProperty, &profile_val)) {
     const gchar* profile_path =
         static_cast<const gchar*>(g_value_get_boxed(&profile_val));
 
@@ -1133,7 +1027,8 @@ SystemInfo* ChromeOSGetSystemInfo() {
     glib::ScopedHashTable profile_properties;
     if (GetProperties(profile_proxy, &profile_properties)) {
       glib::Value entries_val;
-      if (profile_properties.Retrieve(kEntriesProperty, &entries_val)) {
+      if (profile_properties.Retrieve(flimflam::kEntriesProperty,
+                                      &entries_val)) {
         gchar** entries = static_cast<gchar**>(g_value_get_boxed(&entries_val));
         while (*entries) {
           glib::ScopedHashTable entry_properties;
@@ -1149,7 +1044,7 @@ SystemInfo* ChromeOSGetSystemInfo() {
       }
     }
   } else {
-    LOG(WARNING) << "Missing property: " << kActiveProfileProperty;
+    LOG(WARNING) << "Missing property: " << flimflam::kActiveProfileProperty;
   }
 
   // Copy remembered_service_info_list -> system->remembered_services.
@@ -1189,8 +1084,8 @@ bool ChromeOSEnableNetworkDevice(ConnectionType type, bool enable) {
   gchar* device = ::g_strdup(TypeToString(type));
   glib::ScopedError error;
   if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
-                           enable ? kEnableTechnologyFunction :
-                                    kDisableTechnologyFunction,
+                           enable ? flimflam::kEnableTechnologyFunction :
+                                    flimflam::kDisableTechnologyFunction,
                            &Resetter(&error).lvalue(),
                            G_TYPE_STRING,
                            device,
@@ -1285,7 +1180,7 @@ MonitorNetworkConnection ChromeOSMonitorNetwork(
   MonitorNetworkConnection result =
       new ManagerPropertyChangedHandler(callback, object);
   result->connection() = dbus::Monitor(
-      proxy, kMonitorPropertyChanged,
+      proxy, flimflam::kMonitorPropertyChanged,
       &ManagerPropertyChangedHandler::Run, result);
   return result;
 }
