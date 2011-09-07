@@ -499,7 +499,7 @@ NetworkPropertiesMonitor ChromeOSMonitorNetworkManagerProperties(
     MonitorPropertyGValueCallback callback,
     void* object) {
   return CreatePropertyChangeGValueMonitor(callback, kFlimflamManagerInterface,
-                                           "/", object);
+                                           kFlimflamServicePath, object);
 }
 
 extern "C"
@@ -587,7 +587,7 @@ bool ChromeOSDeleteRememberedService(const char* service_path) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy manager_proxy(bus,
                             kFlimflamServiceName,
-                            "/",
+                            kFlimflamServicePath,
                             kFlimflamManagerInterface);
 
   glib::ScopedHashTable properties;
@@ -626,7 +626,7 @@ bool ChromeOSSetOfflineMode(bool offline) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy manager_proxy(bus,
                             kFlimflamServiceName,
-                            "/",
+                            kFlimflamServicePath,
                             kFlimflamManagerInterface);
 
   glib::Value value_offline(offline);
@@ -799,7 +799,7 @@ DeviceNetworkList* ChromeOSGetDeviceNetworkList() {
   {
     dbus::Proxy manager_proxy(bus,
                               kFlimflamServiceName,
-                              "/",
+                              kFlimflamServicePath,
                               kFlimflamManagerInterface);
 
     glib::ScopedHashTable properties;
@@ -1129,7 +1129,7 @@ void ChromeOSRequestNetworkManagerProperties(
     NetworkPropertiesGValueCallback callback,
     void* object) {
   GetPropertiesGValueAsync(kFlimflamManagerInterface,
-                           "/", callback, object);
+                           kFlimflamServicePath, callback, object);
 }
 
 extern "C"
@@ -1180,7 +1180,8 @@ void ChromeOSRequestHiddenWifiNetworkProperties(
   DCHECK(callback);
   GetPropertiesGValueCallbackData* cb_data =
       new GetPropertiesGValueCallbackData(
-          kFlimflamManagerInterface, "/", ssid, callback, object);
+          kFlimflamManagerInterface, kFlimflamServicePath,
+          ssid, callback, object);
 
   glib::ScopedHashTable scoped_properties =
       glib::ScopedHashTable(::g_hash_table_new_full(
@@ -1230,7 +1231,8 @@ void ChromeOSRequestVirtualNetworkProperties(
   DCHECK(callback);
   GetPropertiesGValueCallbackData* cb_data =
       new GetPropertiesGValueCallbackData(
-          kFlimflamManagerInterface, "/", service_name, callback, object);
+          kFlimflamManagerInterface, kFlimflamServicePath,
+          service_name, callback, object);
 
   glib::ScopedHashTable scoped_properties =
       glib::ScopedHashTable(::g_hash_table_new_full(
@@ -1305,7 +1307,8 @@ void ChromeOSRequestRemoveNetworkService(const char* service_path) {
 extern "C"
 void ChromeOSRequestNetworkScan(const char* network_type) {
   FlimflamCallbackData* cb_data =
-      new FlimflamCallbackData(kFlimflamManagerInterface, "/");
+      new FlimflamCallbackData(kFlimflamManagerInterface,
+                               kFlimflamServicePath);
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
       kRequestScanFunction,
@@ -1324,7 +1327,8 @@ void ChromeOSRequestNetworkScan(const char* network_type) {
 extern "C"
 void ChromeOSRequestNetworkDeviceEnable(const char* network_type, bool enable) {
   FlimflamCallbackData* cb_data =
-      new FlimflamCallbackData(kFlimflamManagerInterface, "/");
+      new FlimflamCallbackData(kFlimflamManagerInterface,
+                               kFlimflamServicePath);
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
       enable ? kEnableTechnologyFunction : kDisableTechnologyFunction,
@@ -2428,7 +2432,7 @@ PropertyChangeMonitor ChromeOSMonitorNetworkManager(
     MonitorPropertyCallback callback,
     void* object) {
   return CreatePropertyChangeMonitor(callback, kFlimflamManagerInterface,
-                                     "/", object);
+                                     kFlimflamServicePath, object);
 }
 
 extern "C"
@@ -2586,7 +2590,8 @@ extern "C"
 void ChromeOSRequestNetworkManagerInfo(
     NetworkPropertiesCallback callback,
     void* object) {
-  GetPropertiesAsync(kFlimflamManagerInterface, "/", callback, object);
+  GetPropertiesAsync(kFlimflamManagerInterface, kFlimflamServicePath,
+                     callback, object);
 }
 
 extern "C"
@@ -2633,7 +2638,7 @@ void ChromeOSRequestHiddenWifiNetwork(
   DCHECK(security);
   DCHECK(callback);
   GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
-      kFlimflamManagerInterface, "/", ssid, callback, object);
+      kFlimflamManagerInterface, kFlimflamServicePath, ssid, callback, object);
 
   glib::ScopedHashTable scoped_properties =
       glib::ScopedHashTable(::g_hash_table_new_full(
@@ -2682,7 +2687,8 @@ void ChromeOSRequestVirtualNetwork(
   DCHECK(provider_type);
   DCHECK(callback);
   GetPropertiesCallbackData* cb_data = new GetPropertiesCallbackData(
-      kFlimflamManagerInterface, "/", service_name, callback, object);
+      kFlimflamManagerInterface, kFlimflamServicePath,
+      service_name, callback, object);
 
   glib::ScopedHashTable scoped_properties =
       glib::ScopedHashTable(::g_hash_table_new_full(

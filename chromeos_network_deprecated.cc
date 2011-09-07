@@ -29,13 +29,6 @@ namespace chromeos {  // NOLINT
 
 namespace {  // NOLINT
 
-// Connman D-Bus service identifiers.
-static const char* kConnmanManagerInterface = "org.chromium.flimflam.Manager";
-static const char* kConnmanServiceInterface = "org.chromium.flimflam.Service";
-static const char* kConnmanServiceName = "org.chromium.flimflam";
-static const char* kConnmanDeviceInterface = "org.chromium.flimflam.Device";
-static const char* kConnmanProfileInterface = "org.chromium.flimflam.Profile";
-
 // Connman function names.
 static const char* kConfigureWifiServiceFunction = "ConfigureWifiService";
 
@@ -365,9 +358,9 @@ bool GetEntry(const dbus::Proxy& proxy, const char* entry,
 bool GetDeviceInfo(const char* device_path, ConnectionType type,
                    DeviceInfo *info) {
   dbus::Proxy device_proxy(dbus::GetSystemBusConnection(),
-                           kConnmanServiceName,
+                           flimflam::kFlimflamServiceName,
                            device_path,
-                           kConnmanDeviceInterface);
+                           flimflam::kFlimflamDeviceInterface);
 
   glib::ScopedHashTable device_properties;
   if (!GetProperties(device_proxy, &device_properties)) {
@@ -603,9 +596,9 @@ void ParseServiceProperties(const glib::ScopedHashTable& properties,
 // returns true on success.
 bool GetServiceInfo(const char* path, ServiceInfo *info) {
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
+                            flimflam::kFlimflamServiceName,
                             path,
-                            kConnmanServiceInterface);
+                            flimflam::kFlimflamServiceInterface);
   glib::ScopedHashTable service_properties;
   if (!GetProperties(service_proxy, &service_properties))
     return false;
@@ -667,9 +660,9 @@ void DeleteServiceInfoProperties(ServiceInfo& info) {
 extern "C"
 void ChromeOSRequestScan(ConnectionType type) {
   dbus::Proxy manager_proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
-                            "/",
-                            kConnmanManagerInterface);
+                            flimflam::kFlimflamServiceName,
+                            flimflam::kFlimflamServicePath,
+                            flimflam::kFlimflamManagerInterface);
   gchar* device = ::g_strdup(TypeToString(type));
   glib::ScopedError error;
   if (!::dbus_g_proxy_call(manager_proxy.gproxy(),
@@ -689,9 +682,9 @@ extern "C"
 ServiceInfo* ChromeOSGetWifiService(const char* ssid,
                                     ConnectionSecurity security) {
   dbus::Proxy manager_proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
-                            "/",
-                            kConnmanManagerInterface);
+                            flimflam::kFlimflamServiceName,
+                            flimflam::kFlimflamServicePath,
+                            flimflam::kFlimflamManagerInterface);
 
   glib::ScopedHashTable scoped_properties =
       glib::ScopedHashTable(
@@ -777,9 +770,9 @@ bool ChromeOSConfigureWifiService(const char* ssid,
                                   const char* certpath) {
 
   dbus::Proxy manager_proxy(dbus::GetSystemBusConnection(),
-                            kConnmanServiceName,
-                            "/",
-                            kConnmanManagerInterface);
+                            flimflam::kFlimflamServiceName,
+                            flimflam::kFlimflamServicePath,
+                            flimflam::kFlimflamManagerInterface);
 
   glib::ScopedHashTable scoped_properties =
       glib::ScopedHashTable(
@@ -868,9 +861,9 @@ SystemInfo* ChromeOSGetSystemInfo() {
   base::Time t0 = base::Time::Now();
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy manager_proxy(bus,
-                            kConnmanServiceName,
-                            "/",
-                            kConnmanManagerInterface);
+                            flimflam::kFlimflamServiceName,
+                            flimflam::kFlimflamServicePath,
+                            flimflam::kFlimflamManagerInterface);
 
   glib::ScopedHashTable properties;
   if (!GetProperties(manager_proxy, &properties)) {
@@ -1020,9 +1013,9 @@ SystemInfo* ChromeOSGetSystemInfo() {
         static_cast<const gchar*>(g_value_get_boxed(&profile_val));
 
     dbus::Proxy profile_proxy(bus,
-                              kConnmanServiceName,
+                              flimflam::kFlimflamServiceName,
                               profile_path,
-                              kConnmanProfileInterface);
+                              flimflam::kFlimflamProfileInterface);
 
     glib::ScopedHashTable profile_properties;
     if (GetProperties(profile_proxy, &profile_properties)) {
@@ -1073,9 +1066,9 @@ extern "C"
 bool ChromeOSEnableNetworkDevice(ConnectionType type, bool enable) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy manager_proxy(bus,
-                            kConnmanServiceName,
-                            "/",
-                            kConnmanManagerInterface);
+                            flimflam::kFlimflamServiceName,
+                            flimflam::kFlimflamServicePath,
+                            flimflam::kFlimflamManagerInterface);
   if (type == TYPE_UNKNOWN) {
     LOG(WARNING) << "EnableNetworkDevice called with an unknown type: " << type;
     return false;
@@ -1174,9 +1167,9 @@ MonitorNetworkConnection ChromeOSMonitorNetwork(
     MonitorNetworkCallback callback, void* object) {
   RegisterNetworkMarshallers();
   dbus::Proxy proxy(dbus::GetSystemBusConnection(),
-                    kConnmanServiceName,
-                    "/",
-                    kConnmanManagerInterface);
+                    flimflam::kFlimflamServiceName,
+                    flimflam::kFlimflamServicePath,
+                    flimflam::kFlimflamManagerInterface);
   MonitorNetworkConnection result =
       new ManagerPropertyChangedHandler(callback, object);
   result->connection() = dbus::Monitor(
