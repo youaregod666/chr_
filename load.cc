@@ -235,36 +235,6 @@ DECL_FUNC_2(MonitorNetwork,
 DECL_FUNC_1(DisconnectMonitorNetwork, void, MonitorNetworkConnection);
 DECL_FUNC_2(EnableNetworkDevice, bool, ConnectionType, bool);
 DECL_FUNC_1(SaveIPConfig, bool, IPConfig*);
-// Deprecated (Unused, to be removed):
-DECL_FUNC_3(SetNetworkServiceProperty, void, const char*, const char*,
-            const Value*);
-DECL_FUNC_3(SetNetworkDeviceProperty, void, const char*, const char*,
-            const Value*);
-DECL_FUNC_3(SetNetworkIPConfigProperty, void, const char*, const char*,
-            const Value*);
-DECL_FUNC_2(MonitorNetworkManager, PropertyChangeMonitor,
-            MonitorPropertyCallback, void*);
-DECL_FUNC_3(MonitorNetworkService, PropertyChangeMonitor,
-            MonitorPropertyCallback, const char*, void*);
-DECL_FUNC_3(MonitorNetworkDevice, PropertyChangeMonitor,
-            MonitorPropertyCallback, const char*, void*);
-DECL_FUNC_1(DisconnectPropertyChangeMonitor, void, PropertyChangeMonitor);
-DECL_FUNC_2(RequestNetworkManagerInfo, void,
-            NetworkPropertiesCallback, void*);
-DECL_FUNC_3(RequestNetworkServiceInfo, void, const char*,
-            NetworkPropertiesCallback, void*);
-DECL_FUNC_3(RequestNetworkDeviceInfo, void, const char*,
-            NetworkPropertiesCallback, void*);
-DECL_FUNC_3(RequestNetworkProfile, void, const char*,
-            NetworkPropertiesCallback, void*);
-DECL_FUNC_4(RequestNetworkProfileEntry, void, const char*, const char*,
-            NetworkPropertiesCallback, void*);
-DECL_FUNC_4(RequestWifiServicePath, void, const char*, ConnectionSecurity,
-            NetworkPropertiesCallback, void*);
-DECL_FUNC_4(RequestHiddenWifiNetwork, void, const char*, const char*,
-            NetworkPropertiesCallback, void*);
-DECL_FUNC_5(RequestVirtualNetwork, void, const char*, const char*, const char*,
-            NetworkPropertiesCallback, void*);
 
 // Login
 DECL_FUNC_0(EmitLoginPromptReady, bool);
@@ -539,22 +509,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(DisconnectMonitorNetwork);
   INIT_FUNC(EnableNetworkDevice);
   INIT_FUNC(SaveIPConfig);
-// Deprecated (Unused, to be removed):
-  INIT_FUNC(SetNetworkServiceProperty);
-  INIT_FUNC(SetNetworkDeviceProperty);
-  INIT_FUNC(SetNetworkIPConfigProperty);
-  INIT_FUNC(MonitorNetworkManager);
-  INIT_FUNC(MonitorNetworkService);
-  INIT_FUNC(MonitorNetworkDevice);
-  INIT_FUNC(DisconnectPropertyChangeMonitor);
-  INIT_FUNC(RequestNetworkManagerInfo);
-  INIT_FUNC(RequestNetworkServiceInfo);
-  INIT_FUNC(RequestNetworkDeviceInfo);
-  INIT_FUNC(RequestNetworkProfile);
-  INIT_FUNC(RequestNetworkProfileEntry);
-  INIT_FUNC(RequestWifiServicePath);
-  INIT_FUNC(RequestHiddenWifiNetwork);
-  INIT_FUNC(RequestVirtualNetwork);
 
   // Login
   INIT_FUNC(EmitLoginPromptReady);

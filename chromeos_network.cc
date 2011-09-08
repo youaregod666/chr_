@@ -1498,68 +1498,6 @@ void ChromeOSRequestCellularRegister(const char* device_path,
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-static glib::Value *ConvertToGlibValue(const ::Value* value) {
-  switch (value->GetType()) {
-    case ::Value::TYPE_BOOLEAN: {
-      bool out;
-      if (value->GetAsBoolean(&out))
-        return new glib::Value(out);
-      break;
-    }
-    case ::Value::TYPE_INTEGER: {
-      int out;
-      if (value->GetAsInteger(&out)) {
-        // Converting to a 32-bit signed int type in particular, since
-        // that's what flimflam expects in its DBus API
-        return new glib::Value(out);
-      break;
-      }
-    }
-    case ::Value::TYPE_STRING: {
-      std::string out;
-      if (value->GetAsString(&out))
-        return new glib::Value(out);
-      break;
-    }
-    case ::Value::TYPE_DICTIONARY: {
-      glib::ScopedHashTable scoped_table =
-          glib::ScopedHashTable(::g_hash_table_new_full(
-              ::g_str_hash, ::g_str_equal, ::g_free, ::g_free));
-      ::GHashTable* table = scoped_table.get();
-      const DictionaryValue* dict = static_cast<const DictionaryValue*>(value);
-      for (DictionaryValue::key_iterator it = dict->begin_keys();
-           it != dict->end_keys(); ++it) {
-        std::string key = *it;
-        std::string val;
-        if (!dict->GetString(key, &val)) {
-          LOG(ERROR) << "Invalid type in hash table, key: " << key
-                     << " value type: " << value->GetType();
-          return NULL;
-        }
-        ::g_hash_table_insert(table,
-            ::g_strdup(const_cast<char*>(key.c_str())),
-            ::g_strdup(const_cast<char*>(val.c_str())));
-      }
-      // glib::Value doesn't support boxed types so do it manually.
-      glib::Value* out = new glib::Value();
-      ::g_value_init(out, DBUS_TYPE_G_STRING_STRING_HASHTABLE);
-      ::g_value_set_boxed(out, table);
-      return out;
-    }
-    default:
-      // Other Value types - LIST, NULL, REAL, BINARY -
-      // aren't passed through this mechanism, and so we're not going to
-      // bother to try converting them.
-      // If we get here, it's a programming error, so complain.
-      LOG(ERROR) << "Unconverted Value of type: " << value->GetType();
-      return NULL;
-  }
-  LOG(ERROR) << "Value conversion failed, type: " << value->GetType();
-  return NULL;
-}
-
 static void SetNetworkProperty(FlimflamCallbackData *cb_data,
                                const char* property,
                                const GValue* setting) {
@@ -2247,7 +2185,79 @@ void ChromeOSDisconnectSMSMonitor(SMSMonitor monitor) {
 
 namespace chromeos {  // NOLINT-
 
+class PropertyChangedHandler;
+typedef PropertyChangedHandler* PropertyChangeMonitor;
+
+typedef void (*MonitorPropertyCallback)(void* object,
+                                        const char* path,
+                                        const char* key,
+                                        const Value* value);
+
+typedef void (*NetworkPropertiesCallback)(void* object,
+                                          const char* path,
+                                          const Value* properties);
+
 namespace {
+
+static glib::Value *ConvertToGlibValue(const ::Value* value) {
+  switch (value->GetType()) {
+    case ::Value::TYPE_BOOLEAN: {
+      bool out;
+      if (value->GetAsBoolean(&out))
+        return new glib::Value(out);
+      break;
+    }
+    case ::Value::TYPE_INTEGER: {
+      int out;
+      if (value->GetAsInteger(&out)) {
+        // Converting to a 32-bit signed int type in particular, since
+        // that's what flimflam expects in its DBus API
+        return new glib::Value(out);
+      break;
+      }
+    }
+    case ::Value::TYPE_STRING: {
+      std::string out;
+      if (value->GetAsString(&out))
+        return new glib::Value(out);
+      break;
+    }
+    case ::Value::TYPE_DICTIONARY: {
+      glib::ScopedHashTable scoped_table =
+          glib::ScopedHashTable(::g_hash_table_new_full(
+              ::g_str_hash, ::g_str_equal, ::g_free, ::g_free));
+      ::GHashTable* table = scoped_table.get();
+      const DictionaryValue* dict = static_cast<const DictionaryValue*>(value);
+      for (DictionaryValue::key_iterator it = dict->begin_keys();
+           it != dict->end_keys(); ++it) {
+        std::string key = *it;
+        std::string val;
+        if (!dict->GetString(key, &val)) {
+          LOG(ERROR) << "Invalid type in hash table, key: " << key
+                     << " value type: " << value->GetType();
+          return NULL;
+        }
+        ::g_hash_table_insert(table,
+            ::g_strdup(const_cast<char*>(key.c_str())),
+            ::g_strdup(const_cast<char*>(val.c_str())));
+      }
+      // glib::Value doesn't support boxed types so do it manually.
+      glib::Value* out = new glib::Value();
+      ::g_value_init(out, DBUS_TYPE_G_STRING_STRING_HASHTABLE);
+      ::g_value_set_boxed(out, table);
+      return out;
+    }
+    default:
+      // Other Value types - LIST, NULL, REAL, BINARY -
+      // aren't passed through this mechanism, and so we're not going to
+      // bother to try converting them.
+      // If we get here, it's a programming error, so complain.
+      LOG(ERROR) << "Unconverted Value of type: " << value->GetType();
+      return NULL;
+  }
+  LOG(ERROR) << "Value conversion failed, type: " << value->GetType();
+  return NULL;
+}
 
 static Value* ConvertGlibValue(const glib::Value* gvalue);
 

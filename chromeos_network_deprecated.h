@@ -8,7 +8,13 @@
 #include <base/basictypes.h>
 #include <base/logging.h>
 
+class Value;
+
 namespace chromeos { // NOLINT
+
+typedef void (*NetworkPropertiesCallback)(void* object,
+                                          const char* path,
+                                          const Value* properties);
 
 // Connection enums (see flimflam/include/service.h)
 enum ConnectionType {
