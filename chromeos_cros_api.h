@@ -275,11 +275,12 @@
 // 167: Added RequestRemoveNetworkService and RequestNetworkServiceDisconnect.
 // 168: Added GetIdleTime to power manager.
 // 169: Deprecated functions using base::Value.
+// 170: Added support for trigger login-prompt-visible (EmitLoginPromptVisible)
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 161,
-  kCrosAPIVersion = 169
+  kCrosAPIVersion = 170
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

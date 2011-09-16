@@ -61,6 +61,9 @@ extern void (*DisconnectSession)(SessionConnection connection);
 // Kicks off an attempt to emit the "login-prompt-ready" upstart signal.
 extern bool (*EmitLoginPromptReady)();
 
+// Kicks off an attempt to emit the "login-prompt-visible" upstart signal.
+extern bool (*EmitLoginPromptVisible)();
+
 extern bool (*RestartJob)(int pid, const char* command_line);
 
 extern bool (*RestartEntd)();

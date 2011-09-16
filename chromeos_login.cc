@@ -62,6 +62,25 @@ bool ChromeOSEmitLoginPromptReady() {
 }
 
 extern "C"
+bool ChromeOSEmitLoginPromptVisible() {
+  chromeos::dbus::Proxy proxy = ChromeOSLoginHelpers::CreateProxy();
+  gboolean done = false;
+  chromeos::glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           login_manager::kSessionManagerEmitLoginPromptVisible,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN, &done,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << login_manager::kSessionManagerEmitLoginPromptVisible
+                 << " failed: " << SCOPED_SAFE_MESSAGE(error);
+  }
+  return done;
+}
+
+extern "C"
 bool ChromeOSRestartJob(int pid, const char* command_line) {
   chromeos::dbus::Proxy proxy = ChromeOSLoginHelpers::CreateProxy();
   gboolean done = false;

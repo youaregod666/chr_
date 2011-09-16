@@ -238,6 +238,7 @@ DECL_FUNC_1(SaveIPConfig, bool, IPConfig*);
 
 // Login
 DECL_FUNC_0(EmitLoginPromptReady, bool);
+DECL_FUNC_0(EmitLoginPromptVisible, bool);
 DECL_FUNC_2(RestartJob, bool, int, const char*);
 DECL_FUNC_0(RestartEntd, bool);
 DECL_FUNC_2(RetrievePolicy, void, RetrievePolicyCallback, void*);
@@ -512,6 +513,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
 
   // Login
   INIT_FUNC(EmitLoginPromptReady);
+  INIT_FUNC(EmitLoginPromptVisible);
   INIT_FUNC(RestartJob);
   INIT_FUNC(RestartEntd);
   INIT_FUNC(RetrievePolicy);
