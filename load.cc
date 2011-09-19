@@ -12,7 +12,6 @@
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_cryptohome.h" // NOLINT
 #include "chromeos_imageburn.h"  //NOLINT
-#include "chromeos_libcros_service.h"  // NOLINT
 #include "chromeos_login.h"  // NOLINT
 #include "chromeos_mount.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
@@ -348,14 +347,6 @@ DECL_FUNC_2(MonitorBrightness,
             void*);
 DECL_FUNC_1(DisconnectBrightness, void, BrightnessConnection);
 
-// LibCros Service
-DECL_FUNC_0(StartLibCrosService, LibCrosServiceConnection);
-DECL_FUNC_1(StopLibCrosService, void, LibCrosServiceConnection);
-DECL_FUNC_3(SetNetworkProxyResolver, void,
-            NetworkProxyResolver, void*, LibCrosServiceConnection);
-DECL_FUNC_4(NotifyNetworkProxyResolved, bool, const char*, const char*,
-            const char*, LibCrosServiceConnection);
-
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
 // Initializes the variable by looking up the function by |name|.
@@ -596,12 +587,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MonitorBrightnessV2);
   INIT_FUNC(MonitorBrightness);
   INIT_FUNC(DisconnectBrightness);
-
-  // LibCros Service
-  INIT_FUNC(StartLibCrosService);
-  INIT_FUNC(StopLibCrosService);
-  INIT_FUNC(SetNetworkProxyResolver);
-  INIT_FUNC(NotifyNetworkProxyResolved);
 
   return error_string.empty();
 }
