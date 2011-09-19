@@ -279,14 +279,12 @@
 // 171: Deprecated RequestScan, GetSystemInfo, FreeSystemInfo,
 //      MonitorNetwork, DisconnectMonitorNetwork, EnableNetworkDevice,
 //      RequestWifiServicePath, SaveIPConfig.
-// 172: Deprecated StartLibCrosService, StopLibCrosService,
-//      SetNetworkProxyResolve, NotifyNetworkProxyResolved
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 161,
-  kCrosAPIVersion = 172
+  kCrosAPIVersion = 171
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
