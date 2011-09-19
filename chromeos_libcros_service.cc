@@ -2,14 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "chromeos_libcros_service.h"
-
 #include <chromeos/dbus/abstract_dbus_service.h>
 #include <chromeos/dbus/service_constants.h>
 
 #include "libcros_service.h"
 
 namespace chromeos {
+
+// The expected callback signature provided by chrome which will
+// be invoked by LibCrosService::ResolveNetworkProxy.
+// |object| given when calling SetNetworkProxyResolverHandler will be passed
+// when calling callback.
+typedef void (*NetworkProxyResolver)(void* object,
+                                     const char* source_url);
 
 extern "C"
 LibCrosServiceConnection ChromeOSStartLibCrosService() {
