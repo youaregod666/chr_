@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -20,10 +20,7 @@
 #include "chromeos/glib/object.h"  // NOLINT
 #include "chromeos/string.h"
 
-// This code only exists to preserve backwards compatability with older
-// versions of Chrome, and should be removed once R10 is fully deprecated
-// and kCrosAPIMinVersion in chromeos_cros_api.h is updated appropriately.
-// All of the code here was transplanted from chromeos_network.cc.
+class Value;
 
 namespace chromeos {  // NOLINT
 
@@ -655,8 +652,9 @@ void DeleteServiceInfoProperties(ServiceInfo& info) {
   // Note: DeviceInfo is owned by SystemInfo.
 }
 
-}
+}  // namespace
 
+// TODO(satorux): Remove this.
 extern "C"
 void ChromeOSRequestScan(ConnectionType type) {
   dbus::Proxy manager_proxy(dbus::GetSystemBusConnection(),
@@ -854,6 +852,38 @@ bool ChromeOSConfigureWifiService(const char* ssid,
   return true;
 }
 
+// TODO(satorux): Remove this.
+struct SystemInfo {
+  bool online; // if Manager.State == "online"
+  int available_technologies; // bitwise OR of bit shifted by ConnectionType
+  int enabled_technologies; // bitwise OR of bit shifted by ConnectionType
+  int connected_technologies; // bitwise OR of bit shifted by ConnectionType
+  ConnectionType default_technology;
+  bool offline_mode;
+  int service_size;
+  ServiceInfo *services; // Do not access this directly, use GetServiceInfo().
+  int remembered_service_size;
+  ServiceInfo *remembered_services; // Use GetRememberedServiceInfo().
+  int service_info_size; // Size of the ServiceInfo stuct.
+  int device_size;
+  DeviceInfo* devices;
+  int device_info_size;  // Size of the DeviceInfo struct.
+  // Client needs to call this method to get each ServiceInfo object.
+  ServiceInfo* GetServiceInfo(int index) {
+    size_t ptr = reinterpret_cast<size_t>(services);
+    return reinterpret_cast<ServiceInfo*>(ptr + index * service_info_size);
+  }
+  ServiceInfo* GetRememberedServiceInfo(int index) {
+    size_t ptr = reinterpret_cast<size_t>(remembered_services);
+    return reinterpret_cast<ServiceInfo*>(ptr + index * service_info_size);
+  }
+  DeviceInfo* GetDeviceInfo(int index) {
+    size_t ptr = reinterpret_cast<size_t>(devices);
+    return reinterpret_cast<DeviceInfo*>(ptr + index * device_info_size);
+  }
+};
+
+// TODO(satorux): Remove this.
 extern "C"
 SystemInfo* ChromeOSGetSystemInfo() {
   // TODO(chocobo): need to revisit the overhead of fetching the SystemInfo
@@ -1062,6 +1092,7 @@ SystemInfo* ChromeOSGetSystemInfo() {
   return system;
 }
 
+// TODO(satorux): Remove this.
 extern "C"
 bool ChromeOSEnableNetworkDevice(ConnectionType type, bool enable) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -1093,6 +1124,7 @@ bool ChromeOSEnableNetworkDevice(ConnectionType type, bool enable) {
   return true;
 }
 
+// TODO(satorux): Remove this.
 extern "C"
 void ChromeOSFreeSystemInfo(SystemInfo* system) {
   if (system == NULL)
@@ -1126,6 +1158,22 @@ void ChromeOSFreeServiceInfo(ServiceInfo* info) {
   delete info;
 }
 
+// TODO(satorux): Remove this.
+// An internal listener to a d-bus signal. When notifications are received
+// they are rebroadcasted in non-glib form.
+// MonitorNetworkConnection is deprecated: use PropertyChangeMonitor.
+class ManagerPropertyChangedHandler;
+typedef ManagerPropertyChangedHandler* MonitorNetworkConnection;
+
+// TODO(satorux): Remove this.
+// The expected callback signature that will be provided by the client who
+// calls MonitorNetwork. Callbacks are only called with |object| being
+// the caller. The recipient of the callback should call GetSystemInfo to
+// retrieve the current state of things.
+// MonitorNetworkCallback is deprecated: Use MonitorPropertyCallback.
+typedef void(*MonitorNetworkCallback)(void* object);
+
+// TODO(satorux): Remove this.
 // TODO(ers) ManagerPropertyChangedHandler is deprecated
 class ManagerPropertyChangedHandler {
  public:
@@ -1162,6 +1210,7 @@ class ManagerPropertyChangedHandler {
 // note at top of file.
 extern void RegisterNetworkMarshallers();
 
+// TODO(satorux): Remove this.
 extern "C"
 MonitorNetworkConnection ChromeOSMonitorNetwork(
     MonitorNetworkCallback callback, void* object) {
@@ -1184,12 +1233,18 @@ void ChromeOSDisconnectMonitorNetwork(MonitorNetworkConnection connection) {
   delete connection;
 }
 
+// TODO(satorux): Remove this.
+typedef void (*NetworkPropertiesCallback)(void* object,
+                                          const char* path,
+                                          const Value* properties);
+// TODO(satorux): Remove this.
 extern "C"
 void ChromeOSRequestHiddenWifiNetwork(const char* ssid,
                                       const char* security,
                                       NetworkPropertiesCallback callback,
                                       void* object);
 
+// TODO(satorux): Remove this.
 extern "C"
 void ChromeOSRequestWifiServicePath(
     const char* ssid,
@@ -1200,6 +1255,7 @@ void ChromeOSRequestWifiServicePath(
       ssid, SecurityToString(security), callback, object);
 }
 
+// TODO(satorux): Remove this.
 extern "C"
 bool ChromeOSSaveIPConfig(IPConfig* config) {
   return true;

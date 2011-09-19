@@ -276,11 +276,15 @@
 // 168: Added GetIdleTime to power manager.
 // 169: Deprecated functions using base::Value.
 // 170: Added support for trigger login-prompt-visible (EmitLoginPromptVisible)
+// 171: Deprecated RequestScan, GetSystemInfo, FreeSystemInfo,
+//      MonitorNetwork, DisconnectMonitorNetwork, EnableNetworkDevice,
+//      RequestWifiServicePath, SaveIPConfig.
+
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 161,
-  kCrosAPIVersion = 170
+  kCrosAPIVersion = 171
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

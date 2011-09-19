@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "base/basictypes.h"
-#include "base/values.h"
 #include "chromeos_brightness.h" // NOLINT
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_cryptohome.h" // NOLINT
@@ -223,18 +222,10 @@ DECL_FUNC_0(GetDeviceNetworkList, DeviceNetworkList*);
 DECL_FUNC_1(FreeDeviceNetworkList, void, DeviceNetworkList*);
 
 // Deprecated (in chromeos_network_deprecated):
-DECL_FUNC_1(RequestScan, void, ConnectionType);
 DECL_FUNC_2(GetWifiService, ServiceInfo*, const char*, ConnectionSecurity);
 DECL_FUNC_5(ConfigureWifiService, bool, const char*, ConnectionSecurity,
             const char*, const char*, const char*);
-DECL_FUNC_0(GetSystemInfo, SystemInfo*);
-DECL_FUNC_1(FreeSystemInfo, void, SystemInfo*);
 DECL_FUNC_1(FreeServiceInfo, void, ServiceInfo*);
-DECL_FUNC_2(MonitorNetwork,
-            MonitorNetworkConnection, MonitorNetworkCallback, void*);
-DECL_FUNC_1(DisconnectMonitorNetwork, void, MonitorNetworkConnection);
-DECL_FUNC_2(EnableNetworkDevice, bool, ConnectionType, bool);
-DECL_FUNC_1(SaveIPConfig, bool, IPConfig*);
 
 // Login
 DECL_FUNC_0(EmitLoginPromptReady, bool);
@@ -500,16 +491,9 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(GetDeviceNetworkList);
   INIT_FUNC(FreeDeviceNetworkList);
 // Deprecated (in chromeos_network_deprecated):
-  INIT_FUNC(RequestScan);
   INIT_FUNC(GetWifiService);
   INIT_FUNC(ConfigureWifiService);
-  INIT_FUNC(GetSystemInfo);
-  INIT_FUNC(FreeSystemInfo);
   INIT_FUNC(FreeServiceInfo);
-  INIT_FUNC(MonitorNetwork);
-  INIT_FUNC(DisconnectMonitorNetwork);
-  INIT_FUNC(EnableNetworkDevice);
-  INIT_FUNC(SaveIPConfig);
 
   // Login
   INIT_FUNC(EmitLoginPromptReady);

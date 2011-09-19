@@ -1,6 +1,9 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+//
+// This code was originally used by Chrome but now only by entd.
+// The code should be removed, or moved to entd.
 
 #ifndef CHROMEOS_NETWORK_DEPRECATED_H_
 #define CHROMEOS_NETWORK_DEPRECATED_H_
@@ -8,13 +11,7 @@
 #include <base/basictypes.h>
 #include <base/logging.h>
 
-class Value;
-
 namespace chromeos { // NOLINT
-
-typedef void (*NetworkPropertiesCallback)(void* object,
-                                          const char* path,
-                                          const Value* properties);
 
 // Connection enums (see flimflam/include/service.h)
 enum ConnectionType {
@@ -173,40 +170,6 @@ struct ServiceInfo {
   const char *password;
 };
 
-struct SystemInfo {
-  bool online; // if Manager.State == "online"
-  int available_technologies; // bitwise OR of bit shifted by ConnectionType
-  int enabled_technologies; // bitwise OR of bit shifted by ConnectionType
-  int connected_technologies; // bitwise OR of bit shifted by ConnectionType
-  ConnectionType default_technology;
-  bool offline_mode;
-  int service_size;
-  ServiceInfo *services; // Do not access this directly, use GetServiceInfo().
-  int remembered_service_size;
-  ServiceInfo *remembered_services; // Use GetRememberedServiceInfo().
-  int service_info_size; // Size of the ServiceInfo stuct.
-  int device_size;
-  DeviceInfo* devices;
-  int device_info_size;  // Size of the DeviceInfo struct.
-  // Client needs to call this method to get each ServiceInfo object.
-  ServiceInfo* GetServiceInfo(int index) {
-    size_t ptr = reinterpret_cast<size_t>(services);
-    return reinterpret_cast<ServiceInfo*>(ptr + index * service_info_size);
-  }
-  ServiceInfo* GetRememberedServiceInfo(int index) {
-    size_t ptr = reinterpret_cast<size_t>(remembered_services);
-    return reinterpret_cast<ServiceInfo*>(ptr + index * service_info_size);
-  }
-  DeviceInfo* GetDeviceInfo(int index) {
-    size_t ptr = reinterpret_cast<size_t>(devices);
-    return reinterpret_cast<DeviceInfo*>(ptr + index * device_info_size);
-  }
-};
-
-// Requests a scan of services of |type|.
-// If |type| is TYPE_UNKNOWN (0), it will scan for all types.
-extern void (*RequestScan)(ConnectionType type);
-
 // Gets a ServiceInfo for a wifi service with |ssid| and |security|.
 // If an open network is not found, then it will create a hidden network and
 // return the ServiceInfo for that.
@@ -230,60 +193,11 @@ extern bool (*ConfigureWifiService)(const char* ssid,
                                     const char* identity,
                                     const char* certpath);
 
-// Returns the system info, which includes the state of the system and a list of
-// all of the available services that a user can connect to.
-// The SystemInfo instance that is returned by this function MUST be
-// deleted by calling FreeSystemInfo.
-//
-// Returns NULL on error.
-extern SystemInfo* (*GetSystemInfo)();
-
-// Deletes a SystemInfo type that was allocated in the ChromeOS dll. We need
-// to do this to safely pass data over the dll boundary between our .so and
-// Chrome.
-extern void (*FreeSystemInfo)(SystemInfo* system);
-
 // Deletes a ServiceInfo type that was allocated in the ChromeOS dll. We need
 // to do this to safely pass data over the dll boundary between our .so and
 // Chrome.
 extern void (*FreeServiceInfo)(ServiceInfo* info);
 
-// An internal listener to a d-bus signal. When notifications are received
-// they are rebroadcasted in non-glib form.
-// MonitorNetworkConnection is deprecated: use PropertyChangeMonitor.
-class ManagerPropertyChangedHandler;
-typedef ManagerPropertyChangedHandler* MonitorNetworkConnection;
-
-// The expected callback signature that will be provided by the client who
-// calls MonitorNetwork. Callbacks are only called with |object| being
-// the caller. The recipient of the callback should call GetSystemInfo to
-// retrieve the current state of things.
-// MonitorNetworkCallback is deprecated: Use MonitorPropertyCallback.
-typedef void(*MonitorNetworkCallback)(void* object);
-
-// Sets up monitoring of the PropertyChanged signal on the flimflam manager.
-// The provided MonitorNetworkCallback will be called whenever that happens.
-// MonitorNetwork is deprecated: use MonitorNetworkManager.
-extern MonitorNetworkConnection (*MonitorNetwork)(
-    MonitorNetworkCallback callback,
-    void* object);
-
-// Disconnects a MonitorNetworkConnection.
-// DisconnectMonitorNetwork is deprecated: use DisconnectPropertyChangeMonitor.
-extern void (*DisconnectMonitorNetwork)(MonitorNetworkConnection connection);
-
-// Returns false on failure and true on success.
-extern bool (*EnableNetworkDevice)(ConnectionType type, bool enable);
-
-// Request a wifi service not in the network list (i.e. hidden).
-// Get a service path for a wifi service not in the network list (i.e. hidden).
-extern void (*RequestWifiServicePath)(const char* ssid,
-                                      ConnectionSecurity security,
-                                      NetworkPropertiesCallback callback,
-                                      void* object);
-
-// Save the IP config data
-extern bool (*SaveIPConfig)(IPConfig* config);
 
 }  // namespace chromeos
 
