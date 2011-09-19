@@ -30,10 +30,6 @@ extern void (*IncreaseScreenBrightness)(void);
 extern BrightnessConnection (*MonitorBrightnessV2)(
     BrightnessMonitorFunctionV2 monitor_function,
     void* object);
-// DEPRECATED
-extern BrightnessConnection (*MonitorBrightness)(
-    BrightnessMonitorFunction monitor_function,
-    void* object);
 
 // Unregister the handler.  Takes the BrightnessConnection returned by
 // MonitorBrightnessV2().

@@ -231,6 +231,7 @@ void ChromeOSDisconnectPowerStatus(PowerStatusConnection connection) {
   }
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 bool ChromeOSRetrievePowerInformation(PowerInformation* info) {
   // Func has been stubbed out because some functions it calls has been removed.

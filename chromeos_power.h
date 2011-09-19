@@ -96,7 +96,6 @@ extern void (*GetIdleTime)(GetIdleTimeCallback callback,
                            void* object);
 
 extern void (*DisconnectPowerStatus)(PowerStatusConnection connection);
-extern bool (*RetrievePowerInformation)(PowerInformation* information);
 
 extern void (*EnableScreenLock)(bool enable);
 

@@ -151,6 +151,7 @@ void ChromeOSDisconnectUpdateProgress(UpdateStatusConnection connection) {
   delete connection;
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 bool ChromeOSRetrieveUpdateProgress(UpdateProgress* information) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -197,7 +198,7 @@ bool ChromeOSRetrieveUpdateProgress(UpdateProgress* information) {
   return true;
 }
 
-// TODO(stevenjb): Deprecate (use RequestUpdateCheck instead).
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 bool ChromeOSInitiateUpdateCheck() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -230,7 +231,7 @@ bool ChromeOSRebootIfUpdated() {
   return rc == TRUE;
 }
 
-// TODO(stevenjb): Deprecate (use SetUpdateTrack instead).
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 bool ChromeOSSetTrack(const std::string& track) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -248,7 +249,7 @@ bool ChromeOSSetTrack(const std::string& track) {
   return rc == TRUE;
 }
 
-// TODO(stevenjb): Deprecate (use RequestUpdateTrack instead).
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 std::string ChromeOSGetTrack() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();

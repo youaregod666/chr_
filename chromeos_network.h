@@ -141,20 +141,12 @@ extern void (*SetNetworkDevicePropertyGValue)(const char* device_path,
                                               const char* property,
                                               const GValue* gvalue);
 
-// Clear a property of a device
-extern void (*ClearNetworkDeviceProperty)(const char* device_path,
-                                          const char* property);
-
 // Set a property of an ip config to the provided value
 //
 // Success is indicated by the receipt of a matching PropertyChanged signal.
 extern void (*SetNetworkIPConfigPropertyGValue)(const char* ipconfig_path,
                                                 const char* property,
                                                 const GValue* gvalue);
-
-// Clear a property of an ip config
-extern void (*ClearNetworkIPConfigProperty)(const char* ipconfig_path,
-                                            const char* property);
 
 // Delete a remembered service from a profile.
 extern void (*DeleteServiceFromProfile)(const char* profile_path,
@@ -163,27 +155,9 @@ extern void (*DeleteServiceFromProfile)(const char* profile_path,
 // Disconnects from the network with the |service_path|.
 extern bool (*DisconnectFromNetwork)(const char* service_path);
 
-// This will delete this service from the list of remembered service.
-//
-// Returns false on failure and true on success.
-extern bool (*DeleteRememberedService)(const char* service_path);
-
-// Get the list of data plans for the cellular network corresponding to path.
-// The CellularDataPlansList instance that is returned by this function MUST be
-// deleted by calling FreeCellularDataPlanList
-//
-// Returns NULL on error or no data available.
-extern CellularDataPlanList* (*RetrieveCellularDataPlans)(
-    const char* modem_service_path);
-
 // Request an update of the data plans. A callback will be received by any
 // object that invoked MonitorCellularDataPlan when up to date data is ready.
 extern void (*RequestCellularDataPlanUpdate)(const char* modem_service_path);
-
-// Deletes a CellularDataPlanList that was allocated in the ChromeOS
-// dll. We need to do this to safely pass data over the dll boundary
-// between our .so and Chrome.
-extern void (*FreeCellularDataPlanList)(CellularDataPlanList* list);
 
 // An internal listener to a d-bus signal. When notifications are received
 // they are rebroadcasted in non-glib form.
@@ -415,14 +389,8 @@ extern IPConfigStatus* (*ListIPConfigs)(const char* device_path);
 // Add a IPConfig of the given type to the device
 extern bool (*AddIPConfig)(const char* device_path, IPConfigType type);
 
-// Save the IP config data
-extern bool (*SaveIPConfig)(IPConfig* config);
-
 // Remove an existing IP Config
 extern bool (*RemoveIPConfig)(IPConfig* config);
-
-// Free a found IPConfig
-extern void (*FreeIPConfig)(IPConfig* config);
 
 // Free out a full status
 extern void (*FreeIPConfigStatus)(IPConfigStatus* status);

@@ -236,6 +236,7 @@ void ChromeOSDisconnectBurnStatus(BurnStatusConnection connection) {
   delete connection;
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 void ChromeOSStartBurn(const char* from_path, const char* to_path,
                BurnStatusConnection connection) {

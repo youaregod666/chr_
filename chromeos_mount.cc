@@ -727,25 +727,29 @@ void ChromeOSFormatDevice(const char* device_path,
   FormatDeviceAsync(device_path, filesystem, callback, object);
 }
 
-// TODO(tbarzic): Remove these three.
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 MountEventConnection ChromeOSMonitorMountEvents(MountEventMonitor monitor,
                                                 void* object) {
   return NULL;
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 void ChromeOSMountRemovableDevice(const char* device_path,
                                   MountRequestCallback callback,
                                   void* object) {
 }
+
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 void ChromeOSUnmountRemovableDevice(const char* device_path,
                                     MountRequestCallback callback,
                                     void* object) {
 }
 
-// TODO(zelidrag): Remove everything from here intil the rest of the file.
+// DEPRECAETD.
+// TODO(satorux): Remove everything from here until the end of the file.
 class OpaqueMountStatusConnection {
 };
 bool MountRemoveableDevice(const dbus::BusConnection& bus, const char* path) {

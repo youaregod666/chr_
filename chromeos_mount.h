@@ -188,24 +188,13 @@ extern void (*FormatDevice)(const char* device_path,
 extern void (*RequestMountInfo)(RequestMountInfoCallback callback,
                                 void* object);
 
-
-// Deprecated on 07/20/11.
-extern MountEventConnection (*MonitorMountEvents)(MountEventMonitor monitor,
-                                                  void*);
+// TODO(satorux): Remove the deprecated types.
 typedef void (*MountRequestCallback)(void* object,
                                      const char* path,
                                      const char* mount_path,
                                      MountMethodErrorType error,
                                      const char* error_message);
-extern void (*MountRemovableDevice)(const char* source_path,
-                                    MountRequestCallback callback,
-                                    void* object);
-extern void (*UnmountRemovableDevice)(const char* path,
-                                     MountRequestCallback callback,
-                                     void* object);
 
-// Obsolete methods, kept here just as sacrifice to ChromeOS build gods.
-// This block will be removed in the next iteration.
 struct DiskStatus {
   const char* path;
   const char* mountpath;
@@ -221,17 +210,11 @@ struct MountStatus {
 
 class OpaqueMountStatusConnection;
 typedef OpaqueMountStatusConnection* MountStatusConnection;
-extern MountStatus* (*RetrieveMountInformation)();
-extern void (*FreeMountStatus)(MountStatus* status);
-extern bool (*IsBootDevicePath)(const char* device_path);
+
 typedef void(*MountMonitor)(void*,
                             const MountStatus&,
                             MountEventType,
                             const char*);
-extern bool (*MountDevicePath)(const char* device_path);
-extern bool (*UnmountDevicePath)(const char* device_path);
-extern MountStatusConnection (*MonitorMountStatus)(MountMonitor monitor, void*);
-extern void (*DisconnectMountStatus)(MountStatusConnection connection);
 
 }  // namespace chromeos
 

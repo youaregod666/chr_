@@ -581,7 +581,7 @@ bool ChromeOSDisconnectFromNetwork(const char* service_path) {
   return true;
 }
 
-// Deprecated
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 bool ChromeOSDeleteRememberedService(const char* service_path) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -1567,6 +1567,7 @@ void ChromeOSSetNetworkDevicePropertyGValue(const char* device_path,
   SetNetworkProperty(cb_data, property, gvalue);
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 void ChromeOSClearNetworkDeviceProperty(const char* device_path,
                                         const char* property) {
@@ -1586,6 +1587,7 @@ void ChromeOSSetNetworkIPConfigPropertyGValue(const char* ipconfig_path,
   SetNetworkProperty(cb_data, property, gvalue);
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 void ChromeOSClearNetworkIPConfigProperty(const char* ipconfig_path,
                                           const char* property) {
@@ -1621,6 +1623,7 @@ void ChromeOSDeleteServiceFromProfile(const char* profile_path,
 ///////////////////////////////////////////////////////////////////////////////
 // Cashew services
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 void ChromeOSFreeCellularDataPlanList(CellularDataPlanList* data_plan_list) {
   if (data_plan_list == NULL)
@@ -1735,6 +1738,7 @@ void ChromeOSRequestCellularDataPlanUpdate(
                                G_TYPE_INVALID);
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 CellularDataPlanList* ChromeOSRetrieveCellularDataPlans(
     const char* modem_service_path) {
@@ -2180,6 +2184,7 @@ void ChromeOSDisconnectSMSMonitor(SMSMonitor monitor) {
 
 ///////////////////////////////////////////////////////////////////////////////
 // Deprecated
+// TODO(satorux): Remove everything from here until the end of the file.
 
 #include "base/values.h"
 

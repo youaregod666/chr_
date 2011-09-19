@@ -6,6 +6,8 @@
      
      dbus-binding-tool -mode=glib-server -prefix=libcros_servicer
                         libcros_service.xml &gt; bindings_server.h
+
+  TODO(satorux): Remove this file. DEPRECATED.
 -->
 <node name="/org/chromium/">
   <interface name="org.chromium.LibCrosServiceInterface">

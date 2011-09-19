@@ -60,19 +60,9 @@ extern UpdateStatusConnection (*MonitorUpdateStatus)(UpdateMonitor monitor,
 // Unregister an UpdateMonitor callback.
 extern void (*DisconnectUpdateProgress)(UpdateStatusConnection connection);
 
-// Poll for the status once. Returns true on success.
-// Deprecated.  Use async RequestUpdateStatus below.
-extern bool (*RetrieveUpdateProgress)(UpdateProgress* information);
-// Tell UpdateEngine daemon to check for an update. Returns true on success.
-extern bool (*InitiateUpdateCheck)();
 // Tell UpdateEngine daemon to reboot the system if an update has been
 // downloaded and installed. Returns true on success.
 extern bool (*RebootIfUpdated)();
-// Set the release track (channel). |track| should look like
-// "beta-channel" and "dev-channel". Returns true on success.
-extern bool (*SetTrack)(const std::string& track);
-// Return the release track (channel). On error, return an empty string.
-extern std::string (*GetTrack)();
 
 // Asynchronous API.
 

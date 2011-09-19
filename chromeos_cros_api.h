@@ -281,12 +281,27 @@
 //      RequestWifiServicePath, SaveIPConfig.
 // 172: Deprecated StartLibCrosService, StopLibCrosService,
 //      SetNetworkProxyResolve, NotifyNetworkProxyResolved
+// 173: Deprecated MonitorBrightness, CryptohomeGetSystemSalt, CryptohomeMount,
+//      CryptohomeMountSafe, CryptohomeAsyncMount,
+//      CryptohomeRemoveTrackedSubdirectories,
+//      CryptohomeAsyncRemoveTrackedSubdirectories,
+//      CryptohomeDoAutomaticFreeDiskSpaceControl, CryptohomeTpmGetPassword,
+//      CryptohomeGetStatusStringSafe, CryptohomeFreeBlob,
+//      CryptohomeDisconnectSession, StartBurn, EmitLoginPromptVisible,
+//      MonitorMountEvents, MountRemovableDevice, UnmountRemovableDevice,
+//      RetrieveMountInformation, FreeMountStatus, IsBootDevicePath,
+//      MountDevicePath, UnmountDevicePath, MonitorMountStatus,
+//      DisconnectMountStatus, ClearNetworkDeviceProperty,
+//      ClearNetworkIPConfigProperty, DeleteRememberedService,
+//      RetrieveCellularDataPlans, FreeCellularDataPlanList, SaveIPConfig,
+//      FreeIPConfig, RetrievePowerInformation, RetrieveUpdateProgress,
+//      InitiateUpdateCheck, SetTrack, GetTrack
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 161,
-  kCrosAPIVersion = 172
+  kCrosAPIVersion = 173
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

@@ -119,7 +119,6 @@ DECL_FUNC_1(CrosVersionCheck, bool, chromeos::CrosAPIVersion);
 DECL_FUNC_2(MonitorPowerStatus, PowerStatusConnection, PowerMonitor, void*);
 DECL_FUNC_2(GetIdleTime, void, GetIdleTimeCallback, void*);
 DECL_FUNC_1(DisconnectPowerStatus, void, PowerStatusConnection);
-DECL_FUNC_1(RetrievePowerInformation, bool, PowerInformation*);
 DECL_FUNC_1(EnableScreenLock, void, bool);
 DECL_FUNC_0(RequestRestart, void);
 DECL_FUNC_0(RequestShutdown, void);
@@ -140,12 +139,6 @@ DECL_FUNC_2(RequestMountInfo, void,
 DECL_FUNC_3(MonitorAllMountEvents, MountEventConnection,
             MountEventMonitor, MountCompletedMonitor, void*);
 DECL_FUNC_1(DisconnectMountEventMonitor, void, MountEventConnection);
-// DEPRECATED:
-DECL_FUNC_3(MountRemovableDevice, void,
-            const char*, MountRequestCallback, void*);
-DECL_FUNC_3(UnmountRemovableDevice, void,
-            const char*, MountRequestCallback, void*);
-DECL_FUNC_2(MonitorMountEvents, MountEventConnection, MountEventMonitor, void*);
 
 
 // Networking
@@ -155,16 +148,11 @@ DECL_FUNC_3(SetNetworkServicePropertyGValue, void, const char*, const char*,
 DECL_FUNC_2(ClearNetworkServiceProperty, void, const char*, const char*);
 DECL_FUNC_3(SetNetworkDevicePropertyGValue, void, const char*, const char*,
             const GValue*);
-DECL_FUNC_2(ClearNetworkDeviceProperty, void, const char*, const char*);
 DECL_FUNC_3(SetNetworkIPConfigPropertyGValue, void, const char*, const char*,
             const GValue*);
-DECL_FUNC_2(ClearNetworkIPConfigProperty, void, const char*, const char*);
 DECL_FUNC_2(DeleteServiceFromProfile, void, const char*, const char*);
 DECL_FUNC_1(DisconnectFromNetwork, bool, const char*);
-DECL_FUNC_1(DeleteRememberedService, bool, const char*);
-DECL_FUNC_1(RetrieveCellularDataPlans, CellularDataPlanList*, const char*);
 DECL_FUNC_1(RequestCellularDataPlanUpdate, void, const char*);
-DECL_FUNC_1(FreeCellularDataPlanList, void, CellularDataPlanList*);
 DECL_FUNC_2(MonitorNetworkManagerProperties, NetworkPropertiesMonitor,
             MonitorPropertyGValueCallback, void*);
 DECL_FUNC_3(MonitorNetworkServiceProperties, NetworkPropertiesMonitor,
@@ -215,7 +203,6 @@ DECL_FUNC_2(SetIdentity, bool, const char*, const char*);
 DECL_FUNC_1(ListIPConfigs, IPConfigStatus*, const char*);
 DECL_FUNC_2(AddIPConfig, bool, const char*, IPConfigType);
 DECL_FUNC_1(RemoveIPConfig, bool, IPConfig*);
-DECL_FUNC_1(FreeIPConfig, void, IPConfig*);
 DECL_FUNC_1(FreeIPConfigStatus, void, IPConfigStatus*);
 DECL_FUNC_0(GetDeviceNetworkList, DeviceNetworkList*);
 DECL_FUNC_1(FreeDeviceNetworkList, void, DeviceNetworkList*);
@@ -263,38 +250,26 @@ DECL_FUNC_3(CryptohomeAsyncMigrateKey,
             const char*);
 DECL_FUNC_1(CryptohomeRemove, bool, const char*);
 DECL_FUNC_1(CryptohomeAsyncRemove, int, const char*);
-DECL_FUNC_0(CryptohomeGetSystemSalt, CryptohomeBlob);
 DECL_FUNC_2(CryptohomeGetSystemSaltSafe, bool, char**, int*);
 DECL_FUNC_0(CryptohomeIsMounted, bool);
 DECL_FUNC_3(CryptohomeMountAllowFail, bool, const char*, const char*, int*);
-DECL_FUNC_6(CryptohomeMount, bool, const char*, const char*, bool, bool,
-            const std::vector<std::string>&, int*);
-DECL_FUNC_6(CryptohomeMountSafe, bool, const char*, const char*, bool, bool,
-            const char**, int*);
-DECL_FUNC_5(CryptohomeAsyncMount, int, const char*, const char*, bool, bool,
-            const std::vector<std::string>&);
 DECL_FUNC_5(CryptohomeAsyncMountSafe, int, const char*, const char*, bool, bool,
             const char**);
 DECL_FUNC_1(CryptohomeMountGuest, bool, int*);
 DECL_FUNC_0(CryptohomeAsyncMountGuest, int);
 DECL_FUNC_0(CryptohomeUnmount, bool);
-DECL_FUNC_0(CryptohomeRemoveTrackedSubdirectories, bool);
-DECL_FUNC_0(CryptohomeAsyncRemoveTrackedSubdirectories, int);
-DECL_FUNC_0(CryptohomeDoAutomaticFreeDiskSpaceControl, bool);
 DECL_FUNC_0(CryptohomeAsyncDoAutomaticFreeDiskSpaceControl, int);
 DECL_FUNC_1(CryptohomeAsyncSetOwnerUser, int, const char*);
 DECL_FUNC_0(CryptohomeTpmIsReady, bool);
 DECL_FUNC_0(CryptohomeTpmIsEnabled, bool);
 DECL_FUNC_0(CryptohomeTpmIsOwned, bool);
 DECL_FUNC_0(CryptohomeTpmIsBeingOwned, bool);
-DECL_FUNC_1(CryptohomeTpmGetPassword, bool, std::string*);
 DECL_FUNC_1(CryptohomeTpmGetPasswordSafe, bool, char**);
 DECL_FUNC_0(CryptohomeTpmCanAttemptOwnership, void);
 DECL_FUNC_0(CryptohomeTpmClearStoredPassword, void);
 DECL_FUNC_0(CryptohomePkcs11IsTpmTokenReady, bool);
 DECL_FUNC_2(CryptohomePkcs11GetTpmTokenInfo, void, std::string*, std::string*);
 DECL_FUNC_1(CryptohomeGetStatusString, bool, std::string*);
-DECL_FUNC_1(CryptohomeGetStatusStringSafe, bool, char**);
 DECL_FUNC_2(CryptohomeInstallAttributesGet, bool, const char*, char**);
 DECL_FUNC_2(CryptohomeInstallAttributesSet, bool, const char*, const char*);
 DECL_FUNC_0(CryptohomeInstallAttributesCount, int);
@@ -304,24 +279,17 @@ DECL_FUNC_0(CryptohomeInstallAttributesIsSecure, bool);
 DECL_FUNC_0(CryptohomeInstallAttributesIsInvalid, bool);
 DECL_FUNC_0(CryptohomeInstallAttributesIsFirstInstall, bool);
 DECL_FUNC_1(CryptohomeFreeString, void, char*);
-DECL_FUNC_1(CryptohomeFreeBlob, void, char*);
 DECL_FUNC_2(CryptohomeMonitorSession, void*, CryptohomeSignalCallback, void*);
-DECL_FUNC_1(CryptohomeDisconnectSession, void, void*);
 
 // Imageburn
 DECL_FUNC_2(MonitorBurnStatus, BurnStatusConnection, BurnMonitor, void*);
 DECL_FUNC_1(DisconnectBurnStatus, void, BurnStatusConnection);
-DECL_FUNC_3(StartBurn, void, const char*, const char*, BurnStatusConnection);
 DECL_FUNC_4(RequestBurn, void, const char*, const char*, BurnMonitor, void*);
 
 // Update Engine (replacing Update library)
 DECL_FUNC_2(MonitorUpdateStatus, UpdateStatusConnection, UpdateMonitor, void*);
 DECL_FUNC_1(DisconnectUpdateProgress, void, UpdateStatusConnection);
-DECL_FUNC_1(RetrieveUpdateProgress, bool, UpdateProgress*);
-DECL_FUNC_0(InitiateUpdateCheck, bool);
 DECL_FUNC_0(RebootIfUpdated, bool);
-DECL_FUNC_1(SetTrack, bool, const std::string&);
-DECL_FUNC_0(GetTrack, std::string);
 DECL_FUNC_2(RequestUpdateStatus, void, UpdateMonitor, void*);
 DECL_FUNC_2(RequestUpdateCheck, void, UpdateCallback, void*);
 DECL_FUNC_1(SetUpdateTrack, void, const std::string&);
@@ -340,10 +308,6 @@ DECL_FUNC_0(IncreaseScreenBrightness, void);
 DECL_FUNC_2(MonitorBrightnessV2,
             BrightnessConnection,
             BrightnessMonitorFunctionV2,
-            void*);
-DECL_FUNC_2(MonitorBrightness,
-            BrightnessConnection,
-            BrightnessMonitorFunction,
             void*);
 DECL_FUNC_1(DisconnectBrightness, void, BrightnessConnection);
 
@@ -410,7 +374,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MonitorPowerStatus);
   INIT_FUNC(GetIdleTime);
   INIT_FUNC(DisconnectPowerStatus);
-  INIT_FUNC(RetrievePowerInformation);
   INIT_FUNC(EnableScreenLock);
   INIT_FUNC(RequestRestart);
   INIT_FUNC(RequestShutdown);
@@ -425,25 +388,16 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RequestMountInfo);
   INIT_FUNC(MonitorAllMountEvents);
   INIT_FUNC(DisconnectMountEventMonitor);
-  // DEPRECATED:
-  INIT_FUNC(MountRemovableDevice);
-  INIT_FUNC(UnmountRemovableDevice);
-  INIT_FUNC(MonitorMountEvents);
 
   // Networking
   INIT_FUNC(ActivateCellularModem);
   INIT_FUNC(SetNetworkServicePropertyGValue);
   INIT_FUNC(ClearNetworkServiceProperty);
   INIT_FUNC(SetNetworkDevicePropertyGValue);
-  INIT_FUNC(ClearNetworkDeviceProperty);
   INIT_FUNC(SetNetworkIPConfigPropertyGValue);
-  INIT_FUNC(ClearNetworkIPConfigProperty);
   INIT_FUNC(DeleteServiceFromProfile);
   INIT_FUNC(DisconnectFromNetwork);
-  INIT_FUNC(DeleteRememberedService);
-  INIT_FUNC(RetrieveCellularDataPlans);
   INIT_FUNC(RequestCellularDataPlanUpdate);
-  INIT_FUNC(FreeCellularDataPlanList);
   INIT_FUNC(MonitorNetworkManagerProperties);
   INIT_FUNC(MonitorNetworkServiceProperties);
   INIT_FUNC(MonitorNetworkDeviceProperties);
@@ -477,7 +431,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(ListIPConfigs);
   INIT_FUNC(AddIPConfig);
   INIT_FUNC(RemoveIPConfig);
-  INIT_FUNC(FreeIPConfig);
   INIT_FUNC(FreeIPConfigStatus);
   INIT_FUNC(GetDeviceNetworkList);
   INIT_FUNC(FreeDeviceNetworkList);
@@ -513,34 +466,25 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(CryptohomeAsyncMigrateKey);
   INIT_FUNC(CryptohomeRemove);
   INIT_FUNC(CryptohomeAsyncRemove);
-  INIT_FUNC(CryptohomeGetSystemSalt);
   INIT_FUNC(CryptohomeGetSystemSaltSafe);
   INIT_FUNC(CryptohomeIsMounted);
   INIT_FUNC(CryptohomeMountAllowFail);
-  INIT_FUNC(CryptohomeMount);
-  INIT_FUNC(CryptohomeMountSafe);
-  INIT_FUNC(CryptohomeAsyncMount);
   INIT_FUNC(CryptohomeAsyncMountSafe);
   INIT_FUNC(CryptohomeMountGuest);
   INIT_FUNC(CryptohomeAsyncMountGuest);
   INIT_FUNC(CryptohomeUnmount);
-  INIT_FUNC(CryptohomeRemoveTrackedSubdirectories);
-  INIT_FUNC(CryptohomeAsyncRemoveTrackedSubdirectories);
-  INIT_FUNC(CryptohomeDoAutomaticFreeDiskSpaceControl);
   INIT_FUNC(CryptohomeAsyncDoAutomaticFreeDiskSpaceControl);
   INIT_FUNC(CryptohomeAsyncSetOwnerUser);
   INIT_FUNC(CryptohomeTpmIsReady);
   INIT_FUNC(CryptohomeTpmIsEnabled);
   INIT_FUNC(CryptohomeTpmIsOwned);
   INIT_FUNC(CryptohomeTpmIsBeingOwned);
-  INIT_FUNC(CryptohomeTpmGetPassword);
   INIT_FUNC(CryptohomeTpmGetPasswordSafe);
   INIT_FUNC(CryptohomeTpmCanAttemptOwnership);
   INIT_FUNC(CryptohomeTpmClearStoredPassword);
   INIT_FUNC(CryptohomePkcs11IsTpmTokenReady);
   INIT_FUNC(CryptohomePkcs11GetTpmTokenInfo);
   INIT_FUNC(CryptohomeGetStatusString);
-  INIT_FUNC(CryptohomeGetStatusStringSafe);
   INIT_FUNC(CryptohomeInstallAttributesGet);
   INIT_FUNC(CryptohomeInstallAttributesSet);
   INIT_FUNC(CryptohomeInstallAttributesCount);
@@ -551,24 +495,17 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(CryptohomeInstallAttributesIsFirstInstall);
 
   INIT_FUNC(CryptohomeFreeString);
-  INIT_FUNC(CryptohomeFreeBlob);
   INIT_FUNC(CryptohomeMonitorSession);
-  INIT_FUNC(CryptohomeDisconnectSession);
 
   // Imageburn
   INIT_FUNC(MonitorBurnStatus);
   INIT_FUNC(DisconnectBurnStatus);
-  INIT_FUNC(StartBurn);
   INIT_FUNC(RequestBurn);
 
   // Update Engine
   INIT_FUNC(MonitorUpdateStatus);
   INIT_FUNC(DisconnectUpdateProgress);
-  INIT_FUNC(RetrieveUpdateProgress);
-  INIT_FUNC(InitiateUpdateCheck);
   INIT_FUNC(RebootIfUpdated);
-  INIT_FUNC(SetTrack);
-  INIT_FUNC(GetTrack);
   INIT_FUNC(RequestUpdateStatus);
   INIT_FUNC(RequestUpdateCheck);
   INIT_FUNC(SetUpdateTrack);
@@ -585,7 +522,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(DecreaseScreenBrightness);
   INIT_FUNC(IncreaseScreenBrightness);
   INIT_FUNC(MonitorBrightnessV2);
-  INIT_FUNC(MonitorBrightness);
   INIT_FUNC(DisconnectBrightness);
 
   return error_string.empty();

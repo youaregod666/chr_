@@ -49,8 +49,5 @@ extern void (*DisconnectBurnStatus)(BurnStatusConnection connection);
 extern void (*RequestBurn)(const char* from_path, const char* to_path,
                            BurnMonitor callback, void* user_data);
 
-// Deprecated.
-extern void (*StartBurn)(const char* from_path, const char* to_path,
-                         BurnStatusConnection);
 } // namespace chromeos
 #endif  // PLATFORM_CROS_CHROMEOS_IMAGEBURN_H_

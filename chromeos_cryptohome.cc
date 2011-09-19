@@ -178,6 +178,7 @@ int ChromeOSCryptohomeAsyncRemove(const char* user_email) {
   return async_call_id;
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 CryptohomeBlob ChromeOSCryptohomeGetSystemSalt() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -290,6 +291,7 @@ gchar** ChromeOSCryptohomeCopyStringArray(
   return return_array;
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 bool ChromeOSCryptohomeMountSafe(
     const char* user_email,
@@ -336,6 +338,7 @@ bool ChromeOSCryptohomeMountSafe(
   return done;
 }
 
+// TODO(satorux): Remove this.
 extern "C"
 bool ChromeOSCryptohomeMount(
     const char* user_email,
@@ -408,6 +411,7 @@ int ChromeOSCryptohomeAsyncMountSafe(
   return async_call_id;
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 int ChromeOSCryptohomeAsyncMount(
     const char* user_email,
@@ -517,6 +521,7 @@ bool ChromeOSCryptohomeUnmount() {
   return done;
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 bool ChromeOSCryptohomeRemoveTrackedSubdirectories() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -541,6 +546,7 @@ bool ChromeOSCryptohomeRemoveTrackedSubdirectories() {
   return done;
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 int ChromeOSCryptohomeAsyncRemoveTrackedSubdirectories() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -565,6 +571,7 @@ int ChromeOSCryptohomeAsyncRemoveTrackedSubdirectories() {
   return async_call_id;
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 bool ChromeOSCryptohomeDoAutomaticFreeDiskSpaceControl() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -771,6 +778,7 @@ bool ChromeOSCryptohomeTpmGetPasswordSafe(char** password) {
   return false;
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 bool ChromeOSCryptohomeTpmGetPassword(std::string* password) {
   char* local_password = NULL;
@@ -1099,6 +1107,7 @@ void ChromeOSCryptohomeFreeString(char* value) {
   }
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 void ChromeOSCryptohomeFreeBlob(char* value) {
   if (value) {
@@ -1200,6 +1209,7 @@ void* ChromeOSCryptohomeMonitorSession(CryptohomeSignalCallback monitor,
   return connection;
 }
 
+// TODO(satorux): Remove this. DEPRECATED.
 extern "C"
 void ChromeOSCryptohomeDisconnectSession(void* connection) {
   CryptohomeSessionConnection* self =

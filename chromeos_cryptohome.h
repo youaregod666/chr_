@@ -43,32 +43,11 @@ extern int (*CryptohomeAsyncMigrateKey)(const char* user_email,
                                         const char* to_key);
 extern bool (*CryptohomeRemove)(const char* user_email);
 extern int (*CryptohomeAsyncRemove)(const char* user_email);
-extern CryptohomeBlob (*CryptohomeGetSystemSalt)();
 extern bool (*CryptohomeGetSystemSaltSafe)(char** salt, int* length);
 extern bool (*CryptohomeIsMounted)();
-extern bool (*CryptohomeMount)(
-    const char* user_email,
-    const char* key,
-    bool create_if_missing,
-    bool replace_tracked_subdirectories,
-    const std::vector<std::string>& tracked_subdirectories,
-    int* mount_error);
-extern bool (*CryptohomeMountSafe)(
-    const char* user_email,
-    const char* key,
-    bool create_if_missing,
-    bool replace_tracked_subdirectories,
-    const char** tracked_subdirectories,
-    int* mount_error);
 extern bool (*CryptohomeMountAllowFail)(const char* user_email,
                                         const char* key,
                                         int* mount_error);
-extern int (*CryptohomeAsyncMount)(
-    const char* user_email,
-    const char* key,
-    bool create_if_missing,
-    bool replace_tracked_subdirectories,
-    const std::vector<std::string>& tracked_subdirectories);
 extern int (*CryptohomeAsyncMountSafe)(
     const char* user_email,
     const char* key,
@@ -78,16 +57,12 @@ extern int (*CryptohomeAsyncMountSafe)(
 extern bool (*CryptohomeMountGuest)(int* mount_error);
 extern int (*CryptohomeAsyncMountGuest)();
 extern bool (*CryptohomeUnmount)();
-extern bool (*CryptohomeRemoveTrackedSubdirectories)();
-extern int (*CryptohomeAsyncRemoveTrackedSubdirectories)();
-extern bool (*CryptohomeDoAutomaticFreeDiskSpaceControl)();
 extern int (*CryptohomeAsyncDoAutomaticFreeDiskSpaceControl)();
 extern int (*CryptohomeAsyncSetOwnerUser)(const char* username);
 extern bool (*CryptohomeTpmIsReady)();
 extern bool (*CryptohomeTpmIsEnabled)();
 extern bool (*CryptohomeTpmIsOwned)();
 extern bool (*CryptohomeTpmIsBeingOwned)();
-extern bool (*CryptohomeTpmGetPassword)(std::string* password);
 extern bool (*CryptohomeTpmGetPasswordSafe)(char** password);
 extern void (*CryptohomeTpmCanAttemptOwnership)();
 extern void (*CryptohomeTpmClearStoredPassword)();
@@ -95,7 +70,6 @@ extern void (*CryptohomePkcs11GetTpmTokenInfo)(std::string* label,
                                                std::string* user_pin);
 extern bool (*CryptohomePkcs11IsTpmTokenReady)();
 extern bool (*CryptohomeGetStatusString)(std::string* status);
-extern bool (*CryptohomeGetStatusStringSafe)(char** status);
 extern bool (*CryptohomeInstallAttributesGet)(const char* name, char** value);
 extern bool (*CryptohomeInstallAttributesSet)(const char* name,
                                               const char* value);
@@ -107,7 +81,6 @@ extern bool (*CryptohomeInstallAttributesIsInvalid)();
 extern bool (*CryptohomeInstallAttributesIsFirstInstall)();
 
 extern void (*CryptohomeFreeString)(char* value);
-extern void (*CryptohomeFreeBlob)(char* blob);
 
 typedef void(*CryptohomeSignalCallback)(
     const CryptohomeAsyncCallStatus& call_status, void* callback_context);
@@ -115,7 +88,6 @@ typedef void(*CryptohomeSignalCallback)(
 extern void* (*CryptohomeMonitorSession)(
     CryptohomeSignalCallback monitor,
     void* monitor_context);
-extern void (*CryptohomeDisconnectSession)(void* connection);
 
 }  // namespace chromeos
 
