@@ -46,18 +46,8 @@ glib_marshal_builder = Builder(generator = GlibMarshalGenerator,
                                single_source = 1,
                                suffix = 'glibmarshal.c')
 
-dbus_server_builder = Builder(action =
- "/usr/bin/dbus-binding-tool --mode=glib-server " \
- "--prefix=libcros_servicer $SOURCES > $TARGET")
-
-dbus_client_builder = Builder(action =
- "/usr/bin/dbus-binding-tool --mode=glib-client " \
- "--prefix=libcros_servicer $SOURCES > $TARGET")
-
 base_env = Environment()
 base_env['BUILDERS']['GlibMarshal'] = glib_marshal_builder
-base_env['BUILDERS']['DBusServer'] = dbus_server_builder
-base_env['BUILDERS']['DBusClient'] = dbus_client_builder
 for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
   value = os.environ.get(key)
   if value != None:
@@ -78,7 +68,6 @@ SOURCES = Split('''\
   chromeos_brightness.cc
   chromeos_cryptohome.cc
   chromeos_imageburn.cc
-  chromeos_libcros_service.cc
   chromeos_login.cc
   chromeos_login_helpers.cc
   chromeos_mount.cc
@@ -89,10 +78,7 @@ SOURCES = Split('''\
   chromeos_screen_lock.cc
   chromeos_speech_synthesis.cc
   chromeos_update_engine.cc
-  libcros_service.cc
-  libcros_servicer.cc
   marshal.glibmarshal.c
-  network_proxy_resolver_handler.cc
   version_check.cc
 ''')
 
@@ -104,11 +90,6 @@ env.ParseConfig('%s --cflags --libs dbus-1 glib-2.0 dbus-glib-1 '
                 'libpcrecpp x11' % env['ENV']['PKG_CONFIG'])
 
 env.GlibMarshal('marshal.glibmarshal.c', 'marshal.list')
-
-env.DBusServer('bindings_server.h',
-               ['libcros_service.xml'])
-env.DBusClient('bindings_client.h',
-               ['libcros_service.xml'])
 
 # test_libbase_ndebug is built to catch NDEBUG mismatches between this
 # library and libbase.  It is not installed.

@@ -188,34 +188,6 @@ extern void (*FormatDevice)(const char* device_path,
 extern void (*RequestMountInfo)(RequestMountInfoCallback callback,
                                 void* object);
 
-// TODO(satorux): Remove the deprecated types.
-typedef void (*MountRequestCallback)(void* object,
-                                     const char* path,
-                                     const char* mount_path,
-                                     MountMethodErrorType error,
-                                     const char* error_message);
-
-struct DiskStatus {
-  const char* path;
-  const char* mountpath;
-  const char* systempath;
-  bool isparent;
-  bool hasmedia;
-};
-
-struct MountStatus {
-  DiskStatus *disks;
-  int size;
-};
-
-class OpaqueMountStatusConnection;
-typedef OpaqueMountStatusConnection* MountStatusConnection;
-
-typedef void(*MountMonitor)(void*,
-                            const MountStatus&,
-                            MountEventType,
-                            const char*);
-
 }  // namespace chromeos
 
 #endif  // CHROMEOS_MOUNT_H_

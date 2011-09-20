@@ -296,12 +296,13 @@
 //      RetrieveCellularDataPlans, FreeCellularDataPlanList, SaveIPConfig,
 //      FreeIPConfig, RetrievePowerInformation, RetrieveUpdateProgress,
 //      InitiateUpdateCheck, SetTrack, GetTrack
+// 174: Removed all the known deprecated code.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 161,
-  kCrosAPIVersion = 173
+  kCrosAPIMinVersion = 173,
+  kCrosAPIVersion = 174
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

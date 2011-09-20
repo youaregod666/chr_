@@ -151,70 +151,6 @@ void ChromeOSDisconnectUpdateProgress(UpdateStatusConnection connection) {
   delete connection;
 }
 
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-bool ChromeOSRetrieveUpdateProgress(UpdateProgress* information) {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy update_proxy(bus,
-                           kUpdateEngineServiceName,
-                           kUpdateEngineServicePath,
-                           kUpdateEngineServiceInterface);
-  GError* error = NULL;
-
-  gint64 last_checked_time = 0;
-  gdouble progress = 0.0;
-  char* current_op = NULL;
-  char* new_version = NULL;
-  gint64 new_size = 0;
-  gboolean rc = org_chromium_UpdateEngineInterface_get_status(
-      update_proxy.gproxy(),
-      &last_checked_time,
-      &progress,
-      &current_op,
-      &new_version,
-      &new_size,
-      &error);
-  if (rc == FALSE) {
-    LOG(ERROR) << "Error getting status: " << GetGErrorMessage(error);
-    return false;
-  }
-
-  UpdateStatusOperation status = UpdateStatusFromString(current_op);
-  if (status == UPDATE_STATUS_ERROR) {
-    LOG(ERROR) << "Error parsing status: " << current_op;
-    g_free(current_op);
-    g_free(new_version);
-    return false;
-  }
-  if (information->destruct_) information->destruct_(*information);
-  information->status_ = status;
-  information->download_progress_ = progress;
-  information->last_checked_time_ = last_checked_time;
-  information->new_version_ = NewStringCopy(new_version);
-  information->new_size_ = new_size;
-  information->destruct_ = &DestroyUpdateProgress;
-  g_free(current_op);
-  g_free(new_version);
-  return true;
-}
-
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-bool ChromeOSInitiateUpdateCheck() {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy update_proxy(bus,
-                           kUpdateEngineServiceName,
-                           kUpdateEngineServicePath,
-                           kUpdateEngineServiceInterface);
-  GError* error = NULL;
-
-  gboolean rc = org_chromium_UpdateEngineInterface_attempt_update(
-      update_proxy.gproxy(), "", "", &error);
-  LOG_IF(ERROR, rc == FALSE) << "Error checking for update: "
-                             << GetGErrorMessage(error);
-  return rc == TRUE;
-}
-
 extern "C"
 bool ChromeOSRebootIfUpdated() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -229,48 +165,6 @@ bool ChromeOSRebootIfUpdated() {
   LOG_IF(ERROR, rc == FALSE) << "Error requesting a reboot: "
                              << GetGErrorMessage(error);
   return rc == TRUE;
-}
-
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-bool ChromeOSSetTrack(const std::string& track) {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy update_proxy(bus,
-                           kUpdateEngineServiceName,
-                           kUpdateEngineServicePath,
-                           kUpdateEngineServiceInterface);
-  GError* error = NULL;
-  gboolean rc =
-      org_chromium_UpdateEngineInterface_set_track(update_proxy.gproxy(),
-                                                   track.c_str(),
-                                                   &error);
-  LOG_IF(ERROR, rc == FALSE) << "Error setting track: "
-                             << GetGErrorMessage(error);
-  return rc == TRUE;
-}
-
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-std::string ChromeOSGetTrack() {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy update_proxy(bus,
-                           kUpdateEngineServiceName,
-                           kUpdateEngineServicePath,
-                           kUpdateEngineServiceInterface);
-  char* track = NULL;
-  GError* error = NULL;
-  gboolean rc =
-      org_chromium_UpdateEngineInterface_get_track(update_proxy.gproxy(),
-                                                   &track,
-                                                   &error);
-  LOG_IF(ERROR, rc == FALSE) << "Error getting track: "
-                             << GetGErrorMessage(error);
-  if (!rc || track == NULL) {
-    return "";
-  }
-  std::string output = track;
-  g_free(track);
-  return output;
 }
 
 // Asynchronous API.

@@ -178,39 +178,6 @@ int ChromeOSCryptohomeAsyncRemove(const char* user_email) {
   return async_call_id;
 }
 
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-CryptohomeBlob ChromeOSCryptohomeGetSystemSalt() {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus,
-                    cryptohome::kCryptohomeServiceName,
-                    cryptohome::kCryptohomeServicePath,
-                    cryptohome::kCryptohomeInterface);
-  GArray* salt;
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           cryptohome::kCryptohomeGetSystemSalt,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_INVALID,
-                           DBUS_TYPE_G_UCHAR_ARRAY,
-                           &salt,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << cryptohome::kCryptohomeGetSystemSalt << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-    return CryptohomeBlob();
-  }
-  CryptohomeBlob system_salt;
-  system_salt.resize(salt->len);
-  if (system_salt.size() == salt->len) {
-    memcpy(&system_salt[0], static_cast<const void*>(salt->data), salt->len);
-  } else {
-    system_salt.clear();
-  }
-  g_array_free(salt, false);
-  return system_salt;
-}
-
 extern "C"
 bool ChromeOSCryptohomeGetSystemSaltSafe(char** salt, int* length) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -291,9 +258,7 @@ gchar** ChromeOSCryptohomeCopyStringArray(
   return return_array;
 }
 
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-bool ChromeOSCryptohomeMountSafe(
+static bool CryptohomeMountSafe(
     const char* user_email,
     const char* key,
     bool create_if_missing,
@@ -338,9 +303,7 @@ bool ChromeOSCryptohomeMountSafe(
   return done;
 }
 
-// TODO(satorux): Remove this.
-extern "C"
-bool ChromeOSCryptohomeMount(
+static bool CryptohomeMount(
     const char* user_email,
     const char* key,
     bool create_if_missing,
@@ -359,7 +322,7 @@ bool ChromeOSCryptohomeMount(
     return false;
   }
 
-  done = ChromeOSCryptohomeMountSafe(
+  done = CryptohomeMountSafe(
       user_email, key, create_if_missing, replace_tracked_subdirectories,
       const_cast<const char**>(dbus_tracked_subdirectories),
       &local_mount_error);
@@ -411,37 +374,12 @@ int ChromeOSCryptohomeAsyncMountSafe(
   return async_call_id;
 }
 
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-int ChromeOSCryptohomeAsyncMount(
-    const char* user_email,
-    const char* key,
-    bool create_if_missing,
-    bool replace_tracked_subdirectories,
-    const std::vector<std::string>& tracked_subdirectories) {
-  gint async_call_id = 0;
-
-  char** dbus_tracked_subdirectories =
-      ChromeOSCryptohomeCopyStringArray(tracked_subdirectories);
-  if (dbus_tracked_subdirectories == NULL) {
-    return 0;
-  }
-
-  async_call_id = ChromeOSCryptohomeAsyncMountSafe(
-      user_email, key, create_if_missing, replace_tracked_subdirectories,
-      const_cast<const char**>(dbus_tracked_subdirectories));
-
-  g_strfreev(dbus_tracked_subdirectories);
-
-  return async_call_id;
-}
-
 extern "C"
 bool ChromeOSCryptohomeMountAllowFail(const char* user_email,
     const char* key,
     int* mount_error) {
-  return ChromeOSCryptohomeMount(user_email, key, true, false,
-                                 std::vector<std::string>(), mount_error);
+  return CryptohomeMount(user_email, key, true, false,
+                         std::vector<std::string>(), mount_error);
 }
 
 extern "C"
@@ -517,82 +455,6 @@ bool ChromeOSCryptohomeUnmount() {
     LOG(WARNING) << cryptohome::kCryptohomeUnmount << " failed: "
                  << (error->message ? error->message : "Unknown Error.");
 
-  }
-  return done;
-}
-
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-bool ChromeOSCryptohomeRemoveTrackedSubdirectories() {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus,
-                    cryptohome::kCryptohomeServiceName,
-                    cryptohome::kCryptohomeServicePath,
-                    cryptohome::kCryptohomeInterface);
-  gboolean done = false;
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           cryptohome::kCryptohomeRemoveTrackedSubdirectories,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN,
-                           &done,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << cryptohome::kCryptohomeRemoveTrackedSubdirectories
-                 << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-  }
-  return done;
-}
-
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-int ChromeOSCryptohomeAsyncRemoveTrackedSubdirectories() {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus,
-                    cryptohome::kCryptohomeServiceName,
-                    cryptohome::kCryptohomeServicePath,
-                    cryptohome::kCryptohomeInterface);
-  gint async_call_id = 0;
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-           cryptohome::kCryptohomeAsyncRemoveTrackedSubdirectories,
-           &Resetter(&error).lvalue(),
-           G_TYPE_INVALID,
-           G_TYPE_INT,
-           &async_call_id,
-           G_TYPE_INVALID)) {
-    LOG(WARNING) << cryptohome::kCryptohomeAsyncRemoveTrackedSubdirectories
-                 << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-  }
-  return async_call_id;
-}
-
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-bool ChromeOSCryptohomeDoAutomaticFreeDiskSpaceControl() {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus,
-                    cryptohome::kCryptohomeServiceName,
-                    cryptohome::kCryptohomeServicePath,
-                    cryptohome::kCryptohomeInterface);
-  gboolean done = false;
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(
-          proxy.gproxy(),
-          cryptohome::kCryptohomeDoAutomaticFreeDiskSpaceControl,
-          &Resetter(&error).lvalue(),
-          G_TYPE_INVALID,
-          G_TYPE_BOOLEAN,
-          &done,
-          G_TYPE_INVALID)) {
-    LOG(WARNING) << cryptohome::kCryptohomeDoAutomaticFreeDiskSpaceControl
-                 << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
   }
   return done;
 }
@@ -776,18 +638,6 @@ bool ChromeOSCryptohomeTpmGetPasswordSafe(char** password) {
   }
   *password = NULL;
   return false;
-}
-
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-bool ChromeOSCryptohomeTpmGetPassword(std::string* password) {
-  char* local_password = NULL;
-  if (!ChromeOSCryptohomeTpmGetPasswordSafe(&local_password)) {
-    return false;
-  }
-  password->assign(local_password);
-  g_free(local_password);
-  return true;
 }
 
 extern "C"
@@ -1107,14 +957,6 @@ void ChromeOSCryptohomeFreeString(char* value) {
   }
 }
 
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-void ChromeOSCryptohomeFreeBlob(char* value) {
-  if (value) {
-    g_free(value);
-  }
-}
-
 class CryptohomeSessionConnection {
  public:
   CryptohomeSessionConnection(const CryptohomeSignalCallback& monitor,
@@ -1207,20 +1049,6 @@ void* ChromeOSCryptohomeMonitorSession(CryptohomeSignalCallback monitor,
 
   LOG(INFO) << "Cryptohome API event monitoring started";
   return connection;
-}
-
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-void ChromeOSCryptohomeDisconnectSession(void* connection) {
-  CryptohomeSessionConnection* self =
-      static_cast<CryptohomeSessionConnection*>(connection);
-  DBusConnection *dbus_connection = ::dbus_g_connection_get_connection(
-      dbus::GetSystemBusConnection().g_connection());
-  ::dbus_connection_remove_filter(dbus_connection,
-                                  &CryptohomeSignalFilter,
-                                  connection);
-  delete self;
-  LOG(INFO) << "Disconnected from Cryptohome event monitoring";
 }
 
 }  // namespace chromeos

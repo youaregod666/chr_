@@ -89,13 +89,6 @@ BrightnessConnection ChromeOSMonitorBrightnessV2(
   return new OpaqueBrightnessConnection(monitor_function, NULL, object);
 }
 
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-BrightnessConnection ChromeOSMonitorBrightness(
-    BrightnessMonitorFunction monitor_function, void* object) {
-  return new OpaqueBrightnessConnection(NULL, monitor_function, object);
-}
-
 extern "C"
 void ChromeOSDisconnectBrightness(BrightnessConnection connection) {
   DCHECK(connection);

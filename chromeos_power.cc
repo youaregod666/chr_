@@ -222,14 +222,6 @@ void ChromeOSDisconnectPowerStatus(PowerStatusConnection connection) {
   }
 }
 
-// TODO(satorux): Remove this. DEPRECATED.
-extern "C"
-bool ChromeOSRetrievePowerInformation(PowerInformation* info) {
-  // Func has been stubbed out because some functions it calls has been removed.
-  // It will be removed at a later time.
-  return true;
-}
-
 extern "C"
 void ChromeOSEnableScreenLock(bool enable) {
   static const char kPowerManagerConfig[] =
