@@ -133,8 +133,6 @@ env_gtest_main.ParseConfig('%s --cflags --libs libpcrecpp x11' % (
 env_network_monitor = env_test.Clone()
 env_network_monitor.Append(LIBS=['dbus-glib-1'])
 
-env_libcros_service_test = env.Clone()
-
 env_load = base_env.Clone()
 env_load.ParseConfig('%s --cflags --libs dbus-glib-1' % env['ENV']['PKG_CONFIG'])
 Load = env_load.Object('load.cc')
@@ -163,15 +161,5 @@ tests = [
 ]
 test_alias = Alias('test', tests)
 AlwaysBuild(test_alias)
-
-libcros_service_tests = [
-  env_libcros_service_test.Program(
-      'libcros_service_tester',
-      ['libcros_service_tester.cc',
-       'marshal.glibmarshal.c']),
-]
-libcros_service_test_alias = \
-    Alias('libcros_service_test', libcros_service_tests)
-AlwaysBuild(libcros_service_test_alias)
 
 Alias('crosapi', env_load.StaticLibrary('crosapi', Load), CCFLAGS='-ggdb')
