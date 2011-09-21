@@ -34,13 +34,12 @@ class OpaqueScreenLockConnection {
 
 namespace {
 
-// A utility function to send a signal to PowerManager.
-void SendSignalToPowerManager(const char* signal_name) {
-  LOG(INFO) << "Sending signal '" << signal_name << "' to PowerManager:";
-  chromeos::dbus::SendSignalWithNoArgumentsToSystemBus(
-      "/",
-      power_manager::kPowerManagerInterface,
-      signal_name);
+// A utility function to issue a method call to PowerManager.
+void MethodCallToPowerManager(const char* method_name) {
+  dbus::CallMethodWithNoArguments(power_manager::kPowerManagerServiceName,
+                                  power_manager::kPowerManagerServicePath,
+                                  power_manager::kPowerManagerInterface,
+                                  method_name);
 }
 
 // A message filter to receive signals.
@@ -73,22 +72,22 @@ DBusHandlerResult Filter(DBusConnection* connection,
 
 extern "C"
 void ChromeOSNotifyScreenLockCompleted() {
-  SendSignalToPowerManager(power_manager::kScreenIsLockedSignal);
+  MethodCallToPowerManager(power_manager::kScreenIsLockedMethod);
 }
 
 extern "C"
 void ChromeOSNotifyScreenUnlockCompleted() {
-  SendSignalToPowerManager(power_manager::kScreenIsUnlockedSignal);
+  MethodCallToPowerManager(power_manager::kScreenIsUnlockedMethod);
 }
 
 extern "C"
 void ChromeOSNotifyScreenLockRequested() {
-  SendSignalToPowerManager(power_manager::kRequestLockScreenSignal);
+  MethodCallToPowerManager(power_manager::kRequestLockScreenMethod);
 }
 
 extern "C"
 void ChromeOSNotifyScreenUnlockRequested() {
-  SendSignalToPowerManager(power_manager::kRequestUnlockScreenSignal);
+  MethodCallToPowerManager(power_manager::kRequestUnlockScreenMethod);
 }
 
 #define SAFE_MESSAGE(e) (e.message ? e.message : "unknown error")

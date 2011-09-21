@@ -252,18 +252,20 @@ void ChromeOSEnableScreenLock(bool enable) {
 
 extern "C"
 void ChromeOSRequestRestart() {
-  chromeos::dbus::SendSignalWithNoArgumentsToSystemBus(
+  chromeos::dbus::CallMethodWithNoArguments(
+      power_manager::kPowerManagerServiceName,
       power_manager::kPowerManagerServicePath,
       power_manager::kPowerManagerInterface,
-      power_manager::kRequestRestartSignal);
+      power_manager::kRequestRestartMethod);
 }
 
 extern "C"
 void ChromeOSRequestShutdown() {
-  chromeos::dbus::SendSignalWithNoArgumentsToSystemBus(
+  chromeos::dbus::CallMethodWithNoArguments(
+      power_manager::kPowerManagerServiceName,
       power_manager::kPowerManagerServicePath,
       power_manager::kPowerManagerInterface,
-      power_manager::kRequestShutdownSignal);
+      power_manager::kRequestShutdownMethod);
 }
 
 }  // namespace chromeos
