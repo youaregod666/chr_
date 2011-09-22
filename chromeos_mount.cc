@@ -323,14 +323,15 @@ void UnmountPathAsync(const char* device_path,
           kCrosDisksInterface, device_path, MOUNT_TYPE_INVALID, callback,
           object);
   DBusGProxyCall* call_id =
-      ::dbus_g_proxy_begin_call(cb_data->proxy->gproxy(),
-                                "Unmount",
-                                &UnmountRequestNotify,
-                                cb_data,
-                                &DeleteMountCallbackData<MountRequestCallback>,
-                                G_TYPE_STRING, device_path,
-                                G_TYPE_STRV, kDefaultUnmountOptions,
-                                G_TYPE_INVALID);
+      ::dbus_g_proxy_begin_call(
+          cb_data->proxy->gproxy(),
+          "Unmount",
+          &UnmountRequestNotify,
+          cb_data,
+          &DeleteMountCallbackData<UnmountRequestCallback>,
+          G_TYPE_STRING, device_path,
+          G_TYPE_STRV, kDefaultUnmountOptions,
+          G_TYPE_INVALID);
   if (!call_id) {
     LOG(ERROR) << "UnmountRemoveableDeviceAsync call failed";
     callback(object,
