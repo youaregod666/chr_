@@ -16,9 +16,7 @@
 // status to std::cout and disconnect after it has reported DISK_ADDED event 50
 // times.
 
-void PrintDiskInfo(const chromeos::DiskInfo* info1) {
-  const chromeos::DiskInfoAdvanced* info =
-      reinterpret_cast<const chromeos::DiskInfoAdvanced*>(info1);
+void PrintDiskInfo(const chromeos::DiskInfo* info) {
   std::cout << "    Device path: "
             << (info->path() ? info->path() : "" ) << std::endl;
   std::cout << "    Mount path: "
@@ -43,6 +41,8 @@ void PrintDiskInfo(const chromeos::DiskInfo* info1) {
             << (info->on_boot_device() ? "true" : "false" ) << std::endl;
   std::cout << "    Is read only: "
             << (info->is_read_only() ? "true" : "false" ) << std::endl;
+  std::cout << "    Is hidden: " << (info->is_hidden() ? "true" : "false" )
+            << std::endl;
   std::cout << "    Size: " << info->size() << std::endl;
 
 }

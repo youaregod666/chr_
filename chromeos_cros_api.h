@@ -297,12 +297,13 @@
 //      FreeIPConfig, RetrievePowerInformation, RetrieveUpdateProgress,
 //      InitiateUpdateCheck, SetTrack, GetTrack
 // 174: Removed all the known deprecated code.
+// 175: Deprecated DiskInfoAdvanced in chromeos_mount.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 173,
-  kCrosAPIVersion = 174
+  kCrosAPIVersion = 175
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

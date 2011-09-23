@@ -56,7 +56,7 @@ const char kReadOnly[] = "DeviceIsReadOnly";
 
 namespace {  // NOLINT
 
-struct DiskInfoImpl : public DiskInfoAdvanced {
+struct DiskInfoImpl : public DiskInfo {
  public:
   DiskInfoImpl(const char* path, const glib::ScopedHashTable& properties)
     : mount_path_(NULL),
@@ -70,11 +70,13 @@ struct DiskInfoImpl : public DiskInfoAdvanced {
       partition_slave_(NULL),
       device_type_(UNDEFINED),
       total_size_(0),
-      is_read_only_(false) {
+      is_read_only_(false),
+      is_hidden_(true) {
     DCHECK(path);
     path_ = NewStringCopy(path);
     InitializeFromProperties(properties);
   }
+
   virtual ~DiskInfoImpl() {
     if (path_)
       delete path_;
@@ -107,6 +109,8 @@ struct DiskInfoImpl : public DiskInfoAdvanced {
   virtual DeviceType device_type() const { return device_type_; }
   virtual uint64 size() const { return total_size_; }
   virtual bool is_read_only() const { return is_read_only_; }
+  virtual bool is_hidden() const { return is_hidden_; }
+
  private:
   DeviceType GetDeviceType(bool is_optical, bool is_rotational) {
     if (is_optical)
@@ -119,53 +123,42 @@ struct DiskInfoImpl : public DiskInfoAdvanced {
   void InitializeFromProperties(const glib::ScopedHashTable& properties) {
     properties.Retrieve(kDeviceIsDrive, &is_drive_);
     properties.Retrieve(kReadOnly, &is_read_only_);
+    properties.Retrieve(kDevicePresentationHide, &is_hidden_);
+    properties.Retrieve(kDeviceIsMediaAvailable, &has_media_);
+    properties.Retrieve(kDeviceIsOnBootDevice, &on_boot_device_);
 
-    bool hidden;
-    if (properties.Retrieve(kDevicePresentationHide, &hidden) &&
-        !hidden) {
-      properties.Retrieve(kDeviceIsMediaAvailable, &has_media_);
-      properties.Retrieve(kDeviceIsOnBootDevice, &on_boot_device_);
+    std::string path;
+    if (properties.Retrieve(kNativePath, &path))
+      system_path_ = NewStringCopy(path.c_str());
 
-      std::string path;
-      if (properties.Retrieve(kNativePath, &path))
-        system_path_ = NewStringCopy(path.c_str());
+    std::string file_path_str;
+    if (properties.Retrieve(kDeviceFile, &file_path_str))
+      file_path_ = NewStringCopy(file_path_str.c_str());
 
-      std::string file_path_str;
-      if (properties.Retrieve(kDeviceFile, &file_path_str))
-        file_path_ = NewStringCopy(file_path_str.c_str());
+    std::string drive_model_str;
+    if (properties.Retrieve(kDriveModel, &drive_model_str))
+      drive_model_ = NewStringCopy(drive_model_str.c_str());
 
-      std::string drive_model_str;
-      if (properties.Retrieve(kDriveModel, &drive_model_str))
-        drive_model_ = NewStringCopy(drive_model_str.c_str());
+    std::string  device_label_str;
+    if (properties.Retrieve(kLabel, &device_label_str))
+      label_ = NewStringCopy(device_label_str.c_str());
 
-      std::string  device_label_str;
-      if (properties.Retrieve(kLabel, &device_label_str))
-        label_ = NewStringCopy(device_label_str.c_str());
+    glib::Value size_gval;
+    if (properties.Retrieve(kDeviceSize, &size_gval))
+      total_size_ = static_cast<uint64>(::g_value_get_uint64(&size_gval));
 
-      glib::Value partition_slave_gval;
-      if (properties.Retrieve(kPartitionSlave, &partition_slave_gval)) {
-        char* partition_slave_path =
-            reinterpret_cast<char*>(g_value_get_boxed(&partition_slave_gval));
-        partition_slave_ = NewStringCopy(partition_slave_path);
-      }
-
-      glib::Value size_gval;
-      if (properties.Retrieve(kDeviceSize, &size_gval))
-        total_size_ = static_cast<uint64>(::g_value_get_uint64(&size_gval));
-
-      glib::Value value;
-      if (properties.Retrieve(kDeviceMountPaths, &value)) {
-        char** paths = reinterpret_cast<char**>(g_value_get_boxed(&value));
-        if (paths[0])
-          mount_path_ = NewStringCopy(paths[0]);
-      }
-
-      bool is_rotational;
-      bool is_optical;
-      if (properties.Retrieve(kDriveIsRotational, &is_rotational))
-        if (properties.Retrieve(kDeviceIsOpticalDisc, &is_optical))
-          device_type_ = GetDeviceType(is_optical, is_rotational);
+    glib::Value value;
+    if (properties.Retrieve(kDeviceMountPaths, &value)) {
+      char** paths = reinterpret_cast<char**>(g_value_get_boxed(&value));
+      if (paths[0])
+        mount_path_ = NewStringCopy(paths[0]);
     }
+
+    bool is_rotational;
+    bool is_optical;
+    if (properties.Retrieve(kDriveIsRotational, &is_rotational))
+      if (properties.Retrieve(kDeviceIsOpticalDisc, &is_optical))
+        device_type_ = GetDeviceType(is_optical, is_rotational);
   }
 
   const char* path_;
@@ -182,6 +175,7 @@ struct DiskInfoImpl : public DiskInfoAdvanced {
   DeviceType device_type_;
   uint64 total_size_;
   bool is_read_only_;
+  bool is_hidden_;
 };
 
 struct MountCallbackData {

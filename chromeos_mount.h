@@ -37,8 +37,8 @@ enum MountError {
   // consider doing explicit translation from cros-disks error_types.
 };
 
-
-class DiskInfo {
+// TODO(tbarzic): Remove DiskInfoAdvanced.
+class DiskInfoAdvanced {
  public:
   // DBus service path.
   virtual const char* path() const = 0;
@@ -52,11 +52,6 @@ class DiskInfo {
   virtual bool has_media() const = 0;
   // Is the disk on deveice we booted the machien from.
   virtual bool on_boot_device() const = 0;
-};
-
-// TODO(tbarzic): merge DiskInfoAdvanced with DinskInfo.
-class DiskInfoAdvanced : public DiskInfo {
- public:
   // Disk file path (e.g /dev/sdb).
   virtual const char* file_path() const = 0;
   // Disk label.
@@ -71,6 +66,11 @@ class DiskInfoAdvanced : public DiskInfo {
   virtual uint64 size() const = 0;
   // Is the device read-only.
   virtual bool is_read_only() const = 0;
+};
+
+class DiskInfo : public DiskInfoAdvanced {
+ public:
+  virtual bool is_hidden() const = 0;
 };
 
 enum MountEventType {
