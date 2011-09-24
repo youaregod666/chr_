@@ -53,6 +53,7 @@ bool RetrievePowerStatus(const dbus::Proxy& proxy, PowerStatus* status) {
   // Use dbus_bool_t instead of bool because it is safer for dbus calls.
   dbus_bool_t line_power_on = false;
   dbus_bool_t battery_is_present = false;
+  dbus_bool_t battery_is_charged = false;
   if(!dbus_g_proxy_call(proxy.gproxy(), power_manager::kGetAllPropertiesMethod,
                         &error,
                         G_TYPE_INVALID,
@@ -64,13 +65,15 @@ bool RetrievePowerStatus(const dbus::Proxy& proxy, PowerStatus* status) {
                         G_TYPE_INT64,   &status->battery_time_to_full,
                         G_TYPE_DOUBLE,  &status->battery_percentage,
                         G_TYPE_BOOLEAN, &battery_is_present,
-                        G_TYPE_INT,     &status->battery_state,
+                        G_TYPE_BOOLEAN, &battery_is_charged,
                         G_TYPE_INVALID)) {
     LOG(WARNING) << (error->message ? error->message : "GetProperty failed.");
     return false;
   }
   status->line_power_on = line_power_on;
   status->battery_is_present = battery_is_present;
+  status->battery_state = battery_is_charged ? BATTERY_STATE_FULLY_CHARGED
+                                             : BATTERY_STATE_UNKNOWN;
   return true;
 }
 
