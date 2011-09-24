@@ -12,20 +12,7 @@ namespace chromeos {
 
 enum BatteryState {
   BATTERY_STATE_UNKNOWN,
-  BATTERY_STATE_CHARGING,
-  BATTERY_STATE_DISCHARGING,
-  BATTERY_STATE_EMPTY,
   BATTERY_STATE_FULLY_CHARGED
-};
-
-enum BatteryTechnology {
-  BATTERY_TECHNOLOGY_UNKNOWN,
-  BATTERY_TECHNOLOGY_LITHIUM_ION,
-  BATTERY_TECHNOLOGY_LITHIUM_POLYMER,
-  BATTERY_TECHNOLOGY_IRON_PHOSPHATE,
-  BATTERY_TECHNOLOGY_LEAD_ACID,
-  BATTERY_TECHNOLOGY_NICKEL_CADMIUM,
-  BATTERY_TECHNOLOGY_NICKEL_METAL_HYDRIDE
 };
 
 // Callback for GetIdleTime method.
@@ -54,36 +41,6 @@ struct PowerStatus {
   bool battery_is_present;  // [needed?]
 
   BatteryState battery_state;
-};
-
-struct PowerInformation {
-  PowerStatus power_status;
-
-  // Amount of energy, measured in Wh, in the battery when it's considered
-  // empty.
-  double battery_energy_empty;
-
-  // Amount of energy, measured in Wh, in the battery when it's considered full.
-  double battery_energy_full;
-
-  // Amount of energy, measured in Wh, the battery is designed to hold when it's
-  // considered full.
-  double battery_energy_full_design;
-
-  bool battery_is_rechargeable;  // [needed?]
-  double battery_capacity;
-
-  std::string battery_technology;  // [needed?]
-
-  std::string battery_vendor;
-  std::string battery_model;
-  std::string battery_serial;
-
-  std::string line_power_vendor;
-  std::string line_power_model;
-  std::string line_power_serial;
-
-  std::string battery_state_string;
 };
 
 class OpaquePowerStatusConnection;
