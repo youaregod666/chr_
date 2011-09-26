@@ -73,6 +73,16 @@ const char* GetStringFromGHashTable(GHashTable* ghash, const char* key) {
   return g_value_get_string(gvalue);
 }
 
+const char* GetObjectPathFromGHashTable(GHashTable* ghash, const char* key) {
+  gpointer ptr = g_hash_table_lookup(ghash, key);
+  if (!ptr)
+    return NULL;
+  GValue* gvalue = static_cast<GValue*>(ptr);
+  if (!G_VALUE_HOLDS(gvalue, DBUS_TYPE_G_OBJECT_PATH))
+    return NULL;
+  return static_cast<const char*>(g_value_get_boxed(gvalue));
+}
+
 // Deletes all of the heap allocated members of a given
 // CellularDataPlan instance.
 void DeleteDataPlanProperties(CellularDataPlanInfo &plan) {
@@ -1876,7 +1886,7 @@ class SMSHandler {
       return;
     }
     const char* dbus_object_path =
-        GetStringFromGHashTable(ghash, kDBusObjectProperty);
+        GetObjectPathFromGHashTable(ghash, kDBusObjectProperty);
     if (!dbus_object_path) {
       LOG(WARNING) << "Modem device properties do not include DBus object.";
       return;
