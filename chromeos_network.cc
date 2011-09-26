@@ -1267,7 +1267,7 @@ void ChromeOSRequestVirtualNetworkProperties(
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
       kGetVPNServiceFunction,
-      &GetPropertiesGValueNotify,
+      &GetServiceGValueNotify,
       cb_data,
       &DeleteFlimflamCallbackData,
       ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING, G_TYPE_VALUE),
