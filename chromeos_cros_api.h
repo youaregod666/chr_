@@ -298,12 +298,17 @@
 //      InitiateUpdateCheck, SetTrack, GetTrack
 // 174: Removed all the known deprecated code.
 // 175: Deprecated DiskInfoAdvanced in chromeos_mount.
+// 176: Deprecated MonitorSession, DisconnectSession,
+//      EmitLoginPromptReady, EmitLoginPromptVisible, RestartJob,
+//      RestartEntd, RetrievePolicy, StartSession, StopSession,
+//      StorePolicy, DecreaseScreenBrightness, IncreaseScreenBrightness,
+//      MonitorBrightnessV2, DisconnectBrightness
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 173,
-  kCrosAPIVersion = 175
+  kCrosAPIVersion = 176
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

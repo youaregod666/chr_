@@ -54,38 +54,6 @@ typedef void(*RetrievePropertyCallback)(void* user_data,
                                         bool success,
                                         const Property* property);
 
-
-extern SessionConnection (*MonitorSession)(SessionMonitor monitor, void*);
-extern void (*DisconnectSession)(SessionConnection connection);
-
-// Kicks off an attempt to emit the "login-prompt-ready" upstart signal.
-extern bool (*EmitLoginPromptReady)();
-
-// Kicks off an attempt to emit the "login-prompt-visible" upstart signal.
-extern bool (*EmitLoginPromptVisible)();
-
-extern bool (*RestartJob)(int pid, const char* command_line);
-
-extern bool (*RestartEntd)();
-
-// Fetches the policy blob stored by the session manager.
-// Upon completion of the retrieve attempt, we will call the provided callback.
-// Policies are serialized protocol buffers.  Upon success, we will pass a
-// protobuf to the callback.  On failure, we will pass NULL.
-extern void (*RetrievePolicy)(RetrievePolicyCallback callback, void* delegate);
-
-extern bool (*StartSession)(const char* user_email,
-                            const char* unique_id /* unused */);
-
-extern bool (*StopSession)(const char* unique_id /* unused */);
-
-// Attempts to store the policy blob |prop| asynchronously.
-// Takes |len| because |prop| may have embedded NULL characters.
-// Upon completion of the store attempt, we will call callback(delegate, ...)
-extern void (*StorePolicy)(const char* prop,
-                           const unsigned int len,
-                           StorePolicyCallback callback,
-                           void* delegate);
 }  // namespace chromeos
 
 #endif  // CHROMEOS_LOGIN_H_

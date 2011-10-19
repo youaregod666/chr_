@@ -8,11 +8,9 @@
 #include <vector>
 
 #include "base/basictypes.h"
-#include "chromeos_brightness.h" // NOLINT
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_cryptohome.h" // NOLINT
 #include "chromeos_imageburn.h"  //NOLINT
-#include "chromeos_login.h"  // NOLINT
 #include "chromeos_mount.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
 #include "chromeos_network_deprecated.h"  // NOLINT
@@ -213,23 +211,6 @@ DECL_FUNC_5(ConfigureWifiService, bool, const char*, ConnectionSecurity,
             const char*, const char*, const char*);
 DECL_FUNC_1(FreeServiceInfo, void, ServiceInfo*);
 
-// Login
-DECL_FUNC_0(EmitLoginPromptReady, bool);
-DECL_FUNC_0(EmitLoginPromptVisible, bool);
-DECL_FUNC_2(RestartJob, bool, int, const char*);
-DECL_FUNC_0(RestartEntd, bool);
-DECL_FUNC_2(RetrievePolicy, void, RetrievePolicyCallback, void*);
-DECL_FUNC_2(StartSession, bool, const char*, const char*);
-DECL_FUNC_1(StopSession, bool, const char*);
-DECL_FUNC_4(StorePolicy,
-            void,
-            const char*,
-            const unsigned int,
-            StorePolicyCallback,
-            void*);
-DECL_FUNC_2(MonitorSession, SessionConnection, SessionMonitor, void*);
-DECL_FUNC_1(DisconnectSession, void, SessionConnection);
-
 // Screen Lock
 DECL_FUNC_2(MonitorScreenLock,
             ScreenLockConnection, ScreenLockMonitor, void*);
@@ -301,15 +282,6 @@ DECL_FUNC_1(SetSpeakProperties, bool, const char*);
 DECL_FUNC_0(StopSpeaking, bool);
 DECL_FUNC_0(IsSpeaking, bool);
 DECL_FUNC_1(InitTts, void, InitStatusCallback);
-
-// Brightness
-DECL_FUNC_1(DecreaseScreenBrightness, void, bool);
-DECL_FUNC_0(IncreaseScreenBrightness, void);
-DECL_FUNC_2(MonitorBrightnessV2,
-            BrightnessConnection,
-            BrightnessMonitorFunctionV2,
-            void*);
-DECL_FUNC_1(DisconnectBrightness, void, BrightnessConnection);
 
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
@@ -439,18 +411,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(ConfigureWifiService);
   INIT_FUNC(FreeServiceInfo);
 
-  // Login
-  INIT_FUNC(EmitLoginPromptReady);
-  INIT_FUNC(EmitLoginPromptVisible);
-  INIT_FUNC(RestartJob);
-  INIT_FUNC(RestartEntd);
-  INIT_FUNC(RetrievePolicy);
-  INIT_FUNC(StartSession);
-  INIT_FUNC(StopSession);
-  INIT_FUNC(StorePolicy);
-  INIT_FUNC(MonitorSession);
-  INIT_FUNC(DisconnectSession);
-
   // Screen Lock
   INIT_FUNC(MonitorScreenLock);
   INIT_FUNC(DisconnectScreenLock);
@@ -517,12 +477,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(StopSpeaking);
   INIT_FUNC(IsSpeaking);
   INIT_FUNC(InitTts);
-
-  // Brightness
-  INIT_FUNC(DecreaseScreenBrightness);
-  INIT_FUNC(IncreaseScreenBrightness);
-  INIT_FUNC(MonitorBrightnessV2);
-  INIT_FUNC(DisconnectBrightness);
 
   return error_string.empty();
 }
