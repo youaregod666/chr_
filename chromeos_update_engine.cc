@@ -5,6 +5,7 @@
 #include "chromeos_update_engine.h"
 #include <cstring>
 #include "chromeos/dbus/dbus.h"
+#include "chromeos/dbus/service_constants.h"
 #include "chromeos/string.h"
 #include "marshal.glibmarshal.h"
 
@@ -15,12 +16,6 @@ extern "C" {
 namespace chromeos {
 
 namespace {
-
-const char* const kUpdateEngineServiceName = "org.chromium.UpdateEngine";
-const char* const kUpdateEngineServicePath =
-    "/org/chromium/UpdateEngine";
-const char* const kUpdateEngineServiceInterface =
-    "org.chromium.UpdateEngineInterface";
 
 // This is the "virtualized" destructor for UpdateProgress.
 void DestroyUpdateProgress(const UpdateProgress& x) {
@@ -64,9 +59,9 @@ class OpaqueUpdateStatusConnection {
  public:
   OpaqueUpdateStatusConnection(UpdateMonitor monitor, void* monitor_data)
       : proxy_(dbus::GetSystemBusConnection(),
-               kUpdateEngineServiceName,
-               kUpdateEngineServicePath,
-               kUpdateEngineServiceInterface),
+               update_engine::kUpdateEngineServiceName,
+               update_engine::kUpdateEngineServicePath,
+               update_engine::kUpdateEngineInterface),
         monitor_(monitor),
         monitor_data_(monitor_data) {
     if (!marshaller_registered_) {
@@ -155,9 +150,9 @@ extern "C"
 bool ChromeOSRebootIfUpdated() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy update_proxy(bus,
-                           kUpdateEngineServiceName,
-                           kUpdateEngineServicePath,
-                           kUpdateEngineServiceInterface);
+                           update_engine::kUpdateEngineServiceName,
+                           update_engine::kUpdateEngineServicePath,
+                           update_engine::kUpdateEngineInterface);
   GError* error = NULL;
 
   gboolean rc = org_chromium_UpdateEngineInterface_reboot_if_needed(
@@ -174,9 +169,9 @@ namespace {
 struct UpdateEngineCallbackData {
   UpdateEngineCallbackData()
       : proxy(new dbus::Proxy(dbus::GetSystemBusConnection(),
-                              kUpdateEngineServiceName,
-                              kUpdateEngineServicePath,
-                              kUpdateEngineServiceInterface)) {}
+                              update_engine::kUpdateEngineServiceName,
+                              update_engine::kUpdateEngineServicePath,
+                              update_engine::kUpdateEngineInterface)) {}
   scoped_ptr<dbus::Proxy> proxy;
 };
 
