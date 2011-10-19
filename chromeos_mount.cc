@@ -16,14 +16,12 @@
 #include <vector>
 
 #include "chromeos/dbus/dbus.h"
+#include "chromeos/dbus/service_constants.h"
 #include "chromeos/glib/object.h"
 #include "chromeos/string.h"
 #include "marshal.glibmarshal.h"
 
 namespace chromeos { // NOLINT
-
-const char* kCrosDisksInterface = "org.chromium.CrosDisks";
-const char* kCrosDisksPath = "/org/chromium/CrosDisks";
 
 const char* kDefaultMountOptions[] = {
     "rw",
@@ -37,22 +35,6 @@ const char* kDefaultUnmountOptions[] = {
     "force",
     NULL
 };
-
-// Relevant Device/Disk properties.
-const char kDeviceIsDrive[] = "DeviceIsDrive";
-const char kDevicePresentationHide[] = "DevicePresentationHide";
-const char kDeviceMountPaths[] = "DeviceMountPaths";
-const char kDeviceIsMediaAvailable[] = "DeviceIsMediaAvailable";
-const char kDeviceIsOnBootDevice[] = "DeviceIsOnBootDevice";
-const char kNativePath[] = "NativePath";
-const char kDeviceFile[] = "DeviceFile";
-const char kLabel[] = "IdLabel";
-const char kDriveModel[] = "DriveModel";
-const char kPartitionSlave[] = "PartitionSlave";
-const char kDriveIsRotational[] = "DriveIsRotational";
-const char kDeviceIsOpticalDisc[] = "DeviceIsOpticalDisc";
-const char kDeviceSize[] = "DeviceSize";
-const char kReadOnly[] = "DeviceIsReadOnly";
 
 namespace {  // NOLINT
 
@@ -121,34 +103,34 @@ struct DiskInfoImpl : public DiskInfo {
   }
 
   void InitializeFromProperties(const glib::ScopedHashTable& properties) {
-    properties.Retrieve(kDeviceIsDrive, &is_drive_);
-    properties.Retrieve(kReadOnly, &is_read_only_);
-    properties.Retrieve(kDevicePresentationHide, &is_hidden_);
-    properties.Retrieve(kDeviceIsMediaAvailable, &has_media_);
-    properties.Retrieve(kDeviceIsOnBootDevice, &on_boot_device_);
+    properties.Retrieve(cros_disks::kDeviceIsDrive, &is_drive_);
+    properties.Retrieve(cros_disks::kDeviceIsReadOnly, &is_read_only_);
+    properties.Retrieve(cros_disks::kDevicePresentationHide, &is_hidden_);
+    properties.Retrieve(cros_disks::kDeviceIsMediaAvailable, &has_media_);
+    properties.Retrieve(cros_disks::kDeviceIsOnBootDevice, &on_boot_device_);
 
     std::string path;
-    if (properties.Retrieve(kNativePath, &path))
+    if (properties.Retrieve(cros_disks::kNativePath, &path))
       system_path_ = NewStringCopy(path.c_str());
 
     std::string file_path_str;
-    if (properties.Retrieve(kDeviceFile, &file_path_str))
+    if (properties.Retrieve(cros_disks::kDeviceFile, &file_path_str))
       file_path_ = NewStringCopy(file_path_str.c_str());
 
     std::string drive_model_str;
-    if (properties.Retrieve(kDriveModel, &drive_model_str))
+    if (properties.Retrieve(cros_disks::kDriveModel, &drive_model_str))
       drive_model_ = NewStringCopy(drive_model_str.c_str());
 
     std::string  device_label_str;
-    if (properties.Retrieve(kLabel, &device_label_str))
+    if (properties.Retrieve(cros_disks::kIdLabel, &device_label_str))
       label_ = NewStringCopy(device_label_str.c_str());
 
     glib::Value size_gval;
-    if (properties.Retrieve(kDeviceSize, &size_gval))
+    if (properties.Retrieve(cros_disks::kDeviceSize, &size_gval))
       total_size_ = static_cast<uint64>(::g_value_get_uint64(&size_gval));
 
     glib::Value value;
-    if (properties.Retrieve(kDeviceMountPaths, &value)) {
+    if (properties.Retrieve(cros_disks::kDeviceMountPaths, &value)) {
       char** paths = reinterpret_cast<char**>(g_value_get_boxed(&value));
       if (paths[0])
         mount_path_ = NewStringCopy(paths[0]);
@@ -156,8 +138,8 @@ struct DiskInfoImpl : public DiskInfo {
 
     bool is_rotational;
     bool is_optical;
-    if (properties.Retrieve(kDriveIsRotational, &is_rotational))
-      if (properties.Retrieve(kDeviceIsOpticalDisc, &is_optical))
+    if (properties.Retrieve(cros_disks::kDriveIsRotational, &is_rotational))
+      if (properties.Retrieve(cros_disks::kDeviceIsOpticalDisc, &is_optical))
         device_type_ = GetDeviceType(is_optical, is_rotational);
   }
 
@@ -183,8 +165,8 @@ struct MountCallbackData {
                     const char* device_path,
                     MountType type) :
       proxy(new dbus::Proxy(dbus::GetSystemBusConnection(),
-                            kCrosDisksInterface,
-                            kCrosDisksPath,
+                            cros_disks::kCrosDisksServiceName,
+                            cros_disks::kCrosDisksServicePath,
                             interface)),
       interface_name(interface),
       callback_device_path(device_path),
@@ -291,10 +273,10 @@ void MountPathAsync(const char* source_path,
                     void* object) {
   MountRequestCallbackData<MountCompletedMonitor>* cb_data =
       new MountRequestCallbackData<MountCompletedMonitor>(
-          kCrosDisksInterface, source_path, type, callback, object);
+          cros_disks::kCrosDisksInterface, source_path, type, callback, object);
   DBusGProxyCall* call_id =
       ::dbus_g_proxy_begin_call(cb_data->proxy->gproxy(),
-                                "Mount",
+                                cros_disks::kMount,
                                 &MountRequestNotify,
                                 cb_data,
                                 &DeleteMountCallbackData<MountCompletedMonitor>,
@@ -314,12 +296,12 @@ void UnmountPathAsync(const char* device_path,
                       void* object) {
   MountRequestCallbackData<UnmountRequestCallback>* cb_data =
       new MountRequestCallbackData<UnmountRequestCallback>(
-          kCrosDisksInterface, device_path, MOUNT_TYPE_INVALID, callback,
-          object);
+          cros_disks::kCrosDisksInterface, device_path, MOUNT_TYPE_INVALID,
+          callback, object);
   DBusGProxyCall* call_id =
       ::dbus_g_proxy_begin_call(
           cb_data->proxy->gproxy(),
-          "Unmount",
+          cros_disks::kUnmount,
           &UnmountRequestNotify,
           cb_data,
           &DeleteMountCallbackData<UnmountRequestCallback>,
@@ -382,11 +364,11 @@ void GetDiskPropertiesAsync(const char* device_path,
                             void* object) {
   MountRequestCallbackData<GetDiskPropertiesCallback>* cb_data =
       new MountRequestCallbackData<GetDiskPropertiesCallback>(
-          kCrosDisksInterface, device_path, MOUNT_TYPE_INVALID, callback,
-          object);
+          cros_disks::kCrosDisksInterface, device_path, MOUNT_TYPE_INVALID,
+          callback, object);
   DBusGProxyCall* call_id =
       ::dbus_g_proxy_begin_call(cb_data->proxy->gproxy(),
-          "GetDeviceProperties",
+          cros_disks::kGetDeviceProperties,
           &GetDiskPropertiesNotify,
           cb_data,
           &DeleteMountCallbackData<GetDiskPropertiesCallback>,
@@ -444,11 +426,11 @@ void FormatDeviceAsync(const char* device_path, const char* filesystem,
                        void* object) {
   MountRequestCallbackData<FormatRequestCallback>* cb_data =
       new MountRequestCallbackData<FormatRequestCallback>(
-          kCrosDisksInterface, device_path, MOUNT_TYPE_INVALID, callback,
-          object);
+          cros_disks::kCrosDisksInterface, device_path, MOUNT_TYPE_INVALID,
+          callback, object);
   DBusGProxyCall* call_id =
       ::dbus_g_proxy_begin_call(cb_data->proxy->gproxy(),
-                                "FormatDevice",
+                                cros_disks::kFormatDevice,
                                 &FormatRequestNotify,
                                 cb_data,
                                 &DeleteMountCallbackData<FormatRequestCallback>,
@@ -518,11 +500,11 @@ void RequestMountInfoAsync(RequestMountInfoCallback callback,
                            void* object) {
   MountRequestCallbackData<RequestMountInfoCallback>* cb_data =
       new MountRequestCallbackData<RequestMountInfoCallback>(
-          kCrosDisksInterface, "", MOUNT_TYPE_INVALID, callback,
+          cros_disks::kCrosDisksInterface, "", MOUNT_TYPE_INVALID, callback,
           object);
   DBusGProxyCall* call_id =
       ::dbus_g_proxy_begin_call(cb_data->proxy->gproxy(),
-            "EnumerateAutoMountableDevices",
+            cros_disks::kEnumerateAutoMountableDevices,
             RequestMountInfoNotify,
             cb_data,
             &DeleteMountCallbackData<RequestMountInfoCallback>,
@@ -661,9 +643,9 @@ MountEventConnection ChromeOSMonitorAllMountEvents(
     void* object) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy mount(bus,
-                    kCrosDisksInterface,
-                    kCrosDisksPath,
-                    kCrosDisksInterface);
+                    cros_disks::kCrosDisksServiceName,
+                    cros_disks::kCrosDisksServicePath,
+                    cros_disks::kCrosDisksInterface);
   ::dbus_g_object_register_marshaller(marshal_VOID__UINT_STRING_UINT_STRING,
                                       G_TYPE_NONE,
                                       G_TYPE_UINT,
