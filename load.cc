@@ -17,7 +17,6 @@
 #include "chromeos_power.h"  // NOLINT
 #include "chromeos_resume.h"  // NOLINT
 #include "chromeos_screen_lock.h"  // NOLINT
-#include "chromeos_speech_synthesis.h"  // NOLINT
 #include "chromeos_update_engine.h"  // NOLINT
 
 namespace chromeos {  // NOLINT //
@@ -276,13 +275,6 @@ DECL_FUNC_2(RequestUpdateCheck, void, UpdateCallback, void*);
 DECL_FUNC_1(SetUpdateTrack, void, const std::string&);
 DECL_FUNC_2(RequestUpdateTrack, void, UpdateTrackCallback, void*);
 
-// Speech Synthesis
-DECL_FUNC_1(Speak, bool, const char*);
-DECL_FUNC_1(SetSpeakProperties, bool, const char*);
-DECL_FUNC_0(StopSpeaking, bool);
-DECL_FUNC_0(IsSpeaking, bool);
-DECL_FUNC_1(InitTts, void, InitStatusCallback);
-
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
 // Initializes the variable by looking up the function by |name|.
@@ -470,13 +462,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RequestUpdateCheck);
   INIT_FUNC(SetUpdateTrack);
   INIT_FUNC(RequestUpdateTrack);
-
-  // Speech Synthesis
-  INIT_FUNC(Speak);
-  INIT_FUNC(SetSpeakProperties);
-  INIT_FUNC(StopSpeaking);
-  INIT_FUNC(IsSpeaking);
-  INIT_FUNC(InitTts);
 
   return error_string.empty();
 }

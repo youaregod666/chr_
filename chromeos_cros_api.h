@@ -303,12 +303,13 @@
 //      RestartEntd, RetrievePolicy, StartSession, StopSession,
 //      StorePolicy, DecreaseScreenBrightness, IncreaseScreenBrightness,
 //      MonitorBrightnessV2, DisconnectBrightness
+// 177: Deprecated speech synthesis library.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 173,
-  kCrosAPIVersion = 176
+  kCrosAPIVersion = 177
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
