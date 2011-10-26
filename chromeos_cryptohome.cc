@@ -682,6 +682,7 @@ void ChromeOSCryptohomeTpmClearStoredPassword() {
   }
 }
 
+// TODO(ellyjones): Remove this. crosbug.com/22120
 extern "C"
 bool ChromeOSCryptohomePkcs11IsTpmTokenReady() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -708,6 +709,35 @@ bool ChromeOSCryptohomePkcs11IsTpmTokenReady() {
 }
 
 extern "C"
+bool ChromeOSCryptohomePkcs11IsTpmTokenReadyForUser(const std::string& user) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gboolean ready = FALSE;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomePkcs11IsTpmTokenReadyForUser,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           user.c_str(),
+                           G_TYPE_INVALID,
+                           G_TYPE_BOOLEAN,
+                           &ready,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << cryptohome::kCryptohomePkcs11IsTpmTokenReadyForUser
+                 << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+
+  }
+  return ready;
+}
+
+// TODO(ellyjones): Remove this. crosbug.com/22120
+extern "C"
 void ChromeOSCryptohomePkcs11GetTpmTokenInfo(std::string* label,
                                              std::string* user_pin) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -722,6 +752,46 @@ void ChromeOSCryptohomePkcs11GetTpmTokenInfo(std::string* label,
   if (!::dbus_g_proxy_call(proxy.gproxy(),
                            cryptohome::kCryptohomePkcs11GetTpmTokenInfo,
                            &Resetter(&error).lvalue(),
+                           G_TYPE_INVALID,
+                           G_TYPE_STRING,
+                           &local_label,
+                           G_TYPE_STRING,
+                           &local_user_pin,
+                           G_TYPE_INVALID)) {
+
+    LOG(WARNING) << cryptohome::kCryptohomePkcs11GetTpmTokenInfo << " failed: "
+                 << (error->message ? error->message : "Unknown Error.");
+
+  }
+
+  if (local_label) {
+    *label = local_label;
+    g_free(local_label);
+  }
+  if (local_user_pin) {
+    *user_pin = local_user_pin;
+    g_free(local_user_pin);
+  }
+}
+
+extern "C"
+void ChromeOSCryptohomePkcs11GetTpmTokenInfoForUser(const std::string& user,
+                                                    std::string* label,
+                                                    std::string* user_pin) {
+  dbus::BusConnection bus = dbus::GetSystemBusConnection();
+  dbus::Proxy proxy(bus,
+                    cryptohome::kCryptohomeServiceName,
+                    cryptohome::kCryptohomeServicePath,
+                    cryptohome::kCryptohomeInterface);
+  gchar* local_label = NULL;
+  gchar* local_user_pin = NULL;
+  glib::ScopedError error;
+
+  if (!::dbus_g_proxy_call(proxy.gproxy(),
+                           cryptohome::kCryptohomePkcs11GetTpmTokenInfoForUser,
+                           &Resetter(&error).lvalue(),
+                           G_TYPE_STRING,
+                           user.c_str(),
                            G_TYPE_INVALID,
                            G_TYPE_STRING,
                            &local_label,

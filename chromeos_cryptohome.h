@@ -69,6 +69,10 @@ extern void (*CryptohomeTpmClearStoredPassword)();
 extern void (*CryptohomePkcs11GetTpmTokenInfo)(std::string* label,
                                                std::string* user_pin);
 extern bool (*CryptohomePkcs11IsTpmTokenReady)();
+extern void (*CryptohomePkcs11GetTpmTokenInfoForUser)(const std::string& user,
+                                                      std::string* label,
+                                                      std::string* user_pin);
+extern bool (*CryptohomePkcs11IsTpmTokenReadyForUser)(const std::string& user);
 extern bool (*CryptohomeGetStatusString)(std::string* status);
 extern bool (*CryptohomeInstallAttributesGet)(const char* name, char** value);
 extern bool (*CryptohomeInstallAttributesSet)(const char* name,
