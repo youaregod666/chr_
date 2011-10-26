@@ -1570,6 +1570,36 @@ void ChromeOSDeleteServiceFromProfile(const char* profile_path,
   }
 }
 
+extern "C"
+void ChromeOSConfigureService(const char* identifier,
+                              const GHashTable* properties,
+                              NetworkActionCallback callback,
+                              void* object) {
+  NetworkActionCallbackData* cb_data = new NetworkActionCallbackData(
+      kFlimflamManagerInterface,
+      kFlimflamServicePath,
+      identifier,
+      callback, object);
+
+  DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
+      cb_data->proxy->gproxy(),
+      // TODO(stevenjb): Replace with kConfigureServiceFunction once supported.
+      kConfigureWifiServiceFunction,
+      &NetworkOperationNotify,
+      cb_data,
+      &DeleteFlimflamCallbackData,
+      ::dbus_g_type_get_map("GHashTable", G_TYPE_STRING, G_TYPE_VALUE),
+      properties,
+      G_TYPE_INVALID);
+  if (!call_id) {
+    LOG(ERROR) << "NULL call_id for: " << kFlimflamManagerInterface
+               << "." << kConfigureWifiServiceFunction;
+    callback(object, identifier, NETWORK_METHOD_ERROR_LOCAL,
+             "dbus: NULL call_id");
+    delete cb_data;
+  }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Cashew services
 

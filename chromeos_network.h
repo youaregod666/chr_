@@ -406,6 +406,15 @@ extern DeviceNetworkList* (*GetDeviceNetworkList)();
 // and Chrome.
 extern void (*FreeDeviceNetworkList)(DeviceNetworkList* network_list);
 
+// Configures the network service specified by |properties|.
+// |identifier| can be the service path, guid, or any other identifier
+// specified by the calling code; it is ignored by libcros and flimflam,
+// except to pass it back in |callback| as |path|.
+extern void (*ConfigureService)(const char* identifier,
+                                const GHashTable* properties,
+                                NetworkActionCallback callback,
+                                void* object);
+
 }  // namespace chromeos
 
 #endif  // CHROMEOS_NETWORK_H_

@@ -203,6 +203,8 @@ DECL_FUNC_1(RemoveIPConfig, bool, IPConfig*);
 DECL_FUNC_1(FreeIPConfigStatus, void, IPConfigStatus*);
 DECL_FUNC_0(GetDeviceNetworkList, DeviceNetworkList*);
 DECL_FUNC_1(FreeDeviceNetworkList, void, DeviceNetworkList*);
+DECL_FUNC_4(ConfigureService, void, const char*, const GHashTable*,
+            NetworkActionCallback, void*);
 
 // Deprecated (in chromeos_network_deprecated):
 DECL_FUNC_2(GetWifiService, ServiceInfo*, const char*, ConnectionSecurity);
@@ -401,6 +403,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(FreeIPConfigStatus);
   INIT_FUNC(GetDeviceNetworkList);
   INIT_FUNC(FreeDeviceNetworkList);
+  INIT_FUNC(ConfigureService);
 // Deprecated (in chromeos_network_deprecated):
   INIT_FUNC(GetWifiService);
   INIT_FUNC(ConfigureWifiService);

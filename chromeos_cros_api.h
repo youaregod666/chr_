@@ -312,12 +312,13 @@
 //      StorePolicy, DecreaseScreenBrightness, IncreaseScreenBrightness,
 //      MonitorBrightnessV2, DisconnectBrightness, Speak,
 //      SetSpeakProperties, StopSpeaking, IsSpeaking, InitTts.
+// 180: Added ConfigureService to network API
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 177,
-  kCrosAPIVersion = 179
+  kCrosAPIVersion = 180
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
