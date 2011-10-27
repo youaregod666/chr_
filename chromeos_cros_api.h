@@ -306,12 +306,18 @@
 // 177: Deprecated speech synthesis library.
 // 178: Added CryptohomePkcs11IsTpmTokenReadyForUser,
 //      CryptohomePkcs11GetTpmTokenInfoForUser.
+// 179: Removed MonitorSession, DisconnectSession,
+//      EmitLoginPromptReady, EmitLoginPromptVisible, RestartJob,
+//      RestartEntd, RetrievePolicy, StartSession, StopSession,
+//      StorePolicy, DecreaseScreenBrightness, IncreaseScreenBrightness,
+//      MonitorBrightnessV2, DisconnectBrightness, Speak,
+//      SetSpeakProperties, StopSpeaking, IsSpeaking, InitTts.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 173,
-  kCrosAPIVersion = 178
+  kCrosAPIMinVersion = 177,
+  kCrosAPIVersion = 179
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

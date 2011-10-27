@@ -65,18 +65,14 @@ base_env.Append(CCFLAGS=Split('-ggdb -fPIC -fno-exceptions -Wall -Werror'))
 base_env.Append(LINKFLAGS=Split('-fPIC'))
 
 SOURCES = Split('''\
-  chromeos_brightness.cc
   chromeos_cryptohome.cc
   chromeos_imageburn.cc
-  chromeos_login.cc
-  chromeos_login_helpers.cc
   chromeos_mount.cc
   chromeos_network.cc
   chromeos_network_deprecated.cc
   chromeos_power.cc
   chromeos_resume.cc
   chromeos_screen_lock.cc
-  chromeos_speech_synthesis.cc
   chromeos_update_engine.cc
   marshal.glibmarshal.c
   version_check.cc
@@ -117,17 +113,6 @@ env_network_monitor.Append(LIBS=['dbus-glib-1'])
 env_load = base_env.Clone()
 env_load.ParseConfig('%s --cflags --libs dbus-glib-1' % env['ENV']['PKG_CONFIG'])
 Load = env_load.Object('load.cc')
-
-# Tests that do not require libcros.so. The ebuild script for libcros
-# automatically builds and runs the tests (libcros_unittests) if FEATURES="test"
-# is set.
-unittests = [
-  env_gtest_main.Program('libcros_unittests',
-                         ['chromeos_login.cc',
-                          'chromeos_login_helpers.cc']),
-]
-unittest_alias = Alias('unittest', unittests)
-AlwaysBuild(unittest_alias)
 
 # Tests that do require libcros.so.
 tests = [
