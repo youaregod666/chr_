@@ -313,12 +313,15 @@
 //      MonitorBrightnessV2, DisconnectBrightness, Speak,
 //      SetSpeakProperties, StopSpeaking, IsSpeaking, InitTts.
 // 180: Added ConfigureService to network API
+// 181: Deprecated mount functions (MountSourcePath, UnmountMountPoint,
+//      GetDiskProperties, FormatDevice, RequestMountInfo,
+//      MonitorAllMountEvents, DisconnectMountEventMonitor).
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 177,
-  kCrosAPIVersion = 180
+  kCrosAPIVersion = 181
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

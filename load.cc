@@ -11,7 +11,6 @@
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_cryptohome.h" // NOLINT
 #include "chromeos_imageburn.h"  //NOLINT
-#include "chromeos_mount.h"  // NOLINT
 #include "chromeos_network.h"  // NOLINT
 #include "chromeos_network_deprecated.h"  // NOLINT
 #include "chromeos_power.h"  // NOLINT
@@ -121,22 +120,6 @@ DECL_FUNC_0(RequestRestart, void);
 DECL_FUNC_0(RequestShutdown, void);
 DECL_FUNC_2(MonitorResume, ResumeConnection, ResumeMonitor, void*);
 DECL_FUNC_1(DisconnectResume, void, ResumeConnection);
-
-// Mount
-DECL_FUNC_5(MountSourcePath, void, const char*, MountType,
-            const MountPathOptions&, MountCompletedMonitor, void*);
-DECL_FUNC_3(UnmountMountPoint, void,
-            const char*, UnmountRequestCallback, void*);
-DECL_FUNC_3(GetDiskProperties, void,
-            const char*, GetDiskPropertiesCallback, void*);
-DECL_FUNC_4(FormatDevice, void,
-            const char*, const char*, FormatRequestCallback, void*);
-DECL_FUNC_2(RequestMountInfo, void,
-            RequestMountInfoCallback, void*);
-DECL_FUNC_3(MonitorAllMountEvents, MountEventConnection,
-            MountEventMonitor, MountCompletedMonitor, void*);
-DECL_FUNC_1(DisconnectMountEventMonitor, void, MountEventConnection);
-
 
 // Networking
 DECL_FUNC_2(ActivateCellularModem, bool, const char*, const char*);
@@ -348,15 +331,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(RequestShutdown);
   INIT_FUNC(MonitorResume);
   INIT_FUNC(DisconnectResume);
-
-  // Mount
-  INIT_FUNC(MountSourcePath);
-  INIT_FUNC(UnmountMountPoint);
-  INIT_FUNC(GetDiskProperties);
-  INIT_FUNC(FormatDevice);
-  INIT_FUNC(RequestMountInfo);
-  INIT_FUNC(MonitorAllMountEvents);
-  INIT_FUNC(DisconnectMountEventMonitor);
 
   // Networking
   INIT_FUNC(ActivateCellularModem);

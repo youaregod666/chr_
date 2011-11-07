@@ -109,17 +109,6 @@ typedef void(*MountCompletedMonitor)(void*,  // Callback data passed by client.
                                      MountType,  // Type of the mount.
                                      const char*);  // Mount path.
 
-// Processes a callback from a d-bus signal by finding the path of the
-// DeviceKit Disks service that changed and sending the details along to the
-// next handler in the chain as an instance of MountStatus.
-extern MountEventConnection (*MonitorAllMountEvents)(
-    MountEventMonitor monitor,
-    MountCompletedMonitor mount_complete_monitor,
-    void*);
-
-// Disconnects a listener from the mounting events.
-extern void (*DisconnectMountEventMonitor)(MountEventConnection connection);
-
 // Callback for asynchronous unmount requests.
 typedef void (*UnmountRequestCallback)(void* object,
                                        const char* path,
@@ -148,46 +137,6 @@ typedef void (*RequestMountInfoCallback)(void* object,
                                          const char* error_message);
 
 typedef std::vector<std::pair<const char*, const char*> > MountPathOptions;
-
-// Initiates mount operation for a given |source_path|. When the operation
-// completes, the callback will be invoked with appropriate |error| parameter
-// indicating operation's outcome.
-extern void (*MountSourcePath)(const char* source_path,
-                               MountType mount_type,
-                               const MountPathOptions& options,
-                               MountCompletedMonitor callback,
-                               void* object);
-
-// Initiates unmount operation for a given |path|. When the operation
-// completes, the callback will be invoked with appropriate |error| parameter
-// indicating operation's outcome.
-// Path may be either mount_path or source_path.
-extern void (*UnmountMountPoint)(const char* path,
-                                 UnmountRequestCallback callback,
-                                 void* object);
-
-// Initiates retrieval of information about given |service_path| representing
-// disk drive.
-extern void (*GetDiskProperties)(const char* service_path,
-                                 GetDiskPropertiesCallback callback,
-                                 void* object);
-
-// Initiates formatting of a device using given filesystem.
-// Device path is simple /dev/* file represeting the device
-// For supported filesystems check the format-manager.cc
-// example: device_path: "/dev/sdb1", filesystem: "vfat"
-extern void (*FormatDevice)(const char* device_path,
-                            const char* filesystem,
-                            FormatRequestCallback callback,
-                            void* object);
-
-// Initiates retrieval of information about all mounted disks. Please note that
-// |callback| will be called once for each disk found on the system.
-// This routine will skip all drives that are mounted form the device that
-// system was booted from.
-extern void (*RequestMountInfo)(RequestMountInfoCallback callback,
-                                void* object);
-
 }  // namespace chromeos
 
 #endif  // CHROMEOS_MOUNT_H_
