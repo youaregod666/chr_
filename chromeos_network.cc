@@ -1583,8 +1583,7 @@ void ChromeOSConfigureService(const char* identifier,
 
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
-      // TODO(stevenjb): Replace with kConfigureServiceFunction once supported.
-      kConfigureWifiServiceFunction,
+      kConfigureServiceFunction,
       &NetworkOperationNotify,
       cb_data,
       &DeleteFlimflamCallbackData,
