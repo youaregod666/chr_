@@ -1214,9 +1214,12 @@ void ChromeOSRequestVirtualNetworkProperties(
   // The actual value of Domain does not matter, so just use service_name.
   glib::Value value_vpn_domain(service_name);
   ::GHashTable* properties = scoped_properties.get();
-  ::g_hash_table_insert(properties, ::g_strdup(kNameProperty), &value_name);
-  ::g_hash_table_insert(properties, ::g_strdup(kHostProperty), &value_host);
-  ::g_hash_table_insert(properties, ::g_strdup(kTypeProperty), &value_type);
+  ::g_hash_table_insert(properties, ::g_strdup(kProviderNameProperty),
+                        &value_name);
+  ::g_hash_table_insert(properties, ::g_strdup(kProviderHostProperty),
+                        &value_host);
+  ::g_hash_table_insert(properties, ::g_strdup(kProviderTypeProperty),
+                        &value_type);
   ::g_hash_table_insert(properties, ::g_strdup(kVPNDomainProperty),
                         &value_vpn_domain);
 
