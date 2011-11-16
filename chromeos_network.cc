@@ -1208,18 +1208,21 @@ void ChromeOSRequestVirtualNetworkProperties(
       glib::ScopedHashTable(::g_hash_table_new_full(
           ::g_str_hash, ::g_str_equal, ::g_free, NULL));
 
-  glib::Value value_name(service_name);
-  glib::Value value_host(server_hostname);
-  glib::Value value_type(provider_type);
+  glib::Value value_type("vpn");
+  glib::Value value_provider_name(service_name);
+  glib::Value value_provider_host(server_hostname);
+  glib::Value value_provider_type(provider_type);
   // The actual value of Domain does not matter, so just use service_name.
   glib::Value value_vpn_domain(service_name);
   ::GHashTable* properties = scoped_properties.get();
-  ::g_hash_table_insert(properties, ::g_strdup(kProviderNameProperty),
-                        &value_name);
-  ::g_hash_table_insert(properties, ::g_strdup(kProviderHostProperty),
-                        &value_host);
-  ::g_hash_table_insert(properties, ::g_strdup(kProviderTypeProperty),
+  ::g_hash_table_insert(properties, ::g_strdup(kTypeProperty),
                         &value_type);
+  ::g_hash_table_insert(properties, ::g_strdup(kProviderNameProperty),
+                        &value_provider_name);
+  ::g_hash_table_insert(properties, ::g_strdup(kProviderHostProperty),
+                        &value_provider_host);
+  ::g_hash_table_insert(properties, ::g_strdup(kProviderTypeProperty),
+                        &value_provider_type);
   ::g_hash_table_insert(properties, ::g_strdup(kVPNDomainProperty),
                         &value_vpn_domain);
 
@@ -1229,7 +1232,7 @@ void ChromeOSRequestVirtualNetworkProperties(
   // asynchronous call to GetPropertiesNotify which will then call |callback|.
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
-      kGetVPNServiceFunction,
+      kGetServiceFunction,
       &GetServiceGValueNotify,
       cb_data,
       &DeleteFlimflamCallbackData,
