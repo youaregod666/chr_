@@ -322,12 +322,16 @@
 // 183: Removed mount functions (MountSourcePath, UnmountMountPoint,
 //      GetDiskProperties, FormatDevice, RequestMountInfo,
 //      MonitorAllMountEvents, DisconnectMountEventMonitor) and monitor_mount.
+// 184: Deprecated CryptohomeCheckKey, CryptohomeMigrateKey,
+//      CryptohomeRemove, CryptohomeMountAllowFail, CryptohomeMountGuest,
+//      CryptohomeUnmount, CryptohomeAsyncDoAutomaticFreeDiskSpaceControl,
+//      CryptohomeInstallAttributesCount, CryptohomeInstallAttributesIsSecure.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 181,
-  kCrosAPIVersion = 183
+  kCrosAPIVersion = 184
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

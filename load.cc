@@ -204,25 +204,18 @@ DECL_FUNC_0(NotifyScreenUnlockRequested, void);
 DECL_FUNC_0(NotifyScreenUnlockCompleted, void);
 
 // Cryptohome
-DECL_FUNC_2(CryptohomeCheckKey, bool, const char*, const char*);
 DECL_FUNC_2(CryptohomeAsyncCheckKey, int, const char*, const char*);
-DECL_FUNC_3(CryptohomeMigrateKey, bool, const char*, const char*, const char*);
 DECL_FUNC_3(CryptohomeAsyncMigrateKey,
             int,
             const char*,
             const char*,
             const char*);
-DECL_FUNC_1(CryptohomeRemove, bool, const char*);
 DECL_FUNC_1(CryptohomeAsyncRemove, int, const char*);
 DECL_FUNC_2(CryptohomeGetSystemSaltSafe, bool, char**, int*);
 DECL_FUNC_0(CryptohomeIsMounted, bool);
-DECL_FUNC_3(CryptohomeMountAllowFail, bool, const char*, const char*, int*);
 DECL_FUNC_5(CryptohomeAsyncMountSafe, int, const char*, const char*, bool, bool,
             const char**);
-DECL_FUNC_1(CryptohomeMountGuest, bool, int*);
 DECL_FUNC_0(CryptohomeAsyncMountGuest, int);
-DECL_FUNC_0(CryptohomeUnmount, bool);
-DECL_FUNC_0(CryptohomeAsyncDoAutomaticFreeDiskSpaceControl, int);
 DECL_FUNC_1(CryptohomeAsyncSetOwnerUser, int, const char*);
 DECL_FUNC_0(CryptohomeTpmIsReady, bool);
 DECL_FUNC_0(CryptohomeTpmIsEnabled, bool);
@@ -239,10 +232,8 @@ DECL_FUNC_3(CryptohomePkcs11GetTpmTokenInfoForUser, void, const std::string&,
 DECL_FUNC_1(CryptohomeGetStatusString, bool, std::string*);
 DECL_FUNC_2(CryptohomeInstallAttributesGet, bool, const char*, char**);
 DECL_FUNC_2(CryptohomeInstallAttributesSet, bool, const char*, const char*);
-DECL_FUNC_0(CryptohomeInstallAttributesCount, int);
 DECL_FUNC_0(CryptohomeInstallAttributesFinalize, bool);
 DECL_FUNC_0(CryptohomeInstallAttributesIsReady, bool);
-DECL_FUNC_0(CryptohomeInstallAttributesIsSecure, bool);
 DECL_FUNC_0(CryptohomeInstallAttributesIsInvalid, bool);
 DECL_FUNC_0(CryptohomeInstallAttributesIsFirstInstall, bool);
 DECL_FUNC_1(CryptohomeFreeString, void, char*);
@@ -382,20 +373,13 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(NotifyScreenUnlockCompleted);
 
   // Cryptohome
-  INIT_FUNC(CryptohomeCheckKey);
   INIT_FUNC(CryptohomeAsyncCheckKey);
-  INIT_FUNC(CryptohomeMigrateKey);
   INIT_FUNC(CryptohomeAsyncMigrateKey);
-  INIT_FUNC(CryptohomeRemove);
   INIT_FUNC(CryptohomeAsyncRemove);
   INIT_FUNC(CryptohomeGetSystemSaltSafe);
   INIT_FUNC(CryptohomeIsMounted);
-  INIT_FUNC(CryptohomeMountAllowFail);
   INIT_FUNC(CryptohomeAsyncMountSafe);
-  INIT_FUNC(CryptohomeMountGuest);
   INIT_FUNC(CryptohomeAsyncMountGuest);
-  INIT_FUNC(CryptohomeUnmount);
-  INIT_FUNC(CryptohomeAsyncDoAutomaticFreeDiskSpaceControl);
   INIT_FUNC(CryptohomeAsyncSetOwnerUser);
   INIT_FUNC(CryptohomeTpmIsReady);
   INIT_FUNC(CryptohomeTpmIsEnabled);
@@ -411,10 +395,8 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(CryptohomeGetStatusString);
   INIT_FUNC(CryptohomeInstallAttributesGet);
   INIT_FUNC(CryptohomeInstallAttributesSet);
-  INIT_FUNC(CryptohomeInstallAttributesCount);
   INIT_FUNC(CryptohomeInstallAttributesFinalize);
   INIT_FUNC(CryptohomeInstallAttributesIsReady);
-  INIT_FUNC(CryptohomeInstallAttributesIsSecure);
   INIT_FUNC(CryptohomeInstallAttributesIsInvalid);
   INIT_FUNC(CryptohomeInstallAttributesIsFirstInstall);
 

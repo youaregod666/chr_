@@ -13,6 +13,7 @@
 
 namespace chromeos {  // NOLINT
 
+// TODO(satorux): Remove this.
 extern "C"
 bool ChromeOSCryptohomeCheckKey(const char* user_email, const char* key) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -67,6 +68,7 @@ int ChromeOSCryptohomeAsyncCheckKey(const char* user_email, const char* key) {
   return async_call_id;
 }
 
+// TODO(satorux): Remove this.
 extern "C"
 bool ChromeOSCryptohomeMigrateKey(const char* user_email, const char* from_key,
                                   const char* to_key) {
@@ -128,6 +130,7 @@ int ChromeOSCryptohomeAsyncMigrateKey(const char* user_email,
   return async_call_id;
 }
 
+// TODO(satorux): Remove this.
 extern "C"
 bool ChromeOSCryptohomeRemove(const char* user_email) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -374,6 +377,7 @@ int ChromeOSCryptohomeAsyncMountSafe(
   return async_call_id;
 }
 
+// TODO(satorux): Remove this.
 extern "C"
 bool ChromeOSCryptohomeMountAllowFail(const char* user_email,
     const char* key,
@@ -382,6 +386,7 @@ bool ChromeOSCryptohomeMountAllowFail(const char* user_email,
                          std::vector<std::string>(), mount_error);
 }
 
+// TODO(satorux): Remove this.
 extern "C"
 bool ChromeOSCryptohomeMountGuest(int* mount_error) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -434,6 +439,7 @@ int ChromeOSCryptohomeAsyncMountGuest() {
   return async_call_id;
 }
 
+// TODO(satorux): Remove this.
 extern "C"
 bool ChromeOSCryptohomeUnmount() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -459,6 +465,7 @@ bool ChromeOSCryptohomeUnmount() {
   return done;
 }
 
+// TODO(satorux): Remove this.
 extern "C"
 int ChromeOSCryptohomeAsyncDoAutomaticFreeDiskSpaceControl() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -943,6 +950,7 @@ bool ChromeOSCryptohomeInstallAttributesSet(const char* name,
   return done;
 }
 
+// TODO(satorux): Remove this.
 extern "C"
 int ChromeOSCryptohomeInstallAttributesCount() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -1002,6 +1010,7 @@ bool ChromeOSCryptohomeInstallAttributesIsReady() {
       cryptohome::kCryptohomeInstallAttributesIsReady);
 }
 
+// TODO(satorux): Remove this.
 extern "C"
 bool ChromeOSCryptohomeInstallAttributesIsSecure() {
   return CallCryptohomeBoolFunction(

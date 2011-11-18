@@ -31,33 +31,21 @@ const int kCryptohomeMountErrorTpmDefendLock = 1 << 4;
 const int kCryptohomeMountErrorUserDoesNotExist = 1 << 5;
 const int kCryptohomeMountErrorRecreated = 1 << 31;
 
-extern bool (*CryptohomeCheckKey)(const char* user_email,
-                                  const char* key);
 extern int (*CryptohomeAsyncCheckKey)(const char* user_email,
                                       const char* key);
-extern bool (*CryptohomeMigrateKey)(const char* user_email,
-                                    const char* from_key,
-                                    const char* to_key);
 extern int (*CryptohomeAsyncMigrateKey)(const char* user_email,
                                         const char* from_key,
                                         const char* to_key);
-extern bool (*CryptohomeRemove)(const char* user_email);
 extern int (*CryptohomeAsyncRemove)(const char* user_email);
 extern bool (*CryptohomeGetSystemSaltSafe)(char** salt, int* length);
 extern bool (*CryptohomeIsMounted)();
-extern bool (*CryptohomeMountAllowFail)(const char* user_email,
-                                        const char* key,
-                                        int* mount_error);
 extern int (*CryptohomeAsyncMountSafe)(
     const char* user_email,
     const char* key,
     bool create_if_missing,
     bool replace_tracked_subdirectories,
     const char** tracked_subdirectories);
-extern bool (*CryptohomeMountGuest)(int* mount_error);
 extern int (*CryptohomeAsyncMountGuest)();
-extern bool (*CryptohomeUnmount)();
-extern int (*CryptohomeAsyncDoAutomaticFreeDiskSpaceControl)();
 extern int (*CryptohomeAsyncSetOwnerUser)(const char* username);
 extern bool (*CryptohomeTpmIsReady)();
 extern bool (*CryptohomeTpmIsEnabled)();
@@ -77,10 +65,8 @@ extern bool (*CryptohomeGetStatusString)(std::string* status);
 extern bool (*CryptohomeInstallAttributesGet)(const char* name, char** value);
 extern bool (*CryptohomeInstallAttributesSet)(const char* name,
                                               const char* value);
-extern int (*CryptohomeInstallAttributesCount)();
 extern bool (*CryptohomeInstallAttributesFinalize)();
 extern bool (*CryptohomeInstallAttributesIsReady)();
-extern bool (*CryptohomeInstallAttributesIsSecure)();
 extern bool (*CryptohomeInstallAttributesIsInvalid)();
 extern bool (*CryptohomeInstallAttributesIsFirstInstall)();
 
