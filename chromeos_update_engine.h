@@ -54,22 +54,6 @@ class OpaqueUpdateStatusConnection;
 typedef OpaqueUpdateStatusConnection* UpdateStatusConnection;
 typedef void(*UpdateMonitor)(void*, const UpdateProgress&);
 
-// Register an UpdateMonitor callback.
-extern UpdateStatusConnection (*MonitorUpdateStatus)(UpdateMonitor monitor,
-                                                     void*);
-// Unregister an UpdateMonitor callback.
-extern void (*DisconnectUpdateProgress)(UpdateStatusConnection connection);
-
-// Tell UpdateEngine daemon to reboot the system if an update has been
-// downloaded and installed. Returns true on success.
-extern bool (*RebootIfUpdated)();
-
-// Asynchronous API.
-
-// Asynchronously poll UpdateEngine once for its state and call |callback|
-// with the result.
-extern void (*RequestUpdateStatus)(UpdateMonitor callback, void* user_data);
-
 // Asynchronously tell UpdateEngine daemon to check for an update.
 // If |callback| is non NULL, call with the result when the request completes.
 enum UpdateResult {
@@ -80,15 +64,7 @@ enum UpdateResult {
 typedef void (*UpdateCallback)(void* user_data,
                                UpdateResult result,
                                const char* error_msg);
-extern void (*RequestUpdateCheck)(UpdateCallback callback, void* user_data);
-// Set the release track (channel) asynchronously. |track| should look like
-// "beta-channel" or "dev-channel".
-extern void (*SetUpdateTrack)(const std::string& track);
-// Request the track and call |callback| with the track when complete.
-// On error, call |callback| with a NULL string.
 typedef void (*UpdateTrackCallback)(void* user_data, const char* track);
-extern void (*RequestUpdateTrack)(UpdateTrackCallback callback,
-                                  void* user_data);
 
 }  // namespace chromeos
 
