@@ -16,7 +16,6 @@
 #include "chromeos_power.h"  // NOLINT
 #include "chromeos_resume.h"  // NOLINT
 #include "chromeos_screen_lock.h"  // NOLINT
-#include "chromeos_update_engine.h"  // NOLINT
 
 namespace chromeos {  // NOLINT //
 
@@ -254,15 +253,6 @@ DECL_FUNC_2(MonitorBurnStatus, BurnStatusConnection, BurnMonitor, void*);
 DECL_FUNC_1(DisconnectBurnStatus, void, BurnStatusConnection);
 DECL_FUNC_4(RequestBurn, void, const char*, const char*, BurnMonitor, void*);
 
-// Update Engine (replacing Update library)
-DECL_FUNC_2(MonitorUpdateStatus, UpdateStatusConnection, UpdateMonitor, void*);
-DECL_FUNC_1(DisconnectUpdateProgress, void, UpdateStatusConnection);
-DECL_FUNC_0(RebootIfUpdated, bool);
-DECL_FUNC_2(RequestUpdateStatus, void, UpdateMonitor, void*);
-DECL_FUNC_2(RequestUpdateCheck, void, UpdateCallback, void*);
-DECL_FUNC_1(SetUpdateTrack, void, const std::string&);
-DECL_FUNC_2(RequestUpdateTrack, void, UpdateTrackCallback, void*);
-
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
 // Initializes the variable by looking up the function by |name|.
@@ -435,15 +425,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(MonitorBurnStatus);
   INIT_FUNC(DisconnectBurnStatus);
   INIT_FUNC(RequestBurn);
-
-  // Update Engine
-  INIT_FUNC(MonitorUpdateStatus);
-  INIT_FUNC(DisconnectUpdateProgress);
-  INIT_FUNC(RebootIfUpdated);
-  INIT_FUNC(RequestUpdateStatus);
-  INIT_FUNC(RequestUpdateCheck);
-  INIT_FUNC(SetUpdateTrack);
-  INIT_FUNC(RequestUpdateTrack);
 
   return error_string.empty();
 }
