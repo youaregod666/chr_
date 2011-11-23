@@ -319,12 +319,15 @@
 // 182: Deprecated MonitorUpdateStatus DisconnectUpdateProgress
 //      RebootIfUpdated RequestUpdateStatus RequestUpdateCheck
 //      SetUpdateTrack RequestUpdateTrack
+// 183: Removed mount functions (MountSourcePath, UnmountMountPoint,
+//      GetDiskProperties, FormatDevice, RequestMountInfo,
+//      MonitorAllMountEvents, DisconnectMountEventMonitor) and monitor_mount.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 177,
-  kCrosAPIVersion = 182
+  kCrosAPIMinVersion = 181,
+  kCrosAPIVersion = 183
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
