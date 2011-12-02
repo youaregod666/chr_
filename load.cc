@@ -13,9 +13,6 @@
 #include "chromeos_imageburn.h"  //NOLINT
 #include "chromeos_network.h"  // NOLINT
 #include "chromeos_network_deprecated.h"  // NOLINT
-#include "chromeos_power.h"  // NOLINT
-#include "chromeos_resume.h"  // NOLINT
-#include "chromeos_screen_lock.h"  // NOLINT
 
 namespace chromeos {  // NOLINT //
 
@@ -110,16 +107,6 @@ class TimerInst {
 // Version
 DECL_FUNC_1(CrosVersionCheck, bool, chromeos::CrosAPIVersion);
 
-// Power
-DECL_FUNC_2(MonitorPowerStatus, PowerStatusConnection, PowerMonitor, void*);
-DECL_FUNC_2(GetIdleTime, void, GetIdleTimeCallback, void*);
-DECL_FUNC_1(DisconnectPowerStatus, void, PowerStatusConnection);
-DECL_FUNC_1(EnableScreenLock, void, bool);
-DECL_FUNC_0(RequestRestart, void);
-DECL_FUNC_0(RequestShutdown, void);
-DECL_FUNC_2(MonitorResume, ResumeConnection, ResumeMonitor, void*);
-DECL_FUNC_1(DisconnectResume, void, ResumeConnection);
-
 // Networking
 DECL_FUNC_2(ActivateCellularModem, bool, const char*, const char*);
 DECL_FUNC_3(SetNetworkServicePropertyGValue, void, const char*, const char*,
@@ -193,15 +180,6 @@ DECL_FUNC_2(GetWifiService, ServiceInfo*, const char*, ConnectionSecurity);
 DECL_FUNC_5(ConfigureWifiService, bool, const char*, ConnectionSecurity,
             const char*, const char*, const char*);
 DECL_FUNC_1(FreeServiceInfo, void, ServiceInfo*);
-
-// Screen Lock
-DECL_FUNC_2(MonitorScreenLock,
-            ScreenLockConnection, ScreenLockMonitor, void*);
-DECL_FUNC_1(DisconnectScreenLock, void, ScreenLockConnection);
-DECL_FUNC_0(NotifyScreenLockCompleted, void);
-DECL_FUNC_0(NotifyScreenLockRequested, void);
-DECL_FUNC_0(NotifyScreenUnlockRequested, void);
-DECL_FUNC_0(NotifyScreenUnlockCompleted, void);
 
 // Cryptohome
 DECL_FUNC_2(CryptohomeAsyncCheckKey, int, const char*, const char*);
@@ -303,16 +281,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
     return false;
   }
 
-  // Power
-  INIT_FUNC(MonitorPowerStatus);
-  INIT_FUNC(GetIdleTime);
-  INIT_FUNC(DisconnectPowerStatus);
-  INIT_FUNC(EnableScreenLock);
-  INIT_FUNC(RequestRestart);
-  INIT_FUNC(RequestShutdown);
-  INIT_FUNC(MonitorResume);
-  INIT_FUNC(DisconnectResume);
-
   // Networking
   INIT_FUNC(ActivateCellularModem);
   INIT_FUNC(SetNetworkServicePropertyGValue);
@@ -363,14 +331,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(GetWifiService);
   INIT_FUNC(ConfigureWifiService);
   INIT_FUNC(FreeServiceInfo);
-
-  // Screen Lock
-  INIT_FUNC(MonitorScreenLock);
-  INIT_FUNC(DisconnectScreenLock);
-  INIT_FUNC(NotifyScreenLockCompleted);
-  INIT_FUNC(NotifyScreenLockRequested);
-  INIT_FUNC(NotifyScreenUnlockRequested);
-  INIT_FUNC(NotifyScreenUnlockCompleted);
 
   // Cryptohome
   INIT_FUNC(CryptohomeAsyncCheckKey);

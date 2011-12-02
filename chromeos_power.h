@@ -1,4 +1,4 @@
-// Copyright (c) 2009 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -46,21 +46,6 @@ struct PowerStatus {
 class OpaquePowerStatusConnection;
 typedef OpaquePowerStatusConnection* PowerStatusConnection;
 typedef void(*PowerMonitor)(void*, const PowerStatus&);
-
-extern PowerStatusConnection (*MonitorPowerStatus)(PowerMonitor monitor, void*);
-
-extern void (*GetIdleTime)(GetIdleTimeCallback callback,
-                           void* object);
-
-extern void (*DisconnectPowerStatus)(PowerStatusConnection connection);
-
-extern void (*EnableScreenLock)(bool enable);
-
-// Request restart of the system.
-extern void (*RequestRestart)();
-
-// Request shutdown of the system.
-extern void (*RequestShutdown)();
 
 }  // namespace chromeos
 

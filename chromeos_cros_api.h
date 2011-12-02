@@ -326,12 +326,17 @@
 //      CryptohomeRemove, CryptohomeMountAllowFail, CryptohomeMountGuest,
 //      CryptohomeUnmount, CryptohomeAsyncDoAutomaticFreeDiskSpaceControl,
 //      CryptohomeInstallAttributesCount, CryptohomeInstallAttributesIsSecure.
+// 185: Deprecated MonitorPowerStatus, GetIdleTime, DisconnectPowerStatus,
+//      EnableScreenLock, RequestRestart, RequestShutdown, MonitorResume,
+//      DisconnectResume, MonitorScreenLock, DisconnectScreenLock
+//      NotifyScreenLockCompleted, NotifyScreenLockRequested
+//      NotifyScreenUnlockRequested, NotifyScreenUnlockCompleted.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 181,
-  kCrosAPIVersion = 184
+  kCrosAPIVersion = 185
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
