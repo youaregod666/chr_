@@ -331,11 +331,14 @@
 //      DisconnectResume, MonitorScreenLock, DisconnectScreenLock
 //      NotifyScreenLockCompleted, NotifyScreenLockRequested
 //      NotifyScreenUnlockRequested, NotifyScreenUnlockCompleted.
+// 186: Removed MonitorUpdateStatus DisconnectUpdateProgress
+//      RebootIfUpdated RequestUpdateStatus RequestUpdateCheck
+//      SetUpdateTrack RequestUpdateTrack
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 181,
+  kCrosAPIMinVersion = 182,
   kCrosAPIVersion = 185
 };
 
