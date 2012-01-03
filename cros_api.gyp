@@ -10,9 +10,7 @@
         '../../build/linux/system.gyp:glib',
       ],
       'sources': [
-        'chromeos_power.h',
         'chromeos_network.h',
-        'chromeos_libcros_service.h',
         'load.cc',
       ],
       'include_dirs': [

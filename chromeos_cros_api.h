@@ -334,12 +334,17 @@
 // 186: Removed MonitorUpdateStatus DisconnectUpdateProgress
 //      RebootIfUpdated RequestUpdateStatus RequestUpdateCheck
 //      SetUpdateTrack RequestUpdateTrack
+// 187: Removed MonitorPowerStatus, GetIdleTime, DisconnectPowerStatus,
+//      EnableScreenLock, RequestRestart, RequestShutdown, MonitorResume,
+//      DisconnectResume, MonitorScreenLock, DisconnectScreenLock
+//      NotifyScreenLockCompleted, NotifyScreenLockRequested
+//      NotifyScreenUnlockRequested, NotifyScreenUnlockCompleted.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 182,
-  kCrosAPIVersion = 185
+  kCrosAPIMinVersion = 185,
+  kCrosAPIVersion = 187
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

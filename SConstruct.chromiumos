@@ -69,9 +69,6 @@ SOURCES = Split('''\
   chromeos_imageburn.cc
   chromeos_network.cc
   chromeos_network_deprecated.cc
-  chromeos_power.cc
-  chromeos_resume.cc
-  chromeos_screen_lock.cc
   marshal.glibmarshal.c
   version_check.cc
 ''')
@@ -122,7 +119,6 @@ tests = [
 #
 # env_network_monitor.Program('monitor_network', ['monitor_network.cc', Load]),
 # env_test.Program('cryptohome_drive', ['drive_cryptohome.cc', Load]),
-# env_test.Program('monitor_power', ['monitor_power.cc', Load]),
 # env_test.Program('network_property_test', ['network_property_test.cc', Load]),
 # env_test.Program('simlock_test', ['simlock_test.cc', Load]),
 ]
