@@ -12,7 +12,6 @@
 #include "chromeos_cryptohome.h" // NOLINT
 #include "chromeos_imageburn.h"  //NOLINT
 #include "chromeos_network.h"  // NOLINT
-#include "chromeos_network_deprecated.h"  // NOLINT
 
 namespace chromeos {  // NOLINT //
 
@@ -175,12 +174,6 @@ DECL_FUNC_1(FreeDeviceNetworkList, void, DeviceNetworkList*);
 DECL_FUNC_4(ConfigureService, void, const char*, const GHashTable*,
             NetworkActionCallback, void*);
 
-// Deprecated (in chromeos_network_deprecated):
-DECL_FUNC_2(GetWifiService, ServiceInfo*, const char*, ConnectionSecurity);
-DECL_FUNC_5(ConfigureWifiService, bool, const char*, ConnectionSecurity,
-            const char*, const char*, const char*);
-DECL_FUNC_1(FreeServiceInfo, void, ServiceInfo*);
-
 // Cryptohome
 DECL_FUNC_2(CryptohomeAsyncCheckKey, int, const char*, const char*);
 DECL_FUNC_3(CryptohomeAsyncMigrateKey,
@@ -327,10 +320,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(GetDeviceNetworkList);
   INIT_FUNC(FreeDeviceNetworkList);
   INIT_FUNC(ConfigureService);
-// Deprecated (in chromeos_network_deprecated):
-  INIT_FUNC(GetWifiService);
-  INIT_FUNC(ConfigureWifiService);
-  INIT_FUNC(FreeServiceInfo);
 
   // Cryptohome
   INIT_FUNC(CryptohomeAsyncCheckKey);

@@ -170,35 +170,6 @@ struct ServiceInfo {
   const char *password;
 };
 
-// Gets a ServiceInfo for a wifi service with |ssid| and |security|.
-// If an open network is not found, then it will create a hidden network and
-// return the ServiceInfo for that.
-// The ServiceInfo instance that is returned by this function MUST be
-// deleted with by calling FreeServiceInfo.
-//
-// Returns NULL on error.
-extern ServiceInfo* (*GetWifiService)(const char* ssid,
-                                      ConnectionSecurity security);
-
-// Set up the configuration for a wifi service with |ssid| and the
-// provided security parameters. If the ssid is currently known and
-// visible, the configuration will be applied to the existing service;
-// otherwise, the configuration will be saved for use when the network
-// is found.
-//
-// Returns false on failure and true on success.
-extern bool (*ConfigureWifiService)(const char* ssid,
-                                    ConnectionSecurity security,
-                                    const char* passphrase,
-                                    const char* identity,
-                                    const char* certpath);
-
-// Deletes a ServiceInfo type that was allocated in the ChromeOS dll. We need
-// to do this to safely pass data over the dll boundary between our .so and
-// Chrome.
-extern void (*FreeServiceInfo)(ServiceInfo* info);
-
-
 }  // namespace chromeos
 
 #endif  // CHROMEOS_NETWORK_DEPRECATED_H_
