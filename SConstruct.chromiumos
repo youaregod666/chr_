@@ -68,7 +68,6 @@ SOURCES = Split('''\
   chromeos_cryptohome.cc
   chromeos_imageburn.cc
   chromeos_network.cc
-  chromeos_network_deprecated.cc
   marshal.glibmarshal.c
   version_check.cc
 ''')

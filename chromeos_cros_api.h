@@ -340,12 +340,13 @@
 //      NotifyScreenLockCompleted, NotifyScreenLockRequested
 //      NotifyScreenUnlockRequested, NotifyScreenUnlockCompleted.
 // 188: Deprecated GetWifiService, ConfigureWifiService, FreeServiceInfo.
+// 189: Removed GetWifiService, ConfigureWifiService, FreeServiceInfo.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 185,
-  kCrosAPIVersion = 188
+  kCrosAPIMinVersion = 188,
+  kCrosAPIVersion = 189
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
