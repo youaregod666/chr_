@@ -90,9 +90,8 @@ Default(env.SharedLibrary('cros', SOURCES),
 env_test = base_env.Clone()
 env_test.Append(LIBS=['base', 'dl', 'rt', 'nss3'])
 
-PC_DEPS = 'gobject-2.0 dbus-glib-1 dbus-1 libchromeos nss'
-env_test.ParseConfig('%s --cflags --libs %s'
-                     % (env_test['ENV']['PKG_CONFIG'], PC_DEPS))
+env_test.ParseConfig('%s --cflags --libs gobject-2.0 dbus-glib-1 dbus-1 nss '
+                     % (env_test['ENV']['PKG_CONFIG']))
 env_test.Append(CCFLAGS=['-DOS_CHROMEOS'])
 
 env_gtest = env_test.Clone()
