@@ -111,15 +111,6 @@ Load = env_load.Object('load.cc')
 # Tests that do require libcros.so.
 tests = [
   env_network_monitor.Program('monitor_sms', ['monitor_sms.cc', Load]),
-
-# The following manual testing tools don't compile as they use deprecated
-# APIs. We should fix them if we want to keep them. Otherwise, we should
-# remove them. crosbug.com/20648
-#
-# env_network_monitor.Program('monitor_network', ['monitor_network.cc', Load]),
-# env_test.Program('cryptohome_drive', ['drive_cryptohome.cc', Load]),
-# env_test.Program('network_property_test', ['network_property_test.cc', Load]),
-# env_test.Program('simlock_test', ['simlock_test.cc', Load]),
 ]
 test_alias = Alias('test', tests)
 AlwaysBuild(test_alias)
