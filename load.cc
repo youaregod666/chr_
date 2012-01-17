@@ -116,7 +116,6 @@ DECL_FUNC_3(SetNetworkDevicePropertyGValue, void, const char*, const char*,
 DECL_FUNC_3(SetNetworkIPConfigPropertyGValue, void, const char*, const char*,
             const GValue*);
 DECL_FUNC_2(DeleteServiceFromProfile, void, const char*, const char*);
-DECL_FUNC_1(DisconnectFromNetwork, bool, const char*);
 DECL_FUNC_1(RequestCellularDataPlanUpdate, void, const char*);
 DECL_FUNC_2(MonitorNetworkManagerProperties, NetworkPropertiesMonitor,
             MonitorPropertyGValueCallback, void*);
@@ -162,9 +161,6 @@ DECL_FUNC_1(ProposeScan, void, const char*);
 DECL_FUNC_4(RequestCellularRegister, void, const char*, const char*,
             NetworkActionCallback, void*);
 DECL_FUNC_1(SetOfflineMode, bool, bool);
-DECL_FUNC_2(SetAutoConnect, bool, const char*, bool);
-DECL_FUNC_2(SetPassphrase, bool, const char*, const char*);
-DECL_FUNC_2(SetIdentity, bool, const char*, const char*);
 DECL_FUNC_1(ListIPConfigs, IPConfigStatus*, const char*);
 DECL_FUNC_2(AddIPConfig, bool, const char*, IPConfigType);
 DECL_FUNC_1(RemoveIPConfig, bool, IPConfig*);
@@ -281,7 +277,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(SetNetworkDevicePropertyGValue);
   INIT_FUNC(SetNetworkIPConfigPropertyGValue);
   INIT_FUNC(DeleteServiceFromProfile);
-  INIT_FUNC(DisconnectFromNetwork);
   INIT_FUNC(RequestCellularDataPlanUpdate);
   INIT_FUNC(MonitorNetworkManagerProperties);
   INIT_FUNC(MonitorNetworkServiceProperties);
@@ -310,9 +305,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(ProposeScan);
   INIT_FUNC(RequestCellularRegister);
   INIT_FUNC(SetOfflineMode);
-  INIT_FUNC(SetAutoConnect);
-  INIT_FUNC(SetPassphrase);
-  INIT_FUNC(SetIdentity);
   INIT_FUNC(ListIPConfigs);
   INIT_FUNC(AddIPConfig);
   INIT_FUNC(RemoveIPConfig);

@@ -152,9 +152,6 @@ extern void (*SetNetworkIPConfigPropertyGValue)(const char* ipconfig_path,
 extern void (*DeleteServiceFromProfile)(const char* profile_path,
                                         const char* service_path);
 
-// Disconnects from the network with the |service_path|.
-extern bool (*DisconnectFromNetwork)(const char* service_path);
-
 // Request an update of the data plans. A callback will be received by any
 // object that invoked MonitorCellularDataPlan when up to date data is ready.
 extern void (*RequestCellularDataPlanUpdate)(const char* modem_service_path);
@@ -367,21 +364,6 @@ extern void (*RequestCellularRegister)(const char* device_path,
 //
 // Returns false on failure and true on success.
 extern bool (*SetOfflineMode)(bool offline);
-
-// Set auto_connect for service.
-//
-// Returns true on success.
-extern bool (*SetAutoConnect)(const char* service_path, bool auto_connect);
-
-// Set passphrase for service.
-//
-// Returns true on success.
-extern bool (*SetPassphrase)(const char* service_path, const char* passphrase);
-
-// Set security identity for service.
-//
-// Returns true on success.
-extern bool (*SetIdentity)(const char* service_path, const char* identity);
 
 // Gets a list of all the IPConfigs using a given device path
 extern IPConfigStatus* (*ListIPConfigs)(const char* device_path);

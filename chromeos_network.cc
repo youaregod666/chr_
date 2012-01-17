@@ -619,6 +619,7 @@ bool ChromeOSSetOfflineMode(bool offline) {
   return true;
 }
 
+// Deprecated
 extern "C"
 bool ChromeOSSetAutoConnect(const char* service_path, bool auto_connect) {
   dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
@@ -697,6 +698,7 @@ static bool SetServiceStringProperty(const char* service_path,
 }
 
 
+// Deprecated
 extern "C"
 bool ChromeOSSetPassphrase(const char* service_path, const char* passphrase) {
   if (passphrase && strlen(passphrase) > 0) {
@@ -707,6 +709,7 @@ bool ChromeOSSetPassphrase(const char* service_path, const char* passphrase) {
   }
 }
 
+// Deprecated
 extern "C"
 bool ChromeOSSetIdentity(const char* service_path, const char* identity) {
   return SetServiceStringProperty(service_path, kIdentityProperty, identity);
