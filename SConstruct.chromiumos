@@ -73,11 +73,11 @@ SOURCES = Split('''\
 ''')
 
 env = base_env.Clone()
-env.Append(LIBS=['chromeos', 'base', 'rt'])
 
 # glib and dbus environment
 env.ParseConfig('%s --cflags --libs dbus-1 glib-2.0 dbus-glib-1 '
-                'libpcrecpp x11' % env['ENV']['PKG_CONFIG'])
+                'libchrome libchromeos libpcrecpp x11' %
+                env['ENV']['PKG_CONFIG'])
 
 env.GlibMarshal('marshal.glibmarshal.c', 'marshal.list')
 
@@ -87,9 +87,10 @@ Default(env.SharedLibrary('cros', SOURCES),
         env.Program('test_libbase_ndebug', 'test_libbase_ndebug.cc'))
 
 env_test = base_env.Clone()
-env_test.Append(LIBS=['base', 'dl', 'rt', 'nss3'])
+env_test.Append(LIBS=['nss3'])
 
-env_test.ParseConfig('%s --cflags --libs gobject-2.0 dbus-glib-1 dbus-1 nss '
+env_test.ParseConfig('%s --cflags --libs gobject-2.0 dbus-glib-1 dbus-1 '
+                     'libchrome nss'
                      % (env_test['ENV']['PKG_CONFIG']))
 env_test.Append(CCFLAGS=['-DOS_CHROMEOS'])
 
@@ -97,12 +98,13 @@ env_gtest = env_test.Clone()
 env_gtest.Append(LIBS=['gtest'])
 
 env_gtest_main = env_test.Clone()
-env_gtest_main.Append(LIBS=['gtest', 'gtest_main', 'chromeos', 'base'])
-env_gtest_main.ParseConfig('%s --cflags --libs libpcrecpp x11' % (
-    env_test['ENV']['PKG_CONFIG']))
+env_gtest_main.Append(LIBS=['gtest', 'gtest_main'])
+env_gtest_main.ParseConfig('%s --cflags --libs libchrome libchromeos '
+                           'libpcrecpp x11' % (env_test['ENV']['PKG_CONFIG']))
 
 env_network_monitor = env_test.Clone()
-env_network_monitor.Append(LIBS=['dbus-glib-1'])
+env_network_monitor.ParseConfig('%s --cflags --libs dbus-glib-1' %
+                                env['ENV']['PKG_CONFIG'])
 
 env_load = base_env.Clone()
 env_load.ParseConfig('%s --cflags --libs dbus-glib-1' % env['ENV']['PKG_CONFIG'])
