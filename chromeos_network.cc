@@ -1171,13 +1171,13 @@ void ChromeOSRequestHiddenWifiNetworkProperties(
   ::g_hash_table_insert(properties, ::g_strdup(kSecurityProperty),
                         &value_security);
 
-  // flimflam.Manger.GetWifiService() will apply the property changes in
+  // flimflam.Manger.GetService() will apply the property changes in
   // |properties| and return a new or existing service to GetWifiNotify.
   // GetWifiNotify will then call GetPropertiesAsync, triggering a second
   // asynchronous call to GetPropertiesNotify which will then call |callback|.
   DBusGProxyCall* call_id = ::dbus_g_proxy_begin_call(
       cb_data->proxy->gproxy(),
-      kGetWifiServiceFunction,
+      kGetServiceFunction,
       &GetServiceGValueNotify,
       cb_data,
       &DeleteFlimflamCallbackData,
@@ -1185,7 +1185,7 @@ void ChromeOSRequestHiddenWifiNetworkProperties(
       properties,
       G_TYPE_INVALID);
   if (!call_id) {
-    LOG(ERROR) << "NULL call_id for: " << kGetWifiServiceFunction;
+    LOG(ERROR) << "NULL call_id for: " << kGetServiceFunction;
     delete cb_data;
     callback(object, ssid, NULL);
   }
@@ -1229,7 +1229,7 @@ void ChromeOSRequestVirtualNetworkProperties(
   ::g_hash_table_insert(properties, ::g_strdup(kVPNDomainProperty),
                         &value_vpn_domain);
 
-  // flimflam.Manger.GetVPNService() will apply the property changes in
+  // flimflam.Manger.GetService() will apply the property changes in
   // |properties| and pass a new or existing service to GetVPNNotify.
   // GetVPNNotify will then call GetPropertiesAsync, triggering a second
   // asynchronous call to GetPropertiesNotify which will then call |callback|.
@@ -1243,7 +1243,7 @@ void ChromeOSRequestVirtualNetworkProperties(
       properties,
       G_TYPE_INVALID);
   if (!call_id) {
-    LOG(ERROR) << "NULL call_id for: " << kGetVPNServiceFunction;
+    LOG(ERROR) << "NULL call_id for: " << kGetServiceFunction;
     delete cb_data;
     callback(object, service_name, NULL);
   }
