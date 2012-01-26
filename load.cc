@@ -1,4 +1,4 @@
-// Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,7 +10,6 @@
 #include "base/basictypes.h"
 #include "chromeos_cros_api.h" // NOLINT
 #include "chromeos_cryptohome.h" // NOLINT
-#include "chromeos_imageburn.h"  //NOLINT
 #include "chromeos_network.h"  // NOLINT
 
 namespace chromeos {  // NOLINT //
@@ -206,11 +205,6 @@ DECL_FUNC_0(CryptohomeInstallAttributesIsFirstInstall, bool);
 DECL_FUNC_1(CryptohomeFreeString, void, char*);
 DECL_FUNC_2(CryptohomeMonitorSession, void*, CryptohomeSignalCallback, void*);
 
-// Imageburn
-DECL_FUNC_2(MonitorBurnStatus, BurnStatusConnection, BurnMonitor, void*);
-DECL_FUNC_1(DisconnectBurnStatus, void, BurnStatusConnection);
-DECL_FUNC_4(RequestBurn, void, const char*, const char*, BurnMonitor, void*);
-
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
 // Initializes the variable by looking up the function by |name|.
@@ -343,11 +337,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
 
   INIT_FUNC(CryptohomeFreeString);
   INIT_FUNC(CryptohomeMonitorSession);
-
-  // Imageburn
-  INIT_FUNC(MonitorBurnStatus);
-  INIT_FUNC(DisconnectBurnStatus);
-  INIT_FUNC(RequestBurn);
 
   return error_string.empty();
 }

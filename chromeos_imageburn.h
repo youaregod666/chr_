@@ -1,4 +1,4 @@
-// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -33,21 +33,5 @@ typedef OpaqueBurnStatusConnection* BurnStatusConnection;
 typedef void(*BurnMonitor)(void*,
                            const BurnStatus&,
                            BurnEventType);
-
-// Processes a callback from a d-bus signal. Caller provides a callback function
-// monitor that will be called to process callback. object will be passed as one
-// of arguments to callback function,
-extern BurnStatusConnection (*MonitorBurnStatus)(BurnMonitor monitor, 
-                                                 void* object);
-
-// Disconnects a listener from the burning events (connection).
-extern void (*DisconnectBurnStatus)(BurnStatusConnection connection);
-
-// Initiates image burning. Image located on path from_path is burnt to a device
-// on to_path. BurnStatusConnection is not used anymore. It is left here due to
-// back-compatibility.
-extern void (*RequestBurn)(const char* from_path, const char* to_path,
-                           BurnMonitor callback, void* user_data);
-
 } // namespace chromeos
 #endif  // PLATFORM_CROS_CHROMEOS_IMAGEBURN_H_
