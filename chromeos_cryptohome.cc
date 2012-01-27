@@ -490,30 +490,10 @@ int ChromeOSCryptohomeAsyncDoAutomaticFreeDiskSpaceControl() {
   return async_call_id;
 }
 
+// Deprecated
 extern "C"
 int ChromeOSCryptohomeAsyncSetOwnerUser(const char* username) {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus,
-                    cryptohome::kCryptohomeServiceName,
-                    cryptohome::kCryptohomeServicePath,
-                    cryptohome::kCryptohomeInterface);
-  gint async_call_id = 0;
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           cryptohome::kCryptohomeAsyncSetOwnerUser,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           username,
-                           G_TYPE_INVALID,
-                           G_TYPE_INT,
-                           &async_call_id,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << cryptohome::kCryptohomeAsyncSetOwnerUser
-                 << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-  }
-  return async_call_id;
+  return 0;
 }
 
 extern "C"

@@ -46,7 +46,6 @@ extern int (*CryptohomeAsyncMountSafe)(
     bool replace_tracked_subdirectories,
     const char** tracked_subdirectories);
 extern int (*CryptohomeAsyncMountGuest)();
-extern int (*CryptohomeAsyncSetOwnerUser)(const char* username);
 extern bool (*CryptohomeTpmIsReady)();
 extern bool (*CryptohomeTpmIsEnabled)();
 extern bool (*CryptohomeTpmIsOwned)();
