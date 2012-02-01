@@ -345,12 +345,13 @@
 //      SetIdentity.
 // 191: Deprecated DisconnectBurnStatus, MonitorBurnStatus, RequestBurn.
 // 192: Deprecated CryptohomeAsyncSetOwnerUser.
+// 193: Removed DisconnectBurnStatus, MonitorBurnStatus, RequestBurn.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 188,
-  kCrosAPIVersion = 192
+  kCrosAPIMinVersion = 191,
+  kCrosAPIVersion = 193
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
