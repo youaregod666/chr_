@@ -346,12 +346,16 @@
 // 191: Deprecated DisconnectBurnStatus, MonitorBurnStatus, RequestBurn.
 // 192: Deprecated CryptohomeAsyncSetOwnerUser.
 // 193: Removed DisconnectBurnStatus, MonitorBurnStatus, RequestBurn.
+// 194: Removed CryptohomeCheckKey, CryptohomeMigrateKey, CryptohomeRemove,
+//      CryptohomeMountAllowFail, CryptohomeMountGuest, CryptohomeUnmount,
+//      CryptohomeAsyncDoAutomaticFreeDiskSpaceControl,
+//      CryptohomeInstallAttributesCount, CryptohomeInstallAttributesIsSecure.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 191,
-  kCrosAPIVersion = 193
+  kCrosAPIVersion = 194
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

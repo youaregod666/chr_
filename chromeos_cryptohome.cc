@@ -1,4 +1,4 @@
-// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,34 +12,6 @@
 #include <chromeos/glib/object.h>
 
 namespace chromeos {  // NOLINT
-
-// TODO(satorux): Remove this.
-extern "C"
-bool ChromeOSCryptohomeCheckKey(const char* user_email, const char* key) {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus,
-                    cryptohome::kCryptohomeServiceName,
-                    cryptohome::kCryptohomeServicePath,
-                    cryptohome::kCryptohomeInterface);
-  gboolean done = false;
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           cryptohome::kCryptohomeCheckKey,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           user_email,
-                           G_TYPE_STRING,
-                           key,
-                           G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN,
-                           &done,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << cryptohome::kCryptohomeCheckKey << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-  }
-  return done;
-}
 
 extern "C"
 int ChromeOSCryptohomeAsyncCheckKey(const char* user_email, const char* key) {
@@ -66,37 +38,6 @@ int ChromeOSCryptohomeAsyncCheckKey(const char* user_email, const char* key) {
                  << (error->message ? error->message : "Unknown Error.");
   }
   return async_call_id;
-}
-
-// TODO(satorux): Remove this.
-extern "C"
-bool ChromeOSCryptohomeMigrateKey(const char* user_email, const char* from_key,
-                                  const char* to_key) {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus,
-                    cryptohome::kCryptohomeServiceName,
-                    cryptohome::kCryptohomeServicePath,
-                    cryptohome::kCryptohomeInterface);
-  gboolean done = false;
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           cryptohome::kCryptohomeMigrateKey,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           user_email,
-                           G_TYPE_STRING,
-                           from_key,
-                           G_TYPE_STRING,
-                           to_key,
-                           G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN,
-                           &done,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << cryptohome::kCryptohomeMigrateKey << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-  }
-  return done;
 }
 
 extern "C"
@@ -128,32 +69,6 @@ int ChromeOSCryptohomeAsyncMigrateKey(const char* user_email,
                  << (error->message ? error->message : "Unknown Error.");
   }
   return async_call_id;
-}
-
-// TODO(satorux): Remove this.
-extern "C"
-bool ChromeOSCryptohomeRemove(const char* user_email) {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus,
-                    cryptohome::kCryptohomeServiceName,
-                    cryptohome::kCryptohomeServicePath,
-                    cryptohome::kCryptohomeInterface);
-  gboolean done = false;
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           cryptohome::kCryptohomeRemove,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           user_email,
-                           G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN,
-                           &done,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << cryptohome::kCryptohomeRemove << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-  }
-  return done;
 }
 
 extern "C"
@@ -261,83 +176,6 @@ gchar** ChromeOSCryptohomeCopyStringArray(
   return return_array;
 }
 
-static bool CryptohomeMountSafe(
-    const char* user_email,
-    const char* key,
-    bool create_if_missing,
-    bool replace_tracked_subdirectories,
-    const char** tracked_subdirectories,
-    int* mount_error) {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus,
-                    cryptohome::kCryptohomeServiceName,
-                    cryptohome::kCryptohomeServicePath,
-                    cryptohome::kCryptohomeInterface);
-  gint local_mount_error = 0;
-  gboolean done = false;
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           cryptohome::kCryptohomeMount,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           user_email,
-                           G_TYPE_STRING,
-                           key,
-                           G_TYPE_BOOLEAN,
-                           create_if_missing,
-                           G_TYPE_BOOLEAN,
-                           replace_tracked_subdirectories,
-                           G_TYPE_STRV,
-                           tracked_subdirectories,
-                           G_TYPE_INVALID,
-                           G_TYPE_INT,
-                           &local_mount_error,
-                           G_TYPE_BOOLEAN,
-                           &done,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << cryptohome::kCryptohomeMount << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-  }
-
-  if (mount_error) {
-    *mount_error = local_mount_error;
-  }
-  return done;
-}
-
-static bool CryptohomeMount(
-    const char* user_email,
-    const char* key,
-    bool create_if_missing,
-    bool replace_tracked_subdirectories,
-    const std::vector<std::string>& tracked_subdirectories,
-    int* mount_error) {
-  gint local_mount_error = 0;
-  gboolean done = false;
-
-  // Make a full copy of the string array as we don't own
-  // tracked_subdirectories, and c_str() is only guaranteed to be unchanged as
-  // long as only non-const string functions are called.
-  char** dbus_tracked_subdirectories =
-      ChromeOSCryptohomeCopyStringArray(tracked_subdirectories);
-  if (dbus_tracked_subdirectories == NULL) {
-    return false;
-  }
-
-  done = CryptohomeMountSafe(
-      user_email, key, create_if_missing, replace_tracked_subdirectories,
-      const_cast<const char**>(dbus_tracked_subdirectories),
-      &local_mount_error);
-
-  g_strfreev(dbus_tracked_subdirectories);
-
-  if (mount_error) {
-    *mount_error = local_mount_error;
-  }
-  return done;
-}
-
 extern "C"
 int ChromeOSCryptohomeAsyncMountSafe(
     const char* user_email,
@@ -377,45 +215,6 @@ int ChromeOSCryptohomeAsyncMountSafe(
   return async_call_id;
 }
 
-// TODO(satorux): Remove this.
-extern "C"
-bool ChromeOSCryptohomeMountAllowFail(const char* user_email,
-    const char* key,
-    int* mount_error) {
-  return CryptohomeMount(user_email, key, true, false,
-                         std::vector<std::string>(), mount_error);
-}
-
-// TODO(satorux): Remove this.
-extern "C"
-bool ChromeOSCryptohomeMountGuest(int* mount_error) {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus,
-                    cryptohome::kCryptohomeServiceName,
-                    cryptohome::kCryptohomeServicePath,
-                    cryptohome::kCryptohomeInterface);
-  gint local_mount_error = 0;
-  gboolean done = false;
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           cryptohome::kCryptohomeMountGuest,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_INVALID,
-                           G_TYPE_INT,
-                           &local_mount_error,
-                           G_TYPE_BOOLEAN,
-                           &done,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << cryptohome::kCryptohomeMountGuest << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-  }
-  if (mount_error) {
-    *mount_error = local_mount_error;
-  }
-  return done;
-}
-
 extern "C"
 int ChromeOSCryptohomeAsyncMountGuest() {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -439,58 +238,6 @@ int ChromeOSCryptohomeAsyncMountGuest() {
   return async_call_id;
 }
 
-// TODO(satorux): Remove this.
-extern "C"
-bool ChromeOSCryptohomeUnmount() {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus,
-                    cryptohome::kCryptohomeServiceName,
-                    cryptohome::kCryptohomeServicePath,
-                    cryptohome::kCryptohomeInterface);
-  gboolean done = false;
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           cryptohome::kCryptohomeUnmount,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_INVALID,
-                           G_TYPE_BOOLEAN,
-                           &done,
-                           G_TYPE_INVALID)) {
-
-    LOG(WARNING) << cryptohome::kCryptohomeUnmount << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-
-  }
-  return done;
-}
-
-// TODO(satorux): Remove this.
-extern "C"
-int ChromeOSCryptohomeAsyncDoAutomaticFreeDiskSpaceControl() {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus,
-                    cryptohome::kCryptohomeServiceName,
-                    cryptohome::kCryptohomeServicePath,
-                    cryptohome::kCryptohomeInterface);
-  gint async_call_id = 0;
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-           cryptohome::kCryptohomeAsyncDoAutomaticFreeDiskSpaceControl,
-           &Resetter(&error).lvalue(),
-           G_TYPE_INVALID,
-           G_TYPE_INT,
-           &async_call_id,
-           G_TYPE_INVALID)) {
-    LOG(WARNING) << cryptohome::kCryptohomeAsyncDoAutomaticFreeDiskSpaceControl
-                 << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-  }
-  return async_call_id;
-}
-
-// Deprecated
 extern "C"
 int ChromeOSCryptohomeAsyncSetOwnerUser(const char* username) {
   return 0;
@@ -930,31 +677,6 @@ bool ChromeOSCryptohomeInstallAttributesSet(const char* name,
   return done;
 }
 
-// TODO(satorux): Remove this.
-extern "C"
-int ChromeOSCryptohomeInstallAttributesCount() {
-  dbus::BusConnection bus = dbus::GetSystemBusConnection();
-  dbus::Proxy proxy(bus,
-                    cryptohome::kCryptohomeServiceName,
-                    cryptohome::kCryptohomeServicePath,
-                    cryptohome::kCryptohomeInterface);
-  gint count = 0;
-  glib::ScopedError error;
-
-  if (!::dbus_g_proxy_call(proxy.gproxy(),
-                           cryptohome::kCryptohomeInstallAttributesCount,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_INVALID,
-                           G_TYPE_INT,
-                           &count,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << cryptohome::kCryptohomeInstallAttributesCount
-                 << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-  }
-  return count;
-}
-
 bool CallCryptohomeBoolFunction(const char* function) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
   dbus::Proxy proxy(bus,
@@ -988,13 +710,6 @@ extern "C"
 bool ChromeOSCryptohomeInstallAttributesIsReady() {
   return CallCryptohomeBoolFunction(
       cryptohome::kCryptohomeInstallAttributesIsReady);
-}
-
-// TODO(satorux): Remove this.
-extern "C"
-bool ChromeOSCryptohomeInstallAttributesIsSecure() {
-  return CallCryptohomeBoolFunction(
-      cryptohome::kCryptohomeInstallAttributesIsSecure);
 }
 
 extern "C"
