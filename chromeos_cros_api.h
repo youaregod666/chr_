@@ -350,12 +350,14 @@
 //      CryptohomeMountAllowFail, CryptohomeMountGuest, CryptohomeUnmount,
 //      CryptohomeAsyncDoAutomaticFreeDiskSpaceControl,
 //      CryptohomeInstallAttributesCount, CryptohomeInstallAttributesIsSecure.
+// 195: Deprecated CryptohomePkcs11IsTmpTokenReadyForUser,
+//      CryptohomePkcs11GetTmpTokenReadyForUser, CryptohomeGetStatusString.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 191,
-  kCrosAPIVersion = 194
+  kCrosAPIVersion = 195
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

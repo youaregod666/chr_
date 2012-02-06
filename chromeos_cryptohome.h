@@ -1,4 +1,4 @@
-// Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+// Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -56,11 +56,6 @@ extern void (*CryptohomeTpmClearStoredPassword)();
 extern void (*CryptohomePkcs11GetTpmTokenInfo)(std::string* label,
                                                std::string* user_pin);
 extern bool (*CryptohomePkcs11IsTpmTokenReady)();
-extern void (*CryptohomePkcs11GetTpmTokenInfoForUser)(const std::string& user,
-                                                      std::string* label,
-                                                      std::string* user_pin);
-extern bool (*CryptohomePkcs11IsTpmTokenReadyForUser)(const std::string& user);
-extern bool (*CryptohomeGetStatusString)(std::string* status);
 extern bool (*CryptohomeInstallAttributesGet)(const char* name, char** value);
 extern bool (*CryptohomeInstallAttributesSet)(const char* name,
                                               const char* value);
