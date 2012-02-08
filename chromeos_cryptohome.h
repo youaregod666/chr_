@@ -20,17 +20,6 @@ struct CryptohomeAsyncCallStatus {
   int return_code;
 };
 
-// These constants must match the MountError enumeration in mount.h from
-// cryptohome.
-const int kCryptohomeMountErrorNone = 0;
-const int kCryptohomeMountErrorFatal = 1 << 0;
-const int kCryptohomeMountErrorKeyFailure = 1 << 1;
-const int kCryptohomeMountErrorMountPointBusy = 1 << 2;
-const int kCryptohomeMountErrorTpmCommError = 1 << 3;
-const int kCryptohomeMountErrorTpmDefendLock = 1 << 4;
-const int kCryptohomeMountErrorUserDoesNotExist = 1 << 5;
-const int kCryptohomeMountErrorRecreated = 1 << 31;
-
 extern int (*CryptohomeAsyncCheckKey)(const char* user_email,
                                       const char* key);
 extern int (*CryptohomeAsyncMigrateKey)(const char* user_email,
