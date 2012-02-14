@@ -9,7 +9,6 @@
 
 #include "base/basictypes.h"
 #include "chromeos_cros_api.h" // NOLINT
-#include "chromeos_cryptohome.h" // NOLINT
 #include "chromeos_network.h"  // NOLINT
 
 namespace chromeos {  // NOLINT //
@@ -169,37 +168,6 @@ DECL_FUNC_1(FreeDeviceNetworkList, void, DeviceNetworkList*);
 DECL_FUNC_4(ConfigureService, void, const char*, const GHashTable*,
             NetworkActionCallback, void*);
 
-// Cryptohome
-DECL_FUNC_2(CryptohomeAsyncCheckKey, int, const char*, const char*);
-DECL_FUNC_3(CryptohomeAsyncMigrateKey,
-            int,
-            const char*,
-            const char*,
-            const char*);
-DECL_FUNC_1(CryptohomeAsyncRemove, int, const char*);
-DECL_FUNC_2(CryptohomeGetSystemSaltSafe, bool, char**, int*);
-DECL_FUNC_0(CryptohomeIsMounted, bool);
-DECL_FUNC_5(CryptohomeAsyncMountSafe, int, const char*, const char*, bool, bool,
-            const char**);
-DECL_FUNC_0(CryptohomeAsyncMountGuest, int);
-DECL_FUNC_0(CryptohomeTpmIsReady, bool);
-DECL_FUNC_0(CryptohomeTpmIsEnabled, bool);
-DECL_FUNC_0(CryptohomeTpmIsOwned, bool);
-DECL_FUNC_0(CryptohomeTpmIsBeingOwned, bool);
-DECL_FUNC_1(CryptohomeTpmGetPasswordSafe, bool, char**);
-DECL_FUNC_0(CryptohomeTpmCanAttemptOwnership, void);
-DECL_FUNC_0(CryptohomeTpmClearStoredPassword, void);
-DECL_FUNC_0(CryptohomePkcs11IsTpmTokenReady, bool);
-DECL_FUNC_2(CryptohomePkcs11GetTpmTokenInfo, void, std::string*, std::string*);
-DECL_FUNC_2(CryptohomeInstallAttributesGet, bool, const char*, char**);
-DECL_FUNC_2(CryptohomeInstallAttributesSet, bool, const char*, const char*);
-DECL_FUNC_0(CryptohomeInstallAttributesFinalize, bool);
-DECL_FUNC_0(CryptohomeInstallAttributesIsReady, bool);
-DECL_FUNC_0(CryptohomeInstallAttributesIsInvalid, bool);
-DECL_FUNC_0(CryptohomeInstallAttributesIsFirstInstall, bool);
-DECL_FUNC_1(CryptohomeFreeString, void, char*);
-DECL_FUNC_2(CryptohomeMonitorSession, void*, CryptohomeSignalCallback, void*);
-
 char const * const kCrosDefaultPath = "/opt/google/chrome/chromeos/libcros.so";
 
 // Initializes the variable by looking up the function by |name|.
@@ -301,33 +269,6 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(GetDeviceNetworkList);
   INIT_FUNC(FreeDeviceNetworkList);
   INIT_FUNC(ConfigureService);
-
-  // Cryptohome
-  INIT_FUNC(CryptohomeAsyncCheckKey);
-  INIT_FUNC(CryptohomeAsyncMigrateKey);
-  INIT_FUNC(CryptohomeAsyncRemove);
-  INIT_FUNC(CryptohomeGetSystemSaltSafe);
-  INIT_FUNC(CryptohomeIsMounted);
-  INIT_FUNC(CryptohomeAsyncMountSafe);
-  INIT_FUNC(CryptohomeAsyncMountGuest);
-  INIT_FUNC(CryptohomeTpmIsReady);
-  INIT_FUNC(CryptohomeTpmIsEnabled);
-  INIT_FUNC(CryptohomeTpmIsOwned);
-  INIT_FUNC(CryptohomeTpmIsBeingOwned);
-  INIT_FUNC(CryptohomeTpmGetPasswordSafe);
-  INIT_FUNC(CryptohomeTpmCanAttemptOwnership);
-  INIT_FUNC(CryptohomeTpmClearStoredPassword);
-  INIT_FUNC(CryptohomePkcs11IsTpmTokenReady);
-  INIT_FUNC(CryptohomePkcs11GetTpmTokenInfo);
-  INIT_FUNC(CryptohomeInstallAttributesGet);
-  INIT_FUNC(CryptohomeInstallAttributesSet);
-  INIT_FUNC(CryptohomeInstallAttributesFinalize);
-  INIT_FUNC(CryptohomeInstallAttributesIsReady);
-  INIT_FUNC(CryptohomeInstallAttributesIsInvalid);
-  INIT_FUNC(CryptohomeInstallAttributesIsFirstInstall);
-
-  INIT_FUNC(CryptohomeFreeString);
-  INIT_FUNC(CryptohomeMonitorSession);
 
   return error_string.empty();
 }

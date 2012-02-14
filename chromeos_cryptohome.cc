@@ -2,7 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "chromeos_cryptohome.h"  // NOLINT
+#include <string>
+#include <vector>
 
 #include <base/basictypes.h>
 #include <base/string_util.h>
@@ -12,6 +13,15 @@
 #include <chromeos/glib/object.h>
 
 namespace chromeos {  // NOLINT
+
+struct CryptohomeAsyncCallStatus {
+  int async_id;
+  bool return_status;
+  int return_code;
+};
+
+typedef void(*CryptohomeSignalCallback)(
+    const CryptohomeAsyncCallStatus& call_status, void* callback_context);
 
 extern "C"
 int ChromeOSCryptohomeAsyncCheckKey(const char* user_email, const char* key) {
