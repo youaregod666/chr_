@@ -364,12 +364,29 @@
 //      CryptohomeInstallAttributesIsInvalid,
 //      CryptohomeInstallAttributesIsFirstInstall, CryptohomeFreeString
 //      CryptohomeMonitorSession.
+// 197: Removed CryptohomeAsyncCheckKey, CryptohomeAsyncMigrateKey,
+//      CryptohomeAsyncMountGuest, CryptohomeAsyncMountSafe,
+//      CryptohomeAsyncRemove, CryptohomeAsyncSetOwnerUser,
+//      CryptohomeFreeString, CryptohomeGetStatusString,
+//      CryptohomeGetStatusStringSafe, CryptohomeGetSystemSaltSafe,
+//      CryptohomeInstallAttributesFinalize, CryptohomeInstallAttributesGet,
+//      CryptohomeInstallAttributesIsFirstInstall,
+//      CryptohomeInstallAttributesIsInvalid,
+//      CryptohomeInstallAttributesIsReady, CryptohomeInstallAttributesSet,
+//      CryptohomeIsMounted, CryptohomeMonitorSession,
+//      CryptohomePkcs11GetTpmTokenInfo,
+//      CryptohomePkcs11GetTmpTokenReadyForUser,
+//      CryptohomePkcs11IsTpmTokenReady,
+//      CryptohomePkcs11IsTmpTokenReadyForUser,
+//      CryptohomeTpmCanAttemptOwnership, CryptohomeTpmClearStoredPassword,
+//      CryptohomeTpmGetPasswordSafe, CryptohomeTpmIsBeingOwned,
+//      CryptohomeTpmIsEnabled, CryptohomeTpmIsOwned, CryptohomeTpmIsReady.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
-  kCrosAPIMinVersion = 191,
-  kCrosAPIVersion = 196
+  kCrosAPIMinVersion = 196,
+  kCrosAPIVersion = 197
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"

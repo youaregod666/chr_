@@ -65,7 +65,6 @@ base_env.Append(CCFLAGS=Split('-ggdb -fPIC -fno-exceptions -Wall -Werror'))
 base_env.Append(LINKFLAGS=Split('-fPIC'))
 
 SOURCES = Split('''\
-  chromeos_cryptohome.cc
   chromeos_network.cc
   marshal.glibmarshal.c
   version_check.cc
