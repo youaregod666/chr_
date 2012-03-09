@@ -52,9 +52,10 @@ for key in Split('CC CXX AR RANLIB LD NM CFLAGS CCFLAGS LINKFLAGS'):
   value = os.environ.get(key)
   if value != None:
     base_env[key] = Split(value)
+pkgconfig = os.environ.get('PKG_CONFIG', 'pkg-config')
 
 # Fix issue with scons not passing some vars through the environment.
-for key in Split('PKG_CONFIG PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
+for key in Split('PKG_CONFIG_LIBDIR PKG_CONFIG_PATH SYSROOT'):
   if os.environ.has_key(key):
     base_env['ENV'][key] = os.environ[key]
 
@@ -72,10 +73,12 @@ SOURCES = Split('''\
 
 env = base_env.Clone()
 
+BASE_VER = os.environ.get('BASE_VER', '85268')
+
 # glib and dbus environment
 env.ParseConfig('%s --cflags --libs dbus-1 glib-2.0 dbus-glib-1 '
-                'libchrome libchromeos libpcrecpp x11' %
-                env['ENV']['PKG_CONFIG'])
+                'libchrome-%s libchromeos-%s libpcrecpp x11' %
+                (pkgconfig, BASE_VER, BASE_VER))
 
 env.GlibMarshal('marshal.glibmarshal.c', 'marshal.list')
 
@@ -88,8 +91,7 @@ env_test = base_env.Clone()
 env_test.Append(LIBS=['nss3'])
 
 env_test.ParseConfig('%s --cflags --libs gobject-2.0 dbus-glib-1 dbus-1 '
-                     'libchrome nss'
-                     % (env_test['ENV']['PKG_CONFIG']))
+                     'libchrome-%s nss' % (pkgconfig, BASE_VER))
 env_test.Append(CCFLAGS=['-DOS_CHROMEOS'])
 
 env_gtest = env_test.Clone()
@@ -97,15 +99,15 @@ env_gtest.Append(LIBS=['gtest'])
 
 env_gtest_main = env_test.Clone()
 env_gtest_main.Append(LIBS=['gtest', 'gtest_main'])
-env_gtest_main.ParseConfig('%s --cflags --libs libchrome libchromeos '
-                           'libpcrecpp x11' % (env_test['ENV']['PKG_CONFIG']))
+env_gtest_main.ParseConfig('%s --cflags --libs libchrome-%s libchromeos-%s '
+                           'libpcrecpp x11' % (pkgconfig, BASE_VER, BASE_VER))
 
 env_network_monitor = env_test.Clone()
-env_network_monitor.ParseConfig('%s --cflags --libs dbus-glib-1' %
-                                env['ENV']['PKG_CONFIG'])
+env_network_monitor.ParseConfig('%s --cflags --libs dbus-glib-1' % pkgconfig)
 
 env_load = base_env.Clone()
-env_load.ParseConfig('%s --cflags --libs dbus-glib-1' % env['ENV']['PKG_CONFIG'])
+env_load.ParseConfig('%s --cflags --libs dbus-glib-1 libchrome-%s'
+                     % (pkgconfig, BASE_VER))
 Load = env_load.Object('load.cc')
 
 # Tests that do require libcros.so.
