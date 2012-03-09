@@ -82,10 +82,7 @@ env.ParseConfig('%s --cflags --libs dbus-1 glib-2.0 dbus-glib-1 '
 
 env.GlibMarshal('marshal.glibmarshal.c', 'marshal.list')
 
-# test_libbase_ndebug is built to catch NDEBUG mismatches between this
-# library and libbase.  It is not installed.
-Default(env.SharedLibrary('cros', SOURCES),
-        env.Program('test_libbase_ndebug', 'test_libbase_ndebug.cc'))
+Default(env.SharedLibrary('cros', SOURCES))
 
 env_test = base_env.Clone()
 env_test.Append(LIBS=['nss3'])
