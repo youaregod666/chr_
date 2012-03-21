@@ -569,28 +569,6 @@ bool ChromeOSActivateCellularModem(const char* service_path,
   return true;
 }
 
-// Deprecated
-extern "C"
-bool ChromeOSDisconnectFromNetwork(const char* service_path) {
-  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
-                            kFlimflamServiceName,
-                            service_path,
-                            kFlimflamServiceInterface);
-
-  // Now try disconnecting.
-  glib::ScopedError error;
-  if (!::dbus_g_proxy_call(service_proxy.gproxy(),
-                           kDisconnectFunction,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << "DisconnectFromNetwork failed: "
-        << (error->message ? error->message : "Unknown Error.");
-    return false;
-  }
-  return true;
-}
-
 extern "C"
 bool ChromeOSSetOfflineMode(bool offline) {
   dbus::BusConnection bus = dbus::GetSystemBusConnection();
@@ -617,102 +595,6 @@ bool ChromeOSSetOfflineMode(bool offline) {
   }
 
   return true;
-}
-
-// Deprecated
-extern "C"
-bool ChromeOSSetAutoConnect(const char* service_path, bool auto_connect) {
-  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
-                            kFlimflamServiceName,
-                            service_path,
-                            kFlimflamServiceInterface);
-
-  glib::Value value_auto_connect(auto_connect);
-
-  glib::ScopedError error;
-  if (!::dbus_g_proxy_call(service_proxy.gproxy(),
-                           kSetPropertyFunction,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           kAutoConnectProperty,
-                           G_TYPE_VALUE,
-                           &value_auto_connect,
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << "SetAutoConnect failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-    return false;
-  }
-
-  return true;
-}
-
-static bool ClearServiceProperty(const char* service_path,
-                                 const char* property) {
-  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
-                            kFlimflamServiceName,
-                            service_path,
-                            kFlimflamServiceInterface);
-
-  glib::ScopedError error;
-  if (!::dbus_g_proxy_call(service_proxy.gproxy(),
-                           kClearPropertyFunction,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           property,
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << "Clearing property " << property << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-    return false;
-  }
-
-  return true;
-}
-
-static bool SetServiceStringProperty(const char* service_path,
-                                     const char* property, const char* value) {
-  dbus::Proxy service_proxy(dbus::GetSystemBusConnection(),
-                            kFlimflamServiceName,
-                            service_path,
-                            kFlimflamServiceInterface);
-
-  glib::Value value_string(value);
-  glib::ScopedError error;
-  if (!::dbus_g_proxy_call(service_proxy.gproxy(),
-                           kSetPropertyFunction,
-                           &Resetter(&error).lvalue(),
-                           G_TYPE_STRING,
-                           property,
-                           G_TYPE_VALUE,
-                           &value_string,
-                           G_TYPE_INVALID,
-                           G_TYPE_INVALID)) {
-    LOG(WARNING) << "Setting property " << property << " failed: "
-                 << (error->message ? error->message : "Unknown Error.");
-    return false;
-  }
-
-  return true;
-
-}
-
-
-// Deprecated
-extern "C"
-bool ChromeOSSetPassphrase(const char* service_path, const char* passphrase) {
-  if (passphrase && strlen(passphrase) > 0) {
-    return SetServiceStringProperty(service_path, kPassphraseProperty,
-                                    passphrase);
-  } else {
-    return ClearServiceProperty(service_path, kPassphraseProperty);
-  }
-}
-
-// Deprecated
-extern "C"
-bool ChromeOSSetIdentity(const char* service_path, const char* identity) {
-  return SetServiceStringProperty(service_path, kIdentityProperty, identity);
 }
 
 namespace {
