@@ -113,6 +113,7 @@ DECL_FUNC_3(SetNetworkDevicePropertyGValue, void, const char*, const char*,
             const GValue*);
 DECL_FUNC_3(SetNetworkIPConfigPropertyGValue, void, const char*, const char*,
             const GValue*);
+DECL_FUNC_2(SetNetworkManagerPropertyGValue, void, const char*, const GValue*);
 DECL_FUNC_2(DeleteServiceFromProfile, void, const char*, const char*);
 DECL_FUNC_1(RequestCellularDataPlanUpdate, void, const char*);
 DECL_FUNC_2(MonitorNetworkManagerProperties, NetworkPropertiesMonitor,
@@ -233,6 +234,7 @@ bool LoadLibcros(const char* path_to_libcros, std::string& error_string) {
   INIT_FUNC(ClearNetworkServiceProperty);
   INIT_FUNC(SetNetworkDevicePropertyGValue);
   INIT_FUNC(SetNetworkIPConfigPropertyGValue);
+  INIT_FUNC(SetNetworkManagerPropertyGValue);
   INIT_FUNC(DeleteServiceFromProfile);
   INIT_FUNC(RequestCellularDataPlanUpdate);
   INIT_FUNC(MonitorNetworkManagerProperties);

@@ -148,6 +148,12 @@ extern void (*SetNetworkIPConfigPropertyGValue)(const char* ipconfig_path,
                                                 const char* property,
                                                 const GValue* gvalue);
 
+// Set a property of a manager to the provided value
+//
+// Success is indicated by the receipt of a matching PropertyChanged signal.
+extern void (*SetNetworkManagerPropertyGValue)(const char* property,
+                                               const GValue* gvalue);
+
 // Delete a remembered service from a profile.
 extern void (*DeleteServiceFromProfile)(const char* profile_path,
                                         const char* service_path);

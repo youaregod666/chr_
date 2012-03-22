@@ -1557,6 +1557,14 @@ void ChromeOSSetNetworkIPConfigPropertyGValue(const char* ipconfig_path,
 }
 
 extern "C"
+void ChromeOSSetNetworkManagerPropertyGValue(const char* property,
+                                             const GValue* gvalue) {
+  FlimflamCallbackData* cb_data =
+      new FlimflamCallbackData(kFlimflamManagerInterface, kFlimflamServicePath);
+  SetNetworkProperty(cb_data, property, gvalue);
+}
+
+extern "C"
 void ChromeOSDeleteServiceFromProfile(const char* profile_path,
                                       const char* service_path) {
   FlimflamCallbackData* cb_data =

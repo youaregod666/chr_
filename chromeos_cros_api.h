@@ -381,12 +381,13 @@
 //      CryptohomeTpmCanAttemptOwnership, CryptohomeTpmClearStoredPassword,
 //      CryptohomeTpmGetPasswordSafe, CryptohomeTpmIsBeingOwned,
 //      CryptohomeTpmIsEnabled, CryptohomeTpmIsOwned, CryptohomeTpmIsReady.
+// 198: Added SetNetworkManagerPropertyGValue to network API.
 
 namespace chromeos {  // NOLINT
 
 enum CrosAPIVersion {
   kCrosAPIMinVersion = 196,
-  kCrosAPIVersion = 197
+  kCrosAPIVersion = 198
 };
 
 // Default path to pass to LoadCros: "/opt/google/chrome/chromeos/libcros.so"
