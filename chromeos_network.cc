@@ -14,6 +14,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/scoped_vector.h"
 #include "base/string_util.h"
+#include "base/stringprintf.h"
 #include "chromeos/dbus/dbus.h"  // NOLINT
 #include "chromeos/dbus/service_constants.h"  // NOLINT
 #include "chromeos/glib/object.h"  // NOLINT
