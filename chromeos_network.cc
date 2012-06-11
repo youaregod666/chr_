@@ -18,7 +18,7 @@
 #include "chromeos/dbus/dbus.h"  // NOLINT
 #include "chromeos/dbus/service_constants.h"  // NOLINT
 #include "chromeos/glib/object.h"  // NOLINT
-#include "chromeos/string.h"
+#include "cros_string.h"
 
 using namespace cashew;
 using namespace flimflam;

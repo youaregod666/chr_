@@ -67,6 +67,7 @@ base_env.Append(LINKFLAGS=Split('-fPIC'))
 
 SOURCES = Split('''\
   chromeos_network.cc
+  cros_string.cc
   marshal.glibmarshal.c
   version_check.cc
 ''')
